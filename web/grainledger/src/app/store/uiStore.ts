@@ -47,7 +47,7 @@ export const useUiStore = create<UiState>((set) => ({
   isSearchOpen: false,
   isNotificationsOpen: false,
   isOnline: navigator.onLine,
-  pendingOfflineCount: 3, // 3 pending offline records in field queue
+  pendingOfflineCount: 0,
 
   toggleTheme: () => {
     set((state) => {

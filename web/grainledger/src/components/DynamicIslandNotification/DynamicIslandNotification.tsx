@@ -79,7 +79,7 @@ export const DynamicIslandNotification: React.FC = () => {
 
               <div className="pt-1 flex items-center justify-between border-t border-white/10">
                 <Link
-                  to="/field/sync-queue"
+                  to="/field/sync"
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
                 >
@@ -96,3 +96,4 @@ export const DynamicIslandNotification: React.FC = () => {
     </div>
   );
 };
+

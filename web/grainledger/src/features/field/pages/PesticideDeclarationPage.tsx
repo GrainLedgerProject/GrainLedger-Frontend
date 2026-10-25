@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
 import { catalogsEndpoints, type ActiveSubstanceDto } from "@/api/catalogs";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   Plant,
@@ -78,7 +79,12 @@ export const PesticideDeclarationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.pesticide.errorLoad", "Không thể tải lịch sử khai báo phun thuốc."));
+        setError(
+          t(
+            "field.pesticide.errorLoad",
+            "Không thể tải lịch sử khai báo phun thuốc.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -135,9 +141,13 @@ export const PesticideDeclarationPage: React.FC = () => {
       });
 
       setSuccessMsg(
-        t("field.pesticide.successRecord", "Đã ghi nhận khai báo phun thuốc {{name}}", {
-          name: formData.productName,
-        })
+        t(
+          "field.pesticide.successRecord",
+          "Đã ghi nhận khai báo phun thuốc {{name}}",
+          {
+            name: formData.productName,
+          },
+        ),
       );
       setIsModalOpen(false);
       await loadData();
@@ -145,7 +155,12 @@ export const PesticideDeclarationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.pesticide.errorRecord", "Không thể ghi nhận khai báo phun thuốc."));
+        setError(
+          t(
+            "field.pesticide.errorRecord",
+            "Không thể ghi nhận khai báo phun thuốc.",
+          ),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -161,12 +176,15 @@ export const PesticideDeclarationPage: React.FC = () => {
             {t("field.pesticide.tag", "KHAI BÁO PHUN THUỐC BVTV THEO THỬA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("field.pesticide.title", "Nhật ký Phun thuốc & Cảnh báo Dư lượng MRL")}
+            {t(
+              "field.pesticide.title",
+              "Nhật ký Phun thuốc & Cảnh báo Dư lượng MRL",
+            )}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.pesticide.subtitle",
-              "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL (Quy tắc BR-06)."
+              "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL (Quy tắc BR-06).",
             )}
           </p>
         </div>
@@ -186,7 +204,9 @@ export const PesticideDeclarationPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
-            <span>{t("field.pesticide.createBtn", "Khai báo Phun thuốc mới")}</span>
+            <span>
+              {t("field.pesticide.createBtn", "Khai báo Phun thuốc mới")}
+            </span>
           </button>
         </div>
       </div>
@@ -209,18 +229,26 @@ export const PesticideDeclarationPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("field.pesticide.loading", "Đang tải lịch sử khai báo...")} />
+            <GrainLoader
+              label={t(
+                "field.pesticide.loading",
+                "Đang tải lịch sử khai báo...",
+              )}
+            />
           </div>
         ) : declarations.length === 0 ? (
           <div className="py-16 text-center space-y-2">
             <Plant size={40} className="mx-auto text-ink-tertiary opacity-60" />
             <p className="text-sm font-semibold text-ink-primary">
-              {t("field.pesticide.emptyTitle", "Chưa có khai báo phun thuốc nào")}
+              {t(
+                "field.pesticide.emptyTitle",
+                "Chưa có khai báo phun thuốc nào",
+              )}
             </p>
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
               {t(
                 "field.pesticide.emptyDesc",
-                "Nhấn \"Khai báo Phun thuốc mới\" để nhập thông tin thuốc bảo vệ thực vật đã phun trên thửa ruộng."
+                'Nhấn "Khai báo Phun thuốc mới" để nhập thông tin thuốc bảo vệ thực vật đã phun trên thửa ruộng.',
               )}
             </p>
           </div>
@@ -229,11 +257,21 @@ export const PesticideDeclarationPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("field.pesticide.appliedOn", "Ngày áp dụng")}</th>
-                  <th className="py-3 px-4">{t("field.pesticide.productName", "Tên thương phẩm")}</th>
-                  <th className="py-3 px-4">{t("field.pesticide.dosage", "Liều lượng")}</th>
-                  <th className="py-3 px-4">{t("field.pesticide.source", "Nguồn thông tin")}</th>
-                  <th className="py-3 px-4">{t("field.pesticide.riskAssessment", "Đánh giá rủi ro")}</th>
+                  <th className="py-3 px-4">
+                    {t("field.pesticide.appliedOn", "Ngày áp dụng")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.pesticide.productName", "Tên thương phẩm")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.pesticide.dosage", "Liều lượng")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.pesticide.source", "Nguồn thông tin")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.pesticide.riskAssessment", "Đánh giá rủi ro")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -251,18 +289,29 @@ export const PesticideDeclarationPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-ink-primary">
-                        {item?.productName || t("field.pesticide.defaultProduct", "Thuốc bảo vệ thực vật")}
+                        {item?.productName ||
+                          t(
+                            "field.pesticide.defaultProduct",
+                            "Thuốc bảo vệ thực vật",
+                          )}
                       </td>
                       <td className="py-3 px-4 font-mono text-ink-secondary">
                         {item ? `${item.rate} ${item.rateUnit}` : "0.25 kg/ha"}
                       </td>
                       <td className="py-3 px-4 text-ink-secondary text-[11px]">
-                        {d.informationSource || t("field.pesticide.defaultSource", "Nhật ký đồng ruộng")}
+                        {d.informationSource ||
+                          t(
+                            "field.pesticide.defaultSource",
+                            "Nhật ký đồng ruộng",
+                          )}
                       </td>
                       <td className="py-3 px-4">
                         <StatusBadge
                           status="STALE"
-                          label={t("field.pesticide.pendingLab", "Chờ mẫu Lab đối chứng")}
+                          label={t(
+                            "field.pesticide.pendingLab",
+                            "Chờ mẫu Lab đối chứng",
+                          )}
                         />
                       </td>
                     </tr>
@@ -275,12 +324,14 @@ export const PesticideDeclarationPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("field.pesticide.modalTitle", "Khai báo phun thuốc") }>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("field.pesticide.modalTitle", "Ghi nhận Khai báo Phun thuốc BVTV")}
+                {t(
+                  "field.pesticide.modalTitle",
+                  "Ghi nhận Khai báo Phun thuốc BVTV",
+                )}
               </h3>
               <button
                 type="button"
@@ -309,7 +360,10 @@ export const PesticideDeclarationPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.pesticide.productNameLabel", "Tên thương phẩm thuốc BVTV *")}
+                  {t(
+                    "field.pesticide.productNameLabel",
+                    "Tên thương phẩm thuốc BVTV *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -318,14 +372,20 @@ export const PesticideDeclarationPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, productName: e.target.value })
                   }
-                  placeholder={t("field.pesticide.productNamePlaceholder", "VD: Beam 75WP, Anvil 5SC")}
+                  placeholder={t(
+                    "field.pesticide.productNamePlaceholder",
+                    "VD: Beam 75WP, Anvil 5SC",
+                  )}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.pesticide.substanceLabel", "Hoạt chất chính trong danh mục *")}
+                  {t(
+                    "field.pesticide.substanceLabel",
+                    "Hoạt chất chính trong danh mục *",
+                  )}
                 </label>
                 <select
                   required
@@ -397,13 +457,14 @@ export const PesticideDeclarationPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("common.saving", "Đang lưu...") : t("field.pesticide.submitBtn", "Ghi nhận")}
+                  {submitting
+                    ? t("common.saving", "Đang lưu...")
+                    : t("field.pesticide.submitBtn", "Ghi nhận")}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

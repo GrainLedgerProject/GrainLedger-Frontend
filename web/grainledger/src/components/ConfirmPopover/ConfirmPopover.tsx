@@ -1,6 +1,7 @@
 import { WarningCircle, X } from '@phosphor-icons/react';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import React from 'react';
+import { Modal } from '@/components/Modal';
 
 export interface ConfirmPopoverProps {
   isOpen: boolean;
@@ -25,19 +26,6 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onCancel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onCancel]);
-
   const confirmBtnStyles = {
     danger: 'bg-accent-danger hover:bg-red-700 text-white',
     warning: 'bg-accent-warning hover:bg-amber-500 text-ink-primary',
@@ -45,26 +33,13 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
   }[variant];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
+    <Modal isOpen={isOpen} onClose={onCancel} ariaLabel={title}>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-ink-primary/40 backdrop-blur-xs"
-            onClick={onCancel}
-          />
-
-          {/* Dialog Modal */}
-          <motion.div
-            ref={dialogRef}
             initial={{ scale: 0.95, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 w-full max-w-md rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 p-6 shadow-xl"
+            className="w-[min(28rem,calc(100vw-2rem))] rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 p-6 shadow-xl"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
@@ -125,8 +100,6 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
               </button>
             </div>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+    </Modal>
   );
 };

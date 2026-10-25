@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   MapPin,
@@ -80,7 +81,9 @@ export const PlotRegistrationPage: React.FC = () => {
       const farmerMap = new Map(farmerItems.map((f: any) => [f.id, f.name]));
       const enrichedPlots = plotItems.map((p: any) => ({
         ...p,
-        farmerName: farmerMap.get(p.farmerId) || t("field.plot.unknownFarmer", "Nông hộ chưa rõ"),
+        farmerName:
+          farmerMap.get(p.farmerId) ||
+          t("field.plot.unknownFarmer", "Nông hộ chưa rõ"),
       }));
 
       setPlots(enrichedPlots);
@@ -89,7 +92,12 @@ export const PlotRegistrationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.plot.errLoad", "Không thể tải danh sách thửa ruộng từ máy chủ."));
+        setError(
+          t(
+            "field.plot.errLoad",
+            "Không thể tải danh sách thửa ruộng từ máy chủ.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -127,7 +135,12 @@ export const PlotRegistrationPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.farmerId) {
-      setError(t("field.plot.errSelectFarmer", "Vui lòng chọn Nông hộ sở hữu thửa ruộng."));
+      setError(
+        t(
+          "field.plot.errSelectFarmer",
+          "Vui lòng chọn Nông hộ sở hữu thửa ruộng.",
+        ),
+      );
       return;
     }
 
@@ -155,7 +168,7 @@ export const PlotRegistrationPage: React.FC = () => {
         setSuccessMsg(
           t("field.plot.updatedSuccess", "Đã cập nhật thửa ruộng {{code}}", {
             code: formData.code,
-          })
+          }),
         );
       } else {
         // Create
@@ -175,9 +188,13 @@ export const PlotRegistrationPage: React.FC = () => {
           },
         });
         setSuccessMsg(
-          t("field.plot.createdSuccess", "Đã đăng ký thành công thửa ruộng {{code}}", {
-            code: formData.code,
-          })
+          t(
+            "field.plot.createdSuccess",
+            "Đã đăng ký thành công thửa ruộng {{code}}",
+            {
+              code: formData.code,
+            },
+          ),
         );
       }
 
@@ -197,9 +214,13 @@ export const PlotRegistrationPage: React.FC = () => {
   const handleDelete = async (plot: PlotRecord) => {
     if (
       !window.confirm(
-        t("field.plot.confirmDelete", "Bạn có chắc muốn xoá thửa ruộng \"{{code}}\"?", {
-          code: plot.code,
-        })
+        t(
+          "field.plot.confirmDelete",
+          'Bạn có chắc muốn xoá thửa ruộng "{{code}}"?',
+          {
+            code: plot.code,
+          },
+        ),
       )
     )
       return;
@@ -211,7 +232,7 @@ export const PlotRegistrationPage: React.FC = () => {
       setSuccessMsg(
         t("field.plot.deletedSuccess", "Đã xoá thửa ruộng {{code}}", {
           code: plot.code,
-        })
+        }),
       );
       await loadData();
     } catch (err: unknown) {
@@ -242,7 +263,7 @@ export const PlotRegistrationPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.plot.pageSubtitle",
-              "Gắn định danh thửa đất polygon với từng hộ nông dân nhằm bảo toàn tỷ lệ đóng góp khối lượng ISO 22095."
+              "Gắn định danh thửa đất polygon với từng hộ nông dân nhằm bảo toàn tỷ lệ đóng góp khối lượng ISO 22095.",
             )}
           </p>
         </div>
@@ -287,7 +308,10 @@ export const PlotRegistrationPage: React.FC = () => {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder={t("field.plot.searchPlaceholder", "Tìm theo mã thửa đất...")}
+              placeholder={t(
+                "field.plot.searchPlaceholder",
+                "Tìm theo mã thửa đất...",
+              )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
@@ -303,7 +327,9 @@ export const PlotRegistrationPage: React.FC = () => {
             onChange={(e) => setSelectedFarmerId(e.target.value)}
             className="px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-semibold text-ink-primary"
           >
-            <option value="">{t("field.plot.allFarmers", "Tất cả Nông hộ")}</option>
+            <option value="">
+              {t("field.plot.allFarmers", "Tất cả Nông hộ")}
+            </option>
             {farmers.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name} ({f.code})
@@ -332,7 +358,9 @@ export const PlotRegistrationPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("field.plot.loading", "Đang tải danh sách thửa đất...")} />
+            <GrainLoader
+              label={t("field.plot.loading", "Đang tải danh sách thửa đất...")}
+            />
           </div>
         ) : plots.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -346,7 +374,7 @@ export const PlotRegistrationPage: React.FC = () => {
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
               {t(
                 "field.plot.emptyDesc",
-                "Nhấn \"Thêm Thửa ruộng mới\" để định danh toạ độ thửa đất của nông hộ."
+                'Nhấn "Thêm Thửa ruộng mới" để định danh toạ độ thửa đất của nông hộ.',
               )}
             </p>
           </div>
@@ -355,12 +383,24 @@ export const PlotRegistrationPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("field.plot.thCode", "Mã thửa")}</th>
-                  <th className="py-3 px-4">{t("field.plot.thFarmer", "Nông hộ chủ quản")}</th>
-                  <th className="py-3 px-4">{t("field.plot.thArea", "Diện tích (ha)")}</th>
-                  <th className="py-3 px-4">{t("field.plot.thGps", "Toạ độ GPS / Ranh giới")}</th>
-                  <th className="py-3 px-4">{t("field.plot.thStatus", "Trạng thái hồ sơ")}</th>
-                  <th className="py-3 px-4 text-right">{t("field.plot.thActions", "Thao tác")}</th>
+                  <th className="py-3 px-4">
+                    {t("field.plot.thCode", "Mã thửa")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.plot.thFarmer", "Nông hộ chủ quản")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.plot.thArea", "Diện tích (ha)")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.plot.thGps", "Toạ độ GPS / Ranh giới")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.plot.thStatus", "Trạng thái hồ sơ")}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("field.plot.thActions", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -395,7 +435,10 @@ export const PlotRegistrationPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <StatusBadge status="BALANCED" label={t("field.plot.statusValidGps", "Toạ độ hợp lệ")} />
+                      <StatusBadge
+                        status="BALANCED"
+                        label={t("field.plot.statusValidGps", "Toạ độ hợp lệ")}
+                      />
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
@@ -424,8 +467,7 @@ export const PlotRegistrationPage: React.FC = () => {
       </div>
 
       {/* Create / Edit Plot Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={editingPlot ? t("field.plot.modalEdit", "Cập nhật thửa ruộng") : t("field.plot.modalNew", "Đăng ký thửa ruộng")}>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
@@ -471,7 +513,9 @@ export const PlotRegistrationPage: React.FC = () => {
                   }
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
-                  <option value="">{t("field.plot.selectFarmerOption", "-- Chọn Nông hộ --")}</option>
+                  <option value="">
+                    {t("field.plot.selectFarmerOption", "-- Chọn Nông hộ --")}
+                  </option>
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name} ({f.code})
@@ -507,7 +551,10 @@ export const PlotRegistrationPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.plot.gpsLabel", "Toạ độ GPS (Kinh độ, Vĩ độ hoặc Polygon) *")}
+                  {t(
+                    "field.plot.gpsLabel",
+                    "Toạ độ GPS (Kinh độ, Vĩ độ hoặc Polygon) *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -522,7 +569,7 @@ export const PlotRegistrationPage: React.FC = () => {
                 <span className="text-[10px] text-ink-tertiary mt-0.5 block">
                   {t(
                     "field.plot.gpsHelper",
-                    "Được dùng để định vị trên bản đồ GIS và phục vụ thanh tra hải quan xuất khẩu."
+                    "Được dùng để định vị trên bản đồ GIS và phục vụ thanh tra hải quan xuất khẩu.",
                   )}
                 </span>
               </div>
@@ -549,8 +596,7 @@ export const PlotRegistrationPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

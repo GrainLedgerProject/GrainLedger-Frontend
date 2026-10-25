@@ -7,7 +7,7 @@
  */
 /* eslint-disable react-refresh/only-export-components */
 import { AppLayout } from "@/components/AppLayout/AppLayout";
-import { SuspenseLoader } from "@/components/SuspenseLoader/SuspenseLoader";
+import { AppleSuspenseLoader as SuspenseLoader } from "@/components/AppleSuspenseLoader/AppleSuspenseLoader";
 import React, { Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -833,4 +833,4 @@ export const router = createBrowserRouter([
     path: "*",
     element: <Navigate to="/home" replace />,
   },
-]);
+], { basename: import.meta.env.BASE_URL });

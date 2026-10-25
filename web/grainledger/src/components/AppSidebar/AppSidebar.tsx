@@ -356,17 +356,17 @@ export const AppSidebar: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`group relative flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all duration-200 ${
+                className={`group relative flex items-center gap-3 px-3.5 h-10 rounded-2xl text-xs font-medium border transition-colors duration-150 ${
                   isActive
-                    ? "bg-emerald-500/10 dark:bg-emerald-400/10 text-[#2F6B3A] dark:text-emerald-400 font-semibold shadow-xs border border-emerald-500/20 dark:border-emerald-400/20"
-                    : "text-ink-secondary dark:text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                    ? "bg-emerald-500/10 dark:bg-emerald-400/10 text-[#2F6B3A] dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-400/20 shadow-xs"
+                    : "border-transparent text-ink-secondary dark:text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                 } ${isSidebarCollapsed ? "justify-center px-0" : ""}`}
                 title={isSidebarCollapsed ? item.label : undefined}
               >
                 <Icon
                   size={19}
                   weight={isActive ? "fill" : "regular"}
-                  className={`shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                  className={`shrink-0 transition-transform duration-150 group-hover:scale-105 ${
                     isActive
                       ? "text-[#2F6B3A] dark:text-emerald-400"
                       : "text-ink-tertiary group-hover:text-ink-primary dark:group-hover:text-white"
@@ -374,7 +374,7 @@ export const AppSidebar: React.FC = () => {
                 />
 
                 {!isSidebarCollapsed && (
-                  <span className="truncate flex-1 text-left">
+                  <span className="truncate flex-1 min-w-0 text-left">
                     {item.label}
                   </span>
                 )}
@@ -428,7 +428,7 @@ export const AppSidebar: React.FC = () => {
         <button
           type="button"
           onClick={toggleSidebar}
-          className="w-full flex items-center justify-center p-2.5 rounded-2xl text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all text-xs focus:outline-none"
+          className="w-full h-10 flex items-center justify-center rounded-2xl text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all text-xs focus:outline-none"
           aria-label={
             isSidebarCollapsed
               ? t("common.expand", "Mở rộng thanh điều hướng")

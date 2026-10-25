@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { adminEndpoints, type OrganizationDto } from "@/api/admin";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   Buildings,
@@ -38,7 +39,12 @@ export const CustomerOrganizationsPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("admin.orgs.errorLoad", "Không thể tải danh sách tổ chức/doanh nghiệp."));
+        setError(
+          t(
+            "admin.orgs.errorLoad",
+            "Không thể tải danh sách tổ chức/doanh nghiệp.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -61,9 +67,13 @@ export const CustomerOrganizationsPage: React.FC = () => {
         kind,
       });
       setSuccessMsg(
-        t("admin.orgs.successCreate", "Đã thiết lập thành công doanh nghiệp \"{{name}}\"", {
-          name: name.trim(),
-        })
+        t(
+          "admin.orgs.successCreate",
+          'Đã thiết lập thành công doanh nghiệp "{{name}}"',
+          {
+            name: name.trim(),
+          },
+        ),
       );
       setName("");
       setIsModalOpen(false);
@@ -85,15 +95,21 @@ export const CustomerOrganizationsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
           <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t("admin.orgs.tag", "THIẾT LẬP RANH GIỚI KHÁCH HÀNG (TENANT ISOLATION)")}
+            {t(
+              "admin.orgs.tag",
+              "THIẾT LẬP RANH GIỚI KHÁCH HÀNG (TENANT ISOLATION)",
+            )}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("admin.orgs.title", "Quản trị Doanh nghiệp & Khách hàng Xuất khẩu")}
+            {t(
+              "admin.orgs.title",
+              "Quản trị Doanh nghiệp & Khách hàng Xuất khẩu",
+            )}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.orgs.subtitle",
-              "Quản lý các công ty gửi lúa vào nhà máy sấy, lưu trữ silo và chế biến xuất khẩu. Dữ liệu lô hàng được cô lập 100% giữa các công ty."
+              "Quản lý các công ty gửi lúa vào nhà máy sấy, lưu trữ silo và chế biến xuất khẩu. Dữ liệu lô hàng được cô lập 100% giữa các công ty.",
             )}
           </p>
         </div>
@@ -135,7 +151,12 @@ export const CustomerOrganizationsPage: React.FC = () => {
       {/* Grid of Organizations */}
       {loading ? (
         <div className="py-16 flex justify-center">
-          <GrainLoader label={t("admin.orgs.loading", "Đang kiểm tra ranh giới dữ liệu doanh nghiệp...")} />
+          <GrainLoader
+            label={t(
+              "admin.orgs.loading",
+              "Đang kiểm tra ranh giới dữ liệu doanh nghiệp...",
+            )}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -156,7 +177,10 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   status={org.kind === "Mill" ? "BALANCED" : "STALE"}
                   label={
                     org.kind === "Mill"
-                      ? t("admin.orgs.millOperatorBadge", "Đơn vị Vận hành Nhà máy")
+                      ? t(
+                          "admin.orgs.millOperatorBadge",
+                          "Đơn vị Vận hành Nhà máy",
+                        )
                       : t("admin.orgs.customerBadge", "Doanh nghiệp Xuất khẩu")
                   }
                 />
@@ -174,7 +198,12 @@ export const CustomerOrganizationsPage: React.FC = () => {
               <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-between text-xs text-ink-secondary">
                 <span className="inline-flex items-center gap-1">
                   <Users size={14} className="text-ink-tertiary" />
-                  <span>{t("admin.orgs.tenantIsolation", "Cô lập Tenant riêng biệt")}</span>
+                  <span>
+                    {t(
+                      "admin.orgs.tenantIsolation",
+                      "Cô lập Tenant riêng biệt",
+                    )}
+                  </span>
                 </span>
                 <span className="font-bold text-accent-primary">ISO 22095</span>
               </div>
@@ -184,12 +213,14 @@ export const CustomerOrganizationsPage: React.FC = () => {
       )}
 
       {/* Create Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("admin.orgs.modalTitle", "Tạo doanh nghiệp") }>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("admin.orgs.modalTitle", "Thiết lập Doanh nghiệp Khách hàng Mới")}
+                {t(
+                  "admin.orgs.modalTitle",
+                  "Thiết lập Doanh nghiệp Khách hàng Mới",
+                )}
               </h3>
               <button
                 type="button"
@@ -212,7 +243,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t(
                     "admin.orgs.namePlaceholder",
-                    "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền"
+                    "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền",
                   )}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 />
@@ -230,10 +261,16 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
                   <option value="Customer">
-                    {t("admin.orgs.kindCustomer", "Khách hàng Xuất khẩu (Customer Exporter)")}
+                    {t(
+                      "admin.orgs.kindCustomer",
+                      "Khách hàng Xuất khẩu (Customer Exporter)",
+                    )}
                   </option>
                   <option value="Mill">
-                    {t("admin.orgs.kindMill", "Ban Điều hành Nhà máy (Mill Operator)")}
+                    {t(
+                      "admin.orgs.kindMill",
+                      "Ban Điều hành Nhà máy (Mill Operator)",
+                    )}
                   </option>
                 </select>
               </div>
@@ -251,13 +288,14 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("admin.orgs.creating", "Đang tạo...") : t("admin.orgs.submitBtn", "Tạo doanh nghiệp")}
+                  {submitting
+                    ? t("admin.orgs.creating", "Đang tạo...")
+                    : t("admin.orgs.submitBtn", "Tạo doanh nghiệp")}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

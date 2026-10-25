@@ -52,7 +52,12 @@ export const UserAccessManagementPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("admin.users.errorLoad", "Không thể tải danh sách tài khoản người dùng."));
+        setError(
+          t(
+            "admin.users.errorLoad",
+            "Không thể tải danh sách tài khoản người dùng.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -85,9 +90,13 @@ export const UserAccessManagementPage: React.FC = () => {
       });
 
       setSuccessMsg(
-        t("admin.users.successUpdate", "Đã cập nhật vai trò & quyền hạn cho {{name}}", {
-          name: selectedUser.displayName,
-        })
+        t(
+          "admin.users.successUpdate",
+          "Đã cập nhật vai trò & quyền hạn cho {{name}}",
+          {
+            name: selectedUser.displayName,
+          },
+        ),
       );
       setSelectedUser(null);
       await loadData();
@@ -95,7 +104,9 @@ export const UserAccessManagementPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("admin.users.errorSave", "Không thể lưu quyền hạn tài khoản."));
+        setError(
+          t("admin.users.errorSave", "Không thể lưu quyền hạn tài khoản."),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -126,7 +137,7 @@ export const UserAccessManagementPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.users.subtitle",
-              "Gán 6 vai trò nghiệp vụ nội bộ hoặc người xem kho, liên kết tài khoản với tổ chức và kiểm soát trạng thái hoạt động."
+              "Gán 6 vai trò nghiệp vụ nội bộ hoặc người xem kho, liên kết tài khoản với tổ chức và kiểm soát trạng thái hoạt động.",
             )}
           </p>
         </div>
@@ -160,7 +171,10 @@ export const UserAccessManagementPage: React.FC = () => {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder={t("admin.users.searchPlaceholder", "Tìm theo tên hoặc email người dùng...")}
+            placeholder={t(
+              "admin.users.searchPlaceholder",
+              "Tìm theo tên hoặc email người dùng...",
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
@@ -183,7 +197,12 @@ export const UserAccessManagementPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("admin.users.loading", "Đang kiểm tra ma trận phân quyền RBAC...")} />
+            <GrainLoader
+              label={t(
+                "admin.users.loading",
+                "Đang kiểm tra ma trận phân quyền RBAC...",
+              )}
+            />
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -197,11 +216,21 @@ export const UserAccessManagementPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("admin.users.user", "Người dùng")}</th>
-                  <th className="py-3 px-4">{t("admin.users.organization", "Tổ chức / Công ty")}</th>
-                  <th className="py-3 px-4">{t("admin.users.role", "Vai trò vận hành")}</th>
-                  <th className="py-3 px-4">{t("admin.users.status", "Trạng thái")}</th>
-                  <th className="py-3 px-4 text-right">{t("common.actions", "Thao tác")}</th>
+                  <th className="py-3 px-4">
+                    {t("admin.users.user", "Người dùng")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("admin.users.organization", "Tổ chức / Công ty")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("admin.users.role", "Vai trò vận hành")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("admin.users.status", "Trạng thái")}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("common.actions", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -221,7 +250,10 @@ export const UserAccessManagementPage: React.FC = () => {
                     <td className="py-3 px-4 font-medium text-ink-secondary">
                       <span className="inline-flex items-center gap-1.5">
                         <Buildings size={14} className="text-ink-tertiary" />
-                        <span>{u.organizationName || t("admin.users.noOrg", "Chưa gán công ty")}</span>
+                        <span>
+                          {u.organizationName ||
+                            t("admin.users.noOrg", "Chưa gán công ty")}
+                        </span>
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -236,7 +268,11 @@ export const UserAccessManagementPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <StatusBadge
                         status={u.isActive ? "BALANCED" : "REJECTED"}
-                        label={u.isActive ? t("admin.users.active", "Đang hoạt động") : t("admin.users.inactive", "Tạm vô hiệu")}
+                        label={
+                          u.isActive
+                            ? t("admin.users.active", "Đang hoạt động")
+                            : t("admin.users.inactive", "Tạm vô hiệu")
+                        }
                       />
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -246,7 +282,9 @@ export const UserAccessManagementPage: React.FC = () => {
                         className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-ink-tertiary/20 font-semibold text-accent-primary text-xs transition-colors inline-flex items-center gap-1.5"
                       >
                         <PencilSimple size={14} />
-                        <span>{t("admin.users.assignPermission", "Cấp quyền")}</span>
+                        <span>
+                          {t("admin.users.assignPermission", "Cấp quyền")}
+                        </span>
                       </button>
                     </td>
                   </tr>
@@ -259,7 +297,7 @@ export const UserAccessManagementPage: React.FC = () => {
 
       {/* Edit Access Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <div>
@@ -309,7 +347,9 @@ export const UserAccessManagementPage: React.FC = () => {
                   onChange={(e) => setOrganizationId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
-                  <option value="">{t("admin.users.noOrgSelect", "-- Chưa gán tổ chức --")}</option>
+                  <option value="">
+                    {t("admin.users.noOrgSelect", "-- Chưa gán tổ chức --")}
+                  </option>
                   {organizations.map((org) => (
                     <option key={org.id} value={org.id}>
                       {org.name} (
@@ -334,7 +374,10 @@ export const UserAccessManagementPage: React.FC = () => {
                   htmlFor="userActiveCheck"
                   className="font-semibold text-ink-primary select-none"
                 >
-                  {t("admin.users.allowLogin", "Cho phép tài khoản đăng nhập hoạt động")}
+                  {t(
+                    "admin.users.allowLogin",
+                    "Cho phép tài khoản đăng nhập hoạt động",
+                  )}
                 </label>
               </div>
 
@@ -351,7 +394,9 @@ export const UserAccessManagementPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("common.saving", "Đang lưu...") : t("admin.users.saveBtn", "Lưu quyền hạn")}
+                  {submitting
+                    ? t("common.saving", "Đang lưu...")
+                    : t("admin.users.saveBtn", "Lưu quyền hạn")}
                 </button>
               </div>
             </form>

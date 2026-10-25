@@ -4,6 +4,7 @@ import { procurementEndpoints, type FarmerInput } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import {
   UserPlus,
   MagnifyingGlass,
@@ -61,7 +62,12 @@ export const FarmerRegistrationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.farmer.errLoad", "Không thể tải danh sách nông hộ từ máy chủ."));
+        setError(
+          t(
+            "field.farmer.errLoad",
+            "Không thể tải danh sách nông hộ từ máy chủ.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -110,9 +116,13 @@ export const FarmerRegistrationPage: React.FC = () => {
           expectedVersion: editingFarmer.version || 1,
         });
         setSuccessMsg(
-          t("field.farmer.updatedSuccess", "Đã cập nhật thông tin nông hộ {{name}}", {
-            name: formData.name,
-          })
+          t(
+            "field.farmer.updatedSuccess",
+            "Đã cập nhật thông tin nông hộ {{name}}",
+            {
+              name: formData.name,
+            },
+          ),
         );
       } else {
         // Create
@@ -131,9 +141,13 @@ export const FarmerRegistrationPage: React.FC = () => {
           },
         });
         setSuccessMsg(
-          t("field.farmer.registeredSuccess", "Đã đăng ký thành công nông hộ {{name}}", {
-            name: formData.name,
-          })
+          t(
+            "field.farmer.registeredSuccess",
+            "Đã đăng ký thành công nông hộ {{name}}",
+            {
+              name: formData.name,
+            },
+          ),
         );
       }
 
@@ -153,9 +167,13 @@ export const FarmerRegistrationPage: React.FC = () => {
   const handleDelete = async (farmer: FarmerRecord) => {
     if (
       !window.confirm(
-        t("field.farmer.confirmDelete", "Bạn có chắc muốn xoá hồ sơ nông hộ \"{{name}}\"?", {
-          name: farmer.name,
-        })
+        t(
+          "field.farmer.confirmDelete",
+          'Bạn có chắc muốn xoá hồ sơ nông hộ "{{name}}"?',
+          {
+            name: farmer.name,
+          },
+        ),
       )
     )
       return;
@@ -167,7 +185,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       setSuccessMsg(
         t("field.farmer.deletedSuccess", "Đã xoá hồ sơ nông hộ {{name}}", {
           name: farmer.name,
-        })
+        }),
       );
       await loadFarmers();
     } catch (err: unknown) {
@@ -193,7 +211,7 @@ export const FarmerRegistrationPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.farmer.pageSubtitle",
-              "Quản lý định danh các nông hộ nhỏ liên kết chuỗi cung ứng lúa gạo tại Đồng bằng sông Cửu Long."
+              "Quản lý định danh các nông hộ nhỏ liên kết chuỗi cung ứng lúa gạo tại Đồng bằng sông Cửu Long.",
             )}
           </p>
         </div>
@@ -237,7 +255,10 @@ export const FarmerRegistrationPage: React.FC = () => {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder={t("field.farmer.searchPlaceholder", "Tìm theo tên nông hộ hoặc mã số...")}
+            placeholder={t(
+              "field.farmer.searchPlaceholder",
+              "Tìm theo tên nông hộ hoặc mã số...",
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-body"
@@ -258,7 +279,8 @@ export const FarmerRegistrationPage: React.FC = () => {
           <div className="hidden md:block">
             {t("field.farmer.orgInCharge", "Doanh nghiệp phụ trách:")}{" "}
             <span className="font-semibold text-accent-primary">
-              {user?.organizationName || t("field.farmer.allFarmers", "Tất cả nông hộ")}
+              {user?.organizationName ||
+                t("field.farmer.allFarmers", "Tất cả nông hộ")}
             </span>
           </div>
         </div>
@@ -268,7 +290,9 @@ export const FarmerRegistrationPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("field.farmer.loading", "Đang tải danh sách nông hộ...")} />
+            <GrainLoader
+              label={t("field.farmer.loading", "Đang tải danh sách nông hộ...")}
+            />
           </div>
         ) : farmers.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -282,7 +306,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
               {t(
                 "field.farmer.emptyDesc",
-                "Nhấn \"Thêm Nông hộ mới\" để đăng ký hồ sơ nông dân liên kết chuỗi thu mua lúa gạo."
+                'Nhấn "Thêm Nông hộ mới" để đăng ký hồ sơ nông dân liên kết chuỗi thu mua lúa gạo.',
               )}
             </p>
           </div>
@@ -291,12 +315,24 @@ export const FarmerRegistrationPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("field.farmer.thCode", "Mã số")}</th>
-                  <th className="py-3 px-4">{t("field.farmer.thName", "Họ và Tên nông dân")}</th>
-                  <th className="py-3 px-4">{t("field.farmer.thContact", "Số điện thoại / Liên hệ")}</th>
-                  <th className="py-3 px-4">{t("field.farmer.thPlots", "Thửa ruộng liên kết")}</th>
-                  <th className="py-3 px-4">{t("field.farmer.thStatus", "Trạng thái")}</th>
-                  <th className="py-3 px-4 text-right">{t("field.farmer.thActions", "Thao tác")}</th>
+                  <th className="py-3 px-4">
+                    {t("field.farmer.thCode", "Mã số")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.farmer.thName", "Họ và Tên nông dân")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.farmer.thContact", "Số điện thoại / Liên hệ")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.farmer.thPlots", "Thửa ruộng liên kết")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.farmer.thStatus", "Trạng thái")}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("field.farmer.thActions", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -334,14 +370,20 @@ export const FarmerRegistrationPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <StatusBadge status="BALANCED" label={t("field.farmer.statusVerified", "Đã xác thực")} />
+                      <StatusBadge
+                        status="BALANCED"
+                        label={t("field.farmer.statusVerified", "Đã xác thực")}
+                      />
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(farmer)}
                         className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
-                        title={t("field.farmer.editFarmer", "Chỉnh sửa nông hộ")}
+                        title={t(
+                          "field.farmer.editFarmer",
+                          "Chỉnh sửa nông hộ",
+                        )}
                       >
                         <PencilSimple size={15} />
                       </button>
@@ -363,13 +405,15 @@ export const FarmerRegistrationPage: React.FC = () => {
       </div>
 
       {/* Create / Edit Farmer Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={editingFarmer ? t("field.farmer.modalEdit", "Cập nhật nông hộ") : t("field.farmer.modalNew", "Đăng ký nông hộ")}>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {editingFarmer
-                  ? t("field.farmer.modalEditTitle", "Cập nhật thông tin Nông hộ")
+                  ? t(
+                      "field.farmer.modalEditTitle",
+                      "Cập nhật thông tin Nông hộ",
+                    )
                   : t("field.farmer.modalAddTitle", "Đăng ký Nông hộ mới")}
               </h3>
               <button
@@ -384,7 +428,10 @@ export const FarmerRegistrationPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.farmer.farmerCodeLabel", "Mã Nông hộ (Định danh hệ thống) *")}
+                  {t(
+                    "field.farmer.farmerCodeLabel",
+                    "Mã Nông hộ (Định danh hệ thống) *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -416,7 +463,10 @@ export const FarmerRegistrationPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.farmer.farmerContactLabel", "Số điện thoại / Thông tin liên hệ")}
+                  {t(
+                    "field.farmer.farmerContactLabel",
+                    "Số điện thoại / Thông tin liên hệ",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -451,8 +501,7 @@ export const FarmerRegistrationPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

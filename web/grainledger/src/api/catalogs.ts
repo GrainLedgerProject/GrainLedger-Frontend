@@ -1,5 +1,17 @@
 import { apiFetch } from './client';
 
+type ListParams = Record<string, string | number | boolean | undefined>;
+
+function withQuery(path: string, params?: ListParams) {
+  if (!params) return path;
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([key, value]) => [key, String(value)])
+  ).toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export interface ActiveSubstanceDto {
   id: string;
   code: string;
@@ -60,7 +72,7 @@ export interface UpsertMrlLimitRequest {
 
 export const catalogEndpoints = {
   // Active substances
-  getActiveSubstances: (_params?: unknown) => apiFetch<unknown>('/api/active-substances'),
+  getActiveSubstances: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/active-substances', params)),
   getActiveSubstance: (id: string) => apiFetch<unknown>(`/api/active-substances/${id}`),
   createActiveSubstance: (req: { code: string; name: string }) =>
     apiFetch<unknown>('/api/active-substances', {
@@ -83,7 +95,7 @@ export const catalogEndpoints = {
     }),
 
   // Markets
-  getMarkets: (_params?: unknown) => apiFetch<unknown>('/api/markets'),
+  getMarkets: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/markets', params)),
   getMarket: (id: string) => apiFetch<unknown>(`/api/markets/${id}`),
   createMarket: (req: { code: string; name: string }) =>
     apiFetch<unknown>('/api/markets', {
@@ -106,7 +118,7 @@ export const catalogEndpoints = {
     }),
 
   // Commodities
-  getCommodities: (_params?: unknown) => apiFetch<unknown>('/api/commodities'),
+  getCommodities: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/commodities', params)),
   getCommodity: (id: string) => apiFetch<unknown>(`/api/commodities/${id}`),
   createCommodity: (req: { code: string; name: string }) =>
     apiFetch<unknown>('/api/commodities', {
@@ -129,7 +141,7 @@ export const catalogEndpoints = {
     }),
 
   // Quality attributes
-  getQualityAttributes: (_params?: unknown) => apiFetch<unknown>('/api/quality-attributes'),
+  getQualityAttributes: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/quality-attributes', params)),
   getQualityAttribute: (id: string) => apiFetch<unknown>(`/api/quality-attributes/${id}`),
   createQualityAttribute: (req: { code: string; name: string; unit: string }) =>
     apiFetch<unknown>('/api/quality-attributes', {
@@ -152,7 +164,7 @@ export const catalogEndpoints = {
     }),
 
   // Rice varieties
-  getRiceVarieties: (_params?: unknown) => apiFetch<unknown>('/api/rice-varieties'),
+  getRiceVarieties: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/rice-varieties', params)),
   getRiceVariety: (id: string) => apiFetch<unknown>(`/api/rice-varieties/${id}`),
   createRiceVariety: (req: { code: string; name: string }) =>
     apiFetch<unknown>('/api/rice-varieties', {
@@ -175,7 +187,7 @@ export const catalogEndpoints = {
     }),
 
   // Measurement units
-  getMeasurementUnits: (_params?: unknown) => apiFetch<unknown>('/api/measurement-units'),
+  getMeasurementUnits: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/measurement-units', params)),
   getMeasurementUnit: (id: string) => apiFetch<unknown>(`/api/measurement-units/${id}`),
   createMeasurementUnit: (req: { code: string; name: string; quantityKind: string }) =>
     apiFetch<unknown>('/api/measurement-units', {
