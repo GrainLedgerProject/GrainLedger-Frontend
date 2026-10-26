@@ -1,3 +1,4 @@
+import { checkBackendHealth } from '@/api/health';
 import i18n from '@/app/i18n';
 import { create } from 'zustand';
 
@@ -8,6 +9,9 @@ interface UiState {
   isSearchOpen: boolean;
   isNotificationsOpen: boolean;
   isOnline: boolean;
+  isBackendConnected: boolean;
+  isCheckingConnection: boolean;
+  hasInitialChecked: boolean;
   pendingOfflineCount: number;
 
   // Actions
@@ -19,7 +23,9 @@ interface UiState {
   setSearchOpen: (open: boolean) => void;
   setNotificationsOpen: (open: boolean) => void;
   setOnline: (online: boolean) => void;
+  setBackendConnected: (connected: boolean) => void;
   setPendingOfflineCount: (count: number) => void;
+  checkConnection: (isInitial?: boolean) => Promise<boolean>;
 }
 
 // Read initial stored values
@@ -40,13 +46,16 @@ if (storedTheme === 'dark') {
   document.documentElement.classList.remove('dark');
 }
 
-export const useUiStore = create<UiState>((set) => ({
+export const useUiStore = create<UiState>((set, get) => ({
   theme: storedTheme,
   language: storedLang,
   isSidebarCollapsed: storedCollapsed,
   isSearchOpen: false,
   isNotificationsOpen: false,
   isOnline: navigator.onLine,
+  isBackendConnected: false,
+  isCheckingConnection: true,
+  hasInitialChecked: false,
   pendingOfflineCount: 0,
 
   toggleTheme: () => {
@@ -97,12 +106,66 @@ export const useUiStore = create<UiState>((set) => ({
   setSearchOpen: (open) => set({ isSearchOpen: open }),
   setNotificationsOpen: (open) => set({ isNotificationsOpen: open }),
   setOnline: (online) => set({ isOnline: online }),
+  setBackendConnected: (connected) =>
+    set({
+      isBackendConnected: connected,
+      isOnline: (typeof navigator !== 'undefined' ? navigator.onLine : true) && connected,
+    }),
   setPendingOfflineCount: (count) => set({ pendingOfflineCount: count }),
+  checkConnection: async (isInitial?: boolean): Promise<boolean> => {
+    const isFirstCheck = isInitial || !get().hasInitialChecked;
+    if (isFirstCheck && !get().isCheckingConnection) {
+      set({ isCheckingConnection: true });
+    }
+    try {
+      const connected = await checkBackendHealth();
+      const online = (typeof navigator !== 'undefined' ? navigator.onLine : true) && connected;
+      const current = get();
+      if (
+        isFirstCheck ||
+        current.isBackendConnected !== connected ||
+        current.isOnline !== online ||
+        current.isCheckingConnection
+      ) {
+        set({
+          isBackendConnected: connected,
+          isOnline: online,
+          hasInitialChecked: true,
+          isCheckingConnection: false,
+        });
+      }
+      return connected;
+    } catch {
+      const current = get();
+      if (
+        isFirstCheck ||
+        current.isBackendConnected ||
+        current.isOnline ||
+        current.isCheckingConnection
+      ) {
+        set({
+          isBackendConnected: false,
+          isOnline: false,
+          hasInitialChecked: true,
+          isCheckingConnection: false,
+        });
+      }
+      return false;
+    }
+  },
 }));
 
 // Listen to network online/offline events
-window.addEventListener('online', () => useUiStore.getState().setOnline(true));
-window.addEventListener('offline', () => useUiStore.getState().setOnline(false));
+window.addEventListener('online', () => void useUiStore.getState().checkConnection());
+window.addEventListener('offline', () => {
+  useUiStore.getState().setOnline(false);
+  useUiStore.getState().setBackendConnected(false);
+});
+
+// Initial startup backend connectivity check
+if (typeof window !== 'undefined') {
+  void useUiStore.getState().checkConnection(true);
+}
 
 // Bidirectional synchronization when i18n changes language externally
 i18n.on('languageChanged', (lng) => {

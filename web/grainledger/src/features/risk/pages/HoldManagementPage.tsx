@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   LockSimple,
@@ -322,7 +321,8 @@ export const HoldManagementPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("risk.hold.modalTitle", "Ban hành lệnh HOLD")}>
+      {isModalOpen && (
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-accent-danger flex items-center gap-2">
@@ -439,7 +439,8 @@ export const HoldManagementPage: React.FC = () => {
               </div>
             </form>
           </div>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 };

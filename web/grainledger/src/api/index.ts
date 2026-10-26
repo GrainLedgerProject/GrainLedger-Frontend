@@ -6,3 +6,5 @@ export * from './compliance';
 export * from './ledger';
 export * from './procurement';
 export * from './profile';
+export * from './health';
+export * from './residue';

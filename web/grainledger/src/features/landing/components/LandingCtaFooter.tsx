@@ -1,9 +1,11 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { Link } from "react-router-dom";
+import { useAuthStore } from "@/app/store/authStore";
+import { ArrowRight } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 
 export const LandingCtaFooter: React.FC = () => {
+  const { isAuthenticated } = useAuthStore();
   return (
     <>
       {/* Apple-grade CTA Banner */}
@@ -16,15 +18,18 @@ export const LandingCtaFooter: React.FC = () => {
             Sẵn sàng chuẩn hóa chuỗi cung ứng lúa gạo của bạn?
           </h2>
           <p className="text-base text-white/70 max-w-xl mx-auto leading-relaxed font-normal">
-            Tham gia chương trình thí điểm tại Tiền Giang và trải nghiệm nền tảng sổ cái cân bằng khối lượng đầu tiên tại Việt Nam.
+            Tham gia chương trình thí điểm tại Tiền Giang và trải nghiệm nền
+            tảng sổ cái cân bằng khối lượng đầu tiên tại Việt Nam.
           </p>
           <div className="pt-3 flex flex-wrap items-center justify-center gap-4">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
-                to="/sign-in"
+                to={isAuthenticated ? "/home" : "/sign-in"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-[#1B2420] hover:bg-white/95 shadow-lg transition-all"
               >
-                <span>Đăng nhập hệ thống ngay</span>
+                <span>
+                  {isAuthenticated ? "Vào Home" : "Đăng nhập vào hệ thống"}
+                </span>
                 <ArrowRight size={15} weight="bold" />
               </Link>
             </motion.div>
@@ -46,7 +51,9 @@ export const LandingCtaFooter: React.FC = () => {
                 />
               </div>
               <p className="text-xs text-ink-tertiary leading-relaxed">
-                Nền tảng sổ cái lưu giữ theo cân bằng khối lượng (Mass-Balance Custody Ledger) phục vụ xuất khẩu lúa gạo sang các thị trường cao cấp.
+                Nền tảng sổ cái lưu giữ theo cân bằng khối lượng (Mass-Balance
+                Custody Ledger) phục vụ xuất khẩu lúa gạo sang các thị trường
+                cao cấp.
               </p>
               <div className="text-[11px] font-mono text-ink-tertiary">
                 Đề tài FA26SE272 · Nhóm GFA26SE137
@@ -129,14 +136,19 @@ export const LandingCtaFooter: React.FC = () => {
                 Cơ sở Thí điểm
               </h4>
               <p className="text-xs text-ink-tertiary leading-relaxed">
-                Nhà máy Xay xát Lúa gạo Tiền Giang, Đồng bằng sông Cửu Long, Việt Nam.
+                Nhà máy Xay xát Lúa gạo Tiền Giang, Đồng bằng sông Cửu Long,
+                Việt Nam.
               </p>
               <div className="pt-2">
                 <Link
-                  to="/sign-in"
+                  to={isAuthenticated ? "/home" : "/sign-in"}
                   className="inline-flex items-center gap-1.5 text-xs text-[#2F6B3A] dark:text-emerald-400 font-semibold hover:underline"
                 >
-                  <span>Truy cập Cổng Tài khoản</span>
+                  <span>
+                    {isAuthenticated
+                      ? "Vào Dashboard"
+                      : "Truy cập Cổng Tài khoản"}
+                  </span>
                   <ArrowRight size={13} />
                 </Link>
               </div>
@@ -146,7 +158,8 @@ export const LandingCtaFooter: React.FC = () => {
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-ink-tertiary">
             <div>GrainLedger © 2026 GFA26SE137. Mọi quyền được bảo lưu.</div>
             <div>
-              Tuân thủ nghiêm ngặt tiêu chuẩn bảo toàn khối lượng ISO 22095:2020.
+              Tuân thủ nghiêm ngặt tiêu chuẩn bảo toàn khối lượng ISO
+              22095:2020.
             </div>
           </div>
         </div>

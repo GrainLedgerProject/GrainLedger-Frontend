@@ -1,7 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useUiStore } from '@/app/store/uiStore';
+import React from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/app/store/authStore";
+import { useUiStore } from "@/app/store/uiStore";
 import {
   ShieldCheck,
   ArrowRight,
@@ -10,11 +11,12 @@ import {
   CheckCircle,
   Compass,
   Sparkle,
-} from '@phosphor-icons/react';
-import { motion, useReducedMotion } from 'framer-motion';
+} from "@phosphor-icons/react";
+import { motion, useReducedMotion } from "framer-motion";
 
 export const HeroSection: React.FC = () => {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuthStore();
   const { language } = useUiStore();
   const shouldReduceMotion = useReducedMotion();
 
@@ -30,14 +32,14 @@ export const HeroSection: React.FC = () => {
           <motion.div
             initial={shouldReduceMotion ? {} : { opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 dark:bg-emerald-950/50 text-[#2F6B3A] dark:text-emerald-300 border border-emerald-500/20 backdrop-blur-md shadow-xs"
           >
             <ShieldCheck size={16} weight="bold" />
             <span>
-              {language === 'vi'
-                ? 'Dự án Thí điểm Nhà máy Tiền Giang · Chuẩn Quốc tế ISO 22095:2020'
-                : 'Tiền Giang Mill Pilot Project · ISO 22095:2020 Standard'}
+              {language === "vi"
+                ? "Dự án Thí điểm Nhà máy Tiền Giang · Chuẩn Quốc tế ISO 22095:2020"
+                : "Tiền Giang Mill Pilot Project · ISO 22095:2020 Standard"}
             </span>
           </motion.div>
 
@@ -45,12 +47,17 @@ export const HeroSection: React.FC = () => {
           <motion.h1
             initial={shouldReduceMotion ? {} : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 26, delay: 0.1 }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 26,
+              delay: 0.1,
+            }}
             className="font-sans text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-[-0.035em] text-ink-primary dark:text-white leading-[1.08]"
           >
             {t(
-              'landing.heroHeadline',
-              'Hạ tầng số cho xuất khẩu lúa gạo tương lai.'
+              "landing.heroHeadline",
+              "Hạ tầng số cho xuất khẩu lúa gạo tương lai.",
             )}
           </motion.h1>
 
@@ -58,12 +65,17 @@ export const HeroSection: React.FC = () => {
           <motion.p
             initial={shouldReduceMotion ? {} : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 26, delay: 0.2 }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 26,
+              delay: 0.2,
+            }}
             className="text-base sm:text-xl text-ink-secondary dark:text-ink-tertiary leading-relaxed max-w-2xl mx-auto font-normal"
           >
             {t(
-              'landing.heroSubheadline',
-              'GrainLedger giải quyết bài toán cốt lõi của chuỗi lúa gạo: Ghi nhận chính xác tỷ lệ đóng góp của từng nông hộ nhỏ vào silo chung và kiểm soát dư lượng thuốc bảo vệ thực vật trước khi container cập cảng EU, Mỹ, Nhật Bản.'
+              "landing.heroSubheadline",
+              "GrainLedger giải quyết bài toán cốt lõi của chuỗi lúa gạo: Ghi nhận chính xác tỷ lệ đóng góp của từng nông hộ nhỏ vào silo chung và kiểm soát dư lượng thuốc bảo vệ thực vật trước khi container cập cảng EU, Mỹ, Nhật Bản.",
             )}
           </motion.p>
 
@@ -71,15 +83,24 @@ export const HeroSection: React.FC = () => {
           <motion.div
             initial={shouldReduceMotion ? {} : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 26, delay: 0.3 }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 26,
+              delay: 0.3,
+            }}
             className="pt-2 flex flex-wrap items-center justify-center gap-4"
           >
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
-                to="/sign-in"
+                to={isAuthenticated ? "/home" : "/sign-in"}
                 className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-sm font-semibold bg-[#2F6B3A] text-white hover:bg-[#25562e] transition-all shadow-[0_4px_14px_0_rgba(47,107,58,0.39)]"
               >
-                <span>{t('landing.ctaSignIn', 'Vào bàn làm việc vận hành')}</span>
+                <span>
+                  {isAuthenticated
+                    ? "Vào Dashboard"
+                    : t("landing.ctaSignIn", "Đăng nhập vào hệ thống")}
+                </span>
                 <ArrowRight size={16} weight="bold" />
               </Link>
             </motion.div>
@@ -89,11 +110,14 @@ export const HeroSection: React.FC = () => {
                 href="#simulators"
                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-sm font-semibold bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 border border-black/[0.08] dark:border-white/[0.12] text-ink-primary dark:text-white backdrop-blur-md transition-all shadow-xs"
               >
-                <Scales size={18} className="text-[#2F6B3A] dark:text-emerald-400" />
+                <Scales
+                  size={18}
+                  className="text-[#2F6B3A] dark:text-emerald-400"
+                />
                 <span>
-                  {language === 'vi'
-                    ? 'Trải nghiệm mô phỏng Sổ cái'
-                    : 'Experience Ledger Simulator'}
+                  {language === "vi"
+                    ? "Trải nghiệm mô phỏng Sổ cái"
+                    : "Experience Ledger Simulator"}
                 </span>
               </a>
             </motion.div>
@@ -108,7 +132,10 @@ export const HeroSection: React.FC = () => {
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/60 dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.08] backdrop-blur-md shadow-xs text-ink-secondary dark:text-ink-secondary">
-              <Certificate size={18} className="text-[#2F6B3A] dark:text-emerald-400" />
+              <Certificate
+                size={18}
+                className="text-[#2F6B3A] dark:text-emerald-400"
+              />
               <span>ISO 22095:2020 Mass Balance</span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/60 dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.08] backdrop-blur-md shadow-xs text-ink-secondary dark:text-ink-secondary">

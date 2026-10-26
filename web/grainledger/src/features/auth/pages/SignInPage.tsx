@@ -27,14 +27,14 @@ import {
   User,
   WarningCircle,
 } from "@phosphor-icons/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export const SignInPage: React.FC = () => {
   const { t } = useTranslation();
-  const { loginSuccess } = useAuthStore();
+  const { isAuthenticated, user, loginSuccess } = useAuthStore();
   const { theme, toggleTheme, language, setLanguage } = useUiStore();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -45,6 +45,29 @@ export const SignInPage: React.FC = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const returnUrl = searchParams.get("returnUrl");
+
+  // Auto-redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const targetPath =
+        returnUrl && returnUrl !== "/sign-in" ? returnUrl : "/home";
+      navigate(targetPath, { replace: true });
+    }
+  }, [isAuthenticated, user, returnUrl, navigate]);
+
+  if (isAuthenticated && user) {
+    return (
+      <div className="min-h-screen bg-parchment-grain flex flex-col justify-center items-center">
+        <GrainLoader
+          size="md"
+          label={t(
+            "auth.redirectingToDashboard",
+            "Đang chuyển hướng vào bảng điều khiển...",
+          )}
+        />
+      </div>
+    );
+  }
 
   const {
     register,
@@ -92,9 +115,11 @@ export const SignInPage: React.FC = () => {
       loginSuccess(user, tokens, values.rememberMe);
       if ("PasswordCredential" in window && navigator.credentials) {
         try {
-          const cred = new (window as unknown as {
-            PasswordCredential: new (data: unknown) => unknown;
-          }).PasswordCredential({
+          const cred = new (
+            window as unknown as {
+              PasswordCredential: new (data: unknown) => unknown;
+            }
+          ).PasswordCredential({
             id: values.email,
             password: values.password,
           });
@@ -268,10 +293,17 @@ export const SignInPage: React.FC = () => {
             </div>
           )}
 
-          <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            method="post"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-ink-secondary mb-1">
+              <label
+                htmlFor="email"
+                className="block text-xs font-semibold text-ink-secondary mb-1"
+              >
                 {t("auth.emailLabel", "Địa chỉ email tài khoản")}
               </label>
               <div className="relative">
@@ -281,10 +313,11 @@ export const SignInPage: React.FC = () => {
                   autoComplete="username"
                   {...register("email")}
                   placeholder={t("auth.emailPlaceholder", "ten.ban@congty.com")}
-                  className={`w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface-raised dark:bg-surface-overlay border ${errors.email
-                    ? "border-accent-danger"
-                    : "border-ink-tertiary/30"
-                    } focus:border-accent-primary focus:outline-none transition-colors font-body`}
+                  className={`w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface-raised dark:bg-surface-overlay border ${
+                    errors.email
+                      ? "border-accent-danger"
+                      : "border-ink-tertiary/30"
+                  } focus:border-accent-primary focus:outline-none transition-colors font-body`}
                 />
                 <User
                   size={16}
@@ -301,7 +334,10 @@ export const SignInPage: React.FC = () => {
             {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="block text-xs font-semibold text-ink-secondary">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-semibold text-ink-secondary"
+                >
                   {t("auth.passwordLabel", "Mật khẩu")}
                 </label>
                 <Link
@@ -319,10 +355,11 @@ export const SignInPage: React.FC = () => {
                   autoComplete="current-password"
                   {...register("password")}
                   placeholder="••••••••••••"
-                  className={`w-full pl-9 pr-10 py-2 text-sm rounded-md bg-surface-raised dark:bg-surface-overlay border ${errors.password
-                    ? "border-accent-danger"
-                    : "border-ink-tertiary/30"
-                    } focus:border-accent-primary focus:outline-none transition-colors font-mono`}
+                  className={`w-full pl-9 pr-10 py-2 text-sm rounded-md bg-surface-raised dark:bg-surface-overlay border ${
+                    errors.password
+                      ? "border-accent-danger"
+                      : "border-ink-tertiary/30"
+                  } focus:border-accent-primary focus:outline-none transition-colors font-mono`}
                 />
                 <LockSimple
                   size={16}

@@ -19,6 +19,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/health': {
+        target: 'http://localhost:5080',
+        changeOrigin: true,
+        secure: false,
+      },
       '/signin-google': {
         target: 'http://localhost:5080',
         changeOrigin: true,
