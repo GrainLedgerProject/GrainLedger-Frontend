@@ -73,9 +73,19 @@ export const EditProfilePage: React.FC = () => {
       // Apply language change
       setLanguage(values.language);
 
-      setSuccessMsg(t("settings.profileUpdatedSuccess", "Thông tin cá nhân đã được lưu thành công."));
+      setSuccessMsg(
+        t(
+          "settings.profileUpdatedSuccess",
+          "Thông tin cá nhân đã được lưu thành công.",
+        ),
+      );
     } catch {
-      setErrorMsg(t("settings.profileUpdateError", "Không thể lưu thông tin cá nhân. Vui lòng thử lại."));
+      setErrorMsg(
+        t(
+          "settings.profileUpdateError",
+          "Không thể lưu thông tin cá nhân. Vui lòng thử lại.",
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -85,13 +95,13 @@ export const EditProfilePage: React.FC = () => {
     <SettingsLayout>
       <div className="space-y-6">
         <div className="border-b border-ink-tertiary/15 pb-4">
-          <h2 className="text-lg font-bold text-ink-primary font-serif">
+          <h2 className="text-lg font-bold text-ink-primary">
             {t("settings.profileTitle", "Hồ sơ cá nhân")}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "settings.profileSubtitle",
-              "Quản lý tên hiển thị, số điện thoại liên hệ và ngôn ngữ sử dụng trên hệ thống."
+              "Quản lý tên hiển thị, số điện thoại liên hệ và ngôn ngữ sử dụng trên hệ thống.",
             )}
           </p>
         </div>
@@ -153,7 +163,10 @@ export const EditProfilePage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-ink-secondary mb-1">
-                {t("settings.language", "Ngôn ngữ giao diện (Display Language)")}
+                {t(
+                  "settings.language",
+                  "Ngôn ngữ giao diện (Display Language)",
+                )}
               </label>
               <div className="relative">
                 <select
@@ -202,7 +215,12 @@ export const EditProfilePage: React.FC = () => {
           <div className="p-4 rounded-lg bg-surface-base border border-ink-tertiary/20 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-bold text-ink-tertiary uppercase tracking-wider">
               <LockSimple size={14} />
-              <span>{t("settings.adminManagedScope", "Phân quyền và phạm vi quản lý bởi Quản trị nhà máy")}</span>
+              <span>
+                {t(
+                  "settings.adminManagedScope",
+                  "Phân quyền và phạm vi quản lý bởi Quản trị nhà máy",
+                )}
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -227,7 +245,10 @@ export const EditProfilePage: React.FC = () => {
               {user && isCustomerSide(user.role) && (
                 <div className="sm:col-span-2">
                   <span className="text-ink-tertiary block">
-                    {t("settings.assignedCompany", "Công ty khách hàng sở hữu:")}
+                    {t(
+                      "settings.assignedCompany",
+                      "Công ty khách hàng sở hữu:",
+                    )}
                   </span>
                   <div className="flex items-center gap-1.5 font-medium text-ink-primary mt-0.5">
                     <Buildings size={14} className="text-accent-info" />
@@ -239,7 +260,10 @@ export const EditProfilePage: React.FC = () => {
               {user && isMillSide(user.role) && (
                 <div className="sm:col-span-2">
                   <span className="text-ink-tertiary block">
-                    {t("settings.assignedFacilities", "Cơ sở vận hành được cấp phép:")}
+                    {t(
+                      "settings.assignedFacilities",
+                      "Cơ sở vận hành được cấp phép:",
+                    )}
                   </span>
                   <div className="flex items-center gap-1.5 font-medium text-ink-primary mt-0.5">
                     <Factory size={14} className="text-accent-primary" />
@@ -260,7 +284,10 @@ export const EditProfilePage: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-colors shadow-xs disabled:opacity-60"
             >
               {isSubmitting ? (
-                <GrainLoader size="sm" label={t("common.saving", "Đang lưu...")} />
+                <GrainLoader
+                  size="sm"
+                  label={t("common.saving", "Đang lưu...")}
+                />
               ) : (
                 <span>{t("settings.saveChanges", "Lưu thay đổi")}</span>
               )}
@@ -271,4 +298,3 @@ export const EditProfilePage: React.FC = () => {
     </SettingsLayout>
   );
 };
-

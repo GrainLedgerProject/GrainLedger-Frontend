@@ -64,9 +64,21 @@ export const AppSidebar: React.FC = () => {
     switch (role) {
       case "MILL_ADMIN":
         return [
-          { label: t("nav.home", "Tổng quan hệ thống"), path: "/home", icon: House },
-          { label: t("nav.admin.customers", "Khách hàng"), path: "/admin/customers", icon: Buildings },
-          { label: t("nav.admin.access", "Tài khoản & Quyền"), path: "/admin/access", icon: Users },
+          {
+            label: t("nav.home", "Tổng quan hệ thống"),
+            path: "/home",
+            icon: House,
+          },
+          {
+            label: t("nav.admin.customers", "Khách hàng"),
+            path: "/admin/customers",
+            icon: Buildings,
+          },
+          {
+            label: t("nav.admin.access", "Tài khoản & Quyền"),
+            path: "/admin/access",
+            icon: Users,
+          },
           {
             label: t("nav.admin.facilities", "Cơ sở & Thiết bị"),
             path: "/admin/facilities",
@@ -92,12 +104,20 @@ export const AppSidebar: React.FC = () => {
             path: "/compliance/mrl-versions",
             icon: BookOpen,
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "MILL_OPERATOR":
         return [
-          { label: t("nav.mill.today", "Hôm nay tại dây chuyền"), path: "/home", icon: House },
+          {
+            label: t("nav.mill.today", "Hôm nay tại dây chuyền"),
+            path: "/home",
+            icon: House,
+          },
           {
             label: t("nav.mill.receiving", "Tiếp nhận & Cân đến"),
             path: "/mill/receiving",
@@ -128,12 +148,20 @@ export const AppSidebar: React.FC = () => {
             badge: 1,
             badgeTone: "primary",
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "MILL_MANAGER":
         return [
-          { label: t("nav.manager.home", "Bàn điều hành Quản lý"), path: "/home", icon: House },
+          {
+            label: t("nav.manager.home", "Bàn điều hành Quản lý"),
+            path: "/home",
+            icon: House,
+          },
           {
             label: t("nav.manager.receiving", "Tiếp nhận & Đối soát cân"),
             path: "/mill/receiving",
@@ -168,21 +196,37 @@ export const AppSidebar: React.FC = () => {
             path: "/mill/operations/new",
             icon: Scales,
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "CUSTOMER_PROCUREMENT_OFFICER":
         return [
-          { label: t("nav.field.home", "Bàn làm việc thu mua"), path: "/home", icon: House },
+          {
+            label: t("nav.field.home", "Bàn làm việc thu mua"),
+            path: "/home",
+            icon: House,
+          },
           {
             label: t("nav.field.sync", "Đồng bộ / Hàng đợi"),
             path: "/field/sync",
             icon: ArrowsClockwise,
-            badge: pendingOfflineCount,
+            badge: pendingOfflineCount > 0 ? pendingOfflineCount : undefined,
             badgeTone: pendingOfflineCount > 0 ? "warning" : undefined,
           },
-          { label: t("nav.field.farmers", "Nông hộ"), path: "/field/farmers/new", icon: Users },
-          { label: t("nav.field.plots", "Thửa ruộng"), path: "/field/plots/new", icon: MapPin },
+          {
+            label: t("nav.field.farmers", "Nông hộ"),
+            path: "/field/farmers/new",
+            icon: Users,
+          },
+          {
+            label: t("nav.field.plots", "Thửa ruộng"),
+            path: "/field/plots/new",
+            icon: MapPin,
+          },
           {
             label: t("nav.field.declarations", "Khai báo thuốc BVTV"),
             path: "/field/declarations/new",
@@ -198,13 +242,20 @@ export const AppSidebar: React.FC = () => {
             path: "/field/samples/new",
             icon: TestTube,
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "CUSTOMER_MANAGER":
         return [
           {
-            label: t("nav.customerManager.home", "Điều phối Chất lượng & Rủi ro"),
+            label: t(
+              "nav.customerManager.home",
+              "Điều phối Chất lượng & Rủi ro",
+            ),
             path: "/home",
             icon: House,
           },
@@ -248,13 +299,20 @@ export const AppSidebar: React.FC = () => {
             path: "/compliance/mrl-versions",
             icon: BookOpen,
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "CUSTOMER_EXPORT_OFFICER":
         return [
           {
-            label: t("nav.exportOfficer.home", "Điều phối Đơn hàng & Xuất khẩu"),
+            label: t(
+              "nav.exportOfficer.home",
+              "Điều phối Đơn hàng & Xuất khẩu",
+            ),
             path: "/home",
             icon: House,
           },
@@ -269,24 +327,40 @@ export const AppSidebar: React.FC = () => {
             path: "/export/plans",
             icon: ChartPieSlice,
           },
-          { label: t("nav.export.containers", "Xếp container"), path: "/export/containers", icon: Truck },
+          {
+            label: t("nav.export.containers", "Xếp container"),
+            path: "/export/containers",
+            icon: Truck,
+          },
           {
             label: t("nav.export.dossiers", "Hồ sơ & Chứng từ"),
             path: "/export/dossiers",
             icon: FileText,
           },
-          { label: t("nav.risk.holdAlerts", "Cảnh báo HOLD"), path: "/risk/holds", icon: LockSimple },
+          {
+            label: t("nav.risk.holdAlerts", "Cảnh báo HOLD"),
+            path: "/risk/holds",
+            icon: LockSimple,
+          },
           {
             label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
             path: "/compliance/mrl-versions",
             icon: BookOpen,
           },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
 
       case "AUTHORIZED_STOCK_VIEWER":
         return [
-          { label: t("nav.stockViewer.home", "Tổng quan tồn kho"), path: "/home", icon: House },
+          {
+            label: t("nav.stockViewer.home", "Tổng quan tồn kho"),
+            path: "/home",
+            icon: House,
+          },
           {
             label: t("nav.stock.overview", "Tồn kho theo vị trí"),
             path: "/stock",
@@ -303,7 +377,11 @@ export const AppSidebar: React.FC = () => {
       default:
         return [
           { label: t("nav.home", "Tổng quan"), path: "/home", icon: House },
-          { label: t("nav.events", "Tìm sự kiện"), path: "/events", icon: MagnifyingGlass },
+          {
+            label: t("nav.events", "Tìm sự kiện"),
+            path: "/events",
+            icon: MagnifyingGlass,
+          },
         ];
     }
   };
@@ -312,14 +390,14 @@ export const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 backdrop-blur-2xl bg-white/75 dark:bg-[#0E0E11]/85 border-r border-black/[0.06] dark:border-white/[0.08] flex flex-col justify-between transition-all duration-300 z-40 shadow-[1px_0_3px_0_rgba(0,0,0,0.02)] ${
+      className={`h-screen sticky top-0 backdrop-blur-2xl bg-surface-base/80 border-r border-ink-tertiary/20 dark:border-surface-overlay flex flex-col justify-between transition-all duration-300 z-40 shadow-[1px_0_3px_0_rgba(0,0,0,0.02)] ${
         isSidebarCollapsed ? "w-[68px]" : "w-[260px]"
       }`}
       aria-label="Sidebar Navigation"
     >
       {/* Top Branding Section */}
       <div>
-        <div className="h-16 px-4 flex items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-ink-tertiary/20 dark:border-surface-overlay">
           <Link
             to="/home"
             className={`flex items-center gap-3 overflow-hidden transition-all group ${
@@ -332,7 +410,7 @@ export const AppSidebar: React.FC = () => {
             </div>
             {!isSidebarCollapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="font-sans font-extrabold text-base text-ink-primary dark:text-white tracking-tight leading-tight">
+                <span className="font-sans font-extrabold text-base text-ink-primary tracking-tight leading-tight">
                   GrainLedger
                 </span>
                 <span className="text-[10px] text-ink-tertiary uppercase tracking-wider truncate font-mono">
@@ -358,8 +436,8 @@ export const AppSidebar: React.FC = () => {
                 to={item.path}
                 className={`group relative flex items-center gap-3 px-3.5 h-10 rounded-2xl text-xs font-medium border transition-colors duration-150 ${
                   isActive
-                    ? "bg-emerald-500/10 dark:bg-emerald-400/10 text-[#2F6B3A] dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-400/20 shadow-xs"
-                    : "border-transparent text-ink-secondary dark:text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                    ? "bg-accent-primary/10 text-accent-primary border-accent-primary/20 shadow-xs"
+                    : "border-transparent text-ink-secondary text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                 } ${isSidebarCollapsed ? "justify-center px-0" : ""}`}
                 title={isSidebarCollapsed ? item.label : undefined}
               >
@@ -368,7 +446,7 @@ export const AppSidebar: React.FC = () => {
                   weight={isActive ? "fill" : "regular"}
                   className={`shrink-0 transition-transform duration-150 group-hover:scale-105 ${
                     isActive
-                      ? "text-[#2F6B3A] dark:text-emerald-400"
+                      ? "text-accent-primary"
                       : "text-ink-tertiary group-hover:text-ink-primary dark:group-hover:text-white"
                   }`}
                 />
@@ -387,7 +465,7 @@ export const AppSidebar: React.FC = () => {
                         ? "bg-accent-danger text-white"
                         : item.badgeTone === "warning"
                           ? "bg-accent-warning text-ink-primary"
-                          : "bg-[#2F6B3A] text-white"
+                          : "bg-accent-primary text-ink-inverse"
                     }`}
                   >
                     {item.badge}
@@ -402,7 +480,7 @@ export const AppSidebar: React.FC = () => {
                         ? "bg-accent-danger"
                         : item.badgeTone === "warning"
                           ? "bg-accent-warning"
-                          : "bg-[#2F6B3A]"
+                          : "bg-accent-primary"
                     }`}
                   />
                 )}
@@ -413,7 +491,7 @@ export const AppSidebar: React.FC = () => {
       </div>
 
       {/* Bottom Section: Role Chip & Collapse Toggle */}
-      <div className="p-3 border-t border-black/[0.06] dark:border-white/[0.08] space-y-2">
+      <div className="p-3 border-t border-ink-tertiary/20 dark:border-surface-overlay space-y-2">
         {!isSidebarCollapsed && (
           <div className="px-1 py-1">
             <RoleChip
@@ -446,7 +524,9 @@ export const AppSidebar: React.FC = () => {
             <CaretDoubleLeft size={16} weight="bold" />
           )}
           {!isSidebarCollapsed && (
-            <span className="ml-2 text-xs font-semibold">{t("common.collapse", "Thu gọn")}</span>
+            <span className="ml-2 text-xs font-semibold">
+              {t("common.collapse", "Thu gọn")}
+            </span>
           )}
         </button>
       </div>

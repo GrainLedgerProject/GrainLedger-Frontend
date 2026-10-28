@@ -146,7 +146,7 @@ export const LedgerRejectionCard: React.FC<LedgerRejectionCardProps> = ({
               <button
                 type="button"
                 onClick={onRetry}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-danger text-white hover:bg-red-700 transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-danger text-white hover:opacity-90 transition-colors shadow-xs"
               >
                 <ArrowsCounterClockwise size={14} />
                 {t('mill.rejection.retryButton', 'Hiệu chỉnh lại thông số')}

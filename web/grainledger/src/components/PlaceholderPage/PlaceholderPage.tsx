@@ -54,10 +54,12 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
       <div className="bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-serif font-bold text-ink-primary">
+            <h1 className="text-2xl  font-bold text-ink-primary">
               {primaryTitle}
             </h1>
-            <p className="text-sm text-ink-secondary italic">{secondaryTitle}</p>
+            <p className="text-sm text-ink-secondary italic">
+              {secondaryTitle}
+            </p>
           </div>
 
           <div className="flex flex-col items-start sm:items-end gap-1.5">
@@ -87,13 +89,16 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
             <div className="p-4 rounded-md bg-surface-base border border-ink-tertiary/20 space-y-2">
               <h4 className="font-semibold text-xs uppercase tracking-wider text-ink-tertiary flex items-center gap-1.5">
                 <ShieldCheck size={16} className="text-accent-success" />
-                {t("placeholder.businessRules", "Ràng buộc nghiệp vụ (Business Rules)")}
+                {t(
+                  "placeholder.businessRules",
+                  "Ràng buộc nghiệp vụ (Business Rules)",
+                )}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {businessRuleCodes.map((code) => (
                   <span
                     key={code}
-                    className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-accent-primary border border-accent-primary/30"
+                    className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-functional-balanced-bg text-accent-primary border border-accent-primary/30"
                   >
                     {code}
                   </span>
@@ -102,7 +107,7 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
               <p className="text-xs text-ink-secondary">
                 {t(
                   "placeholder.appendOnlyNotice",
-                  "Tuân thủ nghiêm ngặt mô hình sổ cái chỉ-ghi-thêm (Append-only) và cách ly Tenant theo công ty khách hàng."
+                  "Tuân thủ nghiêm ngặt mô hình sổ cái chỉ-ghi-thêm (Append-only) và cách ly Tenant theo công ty khách hàng.",
                 )}
               </p>
             </div>
@@ -115,15 +120,15 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
               <p className="text-xs text-ink-secondary">
                 {t(
                   "placeholder.devStatusDesc",
-                  "Màn hình đã được khai báo đầy đủ trong cây định tuyến React Router v6 với route guard kiểm tra quyền hạn và phạm vi cơ sở."
+                  "Màn hình đã được khai báo đầy đủ trong cây định tuyến React Router v6 với route guard kiểm tra quyền hạn và phạm vi cơ sở.",
                 )}
               </p>
-              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium pt-1">
+              <div className="flex items-center gap-1.5 text-xs text-accent-warning font-medium pt-1">
                 <Clock size={14} />
                 <span>
                   {t(
                     "placeholder.readyNextSprint",
-                    "Sẵn sàng kết nối giao diện chi tiết trong Sprint kế tiếp"
+                    "Sẵn sàng kết nối giao diện chi tiết trong Sprint kế tiếp",
                   )}
                 </span>
               </div>
@@ -134,4 +139,3 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
     </div>
   );
 };
-

@@ -474,10 +474,10 @@ export const ReconciliationReviewPage: React.FC = () => {
         <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-xs text-ink-secondary">
             <span>{t("mill.reconciliation.kpiPending", "Chờ thẩm định đối soát")}</span>
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+            <span className="text-2xl font-bold font-mono text-accent-warning">
               {stats.pending}
             </span>
             <span className="text-xs text-ink-tertiary font-mono">
@@ -491,12 +491,12 @@ export const ReconciliationReviewPage: React.FC = () => {
             <span>{t("mill.reconciliation.kpiWithinTol", "Trong dung sai cho phép")}</span>
             <ShieldCheck
               size={18}
-              className="text-emerald-600 dark:text-emerald-400"
+              className="text-accent-primary"
               weight="fill"
             />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+            <span className="text-2xl font-bold font-mono text-accent-primary">
               {stats.withinToleranceCount} / {stats.total}
             </span>
             <span className="text-xs text-ink-tertiary font-mono">(≤ 0.5%)</span>
@@ -565,7 +565,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                 type="button"
                 onClick={() => setStatusFilter("PENDING_REVIEW")}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === "PENDING_REVIEW"
-                    ? "bg-surface-base dark:bg-surface-raised text-amber-600 dark:text-amber-400 shadow-xs font-bold"
+                    ? "bg-surface-base dark:bg-surface-raised text-accent-warning shadow-xs font-bold"
                     : "text-ink-secondary hover:text-ink-primary"
                   }`}
               >
@@ -626,8 +626,8 @@ export const ReconciliationReviewPage: React.FC = () => {
                     </div>
 
                     {item.status === "PENDING_REVIEW" && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
+                        <span className="w-1.5 h-1.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
                         {t("mill.reconciliation.statusPending", "Chờ đối soát")}
                       </span>
                     )}
@@ -658,7 +658,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                       <span className="text-ink-tertiary">{t("mill.reconciliation.varianceLabel", "Lệch:")}</span>
                       <span
                         className={`font-bold ${item.varianceKg > 0
-                            ? "text-amber-600 dark:text-amber-400"
+                            ? "text-accent-warning"
                             : "text-accent-danger"
                           }`}
                       >
@@ -674,7 +674,7 @@ export const ReconciliationReviewPage: React.FC = () => {
 
                     <span
                       className={`font-semibold px-2 py-0.5 rounded-md text-[10px] ${item.withinTolerance
-                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                          ? "bg-functional-balanced-bg text-accent-primary border border-accent-primary/20"
                           : "bg-functional-rejected-bg text-accent-danger border border-functional-rejected-border"
                         }`}
                     >
@@ -741,7 +741,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                 {actionMessage && (
                   <div
                     className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 ${actionMessage.type === "success"
-                        ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                        ? "bg-functional-balanced-bg text-accent-primary border border-functional-balanced-border/40"
                         : "bg-functional-rejected-bg text-accent-danger border border-functional-rejected-border"
                       }`}
                   >
@@ -868,7 +868,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                   <div className="p-4 sm:p-5 rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised space-y-3 shadow-xs">
                     <div className="flex items-center justify-between border-b border-ink-tertiary/15 pb-2.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
                           <FilePdf size={18} weight="bold" />
                         </div>
                         <div>
@@ -890,7 +890,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-functional-balanced-bg text-accent-primary border border-accent-primary/20">
                         {t("mill.reconciliation.techStandardPassed", "Đạt chuẩn kỹ thuật")}
                       </span>
                     </div>
@@ -931,14 +931,14 @@ export const ReconciliationReviewPage: React.FC = () => {
                   {/* Gauge Card */}
                   <div
                     className={`p-5 rounded-2xl border ${selectedItem.withinTolerance
-                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/30"
+                        ? "bg-functional-balanced-bg border-functional-balanced-border/40"
                         : "bg-functional-rejected-bg border-functional-rejected-border"
                       } space-y-3.5 shadow-xs`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {selectedItem.withinTolerance ? (
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
                             <ShieldCheck size={22} weight="bold" />
                           </div>
                         ) : (
@@ -970,7 +970,7 @@ export const ReconciliationReviewPage: React.FC = () => {
 
                       <span
                         className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${selectedItem.withinTolerance
-                            ? "bg-emerald-600 text-white"
+                            ? "bg-accent-primary text-ink-inverse"
                             : "bg-accent-danger text-white"
                           }`}
                       >
@@ -1011,7 +1011,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                       <div className="w-full h-3 rounded-full bg-surface-raised dark:bg-surface-overlay overflow-hidden flex relative border border-ink-tertiary/15">
                         <div
                           className={`h-full ${selectedItem.withinTolerance
-                              ? "bg-emerald-600"
+                              ? "bg-accent-primary"
                               : "bg-accent-danger"
                             }`}
                           style={{
@@ -1054,7 +1054,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                         </span>
                         <span
                           className={`font-mono font-bold ${selectedItem.varianceKg > 0
-                              ? "text-amber-600 dark:text-amber-400"
+                              ? "text-accent-warning"
                               : "text-accent-danger"
                             }`}
                         >
@@ -1131,7 +1131,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                         type="button"
                         onClick={handleApproveReconciliation}
                         disabled={isSubmitting}
-                        className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs disabled:opacity-60"
+                        className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse text-xs font-bold transition-all shadow-xs disabled:opacity-60"
                       >
                         <CheckCircle size={16} weight="bold" />
                         <span>{t("mill.reconciliation.btnApprove", "Xác nhận đối soát hợp lệ (SC-17)")}</span>

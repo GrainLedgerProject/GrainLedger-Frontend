@@ -353,7 +353,7 @@ export const BalancePolicyPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -497,7 +497,7 @@ export const BalancePolicyPage: React.FC = () => {
                                     parseFloat(e.target.value) || 0,
                                   )
                                 }
-                                className="w-20 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/30 font-mono text-right text-xs font-bold text-emerald-700 dark:text-emerald-400 focus:border-accent-primary focus:outline-none transition-colors"
+                                className="w-20 px-2.5 py-1.5 rounded-lg border border-functional-balanced-border/40 bg-functional-balanced-bg font-mono text-right text-xs font-bold text-accent-primary focus:border-accent-primary focus:outline-none transition-colors"
                               />
                               <span className="text-ink-tertiary font-mono">
                                 %
@@ -517,7 +517,7 @@ export const BalancePolicyPage: React.FC = () => {
                                     parseFloat(e.target.value) || 0,
                                   )
                                 }
-                                className="w-20 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/30 font-mono text-right text-xs font-bold text-amber-700 dark:text-amber-400 focus:border-accent-primary focus:outline-none transition-colors"
+                                className="w-20 px-2.5 py-1.5 rounded-lg border border-functional-stale-border/40 bg-functional-stale-bg font-mono text-right text-xs font-bold text-accent-warning focus:border-accent-primary focus:outline-none transition-colors"
                               />
                               <span className="text-ink-tertiary font-mono">
                                 %
@@ -642,7 +642,7 @@ export const BalancePolicyPage: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-4 font-mono font-bold text-ink-primary">
                             {c.maxBlendRatioPercent ? (
-                              <span className="text-emerald-600 dark:text-emerald-400">
+                              <span className="text-accent-primary">
                                 {c.maxBlendRatioPercent}%
                               </span>
                             ) : (

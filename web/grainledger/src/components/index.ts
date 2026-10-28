@@ -20,4 +20,3 @@ export * from './RoleChip/RoleChip';
 export * from './SettingsLayout/SettingsLayout';
 export * from './StalePlanBanner/StalePlanBanner';
 export * from './StatusBadge/StatusBadge';
-export * from './SuspenseLoader/SuspenseLoader';

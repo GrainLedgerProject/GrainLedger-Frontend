@@ -29,12 +29,15 @@ export const CompanyContextBar: React.FC = () => {
           <span
             className="w-2.5 h-2.5 rounded-sm inline-block shadow-xs"
             style={{ backgroundColor: companyColor }}
-            title={`${t('common.colorIndicator', 'Mã màu đại diện')}: ${companyName}`}
+            title={`${t("common.colorIndicator", "Mã màu đại diện")}: ${companyName}`}
           />
           <span className="font-semibold text-accent-info">{companyName}</span>
           <span className="text-ink-secondary">|</span>
           <span className="text-ink-secondary">
-            {t('common.tenantNotice', 'Phạm vi dữ liệu cách ly theo chuẩn ISO 22095 (Data Isolated Tenant)')}
+            {t(
+              "common.tenantNotice",
+              "Phạm vi dữ liệu cách ly theo chuẩn ISO 22095",
+            )}
           </span>
         </div>
 

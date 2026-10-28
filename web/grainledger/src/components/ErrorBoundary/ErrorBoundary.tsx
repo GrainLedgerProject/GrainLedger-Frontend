@@ -1,5 +1,5 @@
-import { ArrowClockwise, WarningOctagon } from '@phosphor-icons/react';
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { ArrowClockwise, WarningOctagon } from "@phosphor-icons/react";
+import React, { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // eslint-disable-next-line no-console
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   private handleReset = () => {
@@ -36,16 +36,17 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-[400px] flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-surface-raised dark:bg-surface-overlay border-2 border-accent-danger/40 rounded-lg p-6 shadow-md text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/50 text-accent-danger flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-functional-hold-bg text-accent-danger flex items-center justify-center mx-auto">
               <WarningOctagon size={28} weight="fill" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-lg font-bold text-ink-primary font-serif">
-                {this.props.fallbackTitle || 'Đã xảy ra sự cố không mong muốn'}
+              <h2 className="text-lg font-bold text-ink-primary ">
+                {this.props.fallbackTitle || "Đã xảy ra sự cố không mong muốn"}
               </h2>
               <p className="text-xs text-ink-secondary">
-                Hệ thống đã cách ly lỗi để bảo toàn tính toàn vẹn của phiên làm việc.
+                Hệ thống đã cách ly lỗi để bảo toàn tính toàn vẹn của phiên làm
+                việc.
               </p>
             </div>
 

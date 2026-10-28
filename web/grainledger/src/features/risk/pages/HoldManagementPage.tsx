@@ -161,7 +161,7 @@ export const HoldManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:bg-red-700 transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:opacity-90 transition-all shadow-xs"
           >
             <LockSimple size={16} weight="bold" />
             <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
@@ -177,14 +177,14 @@ export const HoldManagementPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Warning Policy Box */}
-      <div className="p-4 rounded-xl bg-functional-hold-bg dark:bg-functional-hold-bg/20 border border-functional-hold-border/40 flex items-start gap-3">
+      {/* <div className="p-4 rounded-xl bg-functional-hold-bg dark:bg-functional-hold-bg/20 border border-functional-hold-border/40 flex items-start gap-3">
         <ShieldWarning
           size={22}
           className="text-accent-danger shrink-0 mt-0.5"
@@ -201,7 +201,7 @@ export const HoldManagementPage: React.FC = () => {
             )}
           </p>
         </div>
-      </div>
+      </div> */}
 
       {/* Table */}
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
@@ -300,7 +300,7 @@ export const HoldManagementPage: React.FC = () => {
                         onClick={() =>
                           handleRespondHold(h, "TRANSFER_QUARANTINE")
                         }
-                        className="px-2.5 py-1 rounded bg-amber-600 text-white font-semibold text-[11px] hover:bg-amber-700"
+                        className="px-2.5 py-1 rounded bg-accent-warning text-ink-inverse font-semibold text-[11px] hover:opacity-90"
                         title={t(
                           "risk.hold.btnTransferQuarantine",
                           "Xác nhận chuyển kho cách ly vật lý",
@@ -430,7 +430,7 @@ export const HoldManagementPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-danger text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
+                  className="px-5 py-2 rounded-lg bg-accent-danger text-white font-semibold hover:opacity-90 transition-colors disabled:opacity-60"
                 >
                   {submitting
                     ? t("risk.hold.submitting", "Đang phát lệnh...")

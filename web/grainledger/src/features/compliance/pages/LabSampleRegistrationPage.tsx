@@ -263,8 +263,8 @@ export const LabSampleRegistrationPage: React.FC<
         t(
           "compliance.labSample.createSuccessBanner",
           "Đã đăng ký thành công Mẫu xét nghiệm {{id}} (Mã niêm phong: {{seal}}). Hồ sơ đã đưa vào chuỗi hành trình gửi phòng Lab.",
-          { id: newId, seal: formData.sealCode }
-        )
+          { id: newId, seal: formData.sealCode },
+        ),
       );
       setActiveTab("LIST");
     }, 600);
@@ -272,7 +272,7 @@ export const LabSampleRegistrationPage: React.FC<
 
   const handlePrintHandover = (sample: LabSampleRecord) => {
     alert(
-      `[${t("compliance.labSample.printHandoverTitle", "IN BIÊN BẢN BÀN GIAO MẪU NIÊM PHONG")}]\n${t("compliance.labSample.thCodeSeal", "Mã mẫu")}: ${sample.sampleCode}\n${t("compliance.labSample.leadSealLabel", "Mã niêm phong")}: ${sample.sealCode}\n${t("compliance.labSample.thLot", "Lô hàng")}: ${sample.lotId}\n${t("compliance.labSample.receivingLab", "Đơn vị tiếp nhận")}: ${sample.labName}\n${t("compliance.labSample.samplerNameLabel", "Người lấy mẫu")}: ${sample.samplerName}\n\n${t("compliance.labSample.printHandoverReady", "Đã sẵn sàng gửi kèm kiện mẫu gửi Lab.")}`
+      `[${t("compliance.labSample.printHandoverTitle", "IN BIÊN BẢN BÀN GIAO MẪU NIÊM PHONG")}]\n${t("compliance.labSample.thCodeSeal", "Mã mẫu")}: ${sample.sampleCode}\n${t("compliance.labSample.leadSealLabel", "Mã niêm phong")}: ${sample.sealCode}\n${t("compliance.labSample.thLot", "Lô hàng")}: ${sample.lotId}\n${t("compliance.labSample.receivingLab", "Đơn vị tiếp nhận")}: ${sample.labName}\n${t("compliance.labSample.samplerNameLabel", "Người lấy mẫu")}: ${sample.samplerName}\n\n${t("compliance.labSample.printHandoverReady", "Đã sẵn sàng gửi kèm kiện mẫu gửi Lab.")}`,
     );
   };
 
@@ -316,14 +316,14 @@ export const LabSampleRegistrationPage: React.FC<
         );
       case "SENT_TO_LAB":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 inline-flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-accent-info/10 text-accent-info border border-accent-info/20 inline-flex items-center gap-1">
             <Truck size={12} weight="bold" />
             {t("compliance.labSample.statusSent", "Đang gửi Lab")}
           </span>
         );
       case "ANALYZING":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-accent-warning/10 text-accent-warning border border-accent-warning/20 inline-flex items-center gap-1">
             <Clock size={12} weight="bold" className="animate-spin" />
             {t("compliance.labSample.statusAnalyzing", "Đang thử nghiệm")}
           </span>
@@ -356,10 +356,18 @@ export const LabSampleRegistrationPage: React.FC<
           <Link
             to="/compliance/lab-results"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-accent-primary/30 bg-accent-primary/10 hover:bg-accent-primary/15 text-accent-primary transition shadow-xs"
-            title={t("compliance.labSample.switchResults", "Chuyển sang Kết quả xét nghiệm (SC-24)")}
+            title={t(
+              "compliance.labSample.switchResults",
+              "Chuyển sang Kết quả xét nghiệm (SC-24)",
+            )}
           >
             <TestTube size={14} weight="bold" />
-            <span>{t("compliance.labSample.switchResults", "Chuyển sang Kết quả xét nghiệm (SC-24)")}</span>
+            <span>
+              {t(
+                "compliance.labSample.switchResults",
+                "Chuyển sang Kết quả xét nghiệm (SC-24)",
+              )}
+            </span>
             <ArrowRight size={13} weight="bold" />
           </Link>
         </div>
@@ -373,16 +381,16 @@ export const LabSampleRegistrationPage: React.FC<
               <Flask size={28} weight="duotone" />
             </div>
             <div className="space-y-1">
-              <h1 className="text-xl sm:text-2xl font-bold font-serif text-ink-primary">
+              <h1 className="text-xl sm:text-2xl font-bold  text-ink-primary">
                 {t(
                   "compliance.labSample.pageTitle",
-                  "Lấy Mẫu Niêm Phong & Gửi Phòng Lab (Lab Sample Chain of Custody)"
+                  "Lấy Mẫu Niêm Phong & Gửi Phòng Lab (Lab Sample Chain of Custody)",
                 )}
               </h1>
               <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
                 {t(
                   "compliance.labSample.pageSubtitle",
-                  "Khởi tạo hồ sơ mẫu ngũ cốc đại diện theo tiêu chuẩn ISO 24333, niêm phong chì điện tử và theo dõi chuỗi hành trình bàn giao đến phòng xét nghiệm chỉ định ISO/IEC 17025."
+                  "Khởi tạo hồ sơ mẫu ngũ cốc đại diện theo tiêu chuẩn ISO 24333, niêm phong chì điện tử và theo dõi chuỗi hành trình bàn giao đến phòng xét nghiệm chỉ định ISO/IEC 17025.",
                 )}
               </p>
             </div>
@@ -402,12 +410,19 @@ export const LabSampleRegistrationPage: React.FC<
               {activeTab === "CREATE" ? (
                 <>
                   <FileText size={15} />
-                  <span>{t("compliance.labSample.btnViewList", "Xem danh sách mẫu")}</span>
+                  <span>
+                    {t("compliance.labSample.btnViewList", "Xem danh sách mẫu")}
+                  </span>
                 </>
               ) : (
                 <>
                   <Plus size={15} weight="bold" />
-                  <span>{t("compliance.labSample.btnRegisterNew", "Đăng ký mẫu mới (SC-23)")}</span>
+                  <span>
+                    {t(
+                      "compliance.labSample.btnRegisterNew",
+                      "Đăng ký mẫu mới (SC-23)",
+                    )}
+                  </span>
                 </>
               )}
             </button>
@@ -450,11 +465,13 @@ export const LabSampleRegistrationPage: React.FC<
 
         <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-secondary">
-            <span>{t("compliance.labSample.kpiSent", "Đang chuyển phát Lab")}</span>
-            <Truck size={16} className="text-blue-500" />
+            <span>
+              {t("compliance.labSample.kpiSent", "Đang chuyển phát Lab")}
+            </span>
+            <Truck size={16} className="text-accent-info" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+            <span className="text-2xl font-bold font-mono text-accent-info">
               {stats.sent}
             </span>
             <span className="text-xs text-ink-tertiary">
@@ -465,11 +482,13 @@ export const LabSampleRegistrationPage: React.FC<
 
         <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-secondary">
-            <span>{t("compliance.labSample.kpiAnalyzing", "Đang thử nghiệm Lab")}</span>
-            <Clock size={16} className="text-amber-500" />
+            <span>
+              {t("compliance.labSample.kpiAnalyzing", "Đang thử nghiệm Lab")}
+            </span>
+            <Clock size={16} className="text-accent-warning" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+            <span className="text-2xl font-bold font-mono text-accent-warning">
               {stats.analyzing}
             </span>
             <span className="text-xs text-ink-tertiary">
@@ -480,7 +499,9 @@ export const LabSampleRegistrationPage: React.FC<
 
         <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-secondary">
-            <span>{t("compliance.labSample.kpiCompleted", "Đã có kết quả")}</span>
+            <span>
+              {t("compliance.labSample.kpiCompleted", "Đã có kết quả")}
+            </span>
             <CheckCircle
               size={16}
               className="text-accent-success"
@@ -504,14 +525,19 @@ export const LabSampleRegistrationPage: React.FC<
         <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl shadow-xs overflow-hidden">
           <div className="p-5 border-b border-ink-tertiary/15 bg-surface-raised/40 flex items-center justify-between">
             <div className="space-y-0.5">
-              <h2 className="text-base font-bold font-serif text-ink-primary flex items-center gap-2">
+              <h2 className="text-base font-bold  text-ink-primary flex items-center gap-2">
                 <SealCheck size={20} className="text-accent-primary" />
-                <span>{t("compliance.labSample.formTitle", "Đăng Ký Mẫu Niêm Phong Mới Gửi Phòng Lab (SC-23)")}</span>
+                <span>
+                  {t(
+                    "compliance.labSample.formTitle",
+                    "Đăng Ký Mẫu Niêm Phong Mới Gửi Phòng Lab (SC-23)",
+                  )}
+                </span>
               </h2>
               <p className="text-xs text-ink-secondary">
                 {t(
                   "compliance.labSample.formSubtitle",
-                  "Tuân thủ quy trình lấy mẫu ngẫu nhiên đại diện ISO 24333 và niêm phong chì chống tráo đổi."
+                  "Tuân thủ quy trình lấy mẫu ngẫu nhiên đại diện ISO 24333 và niêm phong chì chống tráo đổi.",
                 )}
               </p>
             </div>
@@ -531,12 +557,18 @@ export const LabSampleRegistrationPage: React.FC<
               {/* Col 1: Lô hàng & Khối lượng */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-accent-primary pb-1 border-b border-ink-tertiary/10">
-                  {t("compliance.labSample.sectionLotInfo", "1. Thông tin Lô hàng lấy mẫu")}
+                  {t(
+                    "compliance.labSample.sectionLotInfo",
+                    "1. Thông tin Lô hàng lấy mẫu",
+                  )}
                 </h3>
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.lotIdLabel", "Mã Lô hàng đại diện (Lot ID) *")}
+                    {t(
+                      "compliance.labSample.lotIdLabel",
+                      "Mã Lô hàng đại diện (Lot ID) *",
+                    )}
                   </label>
                   <select
                     value={formData.lotId}
@@ -565,7 +597,10 @@ export const LabSampleRegistrationPage: React.FC<
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.productTypeLabel", "Loại sản phẩm")}
+                    {t(
+                      "compliance.labSample.productTypeLabel",
+                      "Loại sản phẩm",
+                    )}
                   </label>
                   <input
                     type="text"
@@ -579,7 +614,10 @@ export const LabSampleRegistrationPage: React.FC<
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.sampleWeightLabel", "Khối lượng mẫu gửi (kg) *")}
+                    {t(
+                      "compliance.labSample.sampleWeightLabel",
+                      "Khối lượng mẫu gửi (kg) *",
+                    )}
                   </label>
                   <div className="relative">
                     <input
@@ -602,14 +640,17 @@ export const LabSampleRegistrationPage: React.FC<
                   <span className="text-[10px] text-ink-tertiary mt-1 block">
                     {t(
                       "compliance.labSample.weightIsoNote",
-                      "Khuyến nghị ISO 24333: Tối thiểu 1.5 kg cho thử nghiệm dư lượng & vi sinh."
+                      "Khuyến nghị ISO 24333: Tối thiểu 1.5 kg cho thử nghiệm dư lượng & vi sinh.",
                     )}
                   </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.samplingLocationLabel", "Điểm lấy mẫu thực tế")}
+                    {t(
+                      "compliance.labSample.samplingLocationLabel",
+                      "Điểm lấy mẫu thực tế",
+                    )}
                   </label>
                   <input
                     type="text"
@@ -628,12 +669,18 @@ export const LabSampleRegistrationPage: React.FC<
               {/* Col 2: Phòng Lab & Niêm phong */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-accent-primary pb-1 border-b border-ink-tertiary/10">
-                  {t("compliance.labSample.sectionLabSeal", "2. Phòng Lab & Niêm phong chì")}
+                  {t(
+                    "compliance.labSample.sectionLabSeal",
+                    "2. Phòng Lab & Niêm phong chì",
+                  )}
                 </h3>
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.labNameLabel", "Đơn vị phòng kiểm nghiệm ISO/IEC 17025 *")}
+                    {t(
+                      "compliance.labSample.labNameLabel",
+                      "Đơn vị phòng kiểm nghiệm ISO/IEC 17025 *",
+                    )}
                   </label>
                   <select
                     value={formData.labName}
@@ -659,7 +706,10 @@ export const LabSampleRegistrationPage: React.FC<
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.leadSealLabel", "Mã số niêm phong chì bảo mật (Lead Seal Code) *")}
+                    {t(
+                      "compliance.labSample.leadSealLabel",
+                      "Mã số niêm phong chì bảo mật (Lead Seal Code) *",
+                    )}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -682,7 +732,10 @@ export const LabSampleRegistrationPage: React.FC<
                         })
                       }
                       className="px-2.5 py-2 text-xs rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised text-ink-secondary"
-                      title={t("compliance.labSample.generateRandomSeal", "Sinh mã niêm phong ngẫu nhiên")}
+                      title={t(
+                        "compliance.labSample.generateRandomSeal",
+                        "Sinh mã niêm phong ngẫu nhiên",
+                      )}
                     >
                       <Barcode size={16} />
                     </button>
@@ -691,7 +744,10 @@ export const LabSampleRegistrationPage: React.FC<
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.targetMarketLabel", "Thị trường xuất khẩu mục tiêu (Tiêu chuẩn MRL) *")}
+                    {t(
+                      "compliance.labSample.targetMarketLabel",
+                      "Thị trường xuất khẩu mục tiêu (Tiêu chuẩn MRL) *",
+                    )}
                   </label>
                   <select
                     value={formData.targetMarket}
@@ -718,7 +774,10 @@ export const LabSampleRegistrationPage: React.FC<
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-semibold text-ink-primary mb-1">
-                      {t("compliance.labSample.samplingDateLabel", "Ngày lấy mẫu")}
+                      {t(
+                        "compliance.labSample.samplingDateLabel",
+                        "Ngày lấy mẫu",
+                      )}
                     </label>
                     <input
                       type="date"
@@ -734,7 +793,10 @@ export const LabSampleRegistrationPage: React.FC<
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-ink-primary mb-1">
-                      {t("compliance.labSample.estDaysLabel", "Thời gian Lab dự kiến")}
+                      {t(
+                        "compliance.labSample.estDaysLabel",
+                        "Thời gian Lab dự kiến",
+                      )}
                     </label>
                     <select
                       value={formData.estimatedDays}
@@ -757,12 +819,18 @@ export const LabSampleRegistrationPage: React.FC<
               {/* Col 3: Chỉ tiêu phân tích & Ghi chú */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-accent-primary pb-1 border-b border-ink-tertiary/10">
-                  {t("compliance.labSample.sectionSubstances", "3. Chỉ tiêu kiểm nghiệm yêu cầu")}
+                  {t(
+                    "compliance.labSample.sectionSubstances",
+                    "3. Chỉ tiêu kiểm nghiệm yêu cầu",
+                  )}
                 </h3>
 
                 <div className="space-y-2 p-3 rounded-lg bg-surface-raised border border-ink-tertiary/10 text-xs">
                   <span className="font-semibold text-ink-primary block mb-1">
-                    {t("compliance.labSample.substancesListLabel", "Hoạt chất thuốc BVTV cần định lượng:")}
+                    {t(
+                      "compliance.labSample.substancesListLabel",
+                      "Hoạt chất thuốc BVTV cần định lượng:",
+                    )}
                   </span>
                   {[
                     "Tricyclazole (Thuốc trị đạo ôn)",
@@ -788,7 +856,10 @@ export const LabSampleRegistrationPage: React.FC<
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-primary mb-1">
-                    {t("compliance.labSample.chainNotesLabel", "Ghi chú niêm phong & Chuỗi bàn giao (Chain of Custody)")}
+                    {t(
+                      "compliance.labSample.chainNotesLabel",
+                      "Ghi chú niêm phong & Chuỗi bàn giao (Chain of Custody)",
+                    )}
                   </label>
                   <textarea
                     rows={3}
@@ -809,7 +880,7 @@ export const LabSampleRegistrationPage: React.FC<
                 <span>
                   {t(
                     "compliance.labSample.auditStandardNote",
-                    "Mẫu sẽ được mã hóa Barcode và lưu vết kiểm toán bất biến theo chuẩn BR-19."
+                    "Mẫu sẽ được mã hóa Barcode và lưu vết kiểm toán bất biến theo chuẩn BR-19.",
                   )}
                 </span>
               </div>
@@ -832,7 +903,10 @@ export const LabSampleRegistrationPage: React.FC<
                   <span>
                     {isSubmitting
                       ? t("common.processing", "Đang xử lý...")
-                      : t("compliance.labSample.btnSubmitSeal", "Niêm phong & Tạo hồ sơ gửi Lab (SC-23)")}
+                      : t(
+                          "compliance.labSample.btnSubmitSeal",
+                          "Niêm phong & Tạo hồ sơ gửi Lab (SC-23)",
+                        )}
                   </span>
                 </button>
               </div>
@@ -859,21 +933,23 @@ export const LabSampleRegistrationPage: React.FC<
                 onClick={() => setStatusFilter("SENT_TO_LAB")}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${
                   statusFilter === "SENT_TO_LAB"
-                    ? "bg-blue-600 text-white shadow-xs"
+                    ? "bg-accent-info text-ink-inverse shadow-xs"
                     : "text-ink-secondary hover:text-ink-primary hover:bg-surface-raised"
                 }`}
               >
-                {t("compliance.labSample.filterSent", "Đang gửi")} ({stats.sent})
+                {t("compliance.labSample.filterSent", "Đang gửi")} ({stats.sent}
+                )
               </button>
               <button
                 onClick={() => setStatusFilter("ANALYZING")}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${
                   statusFilter === "ANALYZING"
-                    ? "bg-amber-600 text-white shadow-xs"
+                    ? "bg-accent-warning text-ink-inverse shadow-xs"
                     : "text-ink-secondary hover:text-ink-primary hover:bg-surface-raised"
                 }`}
               >
-                {t("compliance.labSample.filterAnalyzing", "Đang thử nghiệm")} ({stats.analyzing})
+                {t("compliance.labSample.filterAnalyzing", "Đang thử nghiệm")} (
+                {stats.analyzing})
               </button>
               <button
                 onClick={() => setStatusFilter("RESULT_RECEIVED")}
@@ -883,7 +959,8 @@ export const LabSampleRegistrationPage: React.FC<
                     : "text-ink-secondary hover:text-ink-primary hover:bg-surface-raised"
                 }`}
               >
-                {t("compliance.labSample.filterCompleted", "Đã có kết quả")} ({stats.completed})
+                {t("compliance.labSample.filterCompleted", "Đã có kết quả")} (
+                {stats.completed})
               </button>
             </div>
 
@@ -898,7 +975,7 @@ export const LabSampleRegistrationPage: React.FC<
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t(
                   "compliance.labSample.searchPlaceholder",
-                  "Tìm mã mẫu, số niêm phong, lô hàng..."
+                  "Tìm mã mẫu, số niêm phong, lô hàng...",
                 )}
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-ink-tertiary/20 bg-surface-base text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:ring-1 focus:ring-accent-primary"
               />
@@ -908,13 +985,13 @@ export const LabSampleRegistrationPage: React.FC<
           {/* Samples Table */}
           <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl shadow-xs overflow-hidden">
             <div className="p-4 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h2 className="text-sm font-bold font-serif text-ink-primary flex items-center gap-2">
+              <h2 className="text-sm font-bold  text-ink-primary flex items-center gap-2">
                 <Flask size={16} className="text-accent-primary" />
                 <span>
                   {t(
                     "compliance.labSample.chainLogTitle",
                     "Sổ Theo Dõi Mẫu & Chuỗi Bàn Giao Niêm Phong ({{count}})",
-                    { count: filteredSamples.length }
+                    { count: filteredSamples.length },
                   )}
                 </span>
               </h2>
@@ -924,13 +1001,30 @@ export const LabSampleRegistrationPage: React.FC<
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-surface-raised border-b border-ink-tertiary/15 text-ink-tertiary uppercase tracking-wider font-semibold">
-                    <th className="py-3 px-4">{t("compliance.labSample.thCodeSeal", "Mã Mẫu / Niêm Phong")}</th>
-                    <th className="py-3 px-4">{t("compliance.labSample.thLot", "Lô Hàng Lấy Mẫu")}</th>
-                    <th className="py-3 px-4">{t("compliance.labSample.thLab", "Đơn Vị Kiểm Nghiệm")}</th>
-                    <th className="py-3 px-4">{t("compliance.labSample.thMarket", "Thị Trường Đích")}</th>
-                    <th className="py-3 px-4">{t("compliance.labSample.thDates", "Ngày Gửi / Dự Kiến")}</th>
-                    <th className="py-3 px-4">{t("compliance.labSample.thStatus", "Trạng Thái")}</th>
-                    <th className="py-3 px-4 text-right">{t("compliance.labSample.thActions", "Thao Tác")}</th>
+                    <th className="py-3 px-4">
+                      {t(
+                        "compliance.labSample.thCodeSeal",
+                        "Mã Mẫu / Niêm Phong",
+                      )}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t("compliance.labSample.thLot", "Lô Hàng Lấy Mẫu")}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t("compliance.labSample.thLab", "Đơn Vị Kiểm Nghiệm")}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t("compliance.labSample.thMarket", "Thị Trường Đích")}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t("compliance.labSample.thDates", "Ngày Gửi / Dự Kiến")}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t("compliance.labSample.thStatus", "Trạng Thái")}
+                    </th>
+                    <th className="py-3 px-4 text-right">
+                      {t("compliance.labSample.thActions", "Thao Tác")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-tertiary/10">
@@ -982,9 +1076,13 @@ export const LabSampleRegistrationPage: React.FC<
                       </td>
 
                       <td className="py-3 px-4 font-mono text-[11px] text-ink-secondary">
-                        <div>{t("compliance.labSample.sentPrefix", "Gửi:")} {sample.samplingDate}</div>
+                        <div>
+                          {t("compliance.labSample.sentPrefix", "Gửi:")}{" "}
+                          {sample.samplingDate}
+                        </div>
                         <div className="text-ink-tertiary text-[10px]">
-                          {t("compliance.labSample.estPrefix", "Dự kiến:")} {sample.estimatedResultDate}
+                          {t("compliance.labSample.estPrefix", "Dự kiến:")}{" "}
+                          {sample.estimatedResultDate}
                         </div>
                       </td>
 
@@ -1000,7 +1098,10 @@ export const LabSampleRegistrationPage: React.FC<
                           <button
                             onClick={() => handlePrintHandover(sample)}
                             className="p-1.5 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition"
-                            title={t("compliance.labSample.printHandoverTooltip", "In biên bản bàn giao mẫu kèm mã vạch")}
+                            title={t(
+                              "compliance.labSample.printHandoverTooltip",
+                              "In biên bản bàn giao mẫu kèm mã vạch",
+                            )}
                           >
                             <Printer size={14} />
                           </button>
@@ -1010,7 +1111,9 @@ export const LabSampleRegistrationPage: React.FC<
                               to="/compliance/lab-results"
                               className="px-2.5 py-1 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white font-semibold text-[11px] transition inline-flex items-center gap-1 shadow-xs"
                             >
-                              <span>{t("compliance.labSample.viewCoa", "Xem CoA")}</span>
+                              <span>
+                                {t("compliance.labSample.viewCoa", "Xem CoA")}
+                              </span>
                               <ArrowRight size={11} weight="bold" />
                             </Link>
                           ) : (
@@ -1034,7 +1137,7 @@ export const LabSampleRegistrationPage: React.FC<
                       >
                         {t(
                           "compliance.labSample.noSamplesFound",
-                          "Không tìm thấy mẫu xét nghiệm nào phù hợp với điều kiện lọc."
+                          "Không tìm thấy mẫu xét nghiệm nào phù hợp với điều kiện lọc.",
                         )}
                       </td>
                     </tr>
@@ -1053,11 +1156,11 @@ export const LabSampleRegistrationPage: React.FC<
             <div className="p-4 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
               <div className="flex items-center gap-2">
                 <SealCheck size={20} className="text-accent-primary" />
-                <h3 className="font-bold font-serif text-sm text-ink-primary">
+                <h3 className="font-bold  text-sm text-ink-primary">
                   {t(
                     "compliance.labSample.detailModalTitle",
                     "Chi Tiết Mẫu Niêm Phong {{code}}",
-                    { code: selectedSample.sampleCode }
+                    { code: selectedSample.sampleCode },
                   )}
                 </h3>
               </div>
@@ -1074,14 +1177,17 @@ export const LabSampleRegistrationPage: React.FC<
               <div className="p-4 rounded-xl bg-surface-raised border border-ink-tertiary/15 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-ink-tertiary uppercase font-mono block">
-                    {t("compliance.labSample.leadSealLabel", "Mã niêm phong chì (Lead Seal)")}
+                    {t(
+                      "compliance.labSample.leadSealLabel",
+                      "Mã niêm phong chì (Lead Seal)",
+                    )}
                   </span>
                   <span className="text-sm font-bold font-mono text-accent-primary">
                     {selectedSample.sealCode}
                   </span>
                   <span className="text-[11px] text-ink-secondary block mt-0.5">
-                    {t("compliance.labSample.thLot", "Lô hàng")}: {selectedSample.lotId} (
-                    {selectedSample.sampleWeightKg} kg)
+                    {t("compliance.labSample.thLot", "Lô hàng")}:{" "}
+                    {selectedSample.lotId} ({selectedSample.sampleWeightKg} kg)
                   </span>
                 </div>
 
@@ -1094,21 +1200,29 @@ export const LabSampleRegistrationPage: React.FC<
               <div className="space-y-2">
                 <div className="flex justify-between py-1 border-b border-ink-tertiary/10">
                   <span className="text-ink-secondary">
-                    {t("compliance.labSample.receivingLab", "Phòng kiểm nghiệm tiếp nhận:")}
+                    {t(
+                      "compliance.labSample.receivingLab",
+                      "Phòng kiểm nghiệm tiếp nhận:",
+                    )}
                   </span>
                   <span className="font-semibold text-ink-primary text-right max-w-xs">
                     {selectedSample.labName}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-ink-tertiary/10">
-                  <span className="text-ink-secondary">{t("compliance.labSample.labAddress", "Địa chỉ gửi mẫu:")}</span>
+                  <span className="text-ink-secondary">
+                    {t("compliance.labSample.labAddress", "Địa chỉ gửi mẫu:")}
+                  </span>
                   <span className="text-ink-secondary text-right max-w-xs">
                     {selectedSample.labAddress}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-ink-tertiary/10">
                   <span className="text-ink-secondary">
-                    {t("compliance.labSample.targetMarketLabel", "Thị trường xuất khẩu mục tiêu:")}
+                    {t(
+                      "compliance.labSample.targetMarketLabel",
+                      "Thị trường xuất khẩu mục tiêu:",
+                    )}
                   </span>
                   <span className="font-semibold text-ink-primary">
                     {selectedSample.targetMarket}
@@ -1116,7 +1230,10 @@ export const LabSampleRegistrationPage: React.FC<
                 </div>
                 <div className="flex justify-between py-1 border-b border-ink-tertiary/10">
                   <span className="text-ink-secondary">
-                    {t("compliance.labSample.samplingStandard", "Phương pháp lấy mẫu:")}
+                    {t(
+                      "compliance.labSample.samplingStandard",
+                      "Phương pháp lấy mẫu:",
+                    )}
                   </span>
                   <span className="font-mono text-ink-primary">
                     {selectedSample.samplingStandard}
@@ -1124,7 +1241,10 @@ export const LabSampleRegistrationPage: React.FC<
                 </div>
                 <div className="flex justify-between py-1 border-b border-ink-tertiary/10">
                   <span className="text-ink-secondary">
-                    {t("compliance.labSample.samplerNameLabel", "Cán bộ thực hiện lấy mẫu:")}
+                    {t(
+                      "compliance.labSample.samplerNameLabel",
+                      "Cán bộ thực hiện lấy mẫu:",
+                    )}
                   </span>
                   <span className="font-medium text-ink-primary">
                     {selectedSample.samplerName}
@@ -1135,7 +1255,10 @@ export const LabSampleRegistrationPage: React.FC<
               {/* Requested Substances */}
               <div>
                 <span className="font-semibold text-ink-primary block mb-1.5">
-                  {t("compliance.labSample.requestedSubstances", "Chỉ tiêu yêu cầu định lượng:")}
+                  {t(
+                    "compliance.labSample.requestedSubstances",
+                    "Chỉ tiêu yêu cầu định lượng:",
+                  )}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedSample.requestedSubstances.map((s, idx) => (
@@ -1152,7 +1275,9 @@ export const LabSampleRegistrationPage: React.FC<
               {/* Notes */}
               {selectedSample.notes && (
                 <div className="p-3 rounded-lg bg-surface-raised/50 border border-ink-tertiary/10 text-ink-secondary">
-                  <strong className="text-ink-primary">{t("common.notes", "Ghi chú:")}</strong>{" "}
+                  <strong className="text-ink-primary">
+                    {t("common.notes", "Ghi chú:")}
+                  </strong>{" "}
                   {selectedSample.notes}
                 </div>
               )}
@@ -1164,7 +1289,12 @@ export const LabSampleRegistrationPage: React.FC<
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink-tertiary/20 hover:bg-surface-base text-xs font-semibold text-ink-primary transition"
               >
                 <Printer size={14} />
-                <span>{t("compliance.labSample.btnPrintHandover", "In biên bản bàn giao")}</span>
+                <span>
+                  {t(
+                    "compliance.labSample.btnPrintHandover",
+                    "In biên bản bàn giao",
+                  )}
+                </span>
               </button>
 
               <div className="flex items-center gap-2">
@@ -1180,7 +1310,12 @@ export const LabSampleRegistrationPage: React.FC<
                     to="/compliance/lab-results"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-bold transition shadow-xs"
                   >
-                    <span>{t("compliance.labSample.viewCoaResult", "Xem kết quả CoA")}</span>
+                    <span>
+                      {t(
+                        "compliance.labSample.viewCoaResult",
+                        "Xem kết quả CoA",
+                      )}
+                    </span>
                     <ArrowRight size={13} weight="bold" />
                   </Link>
                 )}

@@ -247,7 +247,7 @@ export const ReceivingTasksPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -375,12 +375,12 @@ export const ReceivingTasksPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleOpenReview(task)}
-                              className="px-2.5 py-1 rounded bg-amber-600 text-white font-semibold text-[11px] hover:bg-amber-700"
+                              className="px-2.5 py-1 rounded bg-accent-warning text-ink-inverse font-semibold text-[11px] hover:opacity-90"
                             >
                               {t("mill.receiving.btnReview", "Duyệt đối soát")}
                             </button>
                           ) : (
-                            <span className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded text-[11px] font-medium border border-amber-200">
+                            <span className="text-accent-warning bg-functional-stale-bg px-2 py-0.5 rounded text-[11px] font-medium border border-functional-stale-border/40">
                               {t(
                                 "mill.receiving.awaitingManager",
                                 "Chờ Quản lý duyệt",
@@ -472,7 +472,7 @@ export const ReceivingTasksPage: React.FC = () => {
                     required
                     value={measuredMoisture}
                     onChange={(e) => setMeasuredMoisture(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-blue-600 font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary">
                     %
@@ -558,7 +558,7 @@ export const ReceivingTasksPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-emerald-50 text-[#2F6B3A] text-[11px] leading-relaxed">
+              <div className="p-3 rounded-lg bg-functional-balanced-bg text-accent-primary text-[11px] leading-relaxed">
                 {t(
                   "mill.receiving.toleranceOkDesc",
                   "Độ lệch nằm trong giới hạn dung sai cho phép (0,5%). Duyệt để ghi nhận lô hàng vào Sổ cái và chuyển vào Silo sấy.",
@@ -569,7 +569,7 @@ export const ReceivingTasksPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleApproveReview(false)}
-                  className="px-4 py-2 rounded-lg border border-red-300 text-accent-danger font-semibold hover:bg-red-50"
+                  className="px-4 py-2 rounded-lg border border-accent-danger/40 text-accent-danger font-semibold hover:bg-functional-hold-bg"
                 >
                   {t(
                     "mill.receiving.btnRejectDiscrepancy",

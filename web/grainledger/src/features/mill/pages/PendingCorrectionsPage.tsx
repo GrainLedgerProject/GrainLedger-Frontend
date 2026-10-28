@@ -364,8 +364,8 @@ export const PendingCorrectionsPage: React.FC = () => {
     switch (status) {
       case "PENDING_REVIEW":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
             {t(
               "mill.pendingCorrections.statusPendingReview",
               "Chờ Quản lý đối soát",
@@ -480,7 +480,7 @@ export const PendingCorrectionsPage: React.FC = () => {
       )}
 
       {actionSuccess && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2 font-medium">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{actionSuccess}</span>
         </div>
@@ -493,9 +493,9 @@ export const PendingCorrectionsPage: React.FC = () => {
             <span>
               {t("mill.pendingCorrections.kpiPending", "Chờ duyệt đối soát")}
             </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+          <div className="text-2xl font-bold font-mono text-accent-warning">
             {stats.pending}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
@@ -531,11 +531,11 @@ export const PendingCorrectionsPage: React.FC = () => {
             </span>
             <CheckCircle
               size={16}
-              className="text-emerald-600 dark:text-emerald-400"
+              className="text-accent-primary"
               weight="fill"
             />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-bold font-mono text-accent-primary">
             {stats.committed}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
@@ -585,7 +585,7 @@ export const PendingCorrectionsPage: React.FC = () => {
             onClick={() => setStatusFilter("PENDING_REVIEW")}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
               statusFilter === "PENDING_REVIEW"
-                ? "bg-surface-base dark:bg-surface-raised text-amber-600 dark:text-amber-400 font-bold shadow-xs"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-warning font-bold shadow-xs"
                 : "text-ink-secondary hover:text-ink-primary"
             }`}
           >
@@ -609,7 +609,7 @@ export const PendingCorrectionsPage: React.FC = () => {
             onClick={() => setStatusFilter("COMMITTED")}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
               statusFilter === "COMMITTED"
-                ? "bg-surface-base dark:bg-surface-raised text-emerald-600 dark:text-emerald-400 font-bold shadow-xs"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-primary font-bold shadow-xs"
                 : "text-ink-secondary hover:text-ink-primary"
             }`}
           >
@@ -739,7 +739,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                                 <span
                                   className={`font-bold ${
                                     r.deltaMassKg.startsWith("+")
-                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      ? "text-accent-primary"
                                       : r.deltaMassKg.startsWith("-")
                                         ? "text-accent-danger"
                                         : "text-ink-tertiary"
@@ -833,7 +833,7 @@ export const PendingCorrectionsPage: React.FC = () => {
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
               {actionSuccess && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2.5 font-medium animate-ledger-in">
+                <div className="p-3.5 rounded-xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2.5 font-medium animate-ledger-in">
                   <CheckCircle size={18} weight="fill" className="shrink-0" />
                   <span>{actionSuccess}</span>
                 </div>
@@ -904,7 +904,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                             "Trạng thái lô đầu ra:",
                           )}
                         </span>
-                        <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        <span className="font-semibold text-accent-warning">
                           {t(
                             "mill.pendingCorrections.holdPendingRecon",
                             "Tạm khóa chờ đối soát (HOLD)",
@@ -950,7 +950,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                           <span
                             className={`font-bold text-xs ${
                               rev.deltaMassKg.startsWith("+")
-                                ? "text-emerald-600 dark:text-emerald-400"
+                                ? "text-accent-primary"
                                 : rev.deltaMassKg.startsWith("-")
                                   ? "text-accent-danger"
                                   : "text-ink-primary"
@@ -1053,7 +1053,7 @@ export const PendingCorrectionsPage: React.FC = () => {
 
                       <Link
                         to={`/mill/reconciliations/${selectedCorrection.id}`}
-                        className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-lg bg-accent-warning hover:opacity-90 text-ink-inverse text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
                       >
                         <ShieldCheck size={15} weight="bold" />
                         <span>

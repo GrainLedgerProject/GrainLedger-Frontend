@@ -296,7 +296,7 @@ export const PlotRegistrationPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -452,7 +452,7 @@ export const PlotRegistrationPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleDelete(plot)}
-                        className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-accent-danger transition-colors"
+                        className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
                         title={t("field.plot.deletePlot", "Xoá thửa ruộng")}
                       >
                         <Trash size={15} />

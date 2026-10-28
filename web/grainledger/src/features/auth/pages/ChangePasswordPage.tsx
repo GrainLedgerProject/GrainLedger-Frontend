@@ -41,7 +41,11 @@ export const ChangePasswordPage: React.FC = () => {
   // Strength score
   const passwordStrength = useMemo(() => {
     if (!newPasswordValue)
-      return { score: 0, label: t("auth.invitation.strengthNone", "Chưa nhập"), color: "bg-ink-tertiary/20" };
+      return {
+        score: 0,
+        label: t("auth.invitation.strengthNone", "Chưa nhập"),
+        color: "bg-ink-tertiary/20",
+      };
     let score = 0;
     if (newPasswordValue.length >= 12) score += 1;
     if (/[A-Z]/.test(newPasswordValue)) score += 1;
@@ -50,11 +54,23 @@ export const ChangePasswordPage: React.FC = () => {
     if (/[^A-Za-z0-9]/.test(newPasswordValue)) score += 1;
 
     if (score <= 2) {
-      return { score: 1, label: t("auth.invitation.strengthWeak", "Yếu (Weak)"), color: "bg-accent-danger" };
+      return {
+        score: 1,
+        label: t("auth.invitation.strengthWeak", "Yếu (Weak)"),
+        color: "bg-accent-danger",
+      };
     } else if (score <= 4) {
-      return { score: 2, label: t("auth.invitation.strengthFair", "Khá (Fair)"), color: "bg-accent-warning" };
+      return {
+        score: 2,
+        label: t("auth.invitation.strengthFair", "Khá (Fair)"),
+        color: "bg-accent-warning",
+      };
     } else {
-      return { score: 3, label: t("auth.invitation.strengthStrong", "Mạnh (Strong)"), color: "bg-accent-primary" };
+      return {
+        score: 3,
+        label: t("auth.invitation.strengthStrong", "Mạnh (Strong)"),
+        color: "bg-accent-primary",
+      };
     }
   }, [newPasswordValue, t]);
 
@@ -65,13 +81,23 @@ export const ChangePasswordPage: React.FC = () => {
 
     try {
       await authApi.changePassword(values.currentPassword, values.newPassword);
-      setSuccessMessage(t("settings.passwordUpdatedSuccess", "Mật khẩu đã được cập nhật thành công."));
+      setSuccessMessage(
+        t(
+          "settings.passwordUpdatedSuccess",
+          "Mật khẩu đã được cập nhật thành công.",
+        ),
+      );
       reset();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setCustomError(err.message);
       } else {
-        setCustomError(t("settings.passwordUpdateError", "Đã có lỗi xảy ra khi đổi mật khẩu."));
+        setCustomError(
+          t(
+            "settings.passwordUpdateError",
+            "Đã có lỗi xảy ra khi đổi mật khẩu.",
+          ),
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -82,11 +108,14 @@ export const ChangePasswordPage: React.FC = () => {
     <SettingsLayout>
       <div className="space-y-6">
         <div className="border-b border-ink-tertiary/15 pb-4">
-          <h2 className="text-lg font-bold text-ink-primary font-serif">
+          <h2 className="text-lg font-bold text-ink-primary">
             {t("settings.securityTitle", "Bảo mật tài khoản")}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
-            {t("settings.securitySubtitle", "Mật khẩu mới phải có tối thiểu 12 ký tự và không trùng với mật khẩu hiện tại.")}
+            {t(
+              "settings.securitySubtitle",
+              "Mật khẩu mới phải có tối thiểu 12 ký tự và không trùng với mật khẩu hiện tại.",
+            )}
           </p>
         </div>
 
@@ -185,7 +214,9 @@ export const ChangePasswordPage: React.FC = () => {
             {newPasswordValue && (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-ink-tertiary">{t("settings.complexity", "Độ phức tạp")}:</span>
+                  <span className="text-ink-tertiary">
+                    {t("settings.complexity", "Độ phức tạp")}:
+                  </span>
                   <span className="font-semibold text-ink-primary">
                     {passwordStrength.label}
                   </span>
@@ -260,7 +291,7 @@ export const ChangePasswordPage: React.FC = () => {
             <p className="text-[11px]">
               {t(
                 "settings.secNotice",
-                "Đổi mật khẩu thành công sẽ tự động thu hồi các phiên làm việc đang hoạt động khác trên các thiết bị khác."
+                "Đổi mật khẩu thành công sẽ tự động thu hồi các phiên làm việc đang hoạt động khác trên các thiết bị khác.",
               )}
             </p>
           </div>
@@ -272,9 +303,14 @@ export const ChangePasswordPage: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-colors shadow-xs disabled:opacity-60"
             >
               {isSubmitting ? (
-                <GrainLoader size="sm" label={t("common.updating", "Đang cập nhật...")} />
+                <GrainLoader
+                  size="sm"
+                  label={t("common.updating", "Đang cập nhật...")}
+                />
               ) : (
-                <span>{t("settings.updatePasswordButton", "Đổi mật khẩu")}</span>
+                <span>
+                  {t("settings.updatePasswordButton", "Đổi mật khẩu")}
+                </span>
               )}
             </button>
           </div>
@@ -283,4 +319,3 @@ export const ChangePasswordPage: React.FC = () => {
     </SettingsLayout>
   );
 };
-

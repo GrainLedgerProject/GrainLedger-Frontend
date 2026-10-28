@@ -32,7 +32,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div className="border-b border-ink-tertiary/15 pb-4">
-        <h1 className="text-2xl font-serif font-bold text-ink-primary">
+        <h1 className="text-2xl font-bold text-ink-primary">
           {t("settings.title", "Cài đặt tài khoản & Bảo mật")}
         </h1>
         <p className="text-sm text-ink-secondary mt-1">

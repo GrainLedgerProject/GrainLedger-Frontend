@@ -9,9 +9,9 @@ export const LandingCtaFooter: React.FC = () => {
   return (
     <>
       {/* Apple-grade CTA Banner */}
-      <section className="py-24 bg-[#1B2420] dark:bg-black text-white relative overflow-hidden border-t border-black/[0.06] dark:border-white/[0.08]">
+      <section className="py-24 bg-surface-raised text-ink-primary relative overflow-hidden border-t border-ink-tertiary/20 dark:border-surface-overlay">
         {/* Subtle Ambient Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-[#2F6B3A]/25 blur-3xl pointer-events-none rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-accent-primary/25 blur-3xl pointer-events-none rounded-full" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
           <h2 className="font-sans text-3xl sm:text-5xl font-extrabold tracking-[-0.035em] max-w-2xl mx-auto leading-tight">
@@ -25,7 +25,7 @@ export const LandingCtaFooter: React.FC = () => {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 to={isAuthenticated ? "/home" : "/sign-in"}
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-[#1B2420] hover:bg-white/95 shadow-lg transition-all"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-ink-primary hover:bg-white/95 shadow-lg transition-all"
               >
                 <span>
                   {isAuthenticated ? "Vào Home" : "Đăng nhập vào hệ thống"}
@@ -38,9 +38,9 @@ export const LandingCtaFooter: React.FC = () => {
       </section>
 
       {/* Modern Apple Minimal Footer */}
-      <footer className="bg-white dark:bg-[#0A0A0C] text-ink-secondary dark:text-ink-tertiary text-xs py-16 border-t border-black/[0.06] dark:border-white/[0.08] transition-colors">
+      <footer className="bg-surface-base text-ink-secondary text-ink-tertiary text-xs py-16 border-t border-ink-tertiary/20 dark:border-surface-overlay transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-black/[0.06] dark:border-white/[0.08]">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-ink-tertiary/20 dark:border-surface-overlay">
             {/* Col 1: Brand */}
             <div className="space-y-4 md:col-span-1">
               <div className="flex items-center h-8">
@@ -62,7 +62,7 @@ export const LandingCtaFooter: React.FC = () => {
 
             {/* Col 2: Nền tảng */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary dark:text-white">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
                 Công nghệ
               </h4>
               <ul className="space-y-2 text-xs">
@@ -103,7 +103,7 @@ export const LandingCtaFooter: React.FC = () => {
 
             {/* Col 3: Chuẩn mực */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary dark:text-white">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
                 Tiêu chuẩn Xuất khẩu
               </h4>
               <ul className="space-y-2 text-xs">
@@ -132,7 +132,7 @@ export const LandingCtaFooter: React.FC = () => {
 
             {/* Col 4: Cơ sở */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary dark:text-white">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
                 Cơ sở Thí điểm
               </h4>
               <p className="text-xs text-ink-tertiary leading-relaxed">
@@ -142,7 +142,7 @@ export const LandingCtaFooter: React.FC = () => {
               <div className="pt-2">
                 <Link
                   to={isAuthenticated ? "/home" : "/sign-in"}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#2F6B3A] dark:text-emerald-400 font-semibold hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs text-accent-primary font-semibold hover:underline"
                 >
                   <span>
                     {isAuthenticated

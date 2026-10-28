@@ -22,9 +22,9 @@ export const RoleChip: React.FC<RoleChipProps> = ({
 
   // Side-based color themes
   const sideStyles = {
-    MILL: 'bg-emerald-900/10 text-accent-primary border-accent-primary/30 dark:bg-emerald-950/40 dark:text-accent-primary dark:border-accent-primary/40',
-    CUSTOMER: 'bg-indigo-900/10 text-accent-info border-accent-info/30 dark:bg-indigo-950/40 dark:text-blue-300 dark:border-accent-info/40',
-    QUALIFIED_ACCESS: 'bg-amber-900/10 text-amber-800 border-amber-600/30 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-500/40',
+    MILL: 'bg-accent-primary/10 text-accent-primary border-accent-primary/30',
+    CUSTOMER: 'bg-accent-info/10 text-accent-info border-accent-info/30',
+    QUALIFIED_ACCESS: 'bg-accent-warning/10 text-accent-warning border-accent-warning/30',
   };
 
   const currentSideStyle = sideStyles[def.side];
@@ -41,7 +41,7 @@ export const RoleChip: React.FC<RoleChipProps> = ({
             ? 'bg-accent-primary'
             : def.side === 'CUSTOMER'
             ? 'bg-accent-info'
-            : 'bg-amber-500'
+            : 'bg-functional-stale-bg0'
         }`}
       />
       {showCode && <span className="font-mono font-bold">[{def.code}]</span>}

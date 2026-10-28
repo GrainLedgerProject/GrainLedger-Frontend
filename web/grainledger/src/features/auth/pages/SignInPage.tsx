@@ -46,11 +46,25 @@ export const SignInPage: React.FC = () => {
   const searchParams = new URLSearchParams(location.search);
   const returnUrl = searchParams.get("returnUrl");
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: true,
+    },
+  });
+
   // Auto-redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const targetPath =
-        returnUrl && returnUrl !== "/sign-in" ? returnUrl : "/home";
+      const isSelfRedirect = !returnUrl || returnUrl.startsWith("/sign-in");
+      const targetPath = isSelfRedirect ? "/home" : returnUrl;
       navigate(targetPath, { replace: true });
     }
   }, [isAuthenticated, user, returnUrl, navigate]);
@@ -68,20 +82,6 @@ export const SignInPage: React.FC = () => {
       </div>
     );
   }
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<SignInFormValues>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: true,
-    },
-  });
 
   const getRedirectPathForRole = (role: UserRole): string => {
     switch (role) {
@@ -264,7 +264,7 @@ export const SignInPage: React.FC = () => {
         {/* Right Form Panel */}
         <div className="md:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
           <div className="space-y-2 mb-6">
-            <h3 className="text-xl font-serif font-bold text-ink-primary">
+            <h3 className="text-2xl font-bold text-ink-primary">
               {t("auth.signInTitle", "Đăng nhập vào hệ thống")}
             </h3>
             <p className="text-xs text-ink-secondary">
@@ -287,7 +287,6 @@ export const SignInPage: React.FC = () => {
                 className="shrink-0 mt-0.5"
               />
               <div className="flex-1">
-                <span className="font-bold mr-1">MSG12:</span>
                 <span>{authError}</span>
               </div>
             </div>

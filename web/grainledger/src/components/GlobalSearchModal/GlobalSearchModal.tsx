@@ -117,7 +117,7 @@ export const GlobalSearchModal: React.FC = () => {
       case "CONTAINER":
         return <Truck size={18} className="text-accent-info" />;
       case "FARMER":
-        return <User size={18} className="text-amber-600" />;
+        return <User size={18} className="text-accent-warning" />;
       case "EVENT":
         return <FileText size={18} className="text-ink-secondary" />;
     }

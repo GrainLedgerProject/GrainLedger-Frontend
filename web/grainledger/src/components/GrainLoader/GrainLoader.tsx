@@ -39,7 +39,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
         {/* Soft green glow */}
         <div
           className="
-            absolute rounded-full bg-emerald-500/10
+            absolute rounded-full bg-accent-primary/10
             blur-xl animate-pulse
             motion-reduce:animate-none
           "
@@ -64,13 +64,13 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
             r="46"
             stroke="currentColor"
             strokeWidth="1.5"
-            className="text-emerald-700/10"
+            className="text-accent-primary/10"
           />
           <circle
             cx="50"
             cy="50"
             r="46"
-            stroke="#D5AD43"
+            stroke="var(--color-accent-warning)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeDasharray="64 225"

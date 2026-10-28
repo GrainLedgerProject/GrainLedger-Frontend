@@ -97,7 +97,7 @@ const STATUS_CONFIG: Record<
     defaultLabelEn: 'Pending Review',
   },
   IN_PROGRESS: {
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    bg: 'bg-accent-info/10',
     border: 'border-accent-info',
     text: 'text-accent-info',
     icon: ArrowsClockwise,
@@ -113,9 +113,9 @@ const STATUS_CONFIG: Record<
     defaultLabelEn: 'Closed & Sealed',
   },
   ACTIVE: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-500',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-functional-balanced-bg',
+    border: 'border-functional-balanced-border',
+    text: 'text-accent-primary',
     icon: CheckCircle,
     defaultLabelVi: 'Hoạt động',
     defaultLabelEn: 'Active',

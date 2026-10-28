@@ -186,9 +186,9 @@ export const EventHistoryPage: React.FC = () => {
   const getEntityIcon = (entityType: string) => {
     switch (entityType?.toLowerCase()) {
       case "lot":
-        return <Cube className="text-amber-500" size={16} weight="bold" />;
+        return <Cube className="text-accent-warning" size={16} weight="bold" />;
       case "operation":
-        return <Scales className="text-emerald-500" size={16} weight="bold" />;
+        return <Scales className="text-accent-primary" size={16} weight="bold" />;
       case "receivingtask":
       case "receiving":
         return <Truck className="text-sky-500" size={16} weight="bold" />;
@@ -232,7 +232,7 @@ export const EventHistoryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-base dark:bg-surface-raised border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold shadow-xs">
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-base dark:bg-surface-raised border border-functional-balanced-border/40 text-accent-primary text-xs font-semibold shadow-xs">
             <ShieldCheck size={16} weight="fill" />
             <span>{t("audit.events.badgeSha", "Chuỗi băm SHA-256")}</span>
           </div>
@@ -461,7 +461,7 @@ export const EventHistoryPage: React.FC = () => {
                         <span className="font-semibold text-ink-primary text-xs">
                           {evt.entityType}:
                         </span>
-                        <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-[11px] text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded">
                           {evt.entityId}
                         </span>
                       </div>
@@ -515,7 +515,7 @@ export const EventHistoryPage: React.FC = () => {
                   <CheckCircleIcon
                     size={18}
                     weight="fill"
-                    className="shrink-0 text-emerald-600 dark:text-emerald-400 cursor-help"
+                    className="shrink-0 text-accent-primary cursor-help"
                   />
 
                   {/* Tooltip */}
@@ -527,11 +527,11 @@ export const EventHistoryPage: React.FC = () => {
                   transition-all duration-200
                   pointer-events-none"
                   >
-                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-start gap-2.5 shadow-lg">
+                    <div className="p-3.5 rounded-xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-start gap-2.5 shadow-lg">
                       <CheckCircle
                         size={18}
                         weight="fill"
-                        className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                        className="shrink-0 text-accent-primary"
                       />
 
                       <span>
@@ -616,18 +616,18 @@ export const EventHistoryPage: React.FC = () => {
                 <h4 className="text-[11px] font-semibold text-ink-secondary uppercase tracking-wider mb-2">
                   {t("audit.events.lblPayload", "Dữ liệu tải nộp (Payload Snapshot)")}
                 </h4>
-                <pre className="p-4 bg-ink-primary text-emerald-400 dark:bg-black/60 dark:text-emerald-300 font-mono text-[11px] rounded-xl overflow-x-auto border border-ink-tertiary/20 leading-relaxed max-h-60">
+                <pre className="p-4 bg-ink-primary text-accent-primary dark:bg-black/60 font-mono text-[11px] rounded-xl overflow-x-auto border border-ink-tertiary/20 leading-relaxed max-h-60">
                   {typeof selectedEvent.payload === "string"
                     ? selectedEvent.payload
                     : JSON.stringify(selectedEvent.payload, null, 2)}
                 </pre>
               </div> */}
 
-              {/* <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2.5">
+              {/* <div className="p-3.5 rounded-xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2.5">
                 <CheckCircle
                   size={18}
                   weight="fill"
-                  className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                  className="shrink-0 text-accent-primary"
                 />
                 <span>
                   {t(

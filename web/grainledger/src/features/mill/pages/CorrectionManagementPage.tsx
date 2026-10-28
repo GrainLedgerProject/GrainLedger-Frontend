@@ -195,25 +195,25 @@ export const CorrectionManagementPage: React.FC = () => {
     switch (status) {
       case "PENDING_REVIEW":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
             Chờ Quản lý duyệt
           </span>
         );
       case "RECONCILED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-accent-info/10 text-accent-info border border-accent-info/20">
             Đã đối soát xong
           </span>
         );
       case "COMMITTED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-balanced-bg text-accent-primary border border-functional-balanced-border/40">
             Đã chốt bút toán bù
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised text-ink-secondary border border-surface-overlay">
             Đã hủy
           </span>
         );
@@ -226,14 +226,14 @@ export const CorrectionManagementPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-700">
+            <span className="text-xs text-ink-secondary">
               Bất biến lịch sử chế biến
             </span>
           </div>
-          <h1 className="text-2xl font-bold font-serif text-slate-900 mt-1">
+          <h1 className="text-2xl font-bold  text-ink-primary mt-1">
             Quản lý Sửa đổi & Bút toán Bù (Corrections & Reconciliations)
           </h1>
-          <p className="text-sm text-slate-700 mt-0.5">
+          <p className="text-sm text-ink-secondary mt-0.5">
             Khi phát hiện sai sót số liệu trong các mẻ sấy/xay/trộn đã chốt, hệ
             thống tuyệt đối không sửa đè mà ghi nhận bút toán đảo ngược kèm bút
             toán thay thế.
@@ -242,7 +242,7 @@ export const CorrectionManagementPage: React.FC = () => {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center gap-1.5 shadow-sm transition shrink-0"
+          className="px-4 py-2 bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse rounded-lg text-sm font-medium flex items-center gap-1.5 shadow-sm transition shrink-0"
         >
           <Plus size={16} weight="bold" />
           Yêu cầu sửa bước chế biến
@@ -259,12 +259,12 @@ export const CorrectionManagementPage: React.FC = () => {
       )}
 
       {/* Rules Notice */}
-      <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
+      <div className="p-4 bg-functional-stale-bg border border-functional-stale-border/40 rounded-xl text-accent-warning text-xs space-y-1">
         <div className="flex items-center gap-2 font-semibold">
-          <WarningCircle size={16} weight="fill" className="text-amber-600" />
+          <WarningCircle size={16} weight="fill" className="text-accent-warning" />
           <span>Quy tắc hạch toán Mass Balance ISO 22095:</span>
         </div>
-        <p className="text-amber-800 pl-6 leading-relaxed">
+        <p className="text-accent-warning pl-6 leading-relaxed">
           1. Bước chế biến đã COMMIT là bất biến. Yêu cầu sửa đổi sẽ khóa tạm
           thời các lô đầu ra khỏi các kế hoạch đóng container tiếp theo cho đến
           khi Quản lý duyệt.
@@ -276,15 +276,15 @@ export const CorrectionManagementPage: React.FC = () => {
       </div>
 
       {/* List Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+      <div className="bg-surface-base rounded-xl border border-surface-overlay shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-surface-overlay flex items-center justify-between">
+          <h2 className="font-semibold text-ink-primary text-sm flex items-center gap-2">
             <ClockCounterClockwise size={16} />
             Danh sách Yêu cầu Sửa đổi & Đối soát ({corrections.length})
           </h2>
           <button
             onClick={fetchCorrections}
-            className="text-xs text-slate-600 hover:text-emerald-700 flex items-center gap-1"
+            className="text-xs text-ink-secondary hover:text-accent-primary flex items-center gap-1"
           >
             <ArrowClockwise size={14} />
             Làm mới
@@ -292,18 +292,18 @@ export const CorrectionManagementPage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-slate-700 text-sm">
+          <div className="p-12 text-center text-ink-secondary text-sm">
             Đang tải danh sách...
           </div>
         ) : corrections.length === 0 ? (
-          <div className="p-12 text-center text-slate-700 text-sm">
+          <div className="p-12 text-center text-ink-secondary text-sm">
             Chưa có yêu cầu sửa đổi nào.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider">
+                <tr className="bg-surface-raised border-b border-surface-overlay text-ink-secondary font-semibold uppercase tracking-wider">
                   <th className="py-3 px-4">Mã yêu cầu</th>
                   <th className="py-3 px-4">Mã bước chế biến</th>
                   <th className="py-3 px-4">Lý do sai lệch</th>
@@ -313,23 +313,23 @@ export const CorrectionManagementPage: React.FC = () => {
                   <th className="py-3 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-surface-overlay">
                 {corrections.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                  <tr key={item.id} className="hover:bg-surface-raised/80 transition">
+                    <td className="py-3 px-4 font-mono font-medium text-ink-primary">
                       {item.id}
                     </td>
-                    <td className="py-3 px-4 font-mono text-emerald-700 font-semibold">
+                    <td className="py-3 px-4 font-mono text-accent-primary font-semibold">
                       {item.operationId}
                     </td>
-                    <td className="py-3 px-4 text-slate-800 max-w-xs">
+                    <td className="py-3 px-4 text-ink-primary max-w-xs">
                       {item.reason}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 max-w-xs">
+                    <td className="py-3 px-4 text-ink-secondary max-w-xs">
                       {item.reconciliationNotes || "—"}
                     </td>
                     <td className="py-3 px-4">{getStatusBadge(item.status)}</td>
-                    <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                    <td className="py-3 px-4 text-ink-secondary whitespace-nowrap">
                       {new Date(item.createdAt).toLocaleString("vi-VN")}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -337,7 +337,7 @@ export const CorrectionManagementPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleCommitCorrection(item.id)}
-                            className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium rounded text-xs transition inline-flex items-center gap-1"
+                            className="px-2 py-1 bg-functional-balanced-bg hover:bg-functional-balanced-bg text-accent-primary font-medium rounded text-xs transition inline-flex items-center gap-1"
                             title="Chốt bút toán bù đảo ngược"
                           >
                             <CheckCircle size={14} weight="fill" />
@@ -353,7 +353,7 @@ export const CorrectionManagementPage: React.FC = () => {
                         </div>
                       )}
                       {item.status === "COMMITTED" && (
-                        <span className="text-slate-700 text-[11px] font-mono">
+                        <span className="text-ink-secondary text-[11px] font-mono">
                           Đã ghi sổ bù
                         </span>
                       )}
@@ -368,18 +368,18 @@ export const CorrectionManagementPage: React.FC = () => {
 
       {/* Create Modal (SC-16) */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-surface-overlay flex items-center justify-between bg-surface-raised">
               <div className="flex items-center gap-2">
-                <Scales size={20} className="text-emerald-600" />
-                <h3 className="font-bold text-slate-900">
+                <Scales size={20} className="text-accent-primary" />
+                <h3 className="font-bold text-ink-primary">
                   Yêu cầu Sửa bước chế biến
                 </h3>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-slate-700 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition"
+                className="text-ink-secondary hover:text-ink-secondary p-1 rounded-lg hover:bg-surface-overlay transition"
               >
                 <X size={18} />
               </button>
@@ -390,7 +390,7 @@ export const CorrectionManagementPage: React.FC = () => {
               className="p-6 space-y-4 text-sm"
             >
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
                   Mã bước chế biến đã Commit (Operation ID) *
                 </label>
                 <input
@@ -404,12 +404,12 @@ export const CorrectionManagementPage: React.FC = () => {
                       operationId: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm font-mono focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
                   Lý do sai sót & yêu cầu sửa đổi *
                 </label>
                 <textarea
@@ -420,12 +420,12 @@ export const CorrectionManagementPage: React.FC = () => {
                   onChange={(e) =>
                     setCreateForm({ ...createForm, reason: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
                   Biên bản đối soát hoặc phiếu cân thực tế
                 </label>
                 <input
@@ -438,28 +438,28 @@ export const CorrectionManagementPage: React.FC = () => {
                       reconciliationNotes: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
-              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+              <div className="p-3 bg-functional-stale-bg rounded-lg border border-functional-stale-border/40 text-xs text-accent-warning">
                 Ghi chú: Lô hàng đầu ra của bước chế biến này sẽ tạm thời bị
                 khóa cho đến khi Quản lý hoàn tất đối soát và phê duyệt bút toán
                 bù.
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-overlay">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-ink-tertiary/30 rounded-lg text-xs font-medium text-ink-secondary hover:bg-surface-raised transition"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition"
+                  className="px-4 py-2 bg-accent-primary hover:bg-accent-primary-dim disabled:opacity-50 text-white rounded-lg text-xs font-medium transition"
                 >
                   {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
                 </button>

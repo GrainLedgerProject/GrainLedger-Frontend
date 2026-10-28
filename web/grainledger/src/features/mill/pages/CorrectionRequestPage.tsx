@@ -266,7 +266,10 @@ export const CorrectionRequestPage: React.FC = () => {
           </Link>
           <span>/</span>
           <span className="text-ink-primary font-semibold">
-            {t("mill.correctionRequest.breadcrumb", "Tạo yêu cầu sửa bước chế biến")}
+            {t(
+              "mill.correctionRequest.breadcrumb",
+              "Tạo yêu cầu sửa bước chế biến",
+            )}
           </span>
         </div>
 
@@ -275,7 +278,12 @@ export const CorrectionRequestPage: React.FC = () => {
           className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary transition self-start sm:self-auto"
         >
           <ClockCounterClockwise size={14} className="text-accent-primary" />
-          <span>{t("mill.correctionRequest.viewListLink", "Danh sách bút toán bù & đối soát")}</span>
+          <span>
+            {t(
+              "mill.correctionRequest.viewListLink",
+              "Danh sách bút toán bù & đối soát",
+            )}
+          </span>
         </Link>
       </div>
 
@@ -289,19 +297,25 @@ export const CorrectionRequestPage: React.FC = () => {
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
-                {t("mill.correctionRequest.tagRequest", "Phiếu yêu cầu sửa đổi")}
+                {t(
+                  "mill.correctionRequest.tagRequest",
+                  "Phiếu yêu cầu sửa đổi",
+                )}
               </span>
               <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-functional-held-bg text-accent-warning border border-functional-held-border">
                 {t("mill.correctionRequest.tagImmutable", "Bất biến lịch sử")}
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold font-serif text-ink-primary">
-              {t("mill.correctionRequest.pageTitle", "Yêu cầu Sửa đổi Bước Chế biến đã gửi")}
+            <h1 className="text-xl sm:text-2xl font-bold  text-ink-primary">
+              {t(
+                "mill.correctionRequest.pageTitle",
+                "Yêu cầu Sửa đổi Bước Chế biến đã gửi",
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
               {t(
                 "mill.correctionRequest.pageSubtitle",
-                "Khi phát hiện sai lệch số liệu cân, tỷ lệ thu hồi hoặc độ ẩm trong các mẻ sấy/xay/trộn đã chốt sổ cái, hệ thống bảo toàn tuyệt đối bản ghi cũ và lập quy trình hạch toán bút toán bù đảo ngược (Reversal Entry) theo tiêu chuẩn ISO 22095."
+                "Khi phát hiện sai lệch số liệu cân, tỷ lệ thu hồi hoặc độ ẩm trong các mẻ sấy/xay/trộn đã chốt sổ cái, hệ thống bảo toàn tuyệt đối bản ghi cũ và lập quy trình hạch toán bút toán bù đảo ngược (Reversal Entry) theo tiêu chuẩn ISO 22095.",
               )}
             </p>
           </div>
@@ -332,7 +346,10 @@ export const CorrectionRequestPage: React.FC = () => {
                 1
               </span>
               <h2 className="font-semibold text-sm sm:text-base text-ink-primary">
-                {t("mill.correctionRequest.step1Title", "Chọn bước chế biến cần sửa (Operation)")}
+                {t(
+                  "mill.correctionRequest.step1Title",
+                  "Chọn bước chế biến cần sửa (Operation)",
+                )}
               </h2>
             </div>
             <button
@@ -341,7 +358,10 @@ export const CorrectionRequestPage: React.FC = () => {
               className="text-xs text-accent-primary hover:underline font-medium"
             >
               {isCustomOp
-                ? t("mill.correctionRequest.selectRecent", "← Chọn từ mẻ gần đây")
+                ? t(
+                    "mill.correctionRequest.selectRecent",
+                    "← Chọn từ mẻ gần đây",
+                  )
                 : t("mill.correctionRequest.enterCustomOp", "Nhập mã mẻ khác")}
             </button>
           </div>
@@ -394,7 +414,7 @@ export const CorrectionRequestPage: React.FC = () => {
               <label className="block text-xs font-semibold text-ink-secondary mb-1">
                 {t(
                   "mill.correctionRequest.customOpLabel",
-                  "Nhập chính xác mã công đoạn đã ghi sổ cái (Operation ID) *"
+                  "Nhập chính xác mã công đoạn đã ghi sổ cái (Operation ID) *",
                 )}
               </label>
               <div className="relative">
@@ -405,7 +425,7 @@ export const CorrectionRequestPage: React.FC = () => {
                   onChange={(e) => setCustomOpId(e.target.value)}
                   placeholder={t(
                     "mill.correctionRequest.customOpPlaceholder",
-                    "Ví dụ: OP-2026-DRY-05 hoặc OP-2026-MILL-12"
+                    "Ví dụ: OP-2026-DRY-05 hoặc OP-2026-MILL-12",
                   )}
                   className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-ink-tertiary/30 focus:border-accent-primary focus:outline-none font-mono"
                 />
@@ -437,7 +457,10 @@ export const CorrectionRequestPage: React.FC = () => {
             </div>
             <div>
               <span className="text-ink-tertiary block">
-                {t("mill.correctionRequest.inputLotLabel", "Lô nguyên liệu vào:")}
+                {t(
+                  "mill.correctionRequest.inputLotLabel",
+                  "Lô nguyên liệu vào:",
+                )}
               </span>
               <span className="font-mono text-ink-secondary truncate block">
                 {activeOp.inputLot}
@@ -445,7 +468,10 @@ export const CorrectionRequestPage: React.FC = () => {
             </div>
             <div>
               <span className="text-ink-tertiary block">
-                {t("mill.correctionRequest.outputLotLabel", "Lô thành phẩm ra:")}
+                {t(
+                  "mill.correctionRequest.outputLotLabel",
+                  "Lô thành phẩm ra:",
+                )}
               </span>
               <span className="font-mono text-ink-secondary truncate block">
                 {activeOp.outputLot}
@@ -461,13 +487,19 @@ export const CorrectionRequestPage: React.FC = () => {
               2
             </span>
             <h2 className="font-semibold text-sm sm:text-base text-ink-primary">
-              {t("mill.correctionRequest.step2Title", "Phân loại sai lệch & Căn cứ kỹ thuật")}
+              {t(
+                "mill.correctionRequest.step2Title",
+                "Phân loại sai lệch & Căn cứ kỹ thuật",
+              )}
             </h2>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-ink-secondary mb-2">
-              {t("mill.correctionRequest.errorCategoryLabel", "Nhóm nguyên nhân sai sót *")}
+              {t(
+                "mill.correctionRequest.errorCategoryLabel",
+                "Nhóm nguyên nhân sai sót *",
+              )}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {ERROR_CATEGORIES.map((cat) => {
@@ -497,7 +529,10 @@ export const CorrectionRequestPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-ink-secondary mb-1">
-              {t("mill.correctionRequest.summaryLabel", "Tóm tắt nội dung yêu cầu sửa đổi *")}
+              {t(
+                "mill.correctionRequest.summaryLabel",
+                "Tóm tắt nội dung yêu cầu sửa đổi *",
+              )}
             </label>
             <input
               type="text"
@@ -506,7 +541,7 @@ export const CorrectionRequestPage: React.FC = () => {
               onChange={(e) => setSummary(e.target.value)}
               placeholder={t(
                 "mill.correctionRequest.summaryPlaceholder",
-                "VD: Điều chỉnh hao hụt sấy do sai số đo ẩm ban đầu"
+                "VD: Điều chỉnh hao hụt sấy do sai số đo ẩm ban đầu",
               )}
               className="w-full px-3 py-2 text-sm rounded-lg border border-ink-tertiary/30 focus:border-accent-primary focus:outline-none"
             />
@@ -516,7 +551,7 @@ export const CorrectionRequestPage: React.FC = () => {
             <label className="block text-xs font-semibold text-ink-secondary mb-1">
               {t(
                 "mill.correctionRequest.detailedReasonLabel",
-                "Mô tả chi tiết nguyên nhân kỹ thuật & phương án giải quyết *"
+                "Mô tả chi tiết nguyên nhân kỹ thuật & phương án giải quyết *",
               )}
             </label>
             <textarea
@@ -526,7 +561,7 @@ export const CorrectionRequestPage: React.FC = () => {
               onChange={(e) => setDetailedReason(e.target.value)}
               placeholder={t(
                 "mill.correctionRequest.detailedReasonPlaceholder",
-                "Nêu rõ thời điểm phát hiện, số liệu cân thực tế đối chiếu, người làm chứng hoặc sự cố thiết bị..."
+                "Nêu rõ thời điểm phát hiện, số liệu cân thực tế đối chiếu, người làm chứng hoặc sự cố thiết bị...",
               )}
               className="w-full px-3 py-2 text-sm rounded-lg border border-ink-tertiary/30 focus:border-accent-primary focus:outline-none"
             />
@@ -543,7 +578,7 @@ export const CorrectionRequestPage: React.FC = () => {
               <h2 className="font-semibold text-sm sm:text-base text-ink-primary">
                 {t(
                   "mill.correctionRequest.step3Title",
-                  "Bảng đề xuất bút toán bù điều chỉnh (Delta Mass kg)"
+                  "Bảng đề xuất bút toán bù điều chỉnh (Delta Mass kg)",
                 )}
               </h2>
             </div>
@@ -560,7 +595,7 @@ export const CorrectionRequestPage: React.FC = () => {
           <p className="text-xs text-ink-secondary">
             {t(
               "mill.correctionRequest.step3Subtitle",
-              "Nhập chênh lệch khối lượng (+ hoặc - kg) cần ghi nhận bù vào từng lô hàng liên quan theo luật bảo toàn cân bằng khối lượng."
+              "Nhập chênh lệch khối lượng (+ hoặc - kg) cần ghi nhận bù vào từng lô hàng liên quan theo luật bảo toàn cân bằng khối lượng.",
             )}
           </p>
 
@@ -568,14 +603,33 @@ export const CorrectionRequestPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay text-ink-secondary border-b border-ink-tertiary/20">
                 <tr>
-                  <th className="py-2.5 px-3">{t("mill.correctionRequest.colLotCode", "Mã lô hàng")}</th>
-                  <th className="py-2.5 px-3">{t("mill.correctionRequest.colLotName", "Mô tả lô")}</th>
-                  <th className="py-2.5 px-3 text-right">{t("mill.correctionRequest.colOriginalMass", "Khối lượng gốc")}</th>
-                  <th className="py-2.5 px-3 text-right">
-                    {t("mill.correctionRequest.colDeltaMass", "Chênh lệch bù (Delta kg)")}
+                  <th className="py-2.5 px-3">
+                    {t("mill.correctionRequest.colLotCode", "Mã lô hàng")}
                   </th>
-                  <th className="py-2.5 px-3 text-right">{t("mill.correctionRequest.colAfterMass", "Khối lượng sau bù")}</th>
-                  <th className="py-2.5 px-3 text-center">{t("common.action", "Xóa")}</th>
+                  <th className="py-2.5 px-3">
+                    {t("mill.correctionRequest.colLotName", "Mô tả lô")}
+                  </th>
+                  <th className="py-2.5 px-3 text-right">
+                    {t(
+                      "mill.correctionRequest.colOriginalMass",
+                      "Khối lượng gốc",
+                    )}
+                  </th>
+                  <th className="py-2.5 px-3 text-right">
+                    {t(
+                      "mill.correctionRequest.colDeltaMass",
+                      "Chênh lệch bù (Delta kg)",
+                    )}
+                  </th>
+                  <th className="py-2.5 px-3 text-right">
+                    {t(
+                      "mill.correctionRequest.colAfterMass",
+                      "Khối lượng sau bù",
+                    )}
+                  </th>
+                  <th className="py-2.5 px-3 text-center">
+                    {t("common.action", "Xóa")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/15">
@@ -638,7 +692,10 @@ export const CorrectionRequestPage: React.FC = () => {
               4
             </span>
             <h2 className="font-semibold text-sm sm:text-base text-ink-primary">
-              {t("mill.correctionRequest.step4Title", "Căn cứ chứng từ & Chữ ký người lập")}
+              {t(
+                "mill.correctionRequest.step4Title",
+                "Căn cứ chứng từ & Chữ ký người lập",
+              )}
             </h2>
           </div>
 
@@ -647,7 +704,7 @@ export const CorrectionRequestPage: React.FC = () => {
               <label className="block text-xs font-semibold text-ink-secondary mb-1">
                 {t(
                   "mill.correctionRequest.evidenceDocLabel",
-                  "Số biên bản kỹ thuật / Phiếu KCS kiểm tra lại *"
+                  "Số biên bản kỹ thuật / Phiếu KCS kiểm tra lại *",
                 )}
               </label>
               <input
@@ -664,7 +721,7 @@ export const CorrectionRequestPage: React.FC = () => {
               <label className="block text-xs font-semibold text-ink-secondary mb-1">
                 {t(
                   "mill.correctionRequest.evidenceFileLabel",
-                  "File tài liệu bằng chứng đính kèm"
+                  "File tài liệu bằng chứng đính kèm",
                 )}
               </label>
               <input
@@ -673,7 +730,7 @@ export const CorrectionRequestPage: React.FC = () => {
                 onChange={(e) => setEvidenceFile(e.target.value)}
                 placeholder={t(
                   "mill.correctionRequest.evidenceFilePlaceholder",
-                  "Tên tệp biên bản đính kèm..."
+                  "Tên tệp biên bản đính kèm...",
                 )}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-ink-tertiary/30 focus:border-accent-primary focus:outline-none font-mono"
               />
@@ -683,7 +740,7 @@ export const CorrectionRequestPage: React.FC = () => {
               <label className="block text-xs font-semibold text-ink-secondary mb-1">
                 {t(
                   "mill.correctionRequest.requesterLabel",
-                  "Người lập yêu cầu (Hạch toán viên)"
+                  "Người lập yêu cầu (Hạch toán viên)",
                 )}
               </label>
               <input
@@ -709,15 +766,20 @@ export const CorrectionRequestPage: React.FC = () => {
         </div>
 
         {/* Policy Notice Box */}
-        <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-200 text-xs space-y-1.5">
+        <div className="p-4 rounded-xl bg-functional-stale-bg border border-functional-stale-border/40 text-accent-warning text-xs space-y-1.5">
           <div className="flex items-center gap-2 font-semibold">
-            <ShieldCheck size={16} className="text-amber-600" />
-            <span>{t("mill.correctionRequest.internalControlRule", "Quy tắc kiểm soát nội bộ:")}</span>
+            <ShieldCheck size={16} className="text-accent-warning" />
+            <span>
+              {t(
+                "mill.correctionRequest.internalControlRule",
+                "Quy tắc kiểm soát nội bộ:",
+              )}
+            </span>
           </div>
           <p className="leading-relaxed">
             {t(
               "mill.correctionRequest.internalControlDesc",
-              "Yêu cầu sửa đổi này sẽ được chuyển ngay vào danh mục chờ đối soát của Quản lý nhà máy (Mill Manager). Chỉ khi Quản lý ký xác nhận, hệ thống mới phát hành giao dịch bút toán bù vào sổ cái phân tán."
+              "Yêu cầu sửa đổi này sẽ được chuyển ngay vào danh mục chờ đối soát của Quản lý nhà máy (Mill Manager). Chỉ khi Quản lý ký xác nhận, hệ thống mới phát hành giao dịch bút toán bù vào sổ cái phân tán.",
             )}
           </p>
         </div>
@@ -738,10 +800,17 @@ export const CorrectionRequestPage: React.FC = () => {
             className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {isSubmitting ? (
-              <span>{t("mill.correctionRequest.submitting", "Đang gửi yêu cầu...")}</span>
+              <span>
+                {t("mill.correctionRequest.submitting", "Đang gửi yêu cầu...")}
+              </span>
             ) : (
               <>
-                <span>{t("mill.correctionRequest.submitButton", "Gửi yêu cầu sửa bước chế biến")}</span>
+                <span>
+                  {t(
+                    "mill.correctionRequest.submitButton",
+                    "Gửi yêu cầu sửa bước chế biến",
+                  )}
+                </span>
                 <ArrowRight size={16} weight="bold" />
               </>
             )}

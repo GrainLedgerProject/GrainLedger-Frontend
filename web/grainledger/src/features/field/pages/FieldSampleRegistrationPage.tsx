@@ -285,7 +285,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -352,7 +352,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                     <span>{sample.code || "MÃ-MẪU-MỚI"}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-ink-secondary mt-1 font-mono">
-                    <ShieldCheck size={14} className="text-emerald-500" />
+                    <ShieldCheck size={14} className="text-accent-primary" />
                     <span>
                       Niêm chì: <strong>{sample.sealCode || "CHƯA GẮN"}</strong>
                     </span>
@@ -372,7 +372,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                     </div>
                   )}
                   {sample.laboratoryName && (
-                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px] pt-1 border-t border-ink-tertiary/10">
+                    <div className="flex items-center gap-1 text-accent-primary text-[11px] pt-1 border-t border-ink-tertiary/10">
                       <Truck size={12} />
                       <span>{sample.laboratoryName}</span>
                     </div>

@@ -84,13 +84,13 @@ export const OfflineSyncQueuePage: React.FC = () => {
         </button>
       </header>
       <section
-        className={`p-4 rounded-2xl border flex items-center gap-3 ${isOnline ? "bg-emerald-50/70 dark:bg-emerald-950/30 border-accent-primary/25" : "bg-amber-50 dark:bg-amber-950/25 border-amber-500/30"}`}
+        className={`p-4 rounded-2xl border flex items-center gap-3 ${isOnline ? "bg-functional-balanced-bg border-accent-primary/25" : "bg-functional-stale-bg border-functional-stale-border/40"}`}
         role="status"
       >
         {isOnline ? (
           <CloudCheck size={24} className="text-accent-primary" />
         ) : (
-          <CloudSlash size={24} className="text-amber-600" />
+          <CloudSlash size={24} className="text-accent-warning" />
         )}
         <div className="text-xs">
           <p className="font-bold text-ink-primary">
@@ -111,8 +111,8 @@ export const OfflineSyncQueuePage: React.FC = () => {
           <span className="font-semibold">{summary}</span>
         </div>
       )}
-      <section className="rounded-2xl overflow-hidden border border-ink-tertiary/20 bg-surface-base shadow-xs">
-        <div className="px-5 py-3.5 border-b border-ink-tertiary/15 flex justify-between items-center">
+      <section className="rounded-2xl overflow-hidden border dark:border-surface-overlay border-ink-tertiary/20 bg-surface-base shadow-xs">
+        <div className="dark:bg-surface-overlay bg-surface-raised px-5 py-3.5 border-b dark:border-surface-overlay border-ink-tertiary/15 flex justify-between items-center">
           <h2 className="font-semibold text-sm text-ink-primary">
             Phiếu chờ đồng bộ
           </h2>
@@ -125,7 +125,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
             <GrainLoader label="Đang mở hàng đợi trên thiết bị…" />
           </div>
         ) : records.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="dark:bg-surface-raised py-16 text-center">
             <CheckCircle
               size={36}
               weight="fill"
@@ -152,7 +152,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
                       <p className="font-semibold text-sm text-ink-primary">
                         Phiếu thu mua lúa tươi
                       </p>
-                      <span className="shrink-0 px-2 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
+                      <span className="shrink-0 px-2 py-1 rounded-full bg-accent-warning/10 text-accent-warning text-[10px] font-bold">
                         CHỜ GỬI
                       </span>
                     </div>
@@ -164,7 +164,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
                       {new Date(record.capturedAt).toLocaleString("vi-VN")}
                     </p>
                     {record.lastError && (
-                      <p className="text-[11px] mt-2 text-amber-700 dark:text-amber-400 flex gap-1.5">
+                      <p className="text-[11px] mt-2 text-accent-warning flex gap-1.5">
                         <WarningCircle size={14} className="shrink-0" />
                         {record.lastError}
                       </p>

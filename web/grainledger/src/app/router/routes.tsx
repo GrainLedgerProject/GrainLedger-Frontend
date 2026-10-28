@@ -218,16 +218,14 @@ export const router = createBrowserRouter(
         </L>
       ),
     },
-    // {
-    //   path: "/sign-in",
-    //   element: (
-    //     <div className="min-h-screen bg-parchment-grain flex flex-col justify-center items-center">
-    //       <L>
-    //         <SignInPage />
-    //       </L>
-    //     </div>
-    //   ),
-    // },
+    {
+      path: "/sign-in",
+      element: (
+        <L>
+          <SignInPage />
+        </L>
+      ),
+    },
     {
       path: "/invite/:token",
       element: (
@@ -837,5 +835,12 @@ export const router = createBrowserRouter(
       element: <Navigate to="/home" replace />,
     },
   ],
-  { basename: import.meta.env.BASE_URL },
+  {
+    basename:
+      import.meta.env.BASE_URL &&
+      import.meta.env.BASE_URL !== "./" &&
+      import.meta.env.BASE_URL !== "."
+        ? import.meta.env.BASE_URL
+        : "/",
+  },
 );

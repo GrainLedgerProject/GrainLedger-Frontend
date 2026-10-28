@@ -12,7 +12,7 @@ export const AppleNavbar: React.FC = () => {
   const { theme, toggleTheme, language, setLanguage } = useUiStore();
 
   return (
-    <header className="sticky top-0 z-50 transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-black/75 border-b border-black/[0.06] dark:border-white/[0.08] shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+    <header className="sticky top-0 z-50 transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-black/75 border-b border-ink-tertiary/20 dark:border-surface-overlay shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
         {/* Logo & Platform Tag */}
         <Link
@@ -29,7 +29,7 @@ export const AppleNavbar: React.FC = () => {
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-xs font-medium text-ink-secondary dark:text-ink-tertiary">
+        <nav className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-xs font-medium text-ink-secondary text-ink-tertiary">
           <a
             href="#problem"
             className="px-4 py-2 rounded-full hover:text-ink-primary dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all duration-200"
@@ -68,7 +68,7 @@ export const AppleNavbar: React.FC = () => {
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-ink-secondary dark:text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all duration-200 focus:outline-none"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-ink-secondary text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all duration-200 focus:outline-none"
             aria-label="Toggle theme"
           >
             {theme === "dark" ? (
@@ -82,7 +82,7 @@ export const AppleNavbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setLanguage(language === "vi" ? "en" : "vi")}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-ink-primary dark:text-white active:scale-95 transition-all duration-200 focus:outline-none"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-ink-primary active:scale-95 transition-all duration-200 focus:outline-none"
           >
             <Globe size={14} weight="bold" />
             <span className="font-mono uppercase">{language}</span>
@@ -92,7 +92,7 @@ export const AppleNavbar: React.FC = () => {
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Link
               to={isAuthenticated ? "/home" : "/sign-in"}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold bg-[#1B2420] dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-white/90 shadow-sm hover:shadow-md transition-all duration-200"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold bg-ink-primary text-ink-inverse hover:bg-black dark:hover:bg-white/90 shadow-sm hover:shadow-md transition-all duration-200"
             >
               <span>
                 {isAuthenticated

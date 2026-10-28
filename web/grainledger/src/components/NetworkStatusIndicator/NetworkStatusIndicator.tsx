@@ -12,14 +12,12 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   className = "",
   showSyncLink = true,
 }) => {
-  const {
-    isOnline,
-    isBackendConnected,
-    hasInitialChecked,
-    isCheckingConnection,
-    pendingOfflineCount,
-    checkConnection,
-  } = useUiStore();
+  const isOnline = useUiStore((s) => s.isOnline);
+  const isBackendConnected = useUiStore((s) => s.isBackendConnected);
+  const hasInitialChecked = useUiStore((s) => s.hasInitialChecked);
+  const isCheckingConnection = useUiStore((s) => s.isCheckingConnection);
+  const pendingOfflineCount = useUiStore((s) => s.pendingOfflineCount);
+  const checkConnection = useUiStore((s) => s.checkConnection);
 
   useEffect(() => {
     // Initial verification on mount (first visit / F5)
@@ -63,9 +61,9 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
       className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors select-none ${
         isConnected
           ? pendingOfflineCount > 0
-            ? "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-400"
-            : "bg-emerald-500/10 text-accent-primary border-accent-primary/20 dark:bg-emerald-950/30 dark:text-accent-primary"
-          : "bg-red-500/10 text-accent-danger border-accent-danger/30 dark:bg-red-950/30 dark:text-accent-danger"
+            ? "bg-accent-warning/10 text-accent-warning border-functional-stale-border/40"
+            : "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
+          : "bg-accent-danger/10 text-accent-danger border-accent-danger/30"
       } ${className}`}
       role="status"
       title={
@@ -78,7 +76,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
         {isConnected && (
           <span
             className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              pendingOfflineCount > 0 ? "bg-amber-400" : "bg-emerald-400"
+              pendingOfflineCount > 0 ? "bg-accent-warning" : "bg-accent-primary"
             }`}
           />
         )}
@@ -87,7 +85,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
             !isConnected
               ? "bg-accent-danger"
               : pendingOfflineCount > 0
-                ? "bg-amber-500"
+                ? "bg-functional-stale-bg0"
                 : "bg-accent-primary"
           }`}
         />

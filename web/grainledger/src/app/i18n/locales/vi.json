@@ -809,7 +809,7 @@
     "collapse": "Thu gọn",
     "expand": "Mở rộng",
     "workspace": "Bàn làm việc",
-    "tenantNotice": "Phạm vi dữ liệu cách ly theo chuẩn ISO 22095 (Data Isolated Tenant)",
+    "tenantNotice": "Phạm vi dữ liệu cách ly theo chuẩn ISO 22095",
     "isoComplianceFooter": "Tuân thủ mô hình Mass Balance ISO 22095:2020",
     "versionFooter": "Phiên bản v1.0.0-dev",
     "colorIndicator": "Mã màu đại diện",

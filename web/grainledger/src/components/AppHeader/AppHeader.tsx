@@ -64,7 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 backdrop-blur-xl bg-white/70 dark:bg-black/70 border-b border-black/[0.06] dark:border-white/[0.08] px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+      <header className="h-16 backdrop-blur-xl bg-white/70 dark:bg-black/70 border-b border-ink-tertiary/20 dark:border-surface-overlay px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
         {/* Left: Dynamic Title & Breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex flex-col justify-center">
@@ -87,7 +87,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         {bc.label}
                       </Link>
                     ) : (
-                      <span className="text-ink-primary dark:text-white font-medium">
+                      <span className="text-ink-primary font-medium">
                         {bc.label}
                       </span>
                     )}
@@ -103,7 +103,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center justify-between px-4 py-2 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-xs text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-all duration-200 shadow-xs focus:outline-none"
+            className="w-full flex items-center justify-between px-4 py-2 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-ink-tertiary/20 text-xs text-ink-tertiary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-all duration-200 shadow-xs focus:outline-none"
             aria-label={t(
               "header.searchTitle",
               "Tìm kiếm trong hệ thống (Cmd/Ctrl+K)",
@@ -118,7 +118,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 )}
               </span>
             </div>
-            <kbd className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-black/[0.08] dark:border-white/[0.12] text-ink-secondary dark:text-ink-tertiary shadow-2xs">
+            <kbd className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-ink-tertiary/20 dark:border-white/[0.12] text-ink-secondary text-ink-tertiary shadow-2xs">
               ⌘K
             </kbd>
           </button>
@@ -162,13 +162,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96, y: 8 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  className="absolute right-0 mt-2 w-80 bg-white/90 dark:bg-[#121215]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.1] rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-2.5"
+                  className="absolute right-0 mt-2 w-80 bg-surface-base/90 backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-2.5"
                 >
-                  <div className="flex items-center justify-between pb-2.5 border-b border-black/[0.06] dark:border-white/[0.08] font-bold text-ink-primary dark:text-white">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-ink-tertiary/20 dark:border-surface-overlay font-bold text-ink-primary">
                     <span>
                       {t("header.notificationsTitle", "Cảnh báo & Duyệt")}
                     </span>
-                    <span className="font-mono text-[10px] bg-red-500/10 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-full">
+                    <span className="font-mono text-[10px] bg-accent-danger/10 text-accent-danger font-bold px-2 py-0.5 rounded-full">
                       {t("header.newCount", "2 mới")}
                     </span>
                   </div>
@@ -199,9 +199,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <Link
                       to="/export/plans/pending"
                       onClick={() => setNotificationsOpen(false)}
-                      className="block p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/40 hover:border-accent-warning transition-colors"
+                      className="block p-2 rounded bg-functional-stale-bg border border-functional-stale-border/40 hover:border-accent-warning transition-colors"
                     >
-                      <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-200">
+                      <div className="flex items-center gap-1.5 font-bold text-accent-warning">
                         <WarningCircle size={14} weight="fill" />
                         <span>
                           {t(
@@ -269,13 +269,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <button
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2 p-1.5 pl-2 pr-3 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.08] border border-black/[0.08] dark:border-white/[0.1] active:scale-95 transition-all"
+              className="flex items-center gap-2 p-1.5 pl-2 pr-3 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.08] border border-ink-tertiary/20 active:scale-95 transition-all"
               aria-label={t("header.userMenu", "Menu hồ sơ người dùng")}
             >
-              <div className="w-7 h-7 rounded-full bg-[#1B2420] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="w-7 h-7 rounded-full bg-ink-primary text-ink-inverse flex items-center justify-center font-bold text-xs shadow-xs">
                 {getInitials(user?.displayName)}
               </div>
-              <span className="hidden sm:block text-xs font-semibold text-ink-primary dark:text-white max-w-[120px] truncate">
+              <span className="hidden sm:block text-xs font-semibold text-ink-primary max-w-[120px] truncate">
                 {user?.displayName || t("header.notLoggedIn", "Người dùng")}
               </span>
               <CaretDown
@@ -292,11 +292,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96, y: 8 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  className="absolute right-0 mt-2 w-72 bg-white/90 dark:bg-[#121215]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.1] rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-3"
+                  className="absolute right-0 mt-2 w-72 bg-surface-base/90 backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-3"
                 >
                   {/* User Profile Header in Menu */}
-                  <div className="space-y-1.5 pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
-                    <p className="font-bold text-sm text-ink-primary dark:text-white truncate">
+                  <div className="space-y-1.5 pb-3 border-b border-ink-tertiary/20 dark:border-surface-overlay">
+                    <p className="font-bold text-sm text-ink-primary truncate">
                       {user?.displayName ||
                         t("header.notLoggedIn", "Chưa đăng nhập")}
                     </p>
@@ -307,7 +307,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       {user && <RoleChip role={user.role} size="sm" />}
                       {user && isCustomerSide(user.role) && (
-                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
                           {user.organizationName || "Rice"}
                         </span>
                       )}
@@ -319,12 +319,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <Link
                       to="/settings/profile"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary dark:text-white font-medium transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
                     >
                       <User
                         size={16}
                         weight="bold"
-                        className="text-ink-secondary dark:text-ink-tertiary"
+                        className="text-ink-secondary text-ink-tertiary"
                       />
                       <span>{t("nav.profile", "Thông tin cá nhân")}</span>
                     </Link>
@@ -332,25 +332,25 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <Link
                       to="/settings/security"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary dark:text-white font-medium transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
                     >
                       <LockSimple
                         size={16}
                         weight="bold"
-                        className="text-ink-secondary dark:text-ink-tertiary"
+                        className="text-ink-secondary text-ink-tertiary"
                       />
                       <span>{t("nav.security", "Bảo mật tài khoản")}</span>
                     </Link>
                   </div>
 
-                  <div className="border-t border-black/[0.06] dark:border-white/[0.08] pt-2">
+                  <div className="border-t border-ink-tertiary/20 dark:border-surface-overlay pt-2">
                     <button
                       type="button"
                       onClick={() => {
                         setIsUserMenuOpen(false);
                         setIsLogoutModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-red-500/10 font-semibold transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
                     >
                       <SignOut size={16} weight="bold" />
                       <span>{t("nav.signOut", "Đăng xuất")}</span>

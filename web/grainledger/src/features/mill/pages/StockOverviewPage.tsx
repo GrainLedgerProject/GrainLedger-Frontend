@@ -151,32 +151,32 @@ export const StockOverviewPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 space-y-1">
-          <span className="text-[11px] font-semibold text-[#2F6B3A] dark:text-emerald-400 uppercase tracking-wider">
+        <div className="p-4 rounded-xl bg-functional-balanced-bg border border-accent-primary/20 space-y-1">
+          <span className="text-[11px] font-semibold text-accent-primary uppercase tracking-wider">
             {t("mill.stock.kpiAvailableTitle", "Khả dụng xuất bán / Phối trộn")}
           </span>
-          <div className="text-2xl font-mono font-bold text-[#2F6B3A] dark:text-emerald-400">
+          <div className="text-2xl font-mono font-bold text-accent-primary">
             {(totalQuantity * 0.85).toLocaleString("vi-VN", {
               maximumFractionDigits: 0,
             })}{" "}
             <span className="text-sm font-normal">kg</span>
           </div>
-          <span className="text-[10px] text-[#2F6B3A]/80">
+          <span className="text-[10px] text-accent-primary/80">
             {t("mill.stock.kpiAvailableDesc", "Sẵn sàng lập kế hoạch đóng bao")}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 space-y-1">
-          <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+        <div className="p-4 rounded-xl bg-functional-stale-bg border border-accent-warning/20 space-y-1">
+          <span className="text-[11px] font-semibold text-accent-warning uppercase tracking-wider">
             {t("mill.stock.kpiReservedTitle", "Đang bảo lưu (Reserved)")}
           </span>
-          <div className="text-2xl font-mono font-bold text-amber-800 dark:text-amber-300">
+          <div className="text-2xl font-mono font-bold text-accent-warning">
             {(totalQuantity * 0.12).toLocaleString("vi-VN", {
               maximumFractionDigits: 0,
             })}{" "}
             <span className="text-sm font-normal">kg</span>
           </div>
-          <span className="text-[10px] text-amber-700/80">
+          <span className="text-[10px] text-accent-warning/80">
             {t(
               "mill.stock.kpiReservedDesc",
               "Đã gán vào kế hoạch đóng container",
@@ -184,7 +184,7 @@ export const StockOverviewPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-500/20 space-y-1">
+        <div className="p-4 rounded-xl bg-functional-hold-bg border border-accent-danger/20 space-y-1">
           <span className="text-[11px] font-semibold text-accent-danger uppercase tracking-wider">
             {t("mill.stock.kpiHoldTitle", "Phong toả cách ly (HOLD)")}
           </span>
@@ -526,7 +526,7 @@ export const StockOverviewPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 text-xs text-[#2F6B3A] dark:text-emerald-300 space-y-1">
+              <div className="p-3 rounded-lg bg-functional-balanced-bg border border-accent-primary/20 text-xs text-accent-primary space-y-1">
                 <span className="font-bold flex items-center gap-1.5">
                   <ShieldCheck size={16} />
                   <span>

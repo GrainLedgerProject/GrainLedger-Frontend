@@ -27,8 +27,8 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
   onCancel,
 }) => {
   const confirmBtnStyles = {
-    danger: 'bg-accent-danger hover:bg-red-700 text-white',
-    warning: 'bg-accent-warning hover:bg-amber-500 text-ink-primary',
+    danger: 'bg-accent-danger hover:opacity-90 text-white',
+    warning: 'bg-accent-warning hover:opacity-90 text-ink-primary',
     primary: 'bg-accent-primary hover:bg-accent-primary-dim text-white',
   }[variant];
 
@@ -57,10 +57,10 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
               <div
                 className={`p-2.5 rounded-full shrink-0 ${
                   variant === 'danger'
-                    ? 'bg-red-100 text-accent-danger dark:bg-red-950/50'
+                    ? 'bg-functional-hold-bg text-accent-danger'
                     : variant === 'warning'
-                    ? 'bg-amber-100 text-accent-warning dark:bg-amber-950/50'
-                    : 'bg-emerald-100 text-accent-primary dark:bg-emerald-950/50'
+                    ? 'bg-functional-stale-bg text-accent-warning'
+                    : 'bg-functional-balanced-bg text-accent-primary'
                 }`}
               >
                 <WarningCircle size={24} weight="fill" />
@@ -76,7 +76,7 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({
                   </p>
                 )}
                 {warningNote && (
-                  <div className="p-2.5 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="p-2.5 rounded bg-functional-stale-bg border border-functional-stale-border/40 text-xs text-accent-warning">
                     <strong>Lưu ý:</strong> {warningNote}
                   </div>
                 )}

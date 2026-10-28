@@ -127,7 +127,10 @@ export const MrlComplianceCheckPage: React.FC = () => {
       console.error(err);
       setError(
         (err as Error).message ||
-          t("compliance.mrlCheck.errLoad", "Không thể tải dữ liệu kiểm định phòng lab.")
+          t(
+            "compliance.mrlCheck.errLoad",
+            "Không thể tải dữ liệu kiểm định phòng lab.",
+          ),
       );
     } finally {
       setLoading(false);
@@ -137,7 +140,12 @@ export const MrlComplianceCheckPage: React.FC = () => {
   const handleCreateSample = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sampleForm.sampleCode || !sampleForm.lotId) {
-      alert(t("compliance.mrlCheck.alertFillRequired", "Vui lòng nhập đầy đủ mã mẫu và mã lô."));
+      alert(
+        t(
+          "compliance.mrlCheck.alertFillRequired",
+          "Vui lòng nhập đầy đủ mã mẫu và mã lô.",
+        ),
+      );
       return;
     }
 
@@ -161,14 +169,19 @@ export const MrlComplianceCheckPage: React.FC = () => {
       samplingDate: new Date().toISOString().split("T")[0],
       certificateRef: "",
     });
-    alert(t("compliance.mrlCheck.alertCreateSuccess", "Đã gửi đăng ký mẫu xét nghiệm thành công."));
+    alert(
+      t(
+        "compliance.mrlCheck.alertCreateSuccess",
+        "Đã gửi đăng ký mẫu xét nghiệm thành công.",
+      ),
+    );
   };
 
   const getStatusBadge = (status: LabSample["status"]) => {
     switch (status) {
       case "COMPLIANT":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-balanced-bg text-accent-primary border border-functional-balanced-border/40 inline-flex items-center gap-1">
             <CheckCircle size={14} weight="fill" />
             {t("compliance.mrlCheck.statusCompliant", "Đạt chuẩn xuất khẩu")}
           </span>
@@ -182,13 +195,13 @@ export const MrlComplianceCheckPage: React.FC = () => {
         );
       case "PENDING_LAB":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
             {t("compliance.mrlCheck.statusPending", "Đang chờ kết quả lab")}
           </span>
         );
       case "SUPERSEDED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised text-ink-secondary border border-surface-overlay">
             {t("compliance.mrlCheck.statusSuperseded", "Đã bị thay thế")}
           </span>
         );
@@ -200,16 +213,16 @@ export const MrlComplianceCheckPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-slate-900 mt-1">
+          <h1 className="text-2xl font-bold  text-ink-primary mt-1">
             {t(
               "compliance.mrlCheck.pageTitle",
-              "Kết Quả Thử Nghiệm MRL & Thẩm Định CoA (Lab Test Results & MRL Compliance)"
+              "Kết Quả Thử Nghiệm MRL & Thẩm Định CoA (Lab Test Results & MRL Compliance)",
             )}
           </h1>
-          <p className="text-sm text-slate-700 mt-0.5">
+          <p className="text-sm text-ink-secondary mt-0.5">
             {t(
               "compliance.mrlCheck.pageSubtitle",
-              "Thẩm định phiếu kết quả thử nghiệm (Certificate of Analysis) từ phòng lab ISO/IEC 17025, đối chiếu nồng độ hoạt chất với ngưỡng MRL xuất khẩu và kích hoạt lệnh HOLD nếu phát hiện dư lượng vượt ngưỡng."
+              "Thẩm định phiếu kết quả thử nghiệm (Certificate of Analysis) từ phòng lab ISO/IEC 17025, đối chiếu nồng độ hoạt chất với ngưỡng MRL xuất khẩu và kích hoạt lệnh HOLD nếu phát hiện dư lượng vượt ngưỡng.",
             )}
           </p>
         </div>
@@ -217,10 +230,12 @@ export const MrlComplianceCheckPage: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0">
           <Link
             to="/compliance/lab-samples/new"
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+            className="px-3.5 py-2 bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
           >
             <Plus size={15} weight="bold" />
-            <span>{t("compliance.mrlCheck.btnRegisterSample", "Đăng ký mẫu mới")}</span>
+            <span>
+              {t("compliance.mrlCheck.btnRegisterSample", "Đăng ký mẫu mới")}
+            </span>
           </Link>
         </div>
       </div>
@@ -235,42 +250,49 @@ export const MrlComplianceCheckPage: React.FC = () => {
       )}
 
       {/* Safety Margin Banner */}
-      <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl text-emerald-950 text-xs flex items-center justify-between">
+      <div className="p-4 bg-functional-balanced-bg border border-functional-balanced-border/40 rounded-xl text-accent-primary text-xs flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldCheck
             size={24}
             weight="fill"
-            className="text-emerald-600 shrink-0"
+            className="text-accent-primary shrink-0"
           />
           <div>
-            <div className="font-semibold text-emerald-900">
-              {t("compliance.mrlCheck.safetyBannerTitle", "Chính sách Biên an toàn 20% đang kích hoạt (BR-07)")}
+            <div className="font-semibold text-accent-primary">
+              {t(
+                "compliance.mrlCheck.safetyBannerTitle",
+                "Chính sách Biên an toàn 20% đang kích hoạt (BR-07)",
+              )}
             </div>
-            <p className="text-emerald-800 mt-0.5">
+            <p className="text-accent-primary mt-0.5">
               {t(
                 "compliance.mrlCheck.safetyBannerDesc",
-                "Hệ thống tự động trừ 20% vào giới hạn MRL chính thức của thị trường đích để đảm bảo an toàn tuyệt đối khi kiểm định tại cảng nhập khẩu."
+                "Hệ thống tự động trừ 20% vào giới hạn MRL chính thức của thị trường đích để đảm bảo an toàn tuyệt đối khi kiểm định tại cảng nhập khẩu.",
               )}
             </p>
           </div>
         </div>
-        <div className="font-mono font-bold text-sm bg-white px-3 py-1.5 rounded-lg border border-emerald-300 text-emerald-700 shrink-0 shadow-xs">
+        <div className="font-mono font-bold text-sm bg-surface-base px-3 py-1.5 rounded-lg border border-functional-balanced-border/40 text-accent-primary shrink-0 shadow-xs">
           Safety Buffer: -20%
         </div>
       </div>
 
       {/* Samples Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+      <div className="bg-surface-base rounded-xl border border-surface-overlay shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-surface-overlay flex items-center justify-between">
+          <h2 className="font-semibold text-ink-primary text-sm flex items-center gap-2">
             <TestTube size={16} />
-            {t("compliance.mrlCheck.tableTitle", "Danh sách Mẫu Kiểm định Dư lượng ({{count}})", {
-              count: samples.length,
-            })}
+            {t(
+              "compliance.mrlCheck.tableTitle",
+              "Danh sách Mẫu Kiểm định Dư lượng ({{count}})",
+              {
+                count: samples.length,
+              },
+            )}
           </h2>
           <button
             onClick={fetchComplianceData}
-            className="text-xs text-slate-600 hover:text-emerald-700 flex items-center gap-1"
+            className="text-xs text-ink-secondary hover:text-accent-primary flex items-center gap-1"
           >
             <ClockCounterClockwise size={14} />
             {t("common.refresh", "Làm mới")}
@@ -278,44 +300,68 @@ export const MrlComplianceCheckPage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-slate-700 text-sm">
-            {t("compliance.mrlCheck.loadingSamples", "Đang tải danh sách mẫu...")}
+          <div className="p-12 text-center text-ink-secondary text-sm">
+            {t(
+              "compliance.mrlCheck.loadingSamples",
+              "Đang tải danh sách mẫu...",
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thSampleCode", "Mã kiểm định")}</th>
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thLotId", "Lô hàng mục tiêu")}</th>
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thLabName", "Đơn vị phân tích (Lab)")}</th>
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thSamplingDate", "Ngày lấy mẫu")}</th>
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thCoaRef", "Số chứng thư COA")}</th>
-                  <th className="py-3 px-4">{t("compliance.mrlCheck.thSafetyRating", "Đánh giá an toàn")}</th>
-                  <th className="py-3 px-4 text-right">{t("compliance.mrlCheck.thDetails", "Chi tiết")}</th>
+                <tr className="bg-surface-raised border-b border-surface-overlay text-ink-secondary font-semibold uppercase tracking-wider">
+                  <th className="py-3 px-4">
+                    {t("compliance.mrlCheck.thSampleCode", "Mã kiểm định")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("compliance.mrlCheck.thLotId", "Lô hàng mục tiêu")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t(
+                      "compliance.mrlCheck.thLabName",
+                      "Đơn vị phân tích (Lab)",
+                    )}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("compliance.mrlCheck.thSamplingDate", "Ngày lấy mẫu")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("compliance.mrlCheck.thCoaRef", "Số chứng thư COA")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t(
+                      "compliance.mrlCheck.thSafetyRating",
+                      "Đánh giá an toàn",
+                    )}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("compliance.mrlCheck.thDetails", "Chi tiết")}
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-surface-overlay">
                 {samples.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                  <tr key={s.id} className="hover:bg-surface-raised/80 transition">
+                    <td className="py-3 px-4 font-mono font-medium text-ink-primary">
                       {s.sampleCode}
                     </td>
-                    <td className="py-3 px-4 font-mono text-emerald-700 font-semibold">
+                    <td className="py-3 px-4 font-mono text-accent-primary font-semibold">
                       {s.lotId}
                     </td>
-                    <td className="py-3 px-4 text-slate-800">{s.labName}</td>
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-ink-primary">{s.labName}</td>
+                    <td className="py-3 px-4 text-ink-secondary">
                       {s.samplingDate}
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-700">
-                      {s.certificateRef || t("compliance.mrlCheck.notIssuedYet", "Chưa cấp")}
+                    <td className="py-3 px-4 font-mono text-ink-secondary">
+                      {s.certificateRef ||
+                        t("compliance.mrlCheck.notIssuedYet", "Chưa cấp")}
                     </td>
                     <td className="py-3 px-4">{getStatusBadge(s.status)}</td>
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => setSelectedSample(s)}
-                        className="px-2 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded font-medium transition"
+                        className="px-2 py-1 bg-surface-raised hover:bg-accent-primary/10 hover:text-accent-primary text-ink-secondary rounded font-medium transition"
                       >
                         {t("compliance.mrlCheck.btnViewMetrics", "Xem chỉ số")}
                       </button>
@@ -330,90 +376,113 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
       {/* Detail Modal (SC-24) */}
       {selectedSample && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-surface-overlay flex items-center justify-between bg-surface-raised">
               <div className="flex items-center gap-2">
-                <Flask size={20} className="text-emerald-600" />
-                <h3 className="font-bold text-slate-900">
-                  {t("compliance.mrlCheck.modalDetailTitle", "Chi tiết Kết quả Phân tích Phòng Lab")}
+                <Flask size={20} className="text-accent-primary" />
+                <h3 className="font-bold text-ink-primary">
+                  {t(
+                    "compliance.mrlCheck.modalDetailTitle",
+                    "Chi tiết Kết quả Phân tích Phòng Lab",
+                  )}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedSample(null)}
-                className="text-slate-700 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition"
+                className="text-ink-secondary hover:text-ink-secondary p-1 rounded-lg hover:bg-surface-overlay transition"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+              <div className="grid grid-cols-2 gap-4 bg-surface-raised p-4 rounded-lg border border-surface-overlay text-xs">
                 <div>
-                  <span className="text-slate-700 uppercase font-semibold">
+                  <span className="text-ink-secondary uppercase font-semibold">
                     {t("compliance.mrlCheck.modalSampleCode", "Mã mẫu:")}
                   </span>
-                  <p className="font-mono font-bold text-slate-900 text-sm mt-0.5">
+                  <p className="font-mono font-bold text-ink-primary text-sm mt-0.5">
                     {selectedSample.sampleCode}
                   </p>
                 </div>
                 <div>
-                  <span className="text-slate-700 uppercase font-semibold">
+                  <span className="text-ink-secondary uppercase font-semibold">
                     {t("compliance.mrlCheck.modalLotId", "Lô hàng:")}
                   </span>
-                  <p className="font-mono font-bold text-emerald-800 text-sm mt-0.5">
+                  <p className="font-mono font-bold text-accent-primary text-sm mt-0.5">
                     {selectedSample.lotId}
                   </p>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-slate-700 uppercase font-semibold">
+                  <span className="text-ink-secondary uppercase font-semibold">
                     {t("compliance.mrlCheck.modalLabName", "Phòng phân tích:")}
                   </span>
-                  <p className="font-medium text-slate-900 mt-0.5">
+                  <p className="font-medium text-ink-primary mt-0.5">
                     {selectedSample.labName}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-semibold text-slate-800 text-xs uppercase tracking-wider mb-2">
-                  {t("compliance.mrlCheck.substanceTableTitle", "Bảng định lượng hoạt chất (mg/kg ppm)")}
+                <h4 className="font-semibold text-ink-primary text-xs uppercase tracking-wider mb-2">
+                  {t(
+                    "compliance.mrlCheck.substanceTableTitle",
+                    "Bảng định lượng hoạt chất (mg/kg ppm)",
+                  )}
                 </h4>
                 {selectedSample.substancesTested.length === 0 ? (
-                  <div className="p-6 text-center text-slate-700 text-xs bg-slate-50 rounded-lg border border-slate-200">
-                    {t("compliance.mrlCheck.noSubstancesYet", "Chưa có số liệu nạp từ phòng xét nghiệm.")}
+                  <div className="p-6 text-center text-ink-secondary text-xs bg-surface-raised rounded-lg border border-surface-overlay">
+                    {t(
+                      "compliance.mrlCheck.noSubstancesYet",
+                      "Chưa có số liệu nạp từ phòng xét nghiệm.",
+                    )}
                   </div>
                 ) : (
-                  <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-left text-xs border border-surface-overlay rounded-lg overflow-hidden">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-700 font-semibold">
-                        <th className="p-2.5">{t("compliance.mrlCheck.thSubstance", "Hoạt chất")}</th>
-                        <th className="p-2.5 text-right">{t("compliance.mrlCheck.thMeasured", "Thực đo (mg/kg)")}</th>
-                        <th className="p-2.5 text-right">{t("compliance.mrlCheck.thLimit", "Giới hạn MRL")}</th>
-                        <th className="p-2.5 text-right">
-                          {t("compliance.mrlCheck.thSafetyMargin", "Biên an toàn (-20%)")}
+                      <tr className="bg-surface-raised text-ink-secondary font-semibold">
+                        <th className="p-2.5">
+                          {t("compliance.mrlCheck.thSubstance", "Hoạt chất")}
                         </th>
-                        <th className="p-2.5 text-center">{t("compliance.mrlCheck.thVerdict", "Kết luận")}</th>
+                        <th className="p-2.5 text-right">
+                          {t(
+                            "compliance.mrlCheck.thMeasured",
+                            "Thực đo (mg/kg)",
+                          )}
+                        </th>
+                        <th className="p-2.5 text-right">
+                          {t("compliance.mrlCheck.thLimit", "Giới hạn MRL")}
+                        </th>
+                        <th className="p-2.5 text-right">
+                          {t(
+                            "compliance.mrlCheck.thSafetyMargin",
+                            "Biên an toàn (-20%)",
+                          )}
+                        </th>
+                        <th className="p-2.5 text-center">
+                          {t("compliance.mrlCheck.thVerdict", "Kết luận")}
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className="divide-y divide-surface-overlay">
                       {selectedSample.substancesTested.map((sub, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2.5 font-medium text-slate-900">
+                        <tr key={idx} className="hover:bg-surface-raised">
+                          <td className="p-2.5 font-medium text-ink-primary">
                             {sub.substanceName}
                           </td>
                           <td className="p-2.5 text-right font-mono font-bold">
                             {sub.measuredValueMgKg.toFixed(4)}
                           </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
+                          <td className="p-2.5 text-right font-mono text-ink-secondary">
                             {sub.marketLimitMgKg.toFixed(4)}
                           </td>
-                          <td className="p-2.5 text-right font-mono text-emerald-700 font-medium">
+                          <td className="p-2.5 text-right font-mono text-accent-primary font-medium">
                             {sub.safeMarginMgKg.toFixed(4)}
                           </td>
                           <td className="p-2.5 text-center">
                             {sub.status === "PASS" ? (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-functional-balanced-bg text-accent-primary border border-functional-balanced-border/40">
                                 PASS
                               </span>
                             ) : (
@@ -435,17 +504,17 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   <span>
                     {t(
                       "compliance.mrlCheck.holdAlertDesc",
-                      "Lô hàng này đã vượt ngưỡng an toàn MRL! Quy tắc BR-15 yêu cầu phát lệnh HOLD khẩn cấp để ngăn chặn phối trộn hoặc xếp container xuất khẩu."
+                      "Lô hàng này đã vượt ngưỡng an toàn MRL! Quy tắc BR-15 yêu cầu phát lệnh HOLD khẩn cấp để ngăn chặn phối trộn hoặc xếp container xuất khẩu.",
                     )}
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 flex justify-end bg-slate-50">
+            <div className="p-4 border-t border-surface-overlay flex justify-end bg-surface-raised">
               <button
                 onClick={() => setSelectedSample(null)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-medium transition"
+                className="px-4 py-2 bg-surface-overlay hover:bg-surface-overlay text-ink-primary rounded-lg text-xs font-medium transition"
               >
                 {t("common.close", "Đóng")}
               </button>
@@ -456,18 +525,21 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
       {/* Add Sample Modal (SC-23) */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-surface-overlay flex items-center justify-between bg-surface-raised">
               <div className="flex items-center gap-2">
-                <Flask size={20} className="text-emerald-600" />
-                <h3 className="font-bold text-slate-900">
-                  {t("compliance.mrlCheck.addModalTitle", "Đăng ký Mẫu Xét nghiệm Phòng Lab")}
+                <Flask size={20} className="text-accent-primary" />
+                <h3 className="font-bold text-ink-primary">
+                  {t(
+                    "compliance.mrlCheck.addModalTitle",
+                    "Đăng ký Mẫu Xét nghiệm Phòng Lab",
+                  )}
                 </h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-700 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition"
+                className="text-ink-secondary hover:text-ink-secondary p-1 rounded-lg hover:bg-surface-overlay transition"
               >
                 <X size={18} />
               </button>
@@ -478,8 +550,11 @@ export const MrlComplianceCheckPage: React.FC = () => {
               className="p-6 space-y-4 text-sm"
             >
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  {t("compliance.mrlCheck.sealCodeLabel", "Mã niêm phong mẫu (Sample Seal Code) *")}
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
+                  {t(
+                    "compliance.mrlCheck.sealCodeLabel",
+                    "Mã niêm phong mẫu (Sample Seal Code) *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -489,13 +564,16 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   onChange={(e) =>
                     setSampleForm({ ...sampleForm, sampleCode: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm font-mono focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  {t("compliance.mrlCheck.lotIdLabel", "Mã Lô hàng đại diện (Lot ID) *")}
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
+                  {t(
+                    "compliance.mrlCheck.lotIdLabel",
+                    "Mã Lô hàng đại diện (Lot ID) *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -505,20 +583,23 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   onChange={(e) =>
                     setSampleForm({ ...sampleForm, lotId: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm font-mono focus:border-accent-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  {t("compliance.mrlCheck.isoLabLabel", "Đơn vị phòng kiểm nghiệm ISO 17025 *")}
+                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
+                  {t(
+                    "compliance.mrlCheck.isoLabLabel",
+                    "Đơn vị phòng kiểm nghiệm ISO 17025 *",
+                  )}
                 </label>
                 <select
                   value={sampleForm.labName}
                   onChange={(e) =>
                     setSampleForm({ ...sampleForm, labName: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none bg-white"
                 >
                   <option value="Viện Kiểm Nghiệm Vệ Sinh An Toàn Thực Phẩm (NIFC)">
                     Viện Kiểm Nghiệm An Toàn Thực Phẩm Quốc Gia (NIFC)
@@ -537,8 +618,11 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    {t("compliance.mrlCheck.samplingDateLabel", "Ngày lấy mẫu *")}
+                  <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
+                    {t(
+                      "compliance.mrlCheck.samplingDateLabel",
+                      "Ngày lấy mẫu *",
+                    )}
                   </label>
                   <input
                     type="date"
@@ -550,12 +634,15 @@ export const MrlComplianceCheckPage: React.FC = () => {
                         samplingDate: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    {t("compliance.mrlCheck.coaRefLabel", "Số phiếu tiếp nhận/COA")}
+                  <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
+                    {t(
+                      "compliance.mrlCheck.coaRefLabel",
+                      "Số phiếu tiếp nhận/COA",
+                    )}
                   </label>
                   <input
                     type="text"
@@ -567,22 +654,22 @@ export const MrlComplianceCheckPage: React.FC = () => {
                         certificateRef: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-overlay">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-ink-tertiary/30 rounded-lg text-xs font-medium text-ink-secondary hover:bg-surface-raised transition"
                 >
                   {t("common.cancel", "Hủy bỏ")}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition"
+                  className="px-4 py-2 bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse rounded-lg text-xs font-medium transition"
                 >
                   {t("compliance.mrlCheck.btnSubmitSample", "Gửi đăng ký mẫu")}
                 </button>

@@ -65,6 +65,8 @@ export default {
         lg: 'var(--shadow-lg)',
         xl: 'var(--shadow-xl)',
         glow: 'var(--shadow-glow)',
+        'apple-card': 'var(--shadow-sm)',
+        'apple-hover': 'var(--shadow-md)',
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(0.22, 1, 0.36, 1)',

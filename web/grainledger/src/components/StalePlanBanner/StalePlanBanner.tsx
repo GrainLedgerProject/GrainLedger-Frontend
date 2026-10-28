@@ -50,7 +50,7 @@ export const StalePlanBanner: React.FC<StalePlanBannerProps> = ({
 
         <div className="flex-1 space-y-1">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="font-bold text-amber-900 dark:text-amber-200 text-sm">
+            <span className="font-bold text-accent-warning text-sm">
               {message}
             </span>
             <span className="text-xs font-mono text-ink-secondary bg-surface-base px-2 py-0.5 rounded border border-functional-stale-border/40">
@@ -65,7 +65,7 @@ export const StalePlanBanner: React.FC<StalePlanBannerProps> = ({
           <div className="pt-2 flex items-center gap-3">
             <Link
               to={`/export/orders/${orderId}/containers/${containerId}/plan`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-warning text-ink-primary hover:bg-amber-400 transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-warning text-ink-primary hover:opacity-90 transition-colors shadow-xs"
             >
               <ArrowClockwise size={14} weight="bold" />
               {t('export.reRequestPlan', 'Yêu cầu đánh giá lại phương án')}

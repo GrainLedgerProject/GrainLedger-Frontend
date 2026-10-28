@@ -11,10 +11,7 @@ import { useDraftStore } from "@/app/store/draftStore";
 import { HoldBanner } from "@/components/HoldBanner/HoldBanner";
 import { LedgerRejectionCard } from "@/components/LedgerRejectionCard/LedgerRejectionCard";
 import { MassValue } from "@/components/MassValue/MassValue";
-import {
-  checkMassBalance,
-  toDecimal,
-} from "@/shared/utils/decimalMass";
+import { checkMassBalance, toDecimal } from "@/shared/utils/decimalMass";
 import {
   ArrowRight,
   ArrowsClockwise,
@@ -141,7 +138,8 @@ const DEFAULT_FALLBACK_LOTS: LotOption[] = [
     quantityKg: "45000",
     availableKg: "0",
     isHold: true,
-    holdReason: "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
+    holdReason:
+      "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
     restrictions: ["HOLD: Quarantine Tricyclazole"],
   },
 ];
@@ -167,32 +165,32 @@ export const OperationEntryPage: React.FC = () => {
     "DRYING" | "MILLING" | "BLENDING" | "BAGGING"
   >(() => initialDraft?.processType || "MILLING");
   const [selectedInputLot, setSelectedInputLot] = useState<string>(
-    () => initialDraft?.selectedInputLot || "LOT-2026-S1"
+    () => initialDraft?.selectedInputLot || "LOT-2026-S1",
   );
   const [inputMassKg, setInputMassKg] = useState<string>(
-    () => initialDraft?.inputMassKg || "88000"
+    () => initialDraft?.inputMassKg || "88000",
   );
 
   // Outputs (for milling: head rice, broken, bran, husk, and declared loss)
   const [headRiceKg, setHeadRiceKg] = useState<string>(
-    () => initialDraft?.headRiceKg || "58000"
+    () => initialDraft?.headRiceKg || "58000",
   );
   const [brokenRiceKg, setBrokenRiceKg] = useState<string>(
-    () => initialDraft?.brokenRiceKg || "8000"
+    () => initialDraft?.brokenRiceKg || "8000",
   );
   const [branKg, setBranKg] = useState<string>(
-    () => initialDraft?.branKg || "6000"
+    () => initialDraft?.branKg || "6000",
   );
   const [huskKg, setHuskKg] = useState<string>(
-    () => initialDraft?.huskKg || "15700"
+    () => initialDraft?.huskKg || "15700",
   );
   const [declaredLossKg, setDeclaredLossKg] = useState<string>(
-    () => initialDraft?.declaredLossKg || "300"
+    () => initialDraft?.declaredLossKg || "300",
   );
   const [lossReason, setLossReason] = useState<string>(
     () =>
       initialDraft?.lossReason ||
-      "Hao hụt ẩm và bụi phát tán tự nhiên qua hệ thống quạt hút"
+      "Hao hụt ẩm và bụi phát tán tự nhiên qua hệ thống quạt hút",
   );
 
   // Dynamic tolerance based on process type (BR-01)
@@ -213,14 +211,17 @@ export const OperationEntryPage: React.FC = () => {
     "IDLE" | "BALANCED_COMMITTED" | "REJECTED"
   >("IDLE");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [committedTransactionCode, setCommittedTransactionCode] = useState<string>(
-    "EVT-CONV-2026-00492"
-  );
+  const [committedTransactionCode, setCommittedTransactionCode] =
+    useState<string>("EVT-CONV-2026-00492");
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
 
   // Active chosen lot from fetched lots
   const activeLot = useMemo(() => {
-    return lots.find((l) => l.id === selectedInputLot || l.code === selectedInputLot) || lots[0];
+    return (
+      lots.find(
+        (l) => l.id === selectedInputLot || l.code === selectedInputLot,
+      ) || lots[0]
+    );
   }, [lots, selectedInputLot]);
 
   // Check if chosen lot is under HOLD
@@ -265,49 +266,85 @@ export const OperationEntryPage: React.FC = () => {
         }
 
         const commoditiesMap = new Map<string, string>();
-        if (lookupsData?.commodities && Array.isArray(lookupsData.commodities)) {
+        if (
+          lookupsData?.commodities &&
+          Array.isArray(lookupsData.commodities)
+        ) {
           for (const com of lookupsData.commodities) {
             commoditiesMap.set(com.id, com.name || com.id);
           }
         }
 
         const mappedLots: LotOption[] = items.map((lot: RawLot) => {
-          const firstPos = lot.positions && lot.positions.length > 0 ? lot.positions[0] : null;
+          const firstPos =
+            lot.positions && lot.positions.length > 0 ? lot.positions[0] : null;
           const locId = firstPos?.locationId || lot.locationId || "";
-          const locName = locationsMap.get(locId) || lot.locationName || (locId ? `Vị trí Silo ${locId.slice(0, 8)}` : "Silo chính");
+          const locName =
+            locationsMap.get(locId) ||
+            lot.locationName ||
+            (locId ? `Vị trí Silo ${locId.slice(0, 8)}` : "Silo chính");
 
           let totalKg: string;
           let availableKg: string;
-          if (lot.positions && Array.isArray(lot.positions) && lot.positions.length > 0) {
+          if (
+            lot.positions &&
+            Array.isArray(lot.positions) &&
+            lot.positions.length > 0
+          ) {
             totalKg = lot.positions
-              .reduce((sum: number, p: RawPosition) => sum + (parseFloat(String(p.quantityKg)) || 0), 0)
+              .reduce(
+                (sum: number, p: RawPosition) =>
+                  sum + (parseFloat(String(p.quantityKg)) || 0),
+                0,
+              )
               .toString();
             availableKg = lot.positions
-              .reduce((sum: number, p: RawPosition) => sum + (parseFloat(String(p.availableKg ?? p.quantityKg)) || 0), 0)
+              .reduce(
+                (sum: number, p: RawPosition) =>
+                  sum +
+                  (parseFloat(String(p.availableKg ?? p.quantityKg)) || 0),
+                0,
+              )
               .toString();
           } else {
             totalKg = String(lot.quantityKg || lot.currentMassKg || "0");
             availableKg = String(lot.availableKg || lot.quantityKg || "0");
           }
 
-          const restrictions = Array.isArray(lot.restrictions) ? lot.restrictions : [];
+          const restrictions = Array.isArray(lot.restrictions)
+            ? lot.restrictions
+            : [];
           const isHold =
             lot.status === "HOLD" ||
             restrictions.length > 0 ||
-            restrictions.some((r: string) => typeof r === "string" && r.toUpperCase().includes("HOLD")) ||
-            String(lot.code || "").toUpperCase().includes("HOLD");
+            restrictions.some(
+              (r: string) =>
+                typeof r === "string" && r.toUpperCase().includes("HOLD"),
+            ) ||
+            String(lot.code || "")
+              .toUpperCase()
+              .includes("HOLD");
 
           const holdReason =
             lot.holdReason ||
-            restrictions.find((r: string) => typeof r === "string" && r.toUpperCase().includes("HOLD")) ||
+            restrictions.find(
+              (r: string) =>
+                typeof r === "string" && r.toUpperCase().includes("HOLD"),
+            ) ||
             restrictions[0] ||
-            (isHold ? "Lô đang trong lệnh phong toả / kiểm dịch tạm thời" : undefined);
+            (isHold
+              ? "Lô đang trong lệnh phong toả / kiểm dịch tạm thời"
+              : undefined);
 
           return {
             id: String(lot.id || lot.code),
             code: String(lot.code || lot.id),
             stage: lot.stage || "RAW_PADDY",
-            commodityName: commoditiesMap.get(lot.commodityId || "") || lot.commodityName || lot.productIdentity || "Lúa tươi",
+            commodityName:
+              commoditiesMap.get(lot.commodityId || "") ||
+              lot.commodityName ||
+              lot.productIdentity ||
+              "Lúa tươi",
             locationId: locId,
             locationName: locName,
             quantityKg: totalKg,
@@ -335,7 +372,9 @@ export const OperationEntryPage: React.FC = () => {
       }
     } catch (err) {
       console.warn("Could not fetch lots from API, using fallback data:", err);
-      setFetchLotsError("Không thể tải danh sách từ máy chủ, đang dùng danh sách dự phòng.");
+      setFetchLotsError(
+        "Không thể tải danh sách từ máy chủ, đang dùng danh sách dự phòng.",
+      );
       setLots(DEFAULT_FALLBACK_LOTS);
     } finally {
       setLoadingLots(false);
@@ -396,30 +435,54 @@ export const OperationEntryPage: React.FC = () => {
       const outputProducts =
         processType === "MILLING"
           ? [
-            { productType: "HEAD_RICE", stage: "HEAD_RICE", massKg: headRiceKg, quantityKg: headRiceKg, locationId: activeLot?.locationId },
-            { productType: "BROKEN_RICE", stage: "BROKEN_RICE", massKg: brokenRiceKg, quantityKg: brokenRiceKg, locationId: activeLot?.locationId },
-            { productType: "BRAN", stage: "BRAN", massKg: branKg, quantityKg: branKg, locationId: activeLot?.locationId },
-            { productType: "HUSK", stage: "HUSK", massKg: huskKg, quantityKg: huskKg, locationId: activeLot?.locationId },
-          ]
+              {
+                productType: "HEAD_RICE",
+                stage: "HEAD_RICE",
+                massKg: headRiceKg,
+                quantityKg: headRiceKg,
+                locationId: activeLot?.locationId,
+              },
+              {
+                productType: "BROKEN_RICE",
+                stage: "BROKEN_RICE",
+                massKg: brokenRiceKg,
+                quantityKg: brokenRiceKg,
+                locationId: activeLot?.locationId,
+              },
+              {
+                productType: "BRAN",
+                stage: "BRAN",
+                massKg: branKg,
+                quantityKg: branKg,
+                locationId: activeLot?.locationId,
+              },
+              {
+                productType: "HUSK",
+                stage: "HUSK",
+                massKg: huskKg,
+                quantityKg: huskKg,
+                locationId: activeLot?.locationId,
+              },
+            ]
           : [
-            {
-              productType:
-                processType === "DRYING"
-                  ? "DRIED_PADDY"
-                  : processType === "BLENDING"
-                    ? "BLENDED_RICE"
-                    : "BAGGED_RICE",
-              stage:
-                processType === "DRYING"
-                  ? "DRIED_PADDY"
-                  : processType === "BLENDING"
-                    ? "BLENDED_RICE"
-                    : "BAGGED_RICE",
-              massKg: headRiceKg,
-              quantityKg: headRiceKg,
-              locationId: activeLot?.locationId,
-            },
-          ];
+              {
+                productType:
+                  processType === "DRYING"
+                    ? "DRIED_PADDY"
+                    : processType === "BLENDING"
+                      ? "BLENDED_RICE"
+                      : "BAGGED_RICE",
+                stage:
+                  processType === "DRYING"
+                    ? "DRIED_PADDY"
+                    : processType === "BLENDING"
+                      ? "BLENDED_RICE"
+                      : "BAGGED_RICE",
+                massKg: headRiceKg,
+                quantityKg: headRiceKg,
+                locationId: activeLot?.locationId,
+              },
+            ];
 
       const opPayload = {
         id: operationId,
@@ -444,19 +507,30 @@ export const OperationEntryPage: React.FC = () => {
       let committedCode = `EVT-CONV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
       try {
-        const createRes = (await ledgerEndpoints.recordOperation(opPayload)) as CreateOperationResponse | null;
+        const createRes = (await ledgerEndpoints.recordOperation(
+          opPayload,
+        )) as CreateOperationResponse | null;
         const opId = createRes?.id || createRes?.operationId || operationId;
 
         if (createRes && opId) {
           try {
-            const commitRes = (await ledgerEndpoints.commitOperation(opId, {})) as CommitOperationResponse | null;
-            committedCode = commitRes?.code || commitRes?.id || `EVT-CONV-${opId.slice(0, 8).toUpperCase()}`;
+            const commitRes = (await ledgerEndpoints.commitOperation(
+              opId,
+              {},
+            )) as CommitOperationResponse | null;
+            committedCode =
+              commitRes?.code ||
+              commitRes?.id ||
+              `EVT-CONV-${opId.slice(0, 8).toUpperCase()}`;
           } catch {
             committedCode = `DRAFT-${opId.slice(0, 8).toUpperCase()}`;
           }
         }
       } catch (err: unknown) {
-        console.warn("API recordOperation failed, proceeding with local ledger record:", err);
+        console.warn(
+          "API recordOperation failed, proceeding with local ledger record:",
+          err,
+        );
       }
 
       setCommittedTransactionCode(committedCode);
@@ -467,7 +541,10 @@ export const OperationEntryPage: React.FC = () => {
       // Re-fetch lots to synchronize available mass
       void fetchLots(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Không thể ghi nhận bút toán vào sổ cái.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Không thể ghi nhận bút toán vào sổ cái.";
       setApiErrorMessage(msg);
       setSubmissionStatus("REJECTED");
     } finally {
@@ -489,7 +566,7 @@ export const OperationEntryPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.operations.pageSubtitle",
-              "Mọi mẻ chế biến được đối chiếu bảo toàn khối lượng và ghi nhận vào sổ cái chỉ-ghi-thêm."
+              "Mọi mẻ chế biến được đối chiếu bảo toàn khối lượng và ghi nhận vào sổ cái chỉ-ghi-thêm.",
             )}
           </p>
         </div>
@@ -500,10 +577,20 @@ export const OperationEntryPage: React.FC = () => {
             onClick={() => void fetchLots(true)}
             disabled={loadingLots}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-colors shadow-xs disabled:opacity-50"
-            title={t("mill.operations.refreshLots", "Tải lại danh sách lô từ API")}
+            title={t(
+              "mill.operations.refreshLots",
+              "Tải lại danh sách lô từ API",
+            )}
           >
-            <ArrowsClockwise size={15} className={loadingLots ? "animate-spin text-accent-primary" : ""} />
-            <span>{loadingLots ? t("common.loading", "Đang tải...") : t("common.refresh", "Làm mới lô")}</span>
+            <ArrowsClockwise
+              size={15}
+              className={loadingLots ? "animate-spin text-accent-primary" : ""}
+            />
+            <span>
+              {loadingLots
+                ? t("common.loading", "Đang tải...")
+                : t("common.refresh", "Làm mới lô")}
+            </span>
           </button>
 
           <button
@@ -526,7 +613,7 @@ export const OperationEntryPage: React.FC = () => {
             activeLot.holdReason ||
             t(
               "mill.operations.holdNotice",
-              "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU."
+              "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
             )
           }
         />
@@ -551,7 +638,7 @@ export const OperationEntryPage: React.FC = () => {
           lossKg={declaredLossKg}
           suggestedFix={t(
             "mill.operations.rejectionSuggestedFix",
-            "Kiểm tra lại số cân bàn cân phân đoạn hoặc đối soát lại khối lượng trấu và tấm trước khi nộp lại."
+            "Kiểm tra lại số cân bàn cân phân đoạn hoặc đối soát lại khối lượng trấu và tấm trước khi nộp lại.",
           )}
           onRetry={() => setSubmissionStatus("IDLE")}
         />
@@ -559,13 +646,17 @@ export const OperationEntryPage: React.FC = () => {
 
       {/* Success Committed State */}
       {submissionStatus === "BALANCED_COMMITTED" && (
-        <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 space-y-3 shadow-xs animate-ledger-in">
+        <div className="p-5 rounded-2xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary space-y-3 shadow-xs animate-ledger-in">
           <div className="flex items-center gap-2.5 font-display font-bold text-base">
-            <CheckCircle size={24} weight="fill" className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <CheckCircle
+              size={24}
+              weight="fill"
+              className="text-accent-primary shrink-0"
+            />
             <span>
               {t(
                 "mill.operations.successTitle",
-                "Giao dịch chế biến đã được ghi vào sổ cái thành công!"
+                "Giao dịch chế biến đã được ghi vào sổ cái thành công!",
               )}
             </span>
           </div>
@@ -575,12 +666,14 @@ export const OperationEntryPage: React.FC = () => {
               {committedTransactionCode}
             </code>
             . {t("mill.operations.inputDeductionPrefix", "Số dư lô đầu vào ")}
-            <span className="font-mono font-bold text-ink-primary">{activeLot?.code || selectedInputLot}</span>{" "}
+            <span className="font-mono font-bold text-ink-primary">
+              {activeLot?.code || selectedInputLot}
+            </span>{" "}
             {t("mill.operations.inputDeducted", "đã khấu trừ ")}
             <MassValue value={inputMassKg} decimals={3} />{" "}
             {t(
               "mill.operations.outputInherited",
-              "và các lô phân đoạn mới đã được sinh với đầy đủ hệ số kế thừa nguồn gốc."
+              "và các lô phân đoạn mới đã được sinh với đầy đủ hệ số kế thừa nguồn gốc.",
             )}
           </p>
           <button
@@ -603,13 +696,19 @@ export const OperationEntryPage: React.FC = () => {
           {/* Process Type Selector */}
           <div>
             <label className="block text-xs font-semibold text-ink-secondary mb-2">
-              {t("mill.operations.selectProcessType", "Chọn công đoạn chế biến:")}
+              {t(
+                "mill.operations.selectProcessType",
+                "Chọn công đoạn chế biến:",
+              )}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 {
                   type: "MILLING",
-                  label: t("mill.operations.typeMilling", "Xay xát gạo (Milling)"),
+                  label: t(
+                    "mill.operations.typeMilling",
+                    "Xay xát gạo (Milling)",
+                  ),
                   tolerance: "0,5%",
                 },
                 {
@@ -624,7 +723,10 @@ export const OperationEntryPage: React.FC = () => {
                 },
                 {
                   type: "BAGGING",
-                  label: t("mill.operations.typeBagging", "Đóng bao & Xuất kho"),
+                  label: t(
+                    "mill.operations.typeBagging",
+                    "Đóng bao & Xuất kho",
+                  ),
                   tolerance: "0,1%",
                 },
               ].map((p) => (
@@ -632,17 +734,21 @@ export const OperationEntryPage: React.FC = () => {
                   key={p.type}
                   type="button"
                   onClick={() => {
-                    setProcessType(p.type as "DRYING" | "MILLING" | "BLENDING" | "BAGGING");
+                    setProcessType(
+                      p.type as "DRYING" | "MILLING" | "BLENDING" | "BAGGING",
+                    );
                     handleFieldChange();
                   }}
-                  className={`p-3.5 rounded-xl text-left border transition-all ${processType === p.type
-                    ? "bg-surface-base dark:bg-surface-raised border-accent-primary text-accent-primary font-bold shadow-xs ring-1 ring-accent-primary"
-                    : "bg-surface-raised/60 dark:bg-surface-overlay/50 border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:border-ink-tertiary/40"
-                    }`}
+                  className={`p-3.5 rounded-xl text-left border transition-all ${
+                    processType === p.type
+                      ? "bg-surface-base dark:bg-surface-raised border-accent-primary text-accent-primary font-bold shadow-xs ring-1 ring-accent-primary"
+                      : "bg-surface-raised/60 dark:bg-surface-overlay/50 border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:border-ink-tertiary/40"
+                  }`}
                 >
                   <span className="block text-xs font-display">{p.label}</span>
                   <span className="text-[10px] text-ink-tertiary font-mono block mt-1">
-                    {t("mill.operations.tolerancePrefix", "Dung sai:")} {p.tolerance}
+                    {t("mill.operations.tolerancePrefix", "Dung sai:")}{" "}
+                    {p.tolerance}
                   </span>
                 </button>
               ))}
@@ -653,27 +759,42 @@ export const OperationEntryPage: React.FC = () => {
           <div className="p-5 rounded-2xl bg-surface-raised/60 dark:bg-surface-overlay/50 border border-ink-tertiary/15 space-y-4">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-accent-primary flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <span>{t("mill.operations.inputSectionTitle", "1. Lô nguyên liệu đầu vào (Input Lot)")}</span>
+                <span>
+                  {t(
+                    "mill.operations.inputSectionTitle",
+                    "1. Lô nguyên liệu đầu vào (Input Lot)",
+                  )}
+                </span>
                 {loadingLots && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-sans font-normal text-ink-secondary">
-                    <ArrowsClockwise size={12} className="animate-spin text-accent-primary" />
+                    <ArrowsClockwise
+                      size={12}
+                      className="animate-spin text-accent-primary"
+                    />
                     <span>Đang tải lô từ API...</span>
                   </span>
                 )}
               </span>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary">
-                {t("mill.operations.appliedTolerance", "Dung sai áp dụng:")} {tolerancePercent}%
+                {t("mill.operations.appliedTolerance", "Dung sai áp dụng:")}{" "}
+                {tolerancePercent}%
               </span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="lot-silo-select" className="block text-xs font-semibold text-ink-secondary">
+                  <label
+                    htmlFor="lot-silo-select"
+                    className="block text-xs font-semibold text-ink-secondary"
+                  >
                     {t("mill.operations.selectInputLot", "Chọn Lô trong Silo")}
                   </label>
                   {fetchLotsError && (
-                    <span className="text-[10px] text-accent-warning font-sans" title={fetchLotsError}>
+                    <span
+                      className="text-[10px] text-accent-warning font-sans"
+                      title={fetchLotsError}
+                    >
                       (Dữ liệu dự phòng)
                     </span>
                   )}
@@ -686,8 +807,14 @@ export const OperationEntryPage: React.FC = () => {
                   onChange={(e) => {
                     const nextId = e.target.value;
                     setSelectedInputLot(nextId);
-                    const found = lots.find((l) => l.id === nextId || l.code === nextId);
-                    if (found && found.availableKg && parseFloat(found.availableKg) > 0) {
+                    const found = lots.find(
+                      (l) => l.id === nextId || l.code === nextId,
+                    );
+                    if (
+                      found &&
+                      found.availableKg &&
+                      parseFloat(found.availableKg) > 0
+                    ) {
                       setInputMassKg(found.availableKg);
                     }
                     handleFieldChange();
@@ -696,15 +823,26 @@ export const OperationEntryPage: React.FC = () => {
                 >
                   {lots.map((lot) => (
                     <option key={lot.id} value={lot.id}>
-                      {lot.code} — {lot.locationName || "Silo"} — {lot.commodityName || lot.stage} — Khả dụng: {parseFloat(lot.availableKg || "0").toLocaleString("vi-VN")} kg {lot.isHold ? "⚠️ [PHONG TOẢ HOLD]" : ""}
+                      {lot.code} — {lot.locationName || "Silo"} —{" "}
+                      {lot.commodityName || lot.stage} — Khả dụng:{" "}
+                      {parseFloat(lot.availableKg || "0").toLocaleString(
+                        "vi-VN",
+                      )}{" "}
+                      kg {lot.isHold ? "⚠️ [PHONG TOẢ HOLD]" : ""}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="input-mass-field" className="block text-xs font-semibold text-ink-secondary mb-1">
-                  {t("mill.operations.inputMassLabel", "Khối lượng đưa vào chế biến *")}
+                <label
+                  htmlFor="input-mass-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
+                  {t(
+                    "mill.operations.inputMassLabel",
+                    "Khối lượng đưa vào chế biến *",
+                  )}
                 </label>
                 <div className="relative">
                   <input
@@ -729,17 +867,28 @@ export const OperationEntryPage: React.FC = () => {
               <div className="mt-3 p-3.5 rounded-xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/15 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
                   <span className="block text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">
-                    {t("mill.operations.lotSiloLocation", "Vị trí / Silo lưu trữ")}
+                    {t(
+                      "mill.operations.lotSiloLocation",
+                      "Vị trí / Silo lưu trữ",
+                    )}
                   </span>
                   <span className="font-mono font-bold text-ink-primary flex items-center gap-1 mt-0.5">
-                    <Buildings size={14} className="text-accent-primary shrink-0" />
-                    <span className="truncate">{activeLot.locationName || "Silo chính"}</span>
+                    <Buildings
+                      size={14}
+                      className="text-accent-primary shrink-0"
+                    />
+                    <span className="truncate">
+                      {activeLot.locationName || "Silo chính"}
+                    </span>
                   </span>
                 </div>
 
                 <div>
                   <span className="block text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">
-                    {t("mill.operations.lotCommodityStage", "Chủng loại & Phân đoạn")}
+                    {t(
+                      "mill.operations.lotCommodityStage",
+                      "Chủng loại & Phân đoạn",
+                    )}
                   </span>
                   <span className="font-semibold text-ink-primary block mt-0.5 truncate">
                     {activeLot.commodityName || activeLot.stage}
@@ -751,22 +900,27 @@ export const OperationEntryPage: React.FC = () => {
                     {t("mill.operations.lotAvailableBalance", "Số dư khả dụng")}
                   </span>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="font-mono font-bold text-[#2F6B3A] dark:text-emerald-400">
-                      <MassValue value={activeLot.availableKg} decimals={3} /> kg
+                    <span className="font-mono font-bold text-accent-primary">
+                      <MassValue value={activeLot.availableKg} decimals={3} />{" "}
+                      kg
                     </span>
-                    {activeLot.availableKg !== inputMassKg && !activeLot.isHold && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInputMassKg(activeLot.availableKg);
-                          handleFieldChange();
-                        }}
-                        className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary font-medium transition-colors"
-                        title={t("mill.operations.useFullBalance", "Sử dụng toàn bộ số dư khả dụng")}
-                      >
-                        {t("mill.operations.fillAll", "Dùng hết")}
-                      </button>
-                    )}
+                    {activeLot.availableKg !== inputMassKg &&
+                      !activeLot.isHold && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInputMassKg(activeLot.availableKg);
+                            handleFieldChange();
+                          }}
+                          className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary font-medium transition-colors"
+                          title={t(
+                            "mill.operations.useFullBalance",
+                            "Sử dụng toàn bộ số dư khả dụng",
+                          )}
+                        >
+                          {t("mill.operations.fillAll", "Dùng hết")}
+                        </button>
+                      )}
                   </div>
                 </div>
 
@@ -781,7 +935,7 @@ export const OperationEntryPage: React.FC = () => {
                         <span>PHONG TOẢ (HOLD)</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-[#2F6B3A] dark:text-emerald-400 border border-emerald-500/20 font-mono">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-primary/10 text-accent-primary border border-accent-primary/20 font-mono">
                         <CheckCircle size={12} weight="bold" />
                         <span>KHẢ DỤNG</span>
                       </span>
@@ -795,18 +949,30 @@ export const OperationEntryPage: React.FC = () => {
           {/* Section 2: Output Fractions */}
           <div className="p-5 rounded-2xl bg-surface-raised/60 dark:bg-surface-overlay/50 border border-ink-tertiary/15 space-y-4">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-accent-primary">
-              {t("mill.operations.outputSectionTitle", "2. Các phân đoạn đầu ra & Hao hụt (Output Fractions & Loss)")}
+              {t(
+                "mill.operations.outputSectionTitle",
+                "2. Các phân đoạn đầu ra & Hao hụt (Output Fractions & Loss)",
+              )}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
-                <label htmlFor="head-rice-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="head-rice-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {processType === "MILLING"
                     ? t("mill.operations.headRice", "Gạo nguyên")
                     : processType === "DRYING"
-                      ? t("mill.operations.driedPaddyOutput", "Thóc khô sau sấy")
+                      ? t(
+                          "mill.operations.driedPaddyOutput",
+                          "Thóc khô sau sấy",
+                        )
                       : processType === "BLENDING"
-                        ? t("mill.operations.blendedRiceOutput", "Gạo phối trộn")
+                        ? t(
+                            "mill.operations.blendedRiceOutput",
+                            "Gạo phối trộn",
+                          )
                         : t("mill.operations.baggedRiceOutput", "Gạo đóng bao")}
                 </label>
                 <div className="relative">
@@ -827,7 +993,10 @@ export const OperationEntryPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="broken-rice-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="broken-rice-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {t("mill.operations.brokenRice", "Gạo tấm")}
                 </label>
                 <div className="relative">
@@ -848,7 +1017,10 @@ export const OperationEntryPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="bran-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="bran-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {t("mill.operations.bran", "Cám gạo")}
                 </label>
                 <div className="relative">
@@ -869,7 +1041,10 @@ export const OperationEntryPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="husk-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="husk-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {t("mill.operations.husk", "Vỏ trấu")}
                 </label>
                 <div className="relative">
@@ -892,7 +1067,10 @@ export const OperationEntryPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div>
-                <label htmlFor="declared-loss-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="declared-loss-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {t("mill.operations.declaredLoss", "Hao hụt khai báo *")}
                 </label>
                 <div className="relative">
@@ -913,7 +1091,10 @@ export const OperationEntryPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="loss-reason-field" className="block text-xs font-semibold text-ink-secondary mb-1">
+                <label
+                  htmlFor="loss-reason-field"
+                  className="block text-xs font-semibold text-ink-secondary mb-1"
+                >
                   {t("mill.operations.lossReason", "Lý do hao hụt vật lý")}
                 </label>
                 <input
@@ -932,25 +1113,33 @@ export const OperationEntryPage: React.FC = () => {
 
           {/* Section 3: Live Conservation Check Widget */}
           <div
-            className={`p-5 rounded-2xl border flex items-center justify-between flex-wrap gap-4 shadow-xs transition-colors ${balanceResult.isBalanced
-              ? "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300"
-              : "bg-functional-rejected-bg border-functional-rejected-border text-accent-danger"
-              }`}
+            className={`p-5 rounded-2xl border flex items-center justify-between flex-wrap gap-4 shadow-xs transition-colors ${
+              balanceResult.isBalanced
+                ? "bg-functional-balanced-bg border-functional-balanced-border/40 text-accent-primary"
+                : "bg-functional-rejected-bg border-functional-rejected-border text-accent-danger"
+            }`}
           >
             <div className="flex items-center gap-3.5">
               <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${balanceResult.isBalanced
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-accent-danger/10 text-accent-danger"
-                  }`}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  balanceResult.isBalanced
+                    ? "bg-accent-primary/10 text-accent-primary"
+                    : "bg-accent-danger/10 text-accent-danger"
+                }`}
               >
                 <Scales size={22} weight="bold" />
               </div>
               <div>
                 <h4 className="font-display font-bold text-sm">
                   {balanceResult.isBalanced
-                    ? t("mill.operations.balancePassed", "Đạt điều kiện cân bằng khối lượng (BR-01)")
-                    : t("mill.operations.balanceFailed", "Không đạt cân bằng — Bút toán sẽ bị từ chối")}
+                    ? t(
+                        "mill.operations.balancePassed",
+                        "Đạt điều kiện cân bằng khối lượng (BR-01)",
+                      )
+                    : t(
+                        "mill.operations.balanceFailed",
+                        "Không đạt cân bằng — Bút toán sẽ bị từ chối",
+                      )}
                 </h4>
                 <div className="flex items-center gap-2.5 text-xs mt-0.5 opacity-90 font-mono">
                   <span>
@@ -975,7 +1164,10 @@ export const OperationEntryPage: React.FC = () => {
 
             <div className="text-right text-xs">
               <span className="block text-ink-tertiary font-sans text-[11px]">
-                {t("mill.operations.allowedToleranceLabel", "Dung sai cho phép:")}
+                {t(
+                  "mill.operations.allowedToleranceLabel",
+                  "Dung sai cho phép:",
+                )}
               </span>
               <MassValue
                 value={balanceResult.allowedKg}
@@ -989,7 +1181,10 @@ export const OperationEntryPage: React.FC = () => {
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-ink-tertiary flex items-center gap-1.5">
               <FloppyDisk size={15} />
-              {t("mill.operations.autosaveNote", "Bản nháp tự động lưu trên trình duyệt")}
+              {t(
+                "mill.operations.autosaveNote",
+                "Bản nháp tự động lưu trên trình duyệt",
+              )}
             </span>
 
             <button
@@ -1000,11 +1195,18 @@ export const OperationEntryPage: React.FC = () => {
               {isSubmitting ? (
                 <>
                   <ArrowsClockwise size={15} className="animate-spin" />
-                  <span>{t("mill.operations.submitting", "Đang ghi vào sổ cái...")}</span>
+                  <span>
+                    {t("mill.operations.submitting", "Đang ghi vào sổ cái...")}
+                  </span>
                 </>
               ) : (
                 <>
-                  <span>{t("mill.operations.submitButton", "Kiểm tra & Ghi vào sổ cái")}</span>
+                  <span>
+                    {t(
+                      "mill.operations.submitButton",
+                      "Kiểm tra & Ghi vào sổ cái",
+                    )}
+                  </span>
                   <ArrowRight size={15} weight="bold" />
                 </>
               )}

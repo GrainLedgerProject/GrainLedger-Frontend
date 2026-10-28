@@ -344,7 +344,7 @@ export const MrlVersionsPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -410,7 +410,7 @@ export const MrlVersionsPage: React.FC = () => {
                   >
                     <td className="py-3 px-4 font-bold text-ink-primary">
                       <span className="inline-flex items-center gap-1.5">
-                        <Globe size={14} className="text-blue-600" />
+                        <Globe size={14} className="text-accent-info" />
                         <span>{v.marketName || "Châu Âu (EU)"}</span>
                       </span>
                     </td>
@@ -455,7 +455,7 @@ export const MrlVersionsPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handlePublish(v.id)}
-                          className="px-2.5 py-1 rounded bg-[#2F6B3A] text-white font-semibold text-[11px] hover:bg-[#245430]"
+                          className="px-2.5 py-1 rounded bg-accent-primary text-ink-inverse font-semibold text-[11px] hover:bg-accent-primary-dim"
                         >
                           {t("catalogs.mrl.publishBtn", "Công bố")}
                         </button>
@@ -740,11 +740,11 @@ export const MrlVersionsPage: React.FC = () => {
                         <td className="py-2.5 px-3 font-bold text-accent-danger">
                           0.010 mg/kg
                         </td>
-                        <td className="py-2.5 px-3 text-[#2F6B3A] font-bold">
+                        <td className="py-2.5 px-3 text-accent-primary font-bold">
                           0.008 mg/kg
                         </td>
                         <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-accent-danger">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-hold-bg text-accent-danger">
                             {t("catalogs.mrl.riskCritical", "Cực cao (LOQ)")}
                           </span>
                         </td>
@@ -759,11 +759,11 @@ export const MrlVersionsPage: React.FC = () => {
                         <td className="py-2.5 px-3 font-bold text-ink-primary">
                           6.000 mg/kg
                         </td>
-                        <td className="py-2.5 px-3 text-[#2F6B3A] font-bold">
+                        <td className="py-2.5 px-3 text-accent-primary font-bold">
                           4.800 mg/kg
                         </td>
                         <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 text-[#2F6B3A]">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-balanced-bg text-accent-primary">
                             {t("catalogs.mrl.riskLow", "Thấp")}
                           </span>
                         </td>
@@ -778,11 +778,11 @@ export const MrlVersionsPage: React.FC = () => {
                         <td className="py-2.5 px-3 font-bold text-accent-danger">
                           0.010 mg/kg
                         </td>
-                        <td className="py-2.5 px-3 text-[#2F6B3A] font-bold">
+                        <td className="py-2.5 px-3 text-accent-primary font-bold">
                           0.008 mg/kg
                         </td>
                         <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-stale-bg text-accent-warning">
                             {t("catalogs.mrl.riskHigh", "Cao")}
                           </span>
                         </td>

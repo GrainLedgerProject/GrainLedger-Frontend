@@ -18,7 +18,7 @@ import { LandingCtaFooter } from "../components/LandingCtaFooter";
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-surface-base dark:bg-canvas-dark text-ink-primary dark:text-canvas-light font-sans selection:bg-[#2F6B3A]/20 selection:text-[#2F6B3A] transition-colors duration-300">
+    <div className="min-h-screen bg-surface-base dark:bg-canvas-dark text-ink-primary dark:text-canvas-light font-sans selection:bg-accent-primary/20 selection:text-accent-primary transition-colors duration-300">
       {/* 1. Sticky Apple Liquid Glass Navbar */}
       <AppleNavbar />
 

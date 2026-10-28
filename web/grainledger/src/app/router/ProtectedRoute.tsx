@@ -20,9 +20,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If not authenticated, redirect to sign-in with returnUrl
   if (!isAuthenticated || !user) {
+    if (location.pathname.startsWith("/sign-in")) {
+      return null;
+    }
     return (
       <Navigate
-        to={`/sign-in?returnUrl=${encodeURIComponent(location.pathname)}`}
+        to={`/sign-in?returnUrl=${encodeURIComponent(location.pathname + location.search)}`}
         replace
       />
     );
@@ -32,7 +35,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/40 text-accent-danger flex items-center justify-center mx-auto">
+        <div className="w-16 h-16 rounded-full bg-functional-hold-bg text-accent-danger flex items-center justify-center mx-auto">
           <ShieldWarning size={32} weight="fill" />
         </div>
         <h2 className="text-xl font-bold text-ink-primary">

@@ -134,10 +134,13 @@ export const SafetyMarginPolicyPage: React.FC = () => {
     if (testMeasuredValue <= safeThreshold) {
       return {
         status: "SAFE_PASS",
-        label: t("compliance.safetyMargin.safePassLabel", "ĐẠT CHUẨN AN TOÀN (SAFE PASS)"),
+        label: t(
+          "compliance.safetyMargin.safePassLabel",
+          "ĐẠT CHUẨN AN TOÀN (SAFE PASS)",
+        ),
         description: t(
           "compliance.safetyMargin.safePassDesc",
-          "Nồng độ đo thực tế nằm trong biên an toàn 20%. Đủ điều kiện phê duyệt phương án phối trộn xuất khẩu."
+          "Nồng độ đo thực tế nằm trong biên an toàn 20%. Đủ điều kiện phê duyệt phương án phối trộn xuất khẩu.",
         ),
         color:
           "text-accent-success bg-accent-success/10 border-accent-success/20",
@@ -147,11 +150,11 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         status: "WARNING_BUFFER",
         label: t(
           "compliance.safetyMargin.warningBufferLabel",
-          "CẢNH BÁO BIÊN AN TOÀN (SAFETY MARGIN WARNING)"
+          "CẢNH BÁO BIÊN AN TOÀN (SAFETY MARGIN WARNING)",
         ),
         description: t(
           "compliance.safetyMargin.warningBufferDesc",
-          "Nồng độ đo đã vượt qua biên an toàn 20% dù chưa vượt MRL chính thức. Có nguy cơ bị từ chối nếu có sai số đo kiểm tại cảng đích."
+          "Nồng độ đo đã vượt qua biên an toàn 20% dù chưa vượt MRL chính thức. Có nguy cơ bị từ chối nếu có sai số đo kiểm tại cảng đích.",
         ),
         color:
           "text-accent-warning bg-accent-warning/10 border-accent-warning/20",
@@ -159,10 +162,13 @@ export const SafetyMarginPolicyPage: React.FC = () => {
     } else {
       return {
         status: "EXCEEDED_MRL",
-        label: t("compliance.safetyMargin.exceededLabel", "VI PHẠM MRL (MRL EXCEEDED - HOLD)"),
+        label: t(
+          "compliance.safetyMargin.exceededLabel",
+          "VI PHẠM MRL (MRL EXCEEDED - HOLD)",
+        ),
         description: t(
           "compliance.safetyMargin.exceededDesc",
-          "Vượt quá ngưỡng MRL tối đa của thị trường nhập khẩu! Hệ thống tự động kích hoạt Rule BR-15: Phong tỏa lệnh HOLD khẩn cấp."
+          "Vượt quá ngưỡng MRL tối đa của thị trường nhập khẩu! Hệ thống tự động kích hoạt Rule BR-15: Phong tỏa lệnh HOLD khẩn cấp.",
         ),
         color: "text-accent-danger bg-accent-danger/10 border-accent-danger/20",
       };
@@ -179,7 +185,10 @@ export const SafetyMarginPolicyPage: React.FC = () => {
           </Link>
           <span>/</span>
           <span className="text-ink-primary font-semibold">
-            {t("compliance.safetyMargin.breadcrumb", "Biên an toàn MRL (SC-25)")}
+            {t(
+              "compliance.safetyMargin.breadcrumb",
+              "Biên an toàn MRL (SC-25)",
+            )}
           </span>
         </div>
 
@@ -189,7 +198,12 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary transition shadow-xs"
           >
             <TestTube size={14} className="text-accent-primary" />
-            <span>{t("compliance.safetyMargin.viewLabResults", "Xem Kết quả xét nghiệm (SC-24)")}</span>
+            <span>
+              {t(
+                "compliance.safetyMargin.viewLabResults",
+                "Xem Kết quả xét nghiệm (SC-24)",
+              )}
+            </span>
             <ArrowRight size={13} />
           </Link>
         </div>
@@ -202,13 +216,16 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <ShieldCheck size={28} weight="duotone" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl font-bold font-serif text-ink-primary">
-              {t("compliance.safetyMargin.pageTitle", "Chính Sách Biên An Toàn MRL (MRL Safety Margin Policy)")}
+            <h1 className="text-xl sm:text-2xl font-bold  text-ink-primary">
+              {t(
+                "compliance.safetyMargin.pageTitle",
+                "Chính Sách Biên An Toàn MRL (MRL Safety Margin Policy)",
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
               {t(
                 "compliance.safetyMargin.pageSubtitle",
-                "Quy tắc BR-07 yêu cầu hệ thống tự động trừ dự phòng -20% vào giới hạn dư lượng tối đa (MRL) chính thức của thị trường đích khi tính toán công thức phối trộn xuất khẩu, nhằm triệt tiêu sai số phân tích sắc ký và biến thiên chất lượng trong hành trình vận tải biển."
+                "Quy tắc BR-07 yêu cầu hệ thống tự động trừ dự phòng -20% vào giới hạn dư lượng tối đa (MRL) chính thức của thị trường đích khi tính toán công thức phối trộn xuất khẩu, nhằm triệt tiêu sai số phân tích sắc ký và biến thiên chất lượng trong hành trình vận tải biển.",
               )}
             </p>
           </div>
@@ -220,9 +237,14 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         {/* Left: Calculation Simulator (7 cols) */}
         <div className="lg:col-span-7 bg-surface-base border border-ink-tertiary/20 rounded-xl p-5 shadow-xs space-y-5">
           <div className="flex items-center justify-between border-b border-ink-tertiary/15 pb-3">
-            <h2 className="text-sm font-bold font-serif text-ink-primary flex items-center gap-2">
+            <h2 className="text-sm font-bold  text-ink-primary flex items-center gap-2">
               <Calculator size={18} className="text-accent-primary" />
-              <span>{t("compliance.safetyMargin.simulatorTitle", "Công Cụ Mô Phỏng Đánh Giá Biên An Toàn Thực Tế")}</span>
+              <span>
+                {t(
+                  "compliance.safetyMargin.simulatorTitle",
+                  "Công Cụ Mô Phỏng Đánh Giá Biên An Toàn Thực Tế",
+                )}
+              </span>
             </h2>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-surface-raised text-ink-secondary">
               Simulation Mode
@@ -232,7 +254,10 @@ export const SafetyMarginPolicyPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-ink-primary mb-1">
-                {t("compliance.safetyMargin.targetMarketLabel", "Thị trường xuất khẩu đích:")}
+                {t(
+                  "compliance.safetyMargin.targetMarketLabel",
+                  "Thị trường xuất khẩu đích:",
+                )}
               </label>
               <select
                 value={selectedMarket}
@@ -248,7 +273,10 @@ export const SafetyMarginPolicyPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-ink-primary mb-1">
-                {t("compliance.safetyMargin.substanceLabel", "Hoạt chất thuốc BVTV cần thử nghiệm:")}
+                {t(
+                  "compliance.safetyMargin.substanceLabel",
+                  "Hoạt chất thuốc BVTV cần thử nghiệm:",
+                )}
               </label>
               <select
                 value={testSubstance}
@@ -269,7 +297,12 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-ink-primary flex items-center gap-1.5">
                 <Sliders size={15} />
-                <span>{t("compliance.safetyMargin.bufferRatioLabel", "Hệ số Biên an toàn cấu hình (Rule BR-07):")}</span>
+                <span>
+                  {t(
+                    "compliance.safetyMargin.bufferRatioLabel",
+                    "Hệ số Biên an toàn cấu hình (Rule BR-07):",
+                  )}
+                </span>
               </span>
               <span className="font-mono font-bold text-accent-success text-sm">
                 -{safetyBufferPercent}% Buffer
@@ -287,11 +320,21 @@ export const SafetyMarginPolicyPage: React.FC = () => {
               className="w-full accent-accent-success cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-ink-tertiary font-mono">
-              <span>{t("compliance.safetyMargin.bufferBasic", "10% (Cơ bản)")}</span>
-              <span className="font-bold text-accent-success">
-                {t("compliance.safetyMargin.bufferIsoStandard", "20% (Tiêu chuẩn ISO GrainLedger)")}
+              <span>
+                {t("compliance.safetyMargin.bufferBasic", "10% (Cơ bản)")}
               </span>
-              <span>{t("compliance.safetyMargin.bufferStrict", "30% (Thắt chặt tối đa)")}</span>
+              <span className="font-bold text-accent-success">
+                {t(
+                  "compliance.safetyMargin.bufferIsoStandard",
+                  "20% (Tiêu chuẩn ISO GrainLedger)",
+                )}
+              </span>
+              <span>
+                {t(
+                  "compliance.safetyMargin.bufferStrict",
+                  "30% (Thắt chặt tối đa)",
+                )}
+              </span>
             </div>
           </div>
 
@@ -301,7 +344,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
               <label className="font-semibold text-ink-primary">
                 {t(
                   "compliance.safetyMargin.measuredConcLabel",
-                  "Nồng độ hoạt chất đo thực tế từ phòng Lab (mg/kg ppm):"
+                  "Nồng độ hoạt chất đo thực tế từ phòng Lab (mg/kg ppm):",
                 )}
               </label>
               <span className="font-mono font-bold text-accent-primary">
@@ -330,10 +373,14 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 {simulationVerdict.label}
               </span>
               <span className="font-mono text-xs font-semibold">
-                {t("compliance.safetyMargin.measuredVsSafe", "Thực đo: {{measured}} / An toàn: {{safe}}", {
-                  measured: testMeasuredValue.toFixed(4),
-                  safe: safeThreshold.toFixed(4),
-                })}
+                {t(
+                  "compliance.safetyMargin.measuredVsSafe",
+                  "Thực đo: {{measured}} / An toàn: {{safe}}",
+                  {
+                    measured: testMeasuredValue.toFixed(4),
+                    safe: safeThreshold.toFixed(4),
+                  },
+                )}
               </span>
             </div>
             <p className="text-xs leading-relaxed">
@@ -347,13 +394,21 @@ export const SafetyMarginPolicyPage: React.FC = () => {
           <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl p-5 shadow-xs space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-ink-primary flex items-center gap-1.5">
               <BookOpen size={16} className="text-accent-primary" />
-              <span>{t("compliance.safetyMargin.ruleTitle", "Quy Tắc Kỹ Thuật ISO 22095 (BR-07)")}</span>
+              <span>
+                {t(
+                  "compliance.safetyMargin.ruleTitle",
+                  "Quy Tắc Kỹ Thuật ISO 22095 (BR-07)",
+                )}
+              </span>
             </h3>
 
             <div className="space-y-3 text-xs text-ink-secondary leading-relaxed">
               <div className="p-3 rounded-lg bg-surface-raised border border-ink-tertiary/10 space-y-1">
                 <strong className="text-ink-primary block">
-                  {t("compliance.safetyMargin.formulaLabel", "Công thức tính ngưỡng an toàn:")}
+                  {t(
+                    "compliance.safetyMargin.formulaLabel",
+                    "Công thức tính ngưỡng an toàn:",
+                  )}
                 </strong>
                 <p className="font-mono text-[11px] text-accent-success font-semibold">
                   MRL_Effective = MRL_Official × (1 - 0.20)
@@ -361,26 +416,29 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 <p className="text-[11px] text-ink-tertiary">
                   {t(
                     "compliance.safetyMargin.formulaExample",
-                    "Ví dụ: Tricyclazole tại EU có MRL = 0.0100 mg/kg. Ngưỡng cho phép tối đa của GrainLedger là 0.0080 mg/kg."
+                    "Ví dụ: Tricyclazole tại EU có MRL = 0.0100 mg/kg. Ngưỡng cho phép tối đa của GrainLedger là 0.0080 mg/kg.",
                   )}
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-surface-raised border border-ink-tertiary/10 space-y-1">
                 <strong className="text-ink-primary block">
-                  {t("compliance.safetyMargin.automationLabel", "Cơ chế tự động hóa:")}
+                  {t(
+                    "compliance.safetyMargin.automationLabel",
+                    "Cơ chế tự động hóa:",
+                  )}
                 </strong>
                 <ul className="list-disc pl-4 space-y-1 text-[11px]">
                   <li>
                     {t(
                       "compliance.safetyMargin.bulletWarning",
-                      "Nếu vượt ngưỡng 0.0080 mg/kg: Hệ thống cảnh báo màu vàng khi lập phương án phối trộn."
+                      "Nếu vượt ngưỡng 0.0080 mg/kg: Hệ thống cảnh báo màu vàng khi lập phương án phối trộn.",
                     )}
                   </li>
                   <li>
                     {t(
                       "compliance.safetyMargin.bulletHold",
-                      "Nếu vượt ngưỡng 0.0100 mg/kg: Kích hoạt ngay lệnh phong tỏa HOLD (Rule BR-15), không cho phép xuất kho hoặc đóng container."
+                      "Nếu vượt ngưỡng 0.0100 mg/kg: Kích hoạt ngay lệnh phong tỏa HOLD (Rule BR-15), không cho phép xuất kho hoặc đóng container.",
                     )}
                   </li>
                 </ul>
@@ -392,7 +450,12 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 to="/compliance/mrl-versions"
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised text-ink-primary transition"
               >
-                <span>{t("compliance.safetyMargin.viewMrlVersions", "Xem danh mục phiên bản MRL thị trường")}</span>
+                <span>
+                  {t(
+                    "compliance.safetyMargin.viewMrlVersions",
+                    "Xem danh mục phiên bản MRL thị trường",
+                  )}
+                </span>
                 <ArrowRight size={13} />
               </Link>
             </div>

@@ -1,7 +1,13 @@
-export function registerServiceWorker() {
-  if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+// Đăng ký PWA
+import { registerSW } from "virtual:pwa-register";
 
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
-  });
-}
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (confirm("Có phiên bản mới. Bạn có muốn cập nhật không?")) {
+      updateSW(true);
+    }
+  },
+  onOfflineReady() {
+    console.log("Ứng dụng đã sẵn sàng chạy offline!");
+  },
+});

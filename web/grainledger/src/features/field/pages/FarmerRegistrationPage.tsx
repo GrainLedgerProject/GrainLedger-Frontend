@@ -244,7 +244,7 @@ export const FarmerRegistrationPage: React.FC = () => {
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-[#2F6B3A] dark:text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
           <CheckCircle size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -287,7 +287,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       </div>
 
       {/* Farmers Data Table */}
-      <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
+      <div className="border dark:border-surface-overlay rounded-xl border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
             <GrainLoader
@@ -313,7 +313,7 @@ export const FarmerRegistrationPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="dark:border-surface-overlay border bg-surface-raised dark:bg-surface-overlay border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px] shadow-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.farmer.thCode", "Mã số")}
@@ -390,7 +390,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleDelete(farmer)}
-                        className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-accent-danger transition-colors"
+                        className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
                         title={t("field.farmer.deleteFarmer", "Xoá nông hộ")}
                       >
                         <Trash size={15} />
@@ -405,102 +405,107 @@ export const FarmerRegistrationPage: React.FC = () => {
       </div>
 
       {/* Create / Edit Farmer Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={editingFarmer ? t("field.farmer.modalEdit", "Cập nhật nông hộ") : t("field.farmer.modalNew", "Đăng ký nông hộ")}>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {editingFarmer
-                  ? t(
-                      "field.farmer.modalEditTitle",
-                      "Cập nhật thông tin Nông hộ",
-                    )
-                  : t("field.farmer.modalAddTitle", "Đăng ký Nông hộ mới")}
-              </h3>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={
+          editingFarmer
+            ? t("field.farmer.modalEdit", "Cập nhật nông hộ")
+            : t("field.farmer.modalNew", "Đăng ký nông hộ")
+        }
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {editingFarmer
+                ? t("field.farmer.modalEditTitle", "Cập nhật thông tin Nông hộ")
+                : t("field.farmer.modalAddTitle", "Đăng ký Nông hộ mới")}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t(
+                  "field.farmer.farmerCodeLabel",
+                  "Mã Nông hộ (Định danh hệ thống) *",
+                )}
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.code}
+                onChange={(e) =>
+                  setFormData({ ...formData, code: e.target.value })
+                }
+                placeholder="VD: FARMER-001"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("field.farmer.farmerNameLabel", "Họ và tên Nông dân *")}
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="VD: Nguyễn Văn An"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t(
+                  "field.farmer.farmerContactLabel",
+                  "Số điện thoại / Thông tin liên hệ",
+                )}
+              </label>
+              <input
+                type="text"
+                value={formData.contact}
+                onChange={(e) =>
+                  setFormData({ ...formData, contact: e.target.value })
+                }
+                placeholder="VD: 0912 345 678 · Huyện Cái Bè, Tiền Giang"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("common.saving", "Đang lưu...")
+                  : editingFarmer
+                    ? t("common.saveChanges", "Lưu thay đổi")
+                    : t("common.register", "Đăng ký")}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.farmer.farmerCodeLabel",
-                    "Mã Nông hộ (Định danh hệ thống) *",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  placeholder="VD: FARMER-001"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.farmer.farmerNameLabel", "Họ và tên Nông dân *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="VD: Nguyễn Văn An"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.farmer.farmerContactLabel",
-                    "Số điện thoại / Thông tin liên hệ",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  value={formData.contact}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contact: e.target.value })
-                  }
-                  placeholder="VD: 0912 345 678 · Huyện Cái Bè, Tiền Giang"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("common.saving", "Đang lưu...")
-                    : editingFarmer
-                      ? t("common.saveChanges", "Lưu thay đổi")
-                      : t("common.register", "Đăng ký")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );
