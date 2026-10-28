@@ -13,11 +13,11 @@ export * from './GrainLoader/GrainLoader';
 export * from './HoldBanner/HoldBanner';
 export * from './LedgerRejectionCard/LedgerRejectionCard';
 export * from './MassValue/MassValue';
+export * from './Modal';
 export * from './NetworkStatusIndicator/NetworkStatusIndicator';
 export * from './PlaceholderPage/PlaceholderPage';
 export * from './RoleChip/RoleChip';
 export * from './SettingsLayout/SettingsLayout';
 export * from './StalePlanBanner/StalePlanBanner';
 export * from './StatusBadge/StatusBadge';
-export * from './SuspenseLoader/SuspenseLoader'
-export * from './DynamicIslandNotification/DynamicIslandNotification';
+export * from './SuspenseLoader/SuspenseLoader';

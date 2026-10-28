@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { procurementEndpoints, type ProcurementInput } from "@/api/procurement";
+import {
+  procurementEndpoints,
+  type RegisterProcurementRequest,
+} from "@/api/procurement";
+import { ApiError } from "@/api/client";
+import {
+  getQueuedProcurementCount,
+  queueProcurement,
+} from "@/pwa/procurementQueue";
+import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   Receipt,
@@ -37,6 +47,7 @@ interface ProcurementReceiptItem {
 
 export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
+  const { isOnline, setPendingOfflineCount } = useUiStore();
   const [receipts, setReceipts] = useState<ProcurementReceiptItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,7 +97,12 @@ export const ProcurementReceiptPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.receipt.errorLoad", "Không thể tải danh sách phiếu thu mua."));
+        setError(
+          t(
+            "field.receipt.errorLoad",
+            "Không thể tải danh sách phiếu thu mua.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -121,7 +137,9 @@ export const ProcurementReceiptPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.farmerId) {
-      setError(t("field.receipt.errorSelectFarmer", "Vui lòng chọn Nông hộ thu mua."));
+      setError(
+        t("field.receipt.errorSelectFarmer", "Vui lòng chọn Nông hộ thu mua."),
+      );
       return;
     }
 
@@ -129,6 +147,7 @@ export const ProcurementReceiptPage: React.FC = () => {
     setError(null);
     setSuccessMsg(null);
 
+    let request: RegisterProcurementRequest | null = null;
     try {
       const entityId = crypto.randomUUID();
       const clientOperationId = crypto.randomUUID();
@@ -136,7 +155,7 @@ export const ProcurementReceiptPage: React.FC = () => {
       const lotId = crypto.randomUUID();
       const sourceLotId = crypto.randomUUID();
 
-      await procurementEndpoints.registerProcurement({
+      request = {
         deviceId: "grainledger-web",
         clientOperationId,
         capturedAt: new Date().toISOString(),
@@ -162,20 +181,52 @@ export const ProcurementReceiptPage: React.FC = () => {
             },
           ],
         },
-      });
+      };
 
-      setSuccessMsg(
-        t("field.receipt.successCreated", "Đã lập thành công Phiếu thu mua {{weight}} kg lúa tươi", {
-          weight: formData.measuredWeightKg,
-        })
-      );
+      if (!isOnline) {
+        await queueProcurement(request);
+        setPendingOfflineCount(await getQueuedProcurementCount());
+        setSuccessMsg(
+          t(
+            "field.receipt.savedOffline",
+            "Đã lưu phiếu trên thiết bị. Phiếu sẽ tự đồng bộ khi có mạng.",
+          ),
+        );
+      } else {
+        await procurementEndpoints.registerProcurement(request);
+        setSuccessMsg(
+          t(
+            "field.receipt.successCreated",
+            "Đã lập thành công Phiếu thu mua {{weight}} kg lúa tươi",
+            {
+              weight: formData.measuredWeightKg,
+            },
+          ),
+        );
+      }
+
       setIsModalOpen(false);
       await loadData();
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (err instanceof ApiError && err.status === 0) {
+        // A connection can disappear after Save; keep the exact operation ID for a safe retry.
+        if (request) {
+          await queueProcurement(request);
+          setPendingOfflineCount(await getQueuedProcurementCount());
+          setSuccessMsg(
+            t(
+              "field.receipt.savedOffline",
+              "Kết nối bị gián đoạn; phiếu đã được lưu trên thiết bị và sẽ tự đồng bộ.",
+            ),
+          );
+          setIsModalOpen(false);
+        }
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.receipt.errorCreate", "Không thể lập phiếu thu mua."));
+        setError(
+          t("field.receipt.errorCreate", "Không thể lập phiếu thu mua."),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -206,7 +257,7 @@ export const ProcurementReceiptPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.receipt.subtitle",
-              "Ghi nhận khối lượng cân thực tế, tỷ lệ độ ẩm và sinh Lô Nguồn (Source Lot) bất biến trên sổ cái."
+              "Ghi nhận khối lượng cân thực tế, tỷ lệ độ ẩm và sinh Lô Nguồn (Source Lot) bất biến trên sổ cái.",
             )}
           </p>
         </div>
@@ -250,7 +301,10 @@ export const ProcurementReceiptPage: React.FC = () => {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder={t("field.receipt.searchPlaceholder", "Tìm theo mã phiếu hoặc nông hộ...")}
+            placeholder={t(
+              "field.receipt.searchPlaceholder",
+              "Tìm theo mã phiếu hoặc nông hộ...",
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
@@ -275,7 +329,12 @@ export const ProcurementReceiptPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("field.receipt.loading", "Đang tải danh sách phiếu thu mua...")} />
+            <GrainLoader
+              label={t(
+                "field.receipt.loading",
+                "Đang tải danh sách phiếu thu mua...",
+              )}
+            />
           </div>
         ) : filteredReceipts.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -289,7 +348,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
               {t(
                 "field.receipt.emptyDesc",
-                "Nhấn \"Lập Phiếu Thu Mua mới\" để ghi nhận mẻ lúa tươi vừa thu hoạch tại điểm cân."
+                'Nhấn "Lập Phiếu Thu Mua mới" để ghi nhận mẻ lúa tươi vừa thu hoạch tại điểm cân.',
               )}
             </p>
           </div>
@@ -298,12 +357,24 @@ export const ProcurementReceiptPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("field.receipt.receiptCode", "Mã phiếu")}</th>
-                  <th className="py-3 px-4">{t("field.receipt.weighedAt", "Thời điểm cân")}</th>
-                  <th className="py-3 px-4">{t("field.receipt.farmer", "Nông hộ")}</th>
-                  <th className="py-3 px-4">{t("field.receipt.weightKg", "Khối lượng cân (kg)")}</th>
-                  <th className="py-3 px-4">{t("field.receipt.moisture", "Độ ẩm (%)")}</th>
-                  <th className="py-3 px-4">{t("field.receipt.ledgerStatus", "Trạng thái sổ cái")}</th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.receiptCode", "Mã phiếu")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.weighedAt", "Thời điểm cân")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.farmer", "Nông hộ")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.weightKg", "Khối lượng cân (kg)")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.moisture", "Độ ẩm (%)")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.ledgerStatus", "Trạng thái sổ cái")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -328,7 +399,13 @@ export const ProcurementReceiptPage: React.FC = () => {
                       <td className="py-3 px-4 font-semibold text-ink-primary">
                         <span className="inline-flex items-center gap-1.5">
                           <User size={13} className="text-ink-tertiary" />
-                          <span>{r.farmerName || t("field.receipt.defaultFarmer", "Nông hộ liên kết")}</span>
+                          <span>
+                            {r.farmerName ||
+                              t(
+                                "field.receipt.defaultFarmer",
+                                "Nông hộ liên kết",
+                              )}
+                          </span>
                         </span>
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-ink-primary">
@@ -343,7 +420,10 @@ export const ProcurementReceiptPage: React.FC = () => {
                       <td className="py-3 px-4">
                         <StatusBadge
                           status="BALANCED"
-                          label={t("field.receipt.sourceLotCreated", "Đã lập Lô nguồn")}
+                          label={t(
+                            "field.receipt.sourceLotCreated",
+                            "Đã lập Lô nguồn",
+                          )}
                         />
                       </td>
                     </tr>
@@ -356,12 +436,14 @@ export const ProcurementReceiptPage: React.FC = () => {
       </div>
 
       {/* Create Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}>
           <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}
+                {t(
+                  "field.receipt.modalTitle",
+                  "Lập Phiếu Thu Mua Lúa Tươi Mới",
+                )}
               </h3>
               <button
                 type="button"
@@ -385,7 +467,12 @@ export const ProcurementReceiptPage: React.FC = () => {
                   }
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
-                  <option value="">{t("field.receipt.selectFarmerPlaceholder", "-- Chọn Nông hộ --")}</option>
+                  <option value="">
+                    {t(
+                      "field.receipt.selectFarmerPlaceholder",
+                      "-- Chọn Nông hộ --",
+                    )}
+                  </option>
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name} ({f.code})
@@ -397,7 +484,10 @@ export const ProcurementReceiptPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-ink-secondary mb-1">
-                    {t("field.receipt.weightLabel", "Khối lượng cân thực tế (kg) *")}
+                    {t(
+                      "field.receipt.weightLabel",
+                      "Khối lượng cân thực tế (kg) *",
+                    )}
                   </label>
                   <div className="relative">
                     <input
@@ -420,7 +510,10 @@ export const ProcurementReceiptPage: React.FC = () => {
 
                 <div>
                   <label className="block font-semibold text-ink-secondary mb-1">
-                    {t("field.receipt.moistureLabel", "Độ ẩm đo tại điểm cân (%) *")}
+                    {t(
+                      "field.receipt.moistureLabel",
+                      "Độ ẩm đo tại điểm cân (%) *",
+                    )}
                   </label>
                   <div className="relative">
                     <input
@@ -446,12 +539,17 @@ export const ProcurementReceiptPage: React.FC = () => {
               <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-[11px] text-ink-secondary">
                 <div className="flex items-center gap-1.5 font-semibold text-accent-primary">
                   <Warehouse size={14} />
-                  <span>{t("field.receipt.policyTitle", "Quy trình bảo toàn dòng chảy khối lượng (BR-04)")}</span>
+                  <span>
+                    {t(
+                      "field.receipt.policyTitle",
+                      "Quy trình bảo toàn dòng chảy khối lượng (BR-04)",
+                    )}
+                  </span>
                 </div>
                 <p>
                   {t(
                     "field.receipt.policyDesc",
-                    "Khối lượng lúa tươi ghi nhận tại đây sẽ là căn cứ đối soát ban đầu khi xe tải chở lúa cập bến nhà máy sấy Tiền Giang."
+                    "Khối lượng lúa tươi ghi nhận tại đây sẽ là căn cứ đối soát ban đầu khi xe tải chở lúa cập bến nhà máy sấy Tiền Giang.",
                   )}
                 </p>
               </div>
@@ -469,13 +567,14 @@ export const ProcurementReceiptPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("field.receipt.submitting", "Đang ghi nhận...") : t("field.receipt.submitBtn", "Lập Phiếu & Tạo Lô Nguồn")}
+                  {submitting
+                    ? t("field.receipt.submitting", "Đang ghi nhận...")
+                    : t("field.receipt.submitBtn", "Lập Phiếu & Tạo Lô Nguồn")}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

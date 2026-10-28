@@ -90,7 +90,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.samples.errorLoad", "Không thể tải danh sách mẫu thu mua."));
+        setError(
+          t("field.samples.errorLoad", "Không thể tải danh sách mẫu thu mua."),
+        );
       }
     } finally {
       setLoading(false);
@@ -126,9 +128,13 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       await sampleEndpoints.captureSample(payload);
 
       setSuccessMsg(
-        t("field.samples.successCreate", "Đã tạo biên bản lấy mẫu \"{{code}}\" thành công!", {
-          code: code.trim(),
-        })
+        t(
+          "field.samples.successCreate",
+          'Đã tạo biên bản lấy mẫu "{{code}}" thành công!',
+          {
+            code: code.trim(),
+          },
+        ),
       );
 
       // Add to local list
@@ -154,7 +160,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.samples.errorCreate", "Không thể lưu thông tin mẫu niêm phong."));
+        setError(
+          t(
+            "field.samples.errorCreate",
+            "Không thể lưu thông tin mẫu niêm phong.",
+          ),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -186,18 +197,22 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       await sampleEndpoints.recordSampleHandover(selectedSample.id, payload);
 
       setSuccessMsg(
-        t("field.samples.successHandover", "Đã ghi nhận bàn giao mẫu \"{{code}}\" đến {{lab}}", {
-          code: selectedSample.code || selectedSample.id,
-          lab: laboratoryName,
-        })
+        t(
+          "field.samples.successHandover",
+          'Đã ghi nhận bàn giao mẫu "{{code}}" đến {{lab}}',
+          {
+            code: selectedSample.code || selectedSample.id,
+            lab: laboratoryName,
+          },
+        ),
       );
 
       setSamples((prev) =>
         prev.map((s) =>
           s.id === selectedSample.id
             ? { ...s, handoverStatus: "DELIVERED_LAB", laboratoryName }
-            : s
-        )
+            : s,
+        ),
       );
 
       setIsHandoverOpen(false);
@@ -206,7 +221,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("field.samples.errorHandover", "Không thể ghi nhận bàn giao mẫu."));
+        setError(
+          t("field.samples.errorHandover", "Không thể ghi nhận bàn giao mẫu."),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -219,15 +236,21 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
           <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA (BR-05, BR-19)")}
+            {t(
+              "field.samples.tag",
+              "THU THẬP MẪU TẠI ĐIỂM THU MUA (BR-05, BR-19)",
+            )}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("field.samples.title", "Lấy Mẫu Niêm Phong & Bàn Giao (Procurement Samples)")}
+            {t(
+              "field.samples.title",
+              "Lấy Mẫu Niêm Phong & Bàn Giao (Procurement Samples)",
+            )}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.samples.subtitle",
-              "Ghi nhận mã niêm chì và mã barcode của mẫu thóc đại diện được lấy tại điểm thu mua trước khi đưa về nhà máy sấy và lưu kho."
+              "Ghi nhận mã niêm chì và mã barcode của mẫu thóc đại diện được lấy tại điểm thu mua trước khi đưa về nhà máy sấy và lưu kho.",
             )}
           </p>
         </div>
@@ -247,7 +270,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
-            <span>{t("field.samples.createBtn", "Lấy Mẫu Niêm Phong Mới")}</span>
+            <span>
+              {t("field.samples.createBtn", "Lấy Mẫu Niêm Phong Mới")}
+            </span>
           </button>
         </div>
       </div>
@@ -269,16 +294,30 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Grid of Samples */}
       {loading ? (
         <div className="py-16 flex justify-center">
-          <GrainLoader label={t("field.samples.loading", "Đang tải danh sách mẫu niêm chì...")} />
+          <GrainLoader
+            label={t(
+              "field.samples.loading",
+              "Đang tải danh sách mẫu niêm chì...",
+            )}
+          />
         </div>
       ) : samples.length === 0 ? (
         <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
-          <TestTube size={40} className="mx-auto text-ink-tertiary mb-3 opacity-60" />
+          <TestTube
+            size={40}
+            className="mx-auto text-ink-tertiary mb-3 opacity-60"
+          />
           <p className="text-sm font-semibold text-ink-primary">
-            {t("field.samples.emptyTitle", "Chưa có mẫu thóc nào được niêm chì")}
+            {t(
+              "field.samples.emptyTitle",
+              "Chưa có mẫu thóc nào được niêm chì",
+            )}
           </p>
           <p className="text-xs text-ink-secondary mt-1 max-w-sm mx-auto">
-            {t("field.samples.emptyDesc", "Bấm 'Lấy Mẫu Niêm Phong Mới' để lập biên bản lấy mẫu đại diện tại trạm thu mua.")}
+            {t(
+              "field.samples.emptyDesc",
+              "Bấm 'Lấy Mẫu Niêm Phong Mới' để lập biên bản lấy mẫu đại diện tại trạm thu mua.",
+            )}
           </p>
         </div>
       ) : (
@@ -294,7 +333,11 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                     <TestTube size={22} weight="bold" />
                   </div>
                   <StatusBadge
-                    status={sample.handoverStatus === "DELIVERED_LAB" ? "BALANCED" : "STALE"}
+                    status={
+                      sample.handoverStatus === "DELIVERED_LAB"
+                        ? "BALANCED"
+                        : "STALE"
+                    }
                     label={
                       sample.handoverStatus === "DELIVERED_LAB"
                         ? t("field.samples.statusDelivered", "Đã bàn giao Lab")
@@ -310,14 +353,18 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-ink-secondary mt-1 font-mono">
                     <ShieldCheck size={14} className="text-emerald-500" />
-                    <span>Niêm chì: <strong>{sample.sealCode || "CHƯA GẮN"}</strong></span>
+                    <span>
+                      Niêm chì: <strong>{sample.sealCode || "CHƯA GẮN"}</strong>
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/10 text-xs space-y-1">
                   <div className="flex justify-between text-ink-secondary">
                     <span>Lô nguồn:</span>
-                    <span className="font-mono font-medium text-ink-primary">{sample.sourceLotId}</span>
+                    <span className="font-mono font-medium text-ink-primary">
+                      {sample.sourceLotId}
+                    </span>
                   </div>
                   {sample.materialDescription && (
                     <div className="text-ink-tertiary text-[11px] truncate">
@@ -336,7 +383,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-between text-xs text-ink-secondary">
                 <span className="inline-flex items-center gap-1 text-[11px]">
                   <Calendar size={13} className="text-ink-tertiary" />
-                  <span>{new Date(sample.collectedAt).toLocaleDateString("vi-VN")}</span>
+                  <span>
+                    {new Date(sample.collectedAt).toLocaleDateString("vi-VN")}
+                  </span>
                 </span>
 
                 {sample.handoverStatus !== "DELIVERED_LAB" && (
@@ -360,11 +409,14 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
       {/* Modal: Lấy Mẫu Niêm Phong Mới */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("field.samples.modalCreateTitle", "Lấy Mẫu Niêm Chì Mới (BR-05)")}
+                {t(
+                  "field.samples.modalCreateTitle",
+                  "Lấy Mẫu Niêm Chì Mới (BR-05)",
+                )}
               </h3>
               <button
                 type="button"
@@ -375,10 +427,16 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateSample} className="p-5 space-y-4 text-xs">
+            <form
+              onSubmit={handleCreateSample}
+              className="p-5 space-y-4 text-xs"
+            >
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.samples.codeLabel", "Mã Barcode Mẫu (Sample Code) *")}
+                  {t(
+                    "field.samples.codeLabel",
+                    "Mã Barcode Mẫu (Sample Code) *",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -406,7 +464,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.samples.lotLabel", "Mã Lô Thu Mua Nguồn (Source Lot ID)")}
+                  {t(
+                    "field.samples.lotLabel",
+                    "Mã Lô Thu Mua Nguồn (Source Lot ID)",
+                  )}
                 </label>
                 <input
                   type="text"
@@ -419,7 +480,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.samples.descLabel", "Mô tả / Giống lúa / Vùng trồng")}
+                  {t(
+                    "field.samples.descLabel",
+                    "Mô tả / Giống lúa / Vùng trồng",
+                  )}
                 </label>
                 <textarea
                   rows={2}
@@ -443,7 +507,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("common.saving", "Đang lưu...") : t("field.samples.submitCreate", "Niêm phong mẫu")}
+                  {submitting
+                    ? t("common.saving", "Đang lưu...")
+                    : t("field.samples.submitCreate", "Niêm phong mẫu")}
                 </button>
               </div>
             </form>
@@ -453,11 +519,14 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
       {/* Modal: Bàn Giao Mẫu Đến Lab */}
       {isHandoverOpen && selectedSample && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("field.samples.modalHandoverTitle", "Biên Bản Bàn Giao Mẫu (Chain of Custody)")}
+                {t(
+                  "field.samples.modalHandoverTitle",
+                  "Biên Bản Bàn Giao Mẫu (Chain of Custody)",
+                )}
               </h3>
               <button
                 type="button"
@@ -468,13 +537,17 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleRecordHandover} className="p-5 space-y-4 text-xs">
+            <form
+              onSubmit={handleRecordHandover}
+              className="p-5 space-y-4 text-xs"
+            >
               <div className="p-3 rounded-lg bg-accent-primary/5 border border-accent-primary/20 space-y-1">
                 <div className="font-semibold text-accent-primary">
                   Mẫu: {selectedSample.code}
                 </div>
                 <div className="text-[11px] text-ink-secondary">
-                  Niêm chì: {selectedSample.sealCode} | Lô: {selectedSample.sourceLotId}
+                  Niêm chì: {selectedSample.sealCode} | Lô:{" "}
+                  {selectedSample.sourceLotId}
                 </div>
               </div>
 
@@ -513,10 +586,18 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   onChange={(e) => setLaboratoryName(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
-                  <option value="Viện Kiểm Nghiệm NIFC">Viện Kiểm Nghiệm An Toàn Thực Phẩm Quốc Gia (NIFC)</option>
-                  <option value="Eurofins Sắc Ký Hải Đăng">Eurofins Sắc Ký Hải Đăng (ISO 17025)</option>
-                  <option value="Trung Tâm Kỹ Thuật 3 (Quatest 3)">Trung Tâm Đo Lường Chất Lượng Quatest 3</option>
-                  <option value="SGS Vietnam Lab">SGS Vietnam Laboratory</option>
+                  <option value="Viện Kiểm Nghiệm NIFC">
+                    Viện Kiểm Nghiệm An Toàn Thực Phẩm Quốc Gia (NIFC)
+                  </option>
+                  <option value="Eurofins Sắc Ký Hải Đăng">
+                    Eurofins Sắc Ký Hải Đăng (ISO 17025)
+                  </option>
+                  <option value="Trung Tâm Kỹ Thuật 3 (Quatest 3)">
+                    Trung Tâm Đo Lường Chất Lượng Quatest 3
+                  </option>
+                  <option value="SGS Vietnam Lab">
+                    SGS Vietnam Laboratory
+                  </option>
                 </select>
               </div>
 
@@ -529,9 +610,15 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   onChange={(e) => setSealCondition(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 >
-                  <option value="NGUYÊN VẸN">NGUYÊN VẸN (Seal Intact - Pass)</option>
-                  <option value="BỊ BIẾN DẠNG">BỊ BIẾN DẠNG (Damaged Seal - Flag)</option>
-                  <option value="ĐÃ BỊ PHÁ NIÊM">ĐÃ BỊ PHÁ NIÊM (Broken Seal - Reject)</option>
+                  <option value="NGUYÊN VẸN">
+                    NGUYÊN VẸN (Seal Intact - Pass)
+                  </option>
+                  <option value="BỊ BIẾN DẠNG">
+                    BỊ BIẾN DẠNG (Damaged Seal - Flag)
+                  </option>
+                  <option value="ĐÃ BỊ PHÁ NIÊM">
+                    ĐÃ BỊ PHÁ NIÊM (Broken Seal - Reject)
+                  </option>
                 </select>
               </div>
 
@@ -548,7 +635,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("common.saving", "Đang ghi nhận...") : "Xác nhận bàn giao"}
+                  {submitting
+                    ? t("common.saving", "Đang ghi nhận...")
+                    : "Xác nhận bàn giao"}
                 </button>
               </div>
             </form>

@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '',
   plugins: [react()],
   resolve: {
     alias: {
@@ -14,6 +15,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
+        target: 'http://localhost:5080',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
         target: 'http://localhost:5080',
         changeOrigin: true,
         secure: false,

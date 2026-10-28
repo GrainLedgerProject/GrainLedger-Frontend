@@ -122,7 +122,9 @@ export const MrlVersionsPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("catalogs.mrl.errorLoad", "Không thể tải danh sách phiên bản MRL."));
+        setError(
+          t("catalogs.mrl.errorLoad", "Không thể tải danh sách phiên bản MRL."),
+        );
       }
     } finally {
       setLoading(false);
@@ -147,7 +149,9 @@ export const MrlVersionsPage: React.FC = () => {
         sourceRef: createForm.sourceRef,
       });
 
-      setSuccessMsg(t("catalogs.mrl.successCreate", "Đã tạo thành công phiên bản MRL mới"));
+      setSuccessMsg(
+        t("catalogs.mrl.successCreate", "Đã tạo thành công phiên bản MRL mới"),
+      );
       setIsCreateModalOpen(false);
       await loadData();
     } catch (err: unknown) {
@@ -166,8 +170,8 @@ export const MrlVersionsPage: React.FC = () => {
       !window.confirm(
         t(
           "catalogs.mrl.confirmPublish",
-          "Bạn có chắc chắn muốn công bố (Publish) phiên bản MRL này để áp dụng kiểm định xuất khẩu?"
-        )
+          "Bạn có chắc chắn muốn công bố (Publish) phiên bản MRL này để áp dụng kiểm định xuất khẩu?",
+        ),
       )
     )
       return;
@@ -177,15 +181,17 @@ export const MrlVersionsPage: React.FC = () => {
       setSuccessMsg(
         t(
           "catalogs.mrl.successPublish",
-          "Đã công bố phiên bản MRL thành công. Thuật toán phối trộn sẽ áp dụng ngay lập tức."
-        )
+          "Đã công bố phiên bản MRL thành công. Thuật toán phối trộn sẽ áp dụng ngay lập tức.",
+        ),
       );
       await loadData();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("catalogs.mrl.errorPublish", "Không thể công bố phiên bản."));
+        setError(
+          t("catalogs.mrl.errorPublish", "Không thể công bố phiên bản."),
+        );
       }
     }
   };
@@ -218,7 +224,9 @@ export const MrlVersionsPage: React.FC = () => {
           unit: limitUnit,
         },
       );
-      setSuccessMsg(t("catalogs.mrl.successLimit", "Đã cập nhật ngưỡng MRL cho hoạt chất"));
+      setSuccessMsg(
+        t("catalogs.mrl.successLimit", "Đã cập nhật ngưỡng MRL cho hoạt chất"),
+      );
       // reload limits
       const limits = await catalogsEndpoints.getMrlLimits(selectedVersion.id);
       setSelectedVersion({
@@ -255,7 +263,10 @@ export const MrlVersionsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteLimit = async (substanceId: string, substanceName: string) => {
+  const handleDeleteLimit = async (
+    substanceId: string,
+    substanceName: string,
+  ) => {
     if (!selectedVersion) return;
     if (!window.confirm(`Xóa giới hạn hoạt chất ${substanceName}?`)) return;
     try {
@@ -266,7 +277,9 @@ export const MrlVersionsPage: React.FC = () => {
         ...selectedVersion,
         limits: Array.isArray(limits)
           ? limits
-          : selectedVersion.limits?.filter((l) => l.substanceId !== substanceId),
+          : selectedVersion.limits?.filter(
+              (l) => l.substanceId !== substanceId,
+            ),
       });
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -282,12 +295,15 @@ export const MrlVersionsPage: React.FC = () => {
             {t("catalogs.mrl.tag", "QUẢN LÝ BẢNG GIỚI HẠN DƯ LƯỢNG MRL")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("catalogs.mrl.title", "Ngưỡng Dư lượng MRL theo Thị trường Đích")}
+            {t(
+              "catalogs.mrl.title",
+              "Ngưỡng Dư lượng MRL theo Thị trường Đích",
+            )}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "catalogs.mrl.subtitle",
-              "Quản lý bảng ngưỡng MRL có phiên bản hiệu lực cho 6 thị trường: EU, Mỹ, Nhật Bản, Hàn Quốc, Codex, Việt Nam."
+              "Quản lý bảng ngưỡng MRL có phiên bản hiệu lực cho 6 thị trường: EU, Mỹ, Nhật Bản, Hàn Quốc, Codex, Việt Nam.",
             )}
           </p>
         </div>
@@ -338,7 +354,12 @@ export const MrlVersionsPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("catalogs.mrl.loading", "Đang đối chiếu quy định MRL quốc tế...")} />
+            <GrainLoader
+              label={t(
+                "catalogs.mrl.loading",
+                "Đang đối chiếu quy định MRL quốc tế...",
+              )}
+            />
           </div>
         ) : versions.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -352,7 +373,7 @@ export const MrlVersionsPage: React.FC = () => {
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
               {t(
                 "catalogs.mrl.emptyDesc",
-                "Nhấn \"Tạo Phiên bản MRL mới\" để thiết lập bảng ngưỡng kiểm định dư lượng cho thị trường xuất khẩu."
+                'Nhấn "Tạo Phiên bản MRL mới" để thiết lập bảng ngưỡng kiểm định dư lượng cho thị trường xuất khẩu.',
               )}
             </p>
           </div>
@@ -361,12 +382,24 @@ export const MrlVersionsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("catalogs.mrl.thMarket", "Thị trường xuất khẩu")}</th>
-                  <th className="py-3 px-4">{t("catalogs.mrl.thCommodity", "Hàng hoá áp dụng")}</th>
-                  <th className="py-3 px-4">{t("catalogs.mrl.thEffectiveDate", "Ngày hiệu lực")}</th>
-                  <th className="py-3 px-4">{t("catalogs.mrl.thLegalBasis", "Căn cứ quy chuẩn pháp lý")}</th>
-                  <th className="py-3 px-4">{t("catalogs.mrl.thStatus", "Trạng thái phát hành")}</th>
-                  <th className="py-3 px-4 text-right">{t("common.actions", "Thao tác")}</th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.mrl.thMarket", "Thị trường xuất khẩu")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.mrl.thCommodity", "Hàng hoá áp dụng")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.mrl.thEffectiveDate", "Ngày hiệu lực")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.mrl.thLegalBasis", "Căn cứ quy chuẩn pháp lý")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.mrl.thStatus", "Trạng thái phát hành")}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("common.actions", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -438,11 +471,14 @@ export const MrlVersionsPage: React.FC = () => {
 
       {/* Create Version Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t("catalogs.mrl.createModalTitle", "Tạo Phiên bản Bảng MRL Mới")}
+                {t(
+                  "catalogs.mrl.createModalTitle",
+                  "Tạo Phiên bản Bảng MRL Mới",
+                )}
               </h3>
               <button
                 type="button"
@@ -482,7 +518,10 @@ export const MrlVersionsPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.mrl.commodityLabel", "Mặt hàng lúa gạo áp dụng *")}
+                  {t(
+                    "catalogs.mrl.commodityLabel",
+                    "Mặt hàng lúa gạo áp dụng *",
+                  )}
                 </label>
                 <select
                   required
@@ -508,7 +547,10 @@ export const MrlVersionsPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.mrl.effectiveFromLabel", "Ngày bắt đầu có hiệu lực pháp lý *")}
+                  {t(
+                    "catalogs.mrl.effectiveFromLabel",
+                    "Ngày bắt đầu có hiệu lực pháp lý *",
+                  )}
                 </label>
                 <input
                   type="date"
@@ -553,7 +595,9 @@ export const MrlVersionsPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("common.saving", "Đang tạo...") : t("catalogs.mrl.submitCreateBtn", "Tạo phiên bản")}
+                  {submitting
+                    ? t("common.saving", "Đang tạo...")
+                    : t("catalogs.mrl.submitCreateBtn", "Tạo phiên bản")}
                 </button>
               </div>
             </form>
@@ -563,12 +607,15 @@ export const MrlVersionsPage: React.FC = () => {
 
       {/* Threshold Limits Modal */}
       {isLimitModalOpen && selectedVersion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-mono font-bold text-accent-primary uppercase tracking-wider">
-                  {t("catalogs.mrl.limitsModalTag", "THIẾT LẬP NGƯỠNG DƯ LƯỢNG MRL CHO THỊ TRƯỜNG")}
+                  {t(
+                    "catalogs.mrl.limitsModalTag",
+                    "THIẾT LẬP NGƯỠNG DƯ LƯỢNG MRL CHO THỊ TRƯỜNG",
+                  )}
                 </span>
                 <h3 className="font-display font-bold text-lg text-ink-primary">
                   {selectedVersion.marketName || "Châu Âu (EU)"} —{" "}
@@ -591,7 +638,10 @@ export const MrlVersionsPage: React.FC = () => {
                 className="p-3.5 rounded-xl bg-surface-raised border space-y-3"
               >
                 <span className="font-bold text-ink-primary block">
-                  {t("catalogs.mrl.addLimitTitle", "Thêm hoặc cập nhật ngưỡng cho hoạt chất:")}
+                  {t(
+                    "catalogs.mrl.addLimitTitle",
+                    "Thêm hoặc cập nhật ngưỡng cho hoạt chất:",
+                  )}
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
@@ -647,20 +697,36 @@ export const MrlVersionsPage: React.FC = () => {
               <div className="space-y-2">
                 <h4 className="font-bold text-xs text-ink-primary flex items-center gap-1.5">
                   <Flask size={15} className="text-accent-primary" />
-                  <span>{t("catalogs.mrl.tableTitle", "Bảng ngưỡng giới hạn & Biên an toàn (-20%)")}</span>
+                  <span>
+                    {t(
+                      "catalogs.mrl.tableTitle",
+                      "Bảng ngưỡng giới hạn & Biên an toàn (-20%)",
+                    )}
+                  </span>
                 </h4>
 
                 <div className="rounded-lg border border-ink-tertiary/20 overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-surface-raised text-ink-secondary font-semibold border-b">
                       <tr>
-                        <th className="py-2.5 px-3">{t("catalogs.mrl.thSubstanceCode", "Mã hoạt chất")}</th>
-                        <th className="py-2.5 px-3">{t("catalogs.mrl.thSubstanceName", "Tên hoạt chất")}</th>
-                        <th className="py-2.5 px-3 font-mono">{t("catalogs.mrl.thMrlThreshold", "Ngưỡng MRL")}</th>
-                        <th className="py-2.5 px-3 font-mono">
-                          {t("catalogs.mrl.thSafeMargin", "Biên an toàn (-20%)")}
+                        <th className="py-2.5 px-3">
+                          {t("catalogs.mrl.thSubstanceCode", "Mã hoạt chất")}
                         </th>
-                        <th className="py-2.5 px-3">{t("catalogs.mrl.thRiskLevel", "Mức rủi ro")}</th>
+                        <th className="py-2.5 px-3">
+                          {t("catalogs.mrl.thSubstanceName", "Tên hoạt chất")}
+                        </th>
+                        <th className="py-2.5 px-3 font-mono">
+                          {t("catalogs.mrl.thMrlThreshold", "Ngưỡng MRL")}
+                        </th>
+                        <th className="py-2.5 px-3 font-mono">
+                          {t(
+                            "catalogs.mrl.thSafeMargin",
+                            "Biên an toàn (-20%)",
+                          )}
+                        </th>
+                        <th className="py-2.5 px-3">
+                          {t("catalogs.mrl.thRiskLevel", "Mức rủi ro")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ink-tertiary/10 font-mono">
@@ -742,7 +808,7 @@ export const MrlVersionsPage: React.FC = () => {
 
       {/* Import MRL Modal */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary flex items-center gap-2">
@@ -771,7 +837,8 @@ export const MrlVersionsPage: React.FC = () => {
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-[11px]"
                 />
                 <span className="text-[11px] text-ink-tertiary mt-1 block">
-                  Định dạng JSON chuẩn theo schema OpenAPI: marketId, commodityId, effectiveFrom, sourceRef, limits[].
+                  Định dạng JSON chuẩn theo schema OpenAPI: marketId,
+                  commodityId, effectiveFrom, sourceRef, limits[].
                 </span>
               </div>
 

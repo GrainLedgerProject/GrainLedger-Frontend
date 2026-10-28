@@ -27,7 +27,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
     <div
       role="status"
       aria-live="polite"
-      className={`flex flex-col items-center justify-center gap-4 ${className}`}
+      className={`flex flex-col w-full h-full items-center justify-center gap-4 ${className}`}
     >
       <div
         className="relative flex items-center justify-center"

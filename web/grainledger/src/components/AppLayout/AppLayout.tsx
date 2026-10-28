@@ -1,7 +1,6 @@
 import { AppHeader } from "@/components/AppHeader/AppHeader";
 import { AppSidebar } from "@/components/AppSidebar/AppSidebar";
 import { CompanyContextBar } from "@/components/CompanyContextBar/CompanyContextBar";
-import { DynamicIslandNotification } from "@/components/DynamicIslandNotification/DynamicIslandNotification";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal/GlobalSearchModal";
 import React from "react";
@@ -13,9 +12,6 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-surface-base flex flex-row selection:bg-accent-primary/20 selection:text-accent-primary">
-      {/* Dynamic Island Floating Notification */}
-      {/* <DynamicIslandNotification /> */}
-
       {/* App Sidebar */}
       <AppSidebar />
 

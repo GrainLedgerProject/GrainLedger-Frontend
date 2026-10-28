@@ -149,6 +149,16 @@ export const labReportEndpoints = {
       method: 'POST',
       body: JSON.stringify(req),
     }),
+  updateLabReport: (id: string, req: CaptureLabReportRequest) =>
+    apiFetch<unknown>(`/api/lab-reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    }),
+  deleteLabReport: (id: string, req: Pick<CaptureLabReportRequest, 'deviceId' | 'clientOperationId' | 'capturedAt' | 'payloadSchemaVersion'>) =>
+    apiFetch<unknown>(`/api/lab-reports/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify(req),
+    }),
   getLabReportFile: (id: string) => apiFetch<unknown>(`/api/lab-reports/${id}/file`),
   confirmLabReport: (id: string, req: ConfirmLabReportRequest) =>
     apiFetch<unknown>(`/api/lab-reports/${id}/confirm`, {

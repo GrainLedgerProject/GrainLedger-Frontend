@@ -233,10 +233,10 @@ export const PendingCorrectionsPage: React.FC = () => {
         prev.map((c) =>
           c.id === selectedCorrection.id
             ? {
-              ...c,
-              status: "RECONCILED" as const,
-              reconciliationNotes: reviewNotes.trim(),
-            }
+                ...c,
+                status: "RECONCILED" as const,
+                reconciliationNotes: reviewNotes.trim(),
+              }
             : c,
         ),
       );
@@ -244,10 +244,10 @@ export const PendingCorrectionsPage: React.FC = () => {
       setSelectedCorrection((prev) =>
         prev
           ? {
-            ...prev,
-            status: "RECONCILED",
-            reconciliationNotes: reviewNotes.trim(),
-          }
+              ...prev,
+              status: "RECONCILED",
+              reconciliationNotes: reviewNotes.trim(),
+            }
           : null,
       );
 
@@ -366,21 +366,30 @@ export const PendingCorrectionsPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            {t("mill.pendingCorrections.statusPendingReview", "Chờ Quản lý đối soát")}
+            {t(
+              "mill.pendingCorrections.statusPendingReview",
+              "Chờ Quản lý đối soát",
+            )}
           </span>
         );
       case "RECONCILED":
         return (
           <StatusBadge
             status="BALANCED"
-            label={t("mill.pendingCorrections.statusReconciled", "Đã đối soát xong")}
+            label={t(
+              "mill.pendingCorrections.statusReconciled",
+              "Đã đối soát xong",
+            )}
           />
         );
       case "COMMITTED":
         return (
           <StatusBadge
             status="BALANCED"
-            label={t("mill.pendingCorrections.statusCommitted", "Đã chốt bút toán bù")}
+            label={t(
+              "mill.pendingCorrections.statusCommitted",
+              "Đã chốt bút toán bù",
+            )}
           />
         );
       case "CANCELLED":
@@ -399,7 +408,10 @@ export const PendingCorrectionsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
           <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t("mill.pendingCorrections.tag", "HẠCH TOÁN ĐẢO NGƯỢC & BÚT TOÁN BÙ")}
+            {t(
+              "mill.pendingCorrections.tag",
+              "HẠCH TOÁN ĐẢO NGƯỢC & BÚT TOÁN BÙ",
+            )}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("mill.pendingCorrections.pageTitle", "Ghi Bút Toán Bù Sổ Cái")}
@@ -407,7 +419,7 @@ export const PendingCorrectionsPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.pendingCorrections.pageSubtitle",
-              "Thực hiện chốt phát hành các bút toán đảo ngược (Reversal Entry) theo chuẩn cân bằng khối lượng ISO 22095 và ghi nhận điều chỉnh vào Sổ cái bất biến cho các mẻ đã hoàn tất bước đối soát bằng chứng."
+              "Thực hiện chốt phát hành các bút toán đảo ngược (Reversal Entry) theo chuẩn cân bằng khối lượng ISO 22095 và ghi nhận điều chỉnh vào Sổ cái bất biến cho các mẻ đã hoàn tất bước đối soát bằng chứng.",
             )}
           </p>
         </div>
@@ -416,10 +428,18 @@ export const PendingCorrectionsPage: React.FC = () => {
           <Link
             to="/mill/reconciliations"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-colors shadow-xs"
-            title={t("mill.pendingCorrections.goToReconcileTooltip", "Chuyển sang màn hình Đối soát & Xác nhận bằng chứng")}
+            title={t(
+              "mill.pendingCorrections.goToReconcileTooltip",
+              "Chuyển sang màn hình Đối soát & Xác nhận bằng chứng",
+            )}
           >
             <ShieldCheck size={16} className="text-accent-primary" />
-            <span>{t("mill.pendingCorrections.goToReconcile", "Đi tới Đối soát & Xác nhận")}</span>
+            <span>
+              {t(
+                "mill.pendingCorrections.goToReconcile",
+                "Đi tới Đối soát & Xác nhận",
+              )}
+            </span>
             <ArrowRight size={14} />
           </Link>
 
@@ -441,7 +461,12 @@ export const PendingCorrectionsPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
-            <span>{t("mill.pendingCorrections.createNewRequest", "Tạo yêu cầu sửa mới")}</span>
+            <span>
+              {t(
+                "mill.pendingCorrections.createNewRequest",
+                "Tạo yêu cầu sửa mới",
+              )}
+            </span>
           </Link>
         </div>
       </div>
@@ -465,53 +490,77 @@ export const PendingCorrectionsPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-xs text-ink-secondary mb-1">
-            <span>{t("mill.pendingCorrections.kpiPending", "Chờ duyệt đối soát")}</span>
+            <span>
+              {t("mill.pendingCorrections.kpiPending", "Chờ duyệt đối soát")}
+            </span>
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
           </div>
           <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
             {stats.pending}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
-            {t("mill.pendingCorrections.kpiPendingDesc", "Cần Quản lý xác minh")}
+            {t(
+              "mill.pendingCorrections.kpiPendingDesc",
+              "Cần Quản lý xác minh",
+            )}
           </p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-xs text-ink-secondary mb-1">
-            <span>{t("mill.pendingCorrections.kpiReconciled", "Đã đối soát xong")}</span>
+            <span>
+              {t("mill.pendingCorrections.kpiReconciled", "Đã đối soát xong")}
+            </span>
             <span className="w-2.5 h-2.5 rounded-full bg-accent-primary" />
           </div>
           <div className="text-2xl font-bold font-mono text-accent-primary">
             {stats.reconciled}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
-            {t("mill.pendingCorrections.kpiReconciledDesc", "Sẵn sàng chốt bút toán bù")}
+            {t(
+              "mill.pendingCorrections.kpiReconciledDesc",
+              "Sẵn sàng chốt bút toán bù",
+            )}
           </p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-xs text-ink-secondary mb-1">
-            <span>{t("mill.pendingCorrections.kpiCommitted", "Đã chốt sổ cái")}</span>
-            <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400" weight="fill" />
+            <span>
+              {t("mill.pendingCorrections.kpiCommitted", "Đã chốt sổ cái")}
+            </span>
+            <CheckCircle
+              size={16}
+              className="text-emerald-600 dark:text-emerald-400"
+              weight="fill"
+            />
           </div>
           <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
             {stats.committed}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
-            {t("mill.pendingCorrections.kpiCommittedDesc", "Bút toán bù đã phát hành")}
+            {t(
+              "mill.pendingCorrections.kpiCommittedDesc",
+              "Bút toán bù đã phát hành",
+            )}
           </p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-xs text-ink-secondary mb-1">
-            <span>{t("mill.pendingCorrections.kpiTotal", "Tổng yêu cầu trong kỳ")}</span>
+            <span>
+              {t("mill.pendingCorrections.kpiTotal", "Tổng yêu cầu trong kỳ")}
+            </span>
             <FolderOpen size={16} className="text-ink-tertiary" />
           </div>
           <div className="text-2xl font-bold font-mono text-ink-primary">
             {stats.total}
           </div>
           <p className="text-[11px] text-ink-tertiary mt-1">
-            {t("mill.pendingCorrections.kpiTotalDesc", "Hồ sơ kiểm toán ISO 22095")}
+            {t(
+              "mill.pendingCorrections.kpiTotalDesc",
+              "Hồ sơ kiểm toán ISO 22095",
+            )}
           </p>
         </div>
       </div>
@@ -523,42 +572,49 @@ export const PendingCorrectionsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${statusFilter === "ALL"
-              ? "bg-surface-base dark:bg-surface-raised text-ink-primary font-bold shadow-xs"
-              : "text-ink-secondary hover:text-ink-primary"
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "ALL"
+                ? "bg-surface-base dark:bg-surface-raised text-ink-primary font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
           >
             {t("common.all", "Tất cả")} ({corrections.length})
           </button>
           <button
             type="button"
             onClick={() => setStatusFilter("PENDING_REVIEW")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${statusFilter === "PENDING_REVIEW"
-              ? "bg-surface-base dark:bg-surface-raised text-amber-600 dark:text-amber-400 font-bold shadow-xs"
-              : "text-ink-secondary hover:text-ink-primary"
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "PENDING_REVIEW"
+                ? "bg-surface-base dark:bg-surface-raised text-amber-600 dark:text-amber-400 font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
           >
-            {t("mill.pendingCorrections.tabPending", "Chờ duyệt")} ({stats.pending})
+            {t("mill.pendingCorrections.tabPending", "Chờ duyệt")} (
+            {stats.pending})
           </button>
           <button
             type="button"
             onClick={() => setStatusFilter("RECONCILED")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${statusFilter === "RECONCILED"
-              ? "bg-surface-base dark:bg-surface-raised text-accent-primary font-bold shadow-xs"
-              : "text-ink-secondary hover:text-ink-primary"
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "RECONCILED"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-primary font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
           >
-            {t("mill.pendingCorrections.tabReconciled", "Đã đối soát")} ({stats.reconciled})
+            {t("mill.pendingCorrections.tabReconciled", "Đã đối soát")} (
+            {stats.reconciled})
           </button>
           <button
             type="button"
             onClick={() => setStatusFilter("COMMITTED")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${statusFilter === "COMMITTED"
-              ? "bg-surface-base dark:bg-surface-raised text-emerald-600 dark:text-emerald-400 font-bold shadow-xs"
-              : "text-ink-secondary hover:text-ink-primary"
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "COMMITTED"
+                ? "bg-surface-base dark:bg-surface-raised text-emerald-600 dark:text-emerald-400 font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
           >
-            {t("mill.pendingCorrections.tabCommitted", "Đã chốt bù")} ({stats.committed})
+            {t("mill.pendingCorrections.tabCommitted", "Đã chốt bù")} (
+            {stats.committed})
           </button>
         </div>
 
@@ -568,7 +624,10 @@ export const PendingCorrectionsPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("mill.pendingCorrections.searchPlaceholder", "Tìm theo mã CORR-, OP-, lý do...")}
+            placeholder={t(
+              "mill.pendingCorrections.searchPlaceholder",
+              "Tìm theo mã CORR-, OP-, lý do...",
+            )}
             className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none transition-colors"
           />
           <MagnifyingGlass
@@ -598,13 +657,33 @@ export const PendingCorrectionsPage: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-surface-raised dark:bg-surface-overlay text-ink-secondary font-semibold border-b border-ink-tertiary/15 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">{t("mill.pendingCorrections.colCorrId", "Mã yêu cầu")}</th>
-                  <th className="py-3.5 px-4">{t("mill.pendingCorrections.colOpId", "Mã công đoạn")}</th>
-                  <th className="py-3.5 px-4">{t("mill.pendingCorrections.colReason", "Phân loại & Lý do sai sót")}</th>
-                  <th className="py-3.5 px-4">{t("mill.pendingCorrections.colProposedDelta", "Đề xuất bù khối lượng")}</th>
-                  <th className="py-3.5 px-4">{t("mill.pendingCorrections.colAuthor", "Người lập")}</th>
-                  <th className="py-3.5 px-4">{t("common.status", "Trạng thái")}</th>
-                  <th className="py-3.5 px-4 text-right">{t("common.action", "Thao tác")}</th>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colCorrId", "Mã yêu cầu")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colOpId", "Mã công đoạn")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t(
+                      "mill.pendingCorrections.colReason",
+                      "Phân loại & Lý do sai sót",
+                    )}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t(
+                      "mill.pendingCorrections.colProposedDelta",
+                      "Đề xuất bù khối lượng",
+                    )}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colAuthor", "Người lập")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("common.status", "Trạng thái")}
+                  </th>
+                  <th className="py-3.5 px-4 text-right">
+                    {t("common.action", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10 font-sans">
@@ -614,7 +693,10 @@ export const PendingCorrectionsPage: React.FC = () => {
                       colSpan={7}
                       className="py-12 text-center text-ink-tertiary"
                     >
-                      {t("mill.pendingCorrections.noRecords", "Không tìm thấy yêu cầu sửa đổi nào phù hợp.")}
+                      {t(
+                        "mill.pendingCorrections.noRecords",
+                        "Không tìm thấy yêu cầu sửa đổi nào phù hợp.",
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -644,7 +726,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 font-mono">
                         {item.proposedReversals &&
-                          item.proposedReversals.length > 0 ? (
+                        item.proposedReversals.length > 0 ? (
                           <div className="space-y-0.5">
                             {item.proposedReversals.map((r, idx) => (
                               <div
@@ -655,12 +737,13 @@ export const PendingCorrectionsPage: React.FC = () => {
                                   {r.lotId}:
                                 </span>{" "}
                                 <span
-                                  className={`font-bold ${r.deltaMassKg.startsWith("+")
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : r.deltaMassKg.startsWith("-")
-                                      ? "text-accent-danger"
-                                      : "text-ink-tertiary"
-                                    }`}
+                                  className={`font-bold ${
+                                    r.deltaMassKg.startsWith("+")
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : r.deltaMassKg.startsWith("-")
+                                        ? "text-accent-danger"
+                                        : "text-ink-tertiary"
+                                  }`}
                                 >
                                   {r.deltaMassKg} kg
                                 </span>
@@ -691,7 +774,12 @@ export const PendingCorrectionsPage: React.FC = () => {
                           onClick={() => handleOpenWorkbench(item)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-raised dark:bg-surface-overlay hover:bg-accent-primary/10 hover:text-accent-primary border border-ink-tertiary/20 text-ink-primary transition-colors shadow-xs"
                         >
-                          <span>{t("mill.pendingCorrections.actionReconcileAndCommit", "Đối soát & Ghi bù")}</span>
+                          <span>
+                            {t(
+                              "mill.pendingCorrections.actionReconcileAndCommit",
+                              "Đối soát & Ghi bù",
+                            )}
+                          </span>
                           <CaretRight size={14} weight="bold" />
                         </button>
                       </td>
@@ -706,7 +794,7 @@ export const PendingCorrectionsPage: React.FC = () => {
 
       {/* Reconciliation Workbench Modal (SC-17 & SC-18) */}
       {selectedCorrection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-6">
+        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-6">
           <div className="bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-ledger-in">
             {/* Modal Header */}
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
@@ -722,7 +810,10 @@ export const PendingCorrectionsPage: React.FC = () => {
                     {renderStatusBadge(selectedCorrection.status)}
                   </div>
                   <p className="text-xs text-ink-secondary mt-0.5">
-                    {t("mill.pendingCorrections.modalSubtitle", "Hồ sơ đối soát & ghi bút toán bù cho công đoạn: ")}
+                    {t(
+                      "mill.pendingCorrections.modalSubtitle",
+                      "Hồ sơ đối soát & ghi bút toán bù cho công đoạn: ",
+                    )}
                     <span className="font-mono font-bold text-accent-primary">
                       {selectedCorrection.operationId}
                     </span>
@@ -752,7 +843,12 @@ export const PendingCorrectionsPage: React.FC = () => {
               <div>
                 <h3 className="font-bold font-display text-sm text-ink-primary mb-3 flex items-center gap-2">
                   <Calculator size={18} className="text-accent-primary" />
-                  <span>{t("mill.pendingCorrections.compareTitle", "Đối chiếu cân bằng khối lượng ISO 22095 (BR-03):")}</span>
+                  <span>
+                    {t(
+                      "mill.pendingCorrections.compareTitle",
+                      "Đối chiếu cân bằng khối lượng ISO 22095 (BR-03):",
+                    )}
+                  </span>
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -761,7 +857,10 @@ export const PendingCorrectionsPage: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-ink-tertiary/15 pb-2">
                       <span className="font-semibold text-xs text-ink-primary flex items-center gap-1.5">
                         <Lock size={14} className="text-ink-tertiary" />
-                        {t("mill.pendingCorrections.immutableOriginal", "Bản ghi gốc đã Commit (Bất biến)")}
+                        {t(
+                          "mill.pendingCorrections.immutableOriginal",
+                          "Bản ghi gốc đã Commit (Bất biến)",
+                        )}
                       </span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-base dark:bg-surface-raised border border-ink-tertiary/15 text-ink-secondary font-bold">
                         IMMUTABLE
@@ -770,20 +869,27 @@ export const PendingCorrectionsPage: React.FC = () => {
 
                     <div className="space-y-1.5 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-ink-tertiary">{t("mill.pendingCorrections.opBatchId", "Mã mẻ:")}</span>
+                        <span className="text-ink-tertiary">
+                          {t("mill.pendingCorrections.opBatchId", "Mã mẻ:")}
+                        </span>
                         <span className="font-mono font-bold text-ink-primary">
                           {selectedCorrection.operationId}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-ink-tertiary">{t("mill.pendingCorrections.facility", "Cơ sở:")}</span>
+                        <span className="text-ink-tertiary">
+                          {t("mill.pendingCorrections.facility", "Cơ sở:")}
+                        </span>
                         <span className="text-ink-secondary">
                           {t("brand.facility", "Dây chuyền A - Tiền Giang")}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-ink-tertiary">
-                          {t("mill.pendingCorrections.committedTime", "Thời gian chốt:")}
+                          {t(
+                            "mill.pendingCorrections.committedTime",
+                            "Thời gian chốt:",
+                          )}
                         </span>
                         <span className="text-ink-secondary font-mono text-[11px]">
                           {new Date(
@@ -793,10 +899,16 @@ export const PendingCorrectionsPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between border-t border-ink-tertiary/10 pt-1.5">
                         <span className="text-ink-tertiary">
-                          {t("mill.pendingCorrections.outputStatus", "Trạng thái lô đầu ra:")}
+                          {t(
+                            "mill.pendingCorrections.outputStatus",
+                            "Trạng thái lô đầu ra:",
+                          )}
                         </span>
                         <span className="font-semibold text-amber-600 dark:text-amber-400">
-                          {t("mill.pendingCorrections.holdPendingRecon", "Tạm khóa chờ đối soát (HOLD)")}
+                          {t(
+                            "mill.pendingCorrections.holdPendingRecon",
+                            "Tạm khóa chờ đối soát (HOLD)",
+                          )}
                         </span>
                       </div>
                     </div>
@@ -807,7 +919,10 @@ export const PendingCorrectionsPage: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-accent-primary/20 pb-2">
                       <span className="font-semibold text-xs text-accent-primary flex items-center gap-1.5">
                         <Scales size={14} />
-                        {t("mill.pendingCorrections.compensatingEntryTitle", "Bút toán bù điều chỉnh (Compensating Entry)")}
+                        {t(
+                          "mill.pendingCorrections.compensatingEntryTitle",
+                          "Bút toán bù điều chỉnh (Compensating Entry)",
+                        )}
                       </span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent-primary text-white font-bold">
                         REVERSAL
@@ -825,16 +940,21 @@ export const PendingCorrectionsPage: React.FC = () => {
                               {rev.lotId}
                             </span>
                             <span className="text-[10px] text-ink-tertiary font-sans">
-                              {rev.lotName || t("mill.pendingCorrections.deltaLotDefault", "Lô điều chỉnh")}
+                              {rev.lotName ||
+                                t(
+                                  "mill.pendingCorrections.deltaLotDefault",
+                                  "Lô điều chỉnh",
+                                )}
                             </span>
                           </div>
                           <span
-                            className={`font-bold text-xs ${rev.deltaMassKg.startsWith("+")
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : rev.deltaMassKg.startsWith("-")
-                                ? "text-accent-danger"
-                                : "text-ink-primary"
-                              }`}
+                            className={`font-bold text-xs ${
+                              rev.deltaMassKg.startsWith("+")
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : rev.deltaMassKg.startsWith("-")
+                                  ? "text-accent-danger"
+                                  : "text-ink-primary"
+                            }`}
                           >
                             {rev.deltaMassKg} kg
                           </span>
@@ -849,14 +969,24 @@ export const PendingCorrectionsPage: React.FC = () => {
               <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-2">
                 <div className="font-semibold text-xs text-ink-primary flex items-center gap-1.5">
                   <FileText size={16} className="text-accent-primary" />
-                  <span>{t("mill.pendingCorrections.reasonSectionTitle", "Lý do sai sót & Căn cứ hồ sơ:")}</span>
+                  <span>
+                    {t(
+                      "mill.pendingCorrections.reasonSectionTitle",
+                      "Lý do sai sót & Căn cứ hồ sơ:",
+                    )}
+                  </span>
                 </div>
                 <p className="text-xs text-ink-secondary leading-relaxed bg-surface-base dark:bg-surface-raised p-3 rounded-lg border border-ink-tertiary/10">
                   {selectedCorrection.reason}
                 </p>
                 {selectedCorrection.evidenceReference && (
                   <div className="flex items-center gap-2 text-xs text-ink-tertiary pt-1">
-                    <span>{t("mill.pendingCorrections.evidenceDocNumber", "Số hiệu văn bản minh chứng:")}</span>
+                    <span>
+                      {t(
+                        "mill.pendingCorrections.evidenceDocNumber",
+                        "Số hiệu văn bản minh chứng:",
+                      )}
+                    </span>
                     <span className="font-mono font-bold text-accent-primary">
                       {selectedCorrection.evidenceReference}
                     </span>
@@ -874,7 +1004,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-ink-primary mb-1">
                   {t(
                     "mill.pendingCorrections.managerNotesLabel",
-                    "Ý kiến & Biên bản đối soát của Quản lý nhà máy (Mill Manager Review Notes) *"
+                    "Ý kiến & Biên bản đối soát của Quản lý nhà máy (Mill Manager Review Notes) *",
                   )}
                 </label>
                 <textarea
@@ -888,12 +1018,11 @@ export const PendingCorrectionsPage: React.FC = () => {
                   onChange={(e) => setReviewNotes(e.target.value)}
                   placeholder={t(
                     "mill.pendingCorrections.managerNotesPlaceholder",
-                    "Ghi rõ kết luận đối soát: Đã xác minh lại phiếu cân / mẫu KCS, chuẩn y số liệu bù đảo ngược..."
+                    "Ghi rõ kết luận đối soát: Đã xác minh lại phiếu cân / mẫu KCS, chuẩn y số liệu bù đảo ngược...",
                   )}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none disabled:bg-surface-raised disabled:text-ink-secondary transition-colors"
                 />
               </div>
-
             </div>
 
             {/* Modal Actions */}
@@ -916,7 +1045,10 @@ export const PendingCorrectionsPage: React.FC = () => {
                         onClick={handleCancel}
                         className="px-3.5 py-2 rounded-lg border border-accent-danger/30 text-accent-danger hover:bg-functional-rejected-bg text-xs font-semibold transition-colors"
                       >
-                        {t("mill.pendingCorrections.btnRejectRequest", "Từ chối yêu cầu")}
+                        {t(
+                          "mill.pendingCorrections.btnRejectRequest",
+                          "Từ chối yêu cầu",
+                        )}
                       </button>
 
                       <Link
@@ -924,7 +1056,12 @@ export const PendingCorrectionsPage: React.FC = () => {
                         className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
                       >
                         <ShieldCheck size={15} weight="bold" />
-                        <span>{t("mill.pendingCorrections.btnInspectEvidence", "Thẩm định đối soát bằng chứng")}</span>
+                        <span>
+                          {t(
+                            "mill.pendingCorrections.btnInspectEvidence",
+                            "Thẩm định đối soát bằng chứng",
+                          )}
+                        </span>
                         <ArrowRight size={13} weight="bold" />
                       </Link>
 
@@ -933,10 +1070,18 @@ export const PendingCorrectionsPage: React.FC = () => {
                         disabled={isProcessing}
                         onClick={handleReconcile}
                         className="px-3.5 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
-                        title={t("mill.pendingCorrections.btnQuickReconcileTitle", "Duyệt nhanh đối soát")}
+                        title={t(
+                          "mill.pendingCorrections.btnQuickReconcileTitle",
+                          "Duyệt nhanh đối soát",
+                        )}
                       >
                         <CheckCircle size={15} weight="bold" />
-                        <span>{t("mill.pendingCorrections.btnQuickReconcile", "Duyệt nhanh đối soát")}</span>
+                        <span>
+                          {t(
+                            "mill.pendingCorrections.btnQuickReconcile",
+                            "Duyệt nhanh đối soát",
+                          )}
+                        </span>
                       </button>
                     </>
                   )}
@@ -949,7 +1094,12 @@ export const PendingCorrectionsPage: React.FC = () => {
                       className="px-4 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
                     >
                       <Scales size={15} weight="bold" />
-                      <span>{t("mill.pendingCorrections.btnCommitToLedger", "Chốt Bút toán Bù vào Sổ cái")}</span>
+                      <span>
+                        {t(
+                          "mill.pendingCorrections.btnCommitToLedger",
+                          "Chốt Bút toán Bù vào Sổ cái",
+                        )}
+                      </span>
                     </button>
                   )}
                 </div>

@@ -4,6 +4,7 @@
  * Base URL: http://localhost:5080 (or proxied via /api)
  */
 import { useAuthStore } from '@/app/store/authStore';
+import { useUiStore } from '@/app/store/uiStore';
 import { normalizeUserRole } from '@/shared/types/roles';
 import { COOKIE_KEYS, getCookie } from '@/shared/utils/cookies';
 import { logger } from '@/shared/utils/logger';
@@ -197,7 +198,17 @@ export async function apiFetch<T>(
     response = await fetch(url, fetchOptions);
   } catch (netErr) {
     logger.warn(`Network error on ${url}:`, netErr);
+    useUiStore.getState().setOnline(false);
+    useUiStore.getState().setBackendConnected(false);
     throw new ApiError(0, 'Không thể kết nối đến máy chủ backend (Port 5080).');
+  }
+
+  // Update backend connection status based on HTTP response
+  if (response.status >= 502 && response.status <= 504) {
+    useUiStore.getState().setOnline(false);
+    useUiStore.getState().setBackendConnected(false);
+  } else if (!useUiStore.getState().isBackendConnected && response.status < 500) {
+    useUiStore.getState().setBackendConnected(true);
   }
 
   // Reactive Token Refresh:

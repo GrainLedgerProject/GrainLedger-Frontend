@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
 import { adminEndpoints, type OrganizationDto } from "@/api/admin";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
   Scales,
@@ -73,7 +74,9 @@ export const ReceivingThresholdsPage: React.FC = () => {
         setThresholds(threshRes as CompanyThreshold[]);
       } else {
         // Mock fallback initial thresholds for known organizations
-        const orgList = Array.isArray(orgsRes) ? (orgsRes as OrganizationDto[]) : [];
+        const orgList = Array.isArray(orgsRes)
+          ? (orgsRes as OrganizationDto[])
+          : [];
         setThresholds([
           {
             companyId: orgList[0]?.id || "org-001",
@@ -86,7 +89,8 @@ export const ReceivingThresholdsPage: React.FC = () => {
           },
           {
             companyId: orgList[1]?.id || "org-002",
-            companyName: orgList[1]?.name || "Tập đoàn Xuất khẩu Lương thực Đồng Tháp",
+            companyName:
+              orgList[1]?.name || "Tập đoàn Xuất khẩu Lương thực Đồng Tháp",
             weightVarianceTolerancePercent: 1.5,
             moistureDiscountFactor: 1.05,
             maxMoistureAllowedPercent: 27.0,
@@ -99,7 +103,12 @@ export const ReceivingThresholdsPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("admin.thresholds.errorLoad", "Không thể tải cấu hình ngưỡng tiếp nhận."));
+        setError(
+          t(
+            "admin.thresholds.errorLoad",
+            "Không thể tải cấu hình ngưỡng tiếp nhận.",
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -129,10 +138,17 @@ export const ReceivingThresholdsPage: React.FC = () => {
   };
 
   const handleDelete = async (companyId: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?")) return;
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
+      )
+    )
+      return;
     try {
       await ledgerEndpoints.deleteCompanyReceivingThreshold(companyId);
-      setSuccessMsg("Đã xóa ngưỡng riêng của doanh nghiệp, tự động áp dụng ngưỡng mặc định hệ thống.");
+      setSuccessMsg(
+        "Đã xóa ngưỡng riêng của doanh nghiệp, tự động áp dụng ngưỡng mặc định hệ thống.",
+      );
       setThresholds((prev) => prev.filter((t) => t.companyId !== companyId));
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -154,9 +170,15 @@ export const ReceivingThresholdsPage: React.FC = () => {
       };
 
       if (isEdit) {
-        await ledgerEndpoints.updateCompanyReceivingThreshold(selectedCompanyId, payload);
+        await ledgerEndpoints.updateCompanyReceivingThreshold(
+          selectedCompanyId,
+          payload,
+        );
       } else {
-        await ledgerEndpoints.createCompanyReceivingThreshold(selectedCompanyId, payload);
+        await ledgerEndpoints.createCompanyReceivingThreshold(
+          selectedCompanyId,
+          payload,
+        );
       }
 
       const targetOrg = organizations.find((o) => o.id === selectedCompanyId);
@@ -165,7 +187,7 @@ export const ReceivingThresholdsPage: React.FC = () => {
       setSuccessMsg(
         isEdit
           ? `Đã cập nhật thành công ngưỡng tiếp nhận cho "${companyName}"`
-          : `Đã thiết lập thành công ngưỡng riêng cho "${companyName}"`
+          : `Đã thiết lập thành công ngưỡng riêng cho "${companyName}"`,
       );
 
       setIsModalOpen(false);
@@ -190,12 +212,15 @@ export const ReceivingThresholdsPage: React.FC = () => {
             {t("admin.thresholds.tag", "QUY TẮC NGHIỆP VỤ TIẾP NHẬN")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("admin.thresholds.title", "Cấu hình Ngưỡng Tiếp nhận & Dung sai theo Doanh nghiệp")}
+            {t(
+              "admin.thresholds.title",
+              "Cấu hình Ngưỡng Tiếp nhận & Dung sai theo Doanh nghiệp",
+            )}
           </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.thresholds.subtitle",
-              "Thiết lập biên độ sai số khối lượng cân xe, giới hạn độ ẩm và tạp chất chấp nhận khi tiếp nhận thóc vào nhà máy cho từng khách hàng."
+              "Thiết lập biên độ sai số khối lượng cân xe, giới hạn độ ẩm và tạp chất chấp nhận khi tiếp nhận thóc vào nhà máy cho từng khách hàng.",
             )}
           </p>
         </div>
@@ -215,7 +240,9 @@ export const ReceivingThresholdsPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
-            <span>{t("admin.thresholds.createBtn", "Thiết lập Ngưỡng Riêng")}</span>
+            <span>
+              {t("admin.thresholds.createBtn", "Thiết lập Ngưỡng Riêng")}
+            </span>
           </button>
         </div>
       </div>
@@ -242,22 +269,35 @@ export const ReceivingThresholdsPage: React.FC = () => {
             <span>Ngưỡng Mặc Định Toàn Hệ Thống (System-Wide Default)</span>
           </div>
           <p className="text-xs text-ink-secondary">
-            Tất cả doanh nghiệp chưa thiết lập ngưỡng riêng sẽ tự động áp dụng bộ tiêu chí mặc định này.
+            Tất cả doanh nghiệp chưa thiết lập ngưỡng riêng sẽ tự động áp dụng
+            bộ tiêu chí mặc định này.
           </p>
         </div>
 
         <div className="flex items-center gap-6 text-xs font-mono">
           <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">Sai số cân max</span>
-            <span className="text-ink-primary font-bold text-sm text-accent-primary">±{defaultThreshold.weightVarianceTolerancePercent}%</span>
+            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
+              Sai số cân max
+            </span>
+            <span className="text-ink-primary font-bold text-sm text-accent-primary">
+              ±{defaultThreshold.weightVarianceTolerancePercent}%
+            </span>
           </div>
           <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">Độ ẩm tối đa</span>
-            <span className="text-ink-primary font-bold text-sm text-amber-500">{defaultThreshold.maxMoistureAllowedPercent}%</span>
+            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
+              Độ ẩm tối đa
+            </span>
+            <span className="text-ink-primary font-bold text-sm text-amber-500">
+              {defaultThreshold.maxMoistureAllowedPercent}%
+            </span>
           </div>
           <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">Tạp chất tối đa</span>
-            <span className="text-ink-primary font-bold text-sm text-ink-primary">{defaultThreshold.impurityTolerancePercent}%</span>
+            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
+              Tạp chất tối đa
+            </span>
+            <span className="text-ink-primary font-bold text-sm text-ink-primary">
+              {defaultThreshold.impurityTolerancePercent}%
+            </span>
           </div>
         </div>
       </div>
@@ -265,16 +305,25 @@ export const ReceivingThresholdsPage: React.FC = () => {
       {/* Grid of Company Overrides */}
       {loading ? (
         <div className="py-16 flex justify-center">
-          <GrainLoader label={t("admin.thresholds.loading", "Đang tải danh sách ngưỡng dung sai...")} />
+          <GrainLoader
+            label={t(
+              "admin.thresholds.loading",
+              "Đang tải danh sách ngưỡng dung sai...",
+            )}
+          />
         </div>
       ) : thresholds.length === 0 ? (
         <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
-          <Scales size={40} className="mx-auto text-ink-tertiary mb-3 opacity-60" />
+          <Scales
+            size={40}
+            className="mx-auto text-ink-tertiary mb-3 opacity-60"
+          />
           <p className="text-sm font-semibold text-ink-primary">
             Chưa có doanh nghiệp nào cài đặt ngưỡng tiếp nhận riêng
           </p>
           <p className="text-xs text-ink-secondary mt-1 max-w-sm mx-auto">
-            Hệ thống đang áp dụng ngưỡng mặc định cho toàn bộ các lô lúa nhập kho.
+            Hệ thống đang áp dụng ngưỡng mặc định cho toàn bộ các lô lúa nhập
+            kho.
           </p>
         </div>
       ) : (
@@ -289,10 +338,7 @@ export const ReceivingThresholdsPage: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
                     <Buildings size={22} weight="bold" />
                   </div>
-                  <StatusBadge
-                    status="BALANCED"
-                    label="Ngưỡng Riêng"
-                  />
+                  <StatusBadge status="BALANCED" label="Ngưỡng Riêng" />
                 </div>
 
                 <div>
@@ -306,16 +352,28 @@ export const ReceivingThresholdsPage: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/10 text-center font-mono text-xs">
                   <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">Sai số cân</span>
-                    <strong className="text-accent-primary">±{item.weightVarianceTolerancePercent}%</strong>
+                    <span className="block text-[10px] text-ink-secondary font-sans">
+                      Sai số cân
+                    </span>
+                    <strong className="text-accent-primary">
+                      ±{item.weightVarianceTolerancePercent}%
+                    </strong>
                   </div>
                   <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">Độ ẩm max</span>
-                    <strong className="text-amber-500">{item.maxMoistureAllowedPercent}%</strong>
+                    <span className="block text-[10px] text-ink-secondary font-sans">
+                      Độ ẩm max
+                    </span>
+                    <strong className="text-amber-500">
+                      {item.maxMoistureAllowedPercent}%
+                    </strong>
                   </div>
                   <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">Tạp chất</span>
-                    <strong className="text-ink-primary">{item.impurityTolerancePercent}%</strong>
+                    <span className="block text-[10px] text-ink-secondary font-sans">
+                      Tạp chất
+                    </span>
+                    <strong className="text-ink-primary">
+                      {item.impurityTolerancePercent}%
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -349,12 +407,13 @@ export const ReceivingThresholdsPage: React.FC = () => {
       )}
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={isEdit ? "Cập nhật ngưỡng tiếp nhận" : "Thiết lập ngưỡng tiếp nhận"}>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {isEdit ? "Chỉnh sửa Ngưỡng Doanh nghiệp" : "Thiết lập Ngưỡng Riêng Mới"}
+                {isEdit
+                  ? "Chỉnh sửa Ngưỡng Doanh nghiệp"
+                  : "Thiết lập Ngưỡng Riêng Mới"}
               </h3>
               <button
                 type="button"
@@ -395,11 +454,14 @@ export const ReceivingThresholdsPage: React.FC = () => {
                   max="10"
                   required
                   value={weightVariance}
-                  onChange={(e) => setWeightVariance(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setWeightVariance(parseFloat(e.target.value) || 0)
+                  }
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
                 />
                 <span className="text-[10px] text-ink-tertiary block mt-1">
-                  Vượt quá biên độ này sẽ yêu cầu duyệt đối soát tại bước cân xe đến.
+                  Vượt quá biên độ này sẽ yêu cầu duyệt đối soát tại bước cân xe
+                  đến.
                 </span>
               </div>
 
@@ -415,7 +477,9 @@ export const ReceivingThresholdsPage: React.FC = () => {
                     max="35"
                     required
                     value={maxMoisture}
-                    onChange={(e) => setMaxMoisture(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setMaxMoisture(parseFloat(e.target.value) || 0)
+                    }
                     className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
                   />
                 </div>
@@ -430,7 +494,9 @@ export const ReceivingThresholdsPage: React.FC = () => {
                     max="10"
                     required
                     value={impurity}
-                    onChange={(e) => setImpurity(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setImpurity(parseFloat(e.target.value) || 0)
+                    }
                     className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
                   />
                 </div>
@@ -449,13 +515,16 @@ export const ReceivingThresholdsPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Áp dụng ngưỡng"}
+                  {submitting
+                    ? "Đang lưu..."
+                    : isEdit
+                      ? "Lưu thay đổi"
+                      : "Áp dụng ngưỡng"}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

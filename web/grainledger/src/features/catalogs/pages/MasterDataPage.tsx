@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { catalogsEndpoints } from "@/api/catalogs";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { Modal } from "@/components/Modal";
 import {
   Database,
   Plus,
@@ -91,7 +92,9 @@ export const MasterDataPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("catalogs.master.errorLoad", "Không thể tải danh mục từ máy chủ."));
+        setError(
+          t("catalogs.master.errorLoad", "Không thể tải danh mục từ máy chủ."),
+        );
       }
     } finally {
       setLoading(false);
@@ -163,9 +166,9 @@ export const MasterDataPage: React.FC = () => {
             break;
         }
         setSuccessMsg(
-          t("catalogs.master.successUpdate", "Đã cập nhật mục \"{{name}}\"", {
+          t("catalogs.master.successUpdate", 'Đã cập nhật mục "{{name}}"', {
             name: formData.name,
-          })
+          }),
         );
       } else {
         // Create
@@ -210,9 +213,9 @@ export const MasterDataPage: React.FC = () => {
             break;
         }
         setSuccessMsg(
-          t("catalogs.master.successCreate", "Đã tạo mới mục \"{{name}}\"", {
+          t("catalogs.master.successCreate", 'Đã tạo mới mục "{{name}}"', {
             name: formData.name,
-          })
+          }),
         );
       }
 
@@ -222,7 +225,9 @@ export const MasterDataPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError(t("catalogs.master.errorAction", "Thao tác không thành công."));
+        setError(
+          t("catalogs.master.errorAction", "Thao tác không thành công."),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -230,11 +235,20 @@ export const MasterDataPage: React.FC = () => {
   };
 
   const handleDelete = async (item: any) => {
+    const supportsDeletion = ["COMMODITIES", "UNITS", "SUBSTANCES"].includes(activeTab);
+    if (!supportsDeletion) {
+      setError(t("catalogs.master.deleteUnsupported", "Danh mục này chưa có API xoá; hãy chỉnh sửa để ngừng sử dụng thay vì xoá."));
+      return;
+    }
     if (
       !window.confirm(
-        t("catalogs.master.confirmDelete", "Xoá mục \"{{name}}\" khỏi danh mục vận hành?", {
-          name: item.name,
-        })
+        t(
+          "catalogs.master.confirmDelete",
+          'Xoá mục "{{name}}" khỏi danh mục vận hành?',
+          {
+            name: item.name,
+          },
+        ),
       )
     )
       return;
@@ -247,9 +261,9 @@ export const MasterDataPage: React.FC = () => {
       if (activeTab === "SUBSTANCES")
         await catalogsEndpoints.deleteActiveSubstance(item.id);
       setSuccessMsg(
-        t("catalogs.master.successDelete", "Đã xoá mục \"{{name}}\"", {
+        t("catalogs.master.successDelete", 'Đã xoá mục "{{name}}"', {
           name: item.name,
-        })
+        }),
       );
       await loadData();
     } catch (err: unknown) {
@@ -275,7 +289,7 @@ export const MasterDataPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "catalogs.master.subtitle",
-              "Duy trì các danh mục dùng chung: Hàng hoá lúa gạo, đơn vị đo lường, hoạt chất BVTV, thị trường xuất khẩu."
+              "Duy trì các danh mục dùng chung: Hàng hoá lúa gạo, đơn vị đo lường, hoạt chất BVTV, thị trường xuất khẩu.",
             )}
           </p>
         </div>
@@ -317,12 +331,42 @@ export const MasterDataPage: React.FC = () => {
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-ink-tertiary/20 pb-2 overflow-x-auto text-xs font-semibold">
         {[
-          { id: "COMMODITIES", labelKey: "catalogs.master.tabCommodities", defaultLabel: "Hàng hoá lúa gạo", icon: Tag },
-          { id: "SUBSTANCES", labelKey: "catalogs.master.tabSubstances", defaultLabel: "Hoạt chất BVTV", icon: Flask },
-          { id: "UNITS", labelKey: "catalogs.master.tabUnits", defaultLabel: "Đơn vị đo lường", icon: Scales },
-          { id: "MARKETS", labelKey: "catalogs.master.tabMarkets", defaultLabel: "Thị trường xuất khẩu", icon: Globe },
-          { id: "VARIETIES", labelKey: "catalogs.master.tabVarieties", defaultLabel: "Giống lúa canh tác", icon: Plant },
-          { id: "ATTRIBUTES", labelKey: "catalogs.master.tabAttributes", defaultLabel: "Chỉ tiêu chất lượng", icon: Certificate },
+          {
+            id: "COMMODITIES",
+            labelKey: "catalogs.master.tabCommodities",
+            defaultLabel: "Hàng hoá lúa gạo",
+            icon: Tag,
+          },
+          {
+            id: "SUBSTANCES",
+            labelKey: "catalogs.master.tabSubstances",
+            defaultLabel: "Hoạt chất BVTV",
+            icon: Flask,
+          },
+          {
+            id: "UNITS",
+            labelKey: "catalogs.master.tabUnits",
+            defaultLabel: "Đơn vị đo lường",
+            icon: Scales,
+          },
+          {
+            id: "MARKETS",
+            labelKey: "catalogs.master.tabMarkets",
+            defaultLabel: "Thị trường xuất khẩu",
+            icon: Globe,
+          },
+          {
+            id: "VARIETIES",
+            labelKey: "catalogs.master.tabVarieties",
+            defaultLabel: "Giống lúa canh tác",
+            icon: Plant,
+          },
+          {
+            id: "ATTRIBUTES",
+            labelKey: "catalogs.master.tabAttributes",
+            defaultLabel: "Chỉ tiêu chất lượng",
+            icon: Certificate,
+          },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
@@ -348,7 +392,10 @@ export const MasterDataPage: React.FC = () => {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder={t("catalogs.master.searchPlaceholder", "Tìm theo tên hoặc mã code...")}
+            placeholder={t(
+              "catalogs.master.searchPlaceholder",
+              "Tìm theo tên hoặc mã code...",
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
@@ -369,7 +416,12 @@ export const MasterDataPage: React.FC = () => {
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <GrainLoader label={t("catalogs.master.loading", "Đang tải dữ liệu danh mục...")} />
+            <GrainLoader
+              label={t(
+                "catalogs.master.loading",
+                "Đang tải dữ liệu danh mục...",
+              )}
+            />
           </div>
         ) : items.length === 0 ? (
           <div className="py-16 text-center space-y-2">
@@ -381,7 +433,10 @@ export const MasterDataPage: React.FC = () => {
               {t("catalogs.master.noRecords", "Chưa có bản ghi nào")}
             </p>
             <p className="text-xs text-ink-secondary max-w-sm mx-auto">
-              {t("catalogs.master.noRecordsHint", "Nhấn \"Thêm Bản Ghi Mới\" để tạo dữ liệu cho danh mục này.")}
+              {t(
+                "catalogs.master.noRecordsHint",
+                'Nhấn "Thêm Bản Ghi Mới" để tạo dữ liệu cho danh mục này.',
+              )}
             </p>
           </div>
         ) : (
@@ -389,11 +444,21 @@ export const MasterDataPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">{t("catalogs.master.thCode", "Mã Code")}</th>
-                  <th className="py-3 px-4">{t("catalogs.master.thName", "Tên hiển thị chuẩn")}</th>
-                  <th className="py-3 px-4">{t("catalogs.master.thSpecs", "Thông số / Phân loại")}</th>
-                  <th className="py-3 px-4">{t("catalogs.master.thStatus", "Trạng thái")}</th>
-                  <th className="py-3 px-4 text-right">{t("catalogs.master.thActions", "Thao tác")}</th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.master.thCode", "Mã Code")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.master.thName", "Tên hiển thị chuẩn")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.master.thSpecs", "Thông số / Phân loại")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("catalogs.master.thStatus", "Trạng thái")}
+                  </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("catalogs.master.thActions", "Thao tác")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
@@ -412,7 +477,13 @@ export const MasterDataPage: React.FC = () => {
                       {item.quantityKind || item.unit || "-"}
                     </td>
                     <td className="py-3 px-4">
-                      <StatusBadge status="BALANCED" label={t("catalogs.master.statusActive", "Đang áp dụng")} />
+                      <StatusBadge
+                        status="BALANCED"
+                        label={t(
+                          "catalogs.master.statusActive",
+                          "Đang áp dụng",
+                        )}
+                      />
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
@@ -423,14 +494,14 @@ export const MasterDataPage: React.FC = () => {
                       >
                         <PencilSimple size={15} />
                       </button>
-                      <button
+                      {["COMMODITIES", "UNITS", "SUBSTANCES"].includes(activeTab) && <button
                         type="button"
                         onClick={() => handleDelete(item)}
                         className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-accent-danger transition-colors"
                         title={t("catalogs.master.btnDelete", "Xoá")}
                       >
                         <Trash size={15} />
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}
@@ -441,13 +512,15 @@ export const MasterDataPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={editingItem ? t("catalogs.master.modalTitleEdit", "Cập nhật bản ghi danh mục") : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}>
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {editingItem
-                  ? t("catalogs.master.modalTitleEdit", "Cập nhật bản ghi danh mục")
+                  ? t(
+                      "catalogs.master.modalTitleEdit",
+                      "Cập nhật bản ghi danh mục",
+                    )
                   : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}
               </h3>
               <button
@@ -472,7 +545,10 @@ export const MasterDataPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, code: e.target.value })
                   }
-                  placeholder={t("catalogs.master.placeholderCode", "VD: PADDY_OM5451, KG, TCZ")}
+                  placeholder={t(
+                    "catalogs.master.placeholderCode",
+                    "VD: PADDY_OM5451, KG, TCZ",
+                  )}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
                 />
               </div>
@@ -488,7 +564,10 @@ export const MasterDataPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder={t("catalogs.master.placeholderName", "VD: Lúa tươi OM5451, Kilogram, Tricyclazole")}
+                  placeholder={t(
+                    "catalogs.master.placeholderName",
+                    "VD: Lúa tươi OM5451, Kilogram, Tricyclazole",
+                  )}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
                 />
               </div>
@@ -496,7 +575,10 @@ export const MasterDataPage: React.FC = () => {
               {(activeTab === "UNITS" || activeTab === "ATTRIBUTES") && (
                 <div>
                   <label className="block font-semibold text-ink-secondary mb-1">
-                    {t("catalogs.master.lblExtra", "Loại đại lượng / Ký hiệu đo lường")}
+                    {t(
+                      "catalogs.master.lblExtra",
+                      "Loại đại lượng / Ký hiệu đo lường",
+                    )}
                   </label>
                   <input
                     type="text"
@@ -504,7 +586,10 @@ export const MasterDataPage: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, extra: e.target.value })
                     }
-                    placeholder={t("catalogs.master.placeholderExtra", "VD: MASS, AREA, %")}
+                    placeholder={t(
+                      "catalogs.master.placeholderExtra",
+                      "VD: MASS, AREA, %",
+                    )}
                     className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
                   />
                 </div>
@@ -523,13 +608,14 @@ export const MasterDataPage: React.FC = () => {
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
-                  {submitting ? t("catalogs.master.saving", "Đang lưu...") : t("catalogs.master.btnSave", "Lưu bản ghi")}
+                  {submitting
+                    ? t("catalogs.master.saving", "Đang lưu...")
+                    : t("catalogs.master.btnSave", "Lưu bản ghi")}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

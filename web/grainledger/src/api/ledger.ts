@@ -39,7 +39,7 @@ export const ledgerEndpoints = {
   getLots: (params?: Record<string, string | number | undefined>) => {
     if (!params) return apiFetch<unknown>('/api/ledger/lots');
     const filtered = Object.fromEntries(
-      Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== '')
     ) as Record<string, string>;
     const qs = new URLSearchParams(filtered).toString();
     return apiFetch<unknown>(`/api/ledger/lots${qs ? '?' + qs : ''}`);
@@ -99,6 +99,11 @@ export const ledgerEndpoints = {
     apiFetch<unknown>(`/api/ledger/equipment/${id}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
+    }),
+  retireEquipment: (id: string, req: unknown) =>
+    apiFetch<unknown>(`/api/ledger/equipment/${id}/retire`, {
+      method: 'POST',
+      body: JSON.stringify(req),
     }),
 
   // User Assignments to Facilities
@@ -260,6 +265,21 @@ export const ledgerEndpoints = {
       body: JSON.stringify(req),
     }),
   getEvidence: (id: string) => apiFetch<unknown>(`/api/ledger/evidence/${id}`),
+
+  // Traceability and residue evaluation
+  traceLot: (req: { lotId: string; direction?: string; view?: string }) =>
+    apiFetch<unknown>('/api/ledger/trace', { method: 'POST', body: JSON.stringify(req) }),
+  traceLotFromLab: (req: unknown) =>
+    apiFetch<unknown>('/api/ledger/trace/from-lab', { method: 'POST', body: JSON.stringify(req) }),
+  getTraceStarts: () => apiFetch<unknown>('/api/ledger/trace/starts'),
+  getResidueEvaluations: (lotId: string) =>
+    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations`),
+  createResidueEvaluation: (lotId: string, req: { id: string; substanceIds: string[] }) =>
+    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations`, { method: 'POST', body: JSON.stringify(req) }),
+  getResidueEvaluation: (lotId: string, evaluationId: string) =>
+    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations/${evaluationId}`),
+  getResiduePreview: (lotId: string) =>
+    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-preview`),
 
   // Receiving Thresholds (BR-07)
   getReceivingThresholds: () => apiFetch<unknown>('/api/ledger/receiving-thresholds'),
