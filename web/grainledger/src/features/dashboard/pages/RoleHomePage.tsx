@@ -90,7 +90,7 @@ export const RoleHomePage: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          ROLE 1: MILL OPERATOR HOME (SC-15 Focus)
+          ROLE 1: MILL OPERATOR HOME
           ========================================================================= */}
       {currentRole === "MILL_OPERATOR" && (
         <div className="space-y-6">

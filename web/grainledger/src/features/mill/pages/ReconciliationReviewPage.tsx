@@ -463,7 +463,7 @@ export const ReconciliationReviewPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <ClockCounterClockwise size={16} weight="bold" />
-            <span>{t("mill.reconciliation.switchCommitLink", "Chuyển sang Ghi bút toán bù (SC-18)")}</span>
+            <span>{t("mill.reconciliation.switchCommitLink", "Chuyển sang Ghi bút toán bù")}</span>
             <ArrowRight size={14} weight="bold" />
           </Link>
         </div>
@@ -730,7 +730,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                         to="/mill/corrections/pending"
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white transition-all shadow-xs"
                       >
-                        <span>{t("mill.reconciliation.btnPostCompensation", "Ghi bút toán bù (SC-18)")}</span>
+                        <span>{t("mill.reconciliation.btnPostCompensation", "Ghi bút toán bù")}</span>
                         <ArrowRight size={14} weight="bold" />
                       </Link>
                     )}
@@ -1086,7 +1086,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                     <p className="text-xs text-ink-secondary leading-relaxed">
                       {t(
                         "mill.reconciliation.signOffRuleDesc",
-                        "Theo quy định Rule BR-01 và BR-12, Quản lý nhà máy có trách nhiệm xác minh toàn bộ chứng từ đo lường. Sau khi ký xác nhận đối soát, hồ sơ sẽ được chuyển sang trạng thái sẵn sàng để phát hành Bút Toán Bù (SC-18) vào Sổ cái bất biến."
+                        "Quản lý nhà máy có trách nhiệm xác minh toàn bộ chứng từ đo lường. Sau khi ký xác nhận đối soát, hồ sơ sẽ được chuyển sang trạng thái sẵn sàng để phát hành Bút Toán Bù vào Sổ cái bất biến."
                       )}
                     </p>
 
@@ -1134,7 +1134,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                         className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse text-xs font-bold transition-all shadow-xs disabled:opacity-60"
                       >
                         <CheckCircle size={16} weight="bold" />
-                        <span>{t("mill.reconciliation.btnApprove", "Xác nhận đối soát hợp lệ (SC-17)")}</span>
+                        <span>{t("mill.reconciliation.btnApprove", "Xác nhận đối soát hợp lệ")}</span>
                       </button>
 
                       <button
@@ -1161,7 +1161,7 @@ export const ReconciliationReviewPage: React.FC = () => {
                           <span className="text-[11px] text-ink-secondary">
                             {t(
                               "mill.reconciliation.step2Prompt",
-                              "Tiếp tục sang bước 2 để chốt bút toán bù đảo ngược vào Sổ cái bất biến (SC-18)."
+                              "Tiếp tục sang bước 2 để chốt bút toán bù đảo ngược vào Sổ cái bất biến."
                             )}
                           </span>
                         </div>

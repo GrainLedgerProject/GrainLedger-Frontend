@@ -1,20 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
-  LockSimple,
-  ShieldWarning,
-  Plus,
-  ArrowsClockwise,
-  CheckCircle,
-  WarningCircle,
-  X,
-  FileText,
-  Calendar,
-  Warehouse,
-  Flask,
+  LockSimpleIcon,
+  ArrowsClockwiseIcon,
+  CheckCircleIcon,
+  WarningCircleIcon,
+  XIcon,
+  CalendarIcon,
 } from "@phosphor-icons/react";
 
 interface HoldOrder {
@@ -45,13 +40,16 @@ export const HoldManagementPage: React.FC = () => {
   );
   const [submitting, setSubmitting] = useState(false);
 
-  const loadHolds = async () => {
+  // Manual reload / refresh handler used by user actions (reload button, after submit)
+  const loadHolds = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await ledgerEndpoints.getHolds().catch(() => []);
-      const items = Array.isArray(res) ? res : (res as any)?.items || [];
-      setHolds(items);
+      const items = Array.isArray(res)
+        ? res
+        : (res as { items?: HoldOrder[] })?.items || [];
+      setHolds(items as HoldOrder[]);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -61,11 +59,40 @@ export const HoldManagementPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
+  // Synchronize effect with external system (network) using active cancellation flag
   useEffect(() => {
-    void loadHolds();
-  }, []);
+    let active = true;
+
+    async function initHolds() {
+      try {
+        const res = await ledgerEndpoints.getHolds().catch(() => []);
+        if (!active) return;
+        const items = Array.isArray(res)
+          ? res
+          : (res as { items?: HoldOrder[] })?.items || [];
+        setHolds(items as HoldOrder[]);
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD."));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initHolds();
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const handleIssueHold = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +134,7 @@ export const HoldManagementPage: React.FC = () => {
       await ledgerEndpoints.respondToHold(hold.id, {
         responseKind,
         respondedAt: new Date().toISOString(),
-        notes: `Ghi nhận chuyển kho cách ly vật lý theo quy định BR-15`,
+        notes: `Ghi nhận chuyển kho cách ly vật lý theo quy định`,
       });
       setSuccessMsg(
         t(
@@ -156,14 +183,14 @@ export const HoldManagementPage: React.FC = () => {
             className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwiseIcon size={16} />
           </button>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:opacity-90 transition-all shadow-xs"
           >
-            <LockSimple size={16} weight="bold" />
+            <LockSimpleIcon size={16} weight="bold" />
             <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
           </button>
         </div>
@@ -172,20 +199,20 @@ export const HoldManagementPage: React.FC = () => {
       {/* Alerts */}
       {error && (
         <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
-          <WarningCircle size={18} weight="fill" className="shrink-0" />
+          <WarningCircleIcon size={18} weight="fill" className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {successMsg && (
         <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
-          <CheckCircle size={18} weight="fill" className="shrink-0" />
+          <CheckCircleIcon size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Warning Policy Box */}
       {/* <div className="p-4 rounded-xl bg-functional-hold-bg dark:bg-functional-hold-bg/20 border border-functional-hold-border/40 flex items-start gap-3">
-        <ShieldWarning
+        <ShieldWarningIcon
           size={22}
           className="text-accent-danger shrink-0 mt-0.5"
           weight="fill"
@@ -216,7 +243,7 @@ export const HoldManagementPage: React.FC = () => {
           </div>
         ) : holds.length === 0 ? (
           <div className="py-16 text-center space-y-2">
-            <CheckCircle
+            <CheckCircleIcon
               size={40}
               className="mx-auto text-accent-primary opacity-60"
             />
@@ -266,7 +293,7 @@ export const HoldManagementPage: React.FC = () => {
                   >
                     <td className="py-3 px-4 font-mono font-bold text-accent-danger">
                       <span className="inline-flex items-center gap-1.5">
-                        <LockSimple size={14} weight="fill" />
+                        <LockSimpleIcon size={14} weight="fill" />
                         <span>{h.lotCode || `LOT-${h.id.slice(0, 8)}`}</span>
                       </span>
                     </td>
@@ -275,7 +302,7 @@ export const HoldManagementPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 font-mono text-ink-secondary">
                       <span className="inline-flex items-center gap-1">
-                        <Calendar size={13} />
+                        <CalendarIcon size={13} />
                         <span>
                           {new Date(h.issuedAt).toLocaleDateString("vi-VN")}
                         </span>
@@ -326,7 +353,7 @@ export const HoldManagementPage: React.FC = () => {
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-accent-danger flex items-center gap-2">
-                <LockSimple size={18} weight="fill" />
+                <LockSimpleIcon size={18} weight="fill" />
                 <span>
                   {t("risk.hold.modalTitle", "Ban hành Lệnh HOLD Khẩn Cấp")}
                 </span>
@@ -336,7 +363,7 @@ export const HoldManagementPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
               >
-                <X size={18} />
+                <XIcon size={18} />
               </button>
             </div>
 

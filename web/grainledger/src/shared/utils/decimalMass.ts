@@ -40,7 +40,7 @@ export function formatMass(
 }
 
 /**
- * Checks whether an operation satisfies Mass Balance Conservation (BR-01).
+ * Checks whether an operation satisfies Mass Balance Conservation.
  * Total Input = Total Output + Declared Loss within allowed tolerance (e.g. 0.5% of input).
  */
 export function checkMassBalance(

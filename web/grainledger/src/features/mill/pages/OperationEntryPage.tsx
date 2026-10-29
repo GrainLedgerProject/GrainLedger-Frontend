@@ -3,7 +3,7 @@
  * @feature F08, F09 (Custody Ledger)
  * @roles MILL_OPERATOR, MILL_MANAGER (View)
  * @description Record drying, milling, physical blending or merge, bagging, or transfer of an unchanged lot between locations.
- * Validates mass balance conservation (BR-01) and double-spending prevention (BR-02).
+ * Validates mass balance conservation and double-spending prevention.
  */
 import { ledgerEndpoints } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
@@ -139,7 +139,7 @@ const DEFAULT_FALLBACK_LOTS: LotOption[] = [
     availableKg: "0",
     isHold: true,
     holdReason:
-      "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
+      "Lô đang bị giữ theo lệnh phong toả kiểm dịch. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
     restrictions: ["HOLD: Quarantine Tricyclazole"],
   },
 ];
@@ -193,7 +193,7 @@ export const OperationEntryPage: React.FC = () => {
       "Hao hụt ẩm và bụi phát tán tự nhiên qua hệ thống quạt hút",
   );
 
-  // Dynamic tolerance based on process type (BR-01)
+  // Dynamic tolerance based on process type
   const tolerancePercent = useMemo(() => {
     switch (processType) {
       case "BLENDING":
@@ -613,7 +613,7 @@ export const OperationEntryPage: React.FC = () => {
             activeLot.holdReason ||
             t(
               "mill.operations.holdNotice",
-              "Lô đang bị giữ theo lệnh phong toả kiểm dịch BR-15. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
+              "Lô đang bị giữ theo lệnh phong toả kiểm dịch. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
             )
           }
         />
@@ -1134,7 +1134,7 @@ export const OperationEntryPage: React.FC = () => {
                   {balanceResult.isBalanced
                     ? t(
                         "mill.operations.balancePassed",
-                        "Đạt điều kiện cân bằng khối lượng (BR-01)",
+                        "Đạt điều kiện cân bằng khối lượng",
                       )
                     : t(
                         "mill.operations.balanceFailed",

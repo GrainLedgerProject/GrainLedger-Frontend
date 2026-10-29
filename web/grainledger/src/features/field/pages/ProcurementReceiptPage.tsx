@@ -807,7 +807,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                 <span>
                   {t(
                     "field.receipt.policyTitle",
-                    "Quy trình bảo toàn dòng chảy khối lượng (BR-04)",
+                    "Quy trình bảo toàn dòng chảy khối lượng",
                   )}
                 </span>
               </div>

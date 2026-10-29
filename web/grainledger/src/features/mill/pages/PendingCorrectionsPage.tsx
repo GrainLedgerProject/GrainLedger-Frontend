@@ -8,7 +8,6 @@ import {
   Calculator,
   CaretRight,
   CheckCircle,
-  ClockCounterClockwise,
   FileText,
   FolderOpen,
   Lock,
@@ -16,12 +15,11 @@ import {
   Plus,
   Scales,
   ShieldCheck,
-  ShieldWarning,
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 export interface CorrectionRecord {
@@ -43,101 +41,31 @@ export interface CorrectionRecord {
   }>;
 }
 
-const INITIAL_CORRECTIONS: CorrectionRecord[] = [
-  {
-    id: "CORR-2026-001",
-    operationId: "OP-2026-DRY-01",
-    facilityId: "FAC-TIENGIANG-01",
-    category: "Đo sai độ ẩm / Tạp chất",
-    reason:
-      "Nhầm lẫn phiếu cân độ ẩm đầu vào từ 14.8% thành 14.2%, dẫn đến sai lệch lượng hao hụt tính toán",
-    reconciliationNotes:
-      "Biên bản kiểm tra kỹ thuật số 04/BB-KCS ngày 15/10/2026. Đã kiểm tra lại mẫu lưu tại KCS.",
-    status: "PENDING_REVIEW",
-    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    createdBy: "Nguyễn Tấn Vận Hành (Vận hành viên)",
-    evidenceReference: "BB-KCS-2026-042",
-    evidenceFileName: "Phieu_kiem_tra_KCS_042.pdf",
-    proposedReversals: [
-      {
-        lotId: "LOT-TG-2026-001",
-        lotName: "Lúa OM5451 đầu vào",
-        deltaMassKg: "0.000000",
-      },
-      {
-        lotId: "LOT-TG-2026-002",
-        lotName: "Lúa sấy khô đầu ra",
-        deltaMassKg: "+120.000000",
-      },
-    ],
-  },
-  {
-    id: "CORR-2026-002",
-    operationId: "OP-2026-MILL-03",
-    facilityId: "FAC-TIENGIANG-01",
-    category: "Tỷ lệ thu hồi cám/tấm lệch",
-    reason:
-      "Tỷ lệ thu hồi cám thực tế lệch 0.8% so với định mức do máy bóc vỏ gặp sự cố trục rulo đầu ca",
-    reconciliationNotes:
-      "Kỹ thuật viên cơ điện đã thay thế rulo cao su số 3. Đã hiệu chuẩn lại cân silo cám lúc 14:00.",
-    status: "RECONCILED",
-    createdAt: new Date(Date.now() - 1000 * 60 * 540).toISOString(),
-    createdBy: "Nguyễn Tấn Vận Hành (Vận hành viên)",
-    evidenceReference: "BB-SC-2026-018",
-    evidenceFileName: "Bien_ban_su_co_rulo_018.pdf",
-    proposedReversals: [
-      {
-        lotId: "LOT-TG-2026-003",
-        lotName: "Lúa ST25 đầu vào",
-        deltaMassKg: "0.000000",
-      },
-      {
-        lotId: "LOT-TG-2026-004",
-        lotName: "Gạo lứt thành phẩm",
-        deltaMassKg: "+85.000000",
-      },
-      {
-        lotId: "LOT-TG-2026-CAM",
-        lotName: "Cám gạo phụ phẩm",
-        deltaMassKg: "-85.000000",
-      },
-    ],
-  },
-  {
-    id: "CORR-2026-003",
-    operationId: "OP-2026-BLEND-01",
-    facilityId: "FAC-TIENGIANG-01",
-    category: "Sai lệch cân / Bì tare",
-    reason:
-      "Trừ sai khối lượng bao bì xe trung chuyển 40 kg khi đóng bao thành phẩm",
-    reconciliationNotes:
-      "Đã đối chiếu phiếu cân xe và phiếu cân bàn đầu ra. Bút toán bù đã được chốt vào sổ cái.",
-    status: "COMMITTED",
-    createdAt: new Date(Date.now() - 1000 * 60 * 1440 * 2).toISOString(),
-    createdBy: "Lê Văn Quản Trị (Admin)",
-    evidenceReference: "BB-CAN-2026-091",
-    proposedReversals: [
-      {
-        lotId: "LOT-TG-2026-007",
-        lotName: "Gạo thơm 5% tấm",
-        deltaMassKg: "+40.000000",
-      },
-    ],
-  },
-];
+function parseCorrectionsResponse(res: unknown): CorrectionRecord[] {
+  if (Array.isArray(res)) {
+    return res as CorrectionRecord[];
+  }
+  if (res && typeof res === "object") {
+    if ("items" in res && Array.isArray((res as { items: CorrectionRecord[] }).items)) {
+      return (res as { items: CorrectionRecord[] }).items;
+    }
+    if ("corrections" in res && Array.isArray((res as { corrections: CorrectionRecord[] }).corrections)) {
+      return (res as { corrections: CorrectionRecord[] }).corrections;
+    }
+  }
+  return [];
+}
 
 export const PendingCorrectionsPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { id: routeCorrectionId } = useParams<{ id?: string }>();
   const { user } = useAuthStore();
 
   const isManager =
     user?.role === "MILL_MANAGER" || user?.role === "MILL_ADMIN";
 
-  const [corrections, setCorrections] =
-    useState<CorrectionRecord[]>(INITIAL_CORRECTIONS);
-  const [loading, setLoading] = useState(false);
+  const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters
@@ -153,55 +81,68 @@ export const PendingCorrectionsPage: React.FC = () => {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    void fetchCorrections();
-  }, []);
-
-  // Handle route param if deep linked with /mill/reconciliations/:id
-  useEffect(() => {
-    if (routeCorrectionId && corrections.length > 0) {
-      const found = corrections.find(
-        (c) =>
-          c.id.toLowerCase() === routeCorrectionId.toLowerCase() ||
-          c.operationId.toLowerCase() === routeCorrectionId.toLowerCase(),
-      );
-      if (found) {
-        setSelectedCorrection(found);
-        setReviewNotes(found.reconciliationNotes || "");
-      }
-    }
-  }, [routeCorrectionId, corrections]);
-
-  const fetchCorrections = async () => {
+  // Manual reload handler for button click
+  const fetchCorrections = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = (await ledgerEndpoints.getCorrections()) as unknown;
-
-      let list: CorrectionRecord[] = [];
-      if (Array.isArray(res) && res.length > 0) {
-        list = res;
-      } else if (
-        res &&
-        typeof res === "object" &&
-        "items" in res &&
-        Array.isArray((res as { items: unknown[] }).items)
-      ) {
-        list = (res as { items: CorrectionRecord[] }).items;
-      }
-
-      if (list.length > 0) {
-        setCorrections(list);
+      const list = parseCorrectionsResponse(res);
+      setCorrections(list);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        setCorrections(INITIAL_CORRECTIONS);
+        setError("Không thể tải danh sách yêu cầu sửa đổi.");
       }
-    } catch {
-      // Graceful fallback to initial realistic mock data
-      setCorrections(INITIAL_CORRECTIONS);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Synchronize effect with external system (network)
+  useEffect(() => {
+    let active = true;
+
+    async function initCorrections() {
+      try {
+        const res = (await ledgerEndpoints.getCorrections()) as unknown;
+        if (!active) return;
+        const list = parseCorrectionsResponse(res);
+        setCorrections(list);
+
+        // Handle route param if deep linked with /mill/reconciliations/:id
+        if (routeCorrectionId && list.length > 0) {
+          const found = list.find(
+            (c) =>
+              c.id.toLowerCase() === routeCorrectionId.toLowerCase() ||
+              c.operationId.toLowerCase() === routeCorrectionId.toLowerCase(),
+          );
+          if (found) {
+            setSelectedCorrection(found);
+            setReviewNotes(found.reconciliationNotes || "");
+          }
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Không thể tải danh sách yêu cầu sửa đổi.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initCorrections();
+
+    return () => {
+      active = false;
+    };
+  }, [routeCorrectionId]);
 
   const handleOpenWorkbench = (record: CorrectionRecord) => {
     setSelectedCorrection(record);
@@ -221,13 +162,9 @@ export const PendingCorrectionsPage: React.FC = () => {
 
     try {
       setIsProcessing(true);
-      try {
-        await ledgerEndpoints.reconcileCorrection(selectedCorrection.id, {
-          notes: reviewNotes.trim(),
-        });
-      } catch {
-        // Fallback for dev
-      }
+      await ledgerEndpoints.reconcileCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim(),
+      });
 
       setCorrections((prev) =>
         prev.map((c) =>
@@ -254,12 +191,18 @@ export const PendingCorrectionsPage: React.FC = () => {
       setActionSuccess(
         `Đã hoàn tất đối soát yêu cầu ${selectedCorrection.id}. Chờ bước chốt bút toán bù.`,
       );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Không thể đối soát yêu cầu.");
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Action: Chốt ghi bút toán bù vào sổ cái (Commit - SC-18 / BR-03)
+  // Action: Chốt ghi bút toán bù vào sổ cái
   const handleCommit = async () => {
     if (!selectedCorrection) return;
     if (
@@ -272,13 +215,9 @@ export const PendingCorrectionsPage: React.FC = () => {
 
     try {
       setIsProcessing(true);
-      try {
-        await ledgerEndpoints.commitCorrection(selectedCorrection.id, {
-          notes: reviewNotes.trim() || "Committed by Mill Manager",
-        });
-      } catch {
-        // Fallback for dev
-      }
+      await ledgerEndpoints.commitCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim() || "Committed by Mill Manager",
+      });
 
       setCorrections((prev) =>
         prev.map((c) =>
@@ -293,8 +232,14 @@ export const PendingCorrectionsPage: React.FC = () => {
       );
 
       setActionSuccess(
-        `Đã chốt thành công Bút toán Bù đảo ngược cho yêu cầu ${selectedCorrection.id} vào Sổ Cái (BR-03).`,
+        `Đã chốt thành công Bút toán Bù đảo ngược cho yêu cầu ${selectedCorrection.id} vào Sổ Cái.`,
       );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Không thể chốt bút toán bù.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -307,13 +252,9 @@ export const PendingCorrectionsPage: React.FC = () => {
 
     try {
       setIsProcessing(true);
-      try {
-        await ledgerEndpoints.cancelCorrection(selectedCorrection.id, {
-          notes: reviewNotes.trim() || "Cancelled",
-        });
-      } catch {
-        // Fallback for dev
-      }
+      await ledgerEndpoints.cancelCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim() || "Cancelled",
+      });
 
       setCorrections((prev) =>
         prev.map((c) =>
@@ -324,6 +265,12 @@ export const PendingCorrectionsPage: React.FC = () => {
       );
 
       setSelectedCorrection(null);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Không thể hủy bỏ yêu cầu.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -846,7 +793,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                   <span>
                     {t(
                       "mill.pendingCorrections.compareTitle",
-                      "Đối chiếu cân bằng khối lượng ISO 22095 (BR-03):",
+                      "Đối chiếu cân bằng khối lượng ISO 22095:",
                     )}
                   </span>
                 </h3>

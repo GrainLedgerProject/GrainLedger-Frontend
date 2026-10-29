@@ -103,7 +103,7 @@ const SUBSTANCE_RULES: SubstanceThreshold[] = [
 
 export const SafetyMarginPolicyPage: React.FC = () => {
   const { t } = useTranslation();
-  // Safety margin buffer percentage (Rule BR-07: default 20%)
+  // Safety margin buffer percentage (Default 20%)
   const [safetyBufferPercent, setSafetyBufferPercent] = useState<number>(20);
   const [selectedMarket, setSelectedMarket] = useState<string>("EU");
 
@@ -168,7 +168,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         ),
         description: t(
           "compliance.safetyMargin.exceededDesc",
-          "Vượt quá ngưỡng MRL tối đa của thị trường nhập khẩu! Hệ thống tự động kích hoạt Rule BR-15: Phong tỏa lệnh HOLD khẩn cấp.",
+          "Vượt quá ngưỡng MRL tối đa của thị trường nhập khẩu! Hệ thống tự động kích hoạt Phong tỏa lệnh HOLD khẩn cấp.",
         ),
         color: "text-accent-danger bg-accent-danger/10 border-accent-danger/20",
       };
@@ -187,7 +187,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
           <span className="text-ink-primary font-semibold">
             {t(
               "compliance.safetyMargin.breadcrumb",
-              "Biên an toàn MRL (SC-25)",
+              "Biên an toàn MRL",
             )}
           </span>
         </div>
@@ -201,7 +201,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <span>
               {t(
                 "compliance.safetyMargin.viewLabResults",
-                "Xem Kết quả xét nghiệm (SC-24)",
+                "Xem Kết quả xét nghiệm",
               )}
             </span>
             <ArrowRight size={13} />
@@ -225,7 +225,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
               {t(
                 "compliance.safetyMargin.pageSubtitle",
-                "Quy tắc BR-07 yêu cầu hệ thống tự động trừ dự phòng -20% vào giới hạn dư lượng tối đa (MRL) chính thức của thị trường đích khi tính toán công thức phối trộn xuất khẩu, nhằm triệt tiêu sai số phân tích sắc ký và biến thiên chất lượng trong hành trình vận tải biển.",
+                "Hệ thống tự động trừ dự phòng -20% vào giới hạn dư lượng tối đa (MRL) chính thức của thị trường đích khi tính toán công thức phối trộn xuất khẩu, nhằm triệt tiêu sai số phân tích sắc ký và biến thiên chất lượng trong hành trình vận tải biển.",
               )}
             </p>
           </div>
@@ -300,7 +300,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 <span>
                   {t(
                     "compliance.safetyMargin.bufferRatioLabel",
-                    "Hệ số Biên an toàn cấu hình (Rule BR-07):",
+                    "Hệ số Biên an toàn cấu hình:",
                   )}
                 </span>
               </span>
@@ -397,7 +397,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
               <span>
                 {t(
                   "compliance.safetyMargin.ruleTitle",
-                  "Quy Tắc Kỹ Thuật ISO 22095 (BR-07)",
+                  "Quy Tắc Kỹ Thuật ISO 22095",
                 )}
               </span>
             </h3>
@@ -438,7 +438,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                   <li>
                     {t(
                       "compliance.safetyMargin.bulletHold",
-                      "Nếu vượt ngưỡng 0.0100 mg/kg: Kích hoạt ngay lệnh phong tỏa HOLD (Rule BR-15), không cho phép xuất kho hoặc đóng container.",
+                      "Nếu vượt ngưỡng 0.0100 mg/kg: Kích hoạt ngay lệnh phong tỏa HOLD, không cho phép xuất kho hoặc đóng container.",
                     )}
                   </li>
                 </ul>

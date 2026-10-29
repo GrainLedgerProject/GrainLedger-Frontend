@@ -212,7 +212,7 @@ export const BalancePolicyPage: React.FC = () => {
       setSuccessMsg(
         t(
           "admin.balance.successSave",
-          "Cấu hình chính sách dung sai (BR-01) đã được cập nhật thành công trên toàn bộ cụm nhà máy.",
+          "Cấu hình chính sách dung sai đã được cập nhật thành công trên toàn bộ cụm nhà máy.",
         ),
       );
       setTimeout(() => setSuccessMsg(null), 4000);

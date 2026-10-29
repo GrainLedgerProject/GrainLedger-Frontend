@@ -10,7 +10,6 @@ export const BentoGridFeatures: React.FC = () => {
       icon: Scales,
       title: "Sổ cái Cân bằng Khối lượng",
       desc: "Áp dụng mô hình Mass Balance ISO 22095. Tổng đầu ra cộng hao hụt phải bằng tổng đầu vào trong phạm vi dung sai (0,5%). Mọi vi phạm bị từ chối ở tầng dữ liệu.",
-      rule: "Quy tắc BR-01 & BR-02",
       color: "text-accent-primary",
       bgGlow: "from-emerald-500/10 to-transparent",
       tag: "Bất biến",
@@ -19,7 +18,6 @@ export const BentoGridFeatures: React.FC = () => {
       icon: ShieldCheck,
       title: "Động cơ Dư lượng MRL",
       desc: "Tự động gán cận bảo thủ 95% cho các lô chưa xét nghiệm, áp dụng hệ số chế biến phân đoạn (gạo nguyên, tấm, cám) và trừ biên an toàn 20% khi duyệt phương án.",
-      rule: "Quy tắc BR-06 & BR-07",
       color: "text-accent-info",
       bgGlow: "from-blue-500/10 to-transparent",
       tag: "Toán học",
@@ -28,7 +26,6 @@ export const BentoGridFeatures: React.FC = () => {
       icon: MapPin,
       title: "Thu mua Ngoại tuyến Hiện trường",
       desc: "Ứng dụng web hoạt động hoàn hảo khi mất mạng tại bờ ruộng. Ghi toạ độ thửa đất, khai báo phun thuốc và đồng bộ chống trùng lặp (Idempotent) khi có sóng.",
-      rule: "Quy tắc BR-09 & BR-11",
       color: "text-accent-warning",
       bgGlow: "from-amber-500/10 to-transparent",
       tag: "Offline-First",
@@ -37,7 +34,6 @@ export const BentoGridFeatures: React.FC = () => {
       icon: Crosshair,
       title: "Truy vết & Khóa HOLD",
       desc: "Ban hành lệnh HOLD tức thì để ngăn chặn xuất xưởng khi phát hiện nguy cơ. Truy vết đồ thị hai chiều và sinh Hồ sơ tuân thủ (Digital Dossier) tự động.",
-      rule: "Quy tắc BR-15 & BR-17",
       color: "text-accent-danger",
       bgGlow: "from-red-500/10 to-transparent",
       tag: "Cô lập rủi ro",
@@ -108,7 +104,7 @@ export const BentoGridFeatures: React.FC = () => {
                   <span
                     className={`text-[11px] font-mono font-bold ${pillar.color}`}
                   >
-                    {pillar.rule}
+                    {pillar.tag}
                   </span>
                 </div>
               </motion.div>

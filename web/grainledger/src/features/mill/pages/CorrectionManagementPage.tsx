@@ -144,7 +144,7 @@ export const CorrectionManagementPage: React.FC = () => {
   const handleCommitCorrection = async (id: string) => {
     if (
       !confirm(
-        "Bạn có chắc chắn muốn chốt bút toán bù đảo ngược theo luật BR-03? Lịch sử gốc sẽ được bảo tồn nguyên vẹn.",
+        "Bạn có chắc chắn muốn chốt bút toán bù đảo ngược? Lịch sử gốc sẽ được bảo tồn nguyên vẹn.",
       )
     ) {
       return;
@@ -366,7 +366,7 @@ export const CorrectionManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create Modal (SC-16) */}
+      {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">

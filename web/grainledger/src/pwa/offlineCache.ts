@@ -28,92 +28,6 @@ const LOCAL_STORAGE_FARMERS_KEY = "grainledger_cached_farmers";
 const LOCAL_STORAGE_REF_KEY = "grainledger_cached_ref_data";
 const CACHE_UPDATED_EVENT = "grainledger:offline-cache-updated";
 
-/**
- * Seed data for field farmers across typical Mekong Delta agricultural cooperatives
- * Used when the application runs completely offline before any online sync has taken place.
- */
-export const SEED_FARMERS: CachedFarmer[] = [
-  {
-    id: "farmer-tg-001",
-    code: "FM-TG-001",
-    name: "Nguyễn Văn An",
-    contact: "0912 345 678",
-    totalPlots: 2,
-    totalAreaHa: 3.5,
-  },
-  {
-    id: "farmer-tg-002",
-    code: "FM-TG-002",
-    name: "Trần Thị Bình",
-    contact: "0923 456 789",
-    totalPlots: 1,
-    totalAreaHa: 2.0,
-  },
-  {
-    id: "farmer-tg-003",
-    code: "FM-TG-003",
-    name: "Lê Hoàng Nam",
-    contact: "0934 567 890",
-    totalPlots: 3,
-    totalAreaHa: 5.2,
-  },
-  {
-    id: "farmer-tg-004",
-    code: "FM-TG-004",
-    name: "Phạm Quốc Cường",
-    contact: "0945 678 901",
-    totalPlots: 2,
-    totalAreaHa: 4.1,
-  },
-  {
-    id: "farmer-tg-005",
-    code: "FM-TG-005",
-    name: "Võ Thị Mai Lan",
-    contact: "0956 789 012",
-    totalPlots: 1,
-    totalAreaHa: 1.8,
-  },
-];
-
-export const SEED_REF_DATA: CachedReferenceData = {
-  collectionSites: [
-    {
-      id: "site-tg-01",
-      name: "Điểm cân Bờ Ruộng - Cánh đồng Cái Bè",
-      code: "SITE-CB-01",
-    },
-    {
-      id: "site-tg-02",
-      name: "Điểm cân Cầu Kênh 2 - Huyện Cai Lậy",
-      code: "SITE-CL-02",
-    },
-  ],
-  receivingLocations: [
-    {
-      id: "loc-mill-01",
-      name: "Trạm Tiếp Nhận Cụm Kho Sấy Tiền Giang",
-      code: "LOC-TG-MAIN",
-    },
-  ],
-  commodities: [
-    { id: "comm-st25", name: "Lúa tươi ST25 (Đặc sản)", code: "ST25" },
-    { id: "comm-om18", name: "Lúa tươi OM18 (Xuất khẩu)", code: "OM18" },
-    { id: "comm-dt8", name: "Lúa tươi Đài Thơm 8", code: "DT8" },
-  ],
-  plotSeasons: [
-    {
-      id: "plot-s-01",
-      name: "Vụ Đông Xuân 2026 - Lô ST25-01",
-      riceVariety: "ST25",
-    },
-    {
-      id: "plot-s-02",
-      name: "Vụ Đông Xuân 2026 - Lô OM18-02",
-      riceVariety: "OM18",
-    },
-  ],
-};
-
 function notifyCacheUpdated() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(CACHE_UPDATED_EVENT));
@@ -157,7 +71,7 @@ export async function getCachedFarmers(): Promise<CachedFarmer[]> {
     }
   }
 
-  return SEED_FARMERS;
+  return [];
 }
 
 /**
@@ -190,9 +104,9 @@ export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true):
 }
 
 /**
- * Reads cached reference data: IndexedDB -> LocalStorage -> SEED_REF_DATA
+ * Reads cached reference data: IndexedDB -> LocalStorage
  */
-export async function getCachedRefData(): Promise<CachedReferenceData> {
+export async function getCachedRefData(): Promise<CachedReferenceData | null> {
   try {
     const record = await withStore<{ key: string; value: CachedReferenceData }>(
       STORES.OFFLINE_CACHE,
@@ -217,7 +131,7 @@ export async function getCachedRefData(): Promise<CachedReferenceData> {
     }
   }
 
-  return SEED_REF_DATA;
+  return null;
 }
 
 /**
@@ -269,7 +183,7 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
     if (farmersRes) {
       const items = Array.isArray(farmersRes)
         ? farmersRes
-        : (farmersRes as any)?.items || [];
+        : (farmersRes as { items?: CachedFarmer[] })?.items || [];
 
       if (items.length > 0) {
         await saveCachedFarmers(items);

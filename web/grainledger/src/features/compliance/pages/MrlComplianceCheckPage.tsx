@@ -261,7 +261,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
             <div className="font-semibold text-accent-primary">
               {t(
                 "compliance.mrlCheck.safetyBannerTitle",
-                "Chính sách Biên an toàn 20% đang kích hoạt (BR-07)",
+                "Chính sách Biên an toàn 20% đang kích hoạt",
               )}
             </div>
             <p className="text-accent-primary mt-0.5">
@@ -374,7 +374,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
         )}
       </div>
 
-      {/* Detail Modal (SC-24) */}
+      {/* Detail Modal */}
       {selectedSample && (
         <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -504,7 +504,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   <span>
                     {t(
                       "compliance.mrlCheck.holdAlertDesc",
-                      "Lô hàng này đã vượt ngưỡng an toàn MRL! Quy tắc BR-15 yêu cầu phát lệnh HOLD khẩn cấp để ngăn chặn phối trộn hoặc xếp container xuất khẩu.",
+                      "Lô hàng này đã vượt ngưỡng an toàn MRL! Quy tắc yêu cầu phát lệnh HOLD khẩn cấp để ngăn chặn phối trộn hoặc xếp container xuất khẩu.",
                     )}
                   </span>
                 </div>
@@ -523,7 +523,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add Sample Modal (SC-23) */}
+      {/* Add Sample Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">

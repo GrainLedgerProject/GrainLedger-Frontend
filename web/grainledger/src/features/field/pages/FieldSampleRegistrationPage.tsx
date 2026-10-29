@@ -288,7 +288,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
           <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "field.samples.tag",
-              "THU THẬP MẪU TẠI ĐIỂM THU MUA (BR-05, BR-19)",
+              "THU THẬP MẪU TẠI ĐIỂM THU MUA",
             )}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -465,7 +465,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {t(
                   "field.samples.modalCreateTitle",
-                  "Lấy Mẫu Niêm Chì Mới (BR-05)",
+                  "Lấy Mẫu Niêm Chì Mới",
                 )}
               </h3>
               <button

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
@@ -36,6 +36,21 @@ interface AuditEvent {
   hash?: string;
 }
 
+function parseEventsResponse(res: unknown): AuditEvent[] {
+  if (Array.isArray(res)) {
+    return res as AuditEvent[];
+  }
+  if (res && typeof res === "object") {
+    if ("items" in res && Array.isArray((res as { items: AuditEvent[] }).items)) {
+      return (res as { items: AuditEvent[] }).items;
+    }
+    if ("events" in res && Array.isArray((res as { events: AuditEvent[] }).events)) {
+      return (res as { events: AuditEvent[] }).events;
+    }
+  }
+  return [];
+}
+
 export const EventHistoryPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<AuditEvent[]>([]);
@@ -47,122 +62,58 @@ export const EventHistoryPage: React.FC = () => {
   const [entityFilter, setEntityFilter] = useState("ALL");
   const [eventTypeFilter, setEventTypeFilter] = useState("ALL");
 
-  // Selected event for detail modal (SC-22)
+  // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
-  useEffect(() => {
-    void fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
+  // Manual reload handler for button click
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = (await ledgerEndpoints.getHistory()) as unknown;
-
-      let list: AuditEvent[] = [];
-      if (Array.isArray(res)) {
-        list = res;
-      } else if (res && typeof res === "object" && "items" in res) {
-        list = (res as { items: AuditEvent[] }).items;
-      } else if (res && typeof res === "object" && "events" in res) {
-        list = (res as { events: AuditEvent[] }).events;
-      }
-
-      // If empty in mock/dev, provide ISO 22095 sample ledger events
-      if (list.length === 0) {
-        list = [
-          {
-            id: "EVT-2026-0098",
-            eventType: "LotCreated",
-            entityType: "Lot",
-            entityId: "LOT-TG-2026-001",
-            facilityId: "FAC-TIENGIANG-01",
-            actorEmail: "procurement@grainledger.vn",
-            timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-            version: 1,
-            hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            payload: {
-              sourceLotCode: "SL-2026-FARM-01",
-              variety: "ST25 Lúa Tôm",
-              measuredMassKg: "15400.000000",
-              moisturePercent: "14.2",
-              farmerCode: "FM-TG-001",
-              plotCode: "PL-ST25-01",
-            },
-          },
-          {
-            id: "EVT-2026-0097",
-            eventType: "ReceivingMeasurementRecorded",
-            entityType: "ReceivingTask",
-            entityId: "RCV-2026-001",
-            facilityId: "FAC-TIENGIANG-01",
-            actorEmail: "operator@grainledger.vn",
-            timestamp: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
-            version: 1,
-            hash: "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
-            payload: {
-              truckPlate: "63C-123.45",
-              grossWeightKg: "24500.000000",
-              tareWeightKg: "9100.000000",
-              netWeightKg: "15400.000000",
-              scaleTicketNumber: "ST-88921",
-            },
-          },
-          {
-            id: "EVT-2026-0096",
-            eventType: "OperationCommitted",
-            entityType: "Operation",
-            entityId: "OP-2026-DRY-01",
-            facilityId: "FAC-TIENGIANG-01",
-            actorEmail: "operator@grainledger.vn",
-            timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-            version: 1,
-            hash: "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
-            payload: {
-              operationType: "DRYING",
-              inputLots: [{ lotId: "LOT-TG-2026-001", massKg: "15400.000000" }],
-              outputLots: [
-                {
-                  productType: "PADDY_DRY",
-                  massKg: "14920.000000",
-                  locationId: "SILO-01",
-                },
-              ],
-              declaredLossKg: "480.000000",
-              moistureReduction: "14.2% -> 12.0%",
-            },
-          },
-          {
-            id: "EVT-2026-0095",
-            eventType: "HoldIssued",
-            entityType: "Hold",
-            entityId: "HOLD-2026-001",
-            facilityId: "FAC-TIENGIANG-01",
-            actorEmail: "quality.mgr@export-rice.com",
-            timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-            version: 1,
-            hash: "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
-            payload: {
-              targetLotId: "LOT-TG-2026-001",
-              reason: "Dư lượng Tricyclazole vượt ngưỡng cho phép 0.01 mg/kg",
-              evidenceReference: "LAB-TEST-2026-9921",
-              status: "ACTIVE_HOLD",
-            },
-          },
-        ];
-      }
+      const list = parseEventsResponse(res);
       setEvents(list);
     } catch (err: unknown) {
       console.error(err);
       setError(
         (err as Error).message ||
-          t("audit.events.errorLoad", "Không thể tải chuỗi sự kiện nghiệp vụ."),
+          t("audit.events.errorLoad", "Không thể tải chuỗi sự kiện nghiệp vụ.")
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  // Synchronize effect with external system
+  useEffect(() => {
+    let active = true;
+
+    async function initEvents() {
+      try {
+        const res = (await ledgerEndpoints.getHistory()) as unknown;
+        if (!active) return;
+        const list = parseEventsResponse(res);
+        setEvents(list);
+      } catch (err: unknown) {
+        if (!active) return;
+        console.error(err);
+        setError(
+          (err as Error).message ||
+            t("audit.events.errorLoad", "Không thể tải chuỗi sự kiện nghiệp vụ.")
+        );
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initEvents();
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const filteredEvents = events.filter((evt) => {
     const matchesSearch =
@@ -498,7 +449,7 @@ export const EventHistoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Detail Modal (SC-22) - Synchronized with CustomerOrganizationsPage modal */}
+      {/* Detail Modal - Synchronized with CustomerOrganizationsPage modal */}
       {selectedEvent && (
         <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in flex flex-col max-h-[90vh]">

@@ -289,7 +289,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               {isUserMenuOpen && (
                 <>
                   <div
-                    className="fixed inset-0 h-screen w-screen"
+                    className="fixed inset-0 h-screen"
                     onClick={() => setIsUserMenuOpen(false)}
                   />
                   <motion.div

@@ -13,7 +13,7 @@ export interface HoldBannerProps {
 
 /**
  * HoldBanner
- * Displays authoritative warning when a lot or container is under quarantine HOLD (BR-15).
+ * Displays authoritative warning when a lot or container is under quarantine HOLD
  * Note: MVP has NO stock RELEASE action.
  */
 export const HoldBanner: React.FC<HoldBannerProps> = ({

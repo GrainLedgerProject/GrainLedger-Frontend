@@ -184,7 +184,7 @@ export const PesticideDeclarationPage: React.FC = () => {
           <p className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.pesticide.subtitle",
-              "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL (Quy tắc BR-06).",
+              "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL.",
             )}
           </p>
         </div>

@@ -62,9 +62,9 @@ export const LedgerRejectionCard: React.FC<LedgerRejectionCardProps> = ({
               </span>
               <h3 className="font-semibold text-accent-danger text-base">
                 {msgCode === 'MSG01'
-                  ? t('mill.rejection.titleBR01', 'Giao dịch bị từ chối — Vi phạm Cân bằng Khối lượng (BR-01)')
+                  ? t('mill.rejection.titleBR01', 'Giao dịch bị từ chối — Vi phạm Cân bằng Khối lượng')
                   : msgCode === 'MSG02'
-                  ? t('mill.rejection.titleBR02', 'Giao dịch bị từ chối — Không đủ số dư khả dụng (BR-02)')
+                  ? t('mill.rejection.titleBR02', 'Giao dịch bị từ chối — Không đủ số dư khả dụng')
                   : t('mill.rejection.titleDefault', 'Giao dịch bị sổ cái từ chối')}
               </h3>
             </div>

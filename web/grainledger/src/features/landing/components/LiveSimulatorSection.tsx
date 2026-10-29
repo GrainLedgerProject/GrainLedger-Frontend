@@ -164,7 +164,7 @@ export const LiveSimulatorSection: React.FC = () => {
                 />
               )}
               <span className="relative z-10">
-                1. Sổ cái Cân bằng Khối lượng (BR-01)
+                1. Sổ cái Cân bằng Khối lượng
               </span>
             </button>
 
@@ -185,7 +185,7 @@ export const LiveSimulatorSection: React.FC = () => {
                 />
               )}
               <span className="relative z-10">
-                2. Đánh giá MRL & Biên An Toàn (BR-07)
+                2. Đánh giá MRL & Biên An Toàn
               </span>
             </button>
           </div>

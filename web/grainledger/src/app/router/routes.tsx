@@ -523,7 +523,6 @@ export const router = createBrowserRouter(
                   titleEn="Approved Plan Execution"
                   roles={["MILL_OPERATOR"]}
                   descriptionVi="Nhân viên vận hành lấy đúng số lượng gạo từ các silo đã được Customer Manager phê duyệt để thực hiện mẻ phối trộn xuất khẩu."
-                  businessRuleCodes={["BR-02", "BR-08", "BR-14"]}
                 />
               </L>
             </ProtectedRoute>
@@ -613,7 +612,6 @@ export const router = createBrowserRouter(
                   titleEn="Export Order"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Ghi nhận hợp đồng xuất khẩu gạo với thị trường đích, khối lượng yêu cầu, chuẩn chất lượng và số lượng container 20ft mục tiêu."
-                  businessRuleCodes={["BR-05", "BR-14"]}
                 />
               </L>
             </ProtectedRoute>
@@ -631,7 +629,6 @@ export const router = createBrowserRouter(
                   titleEn="Blend Plan Request"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Thuật toán đề xuất công thức phối trộn từ các lô khả dụng của công ty để đạt quy cách % tấm và giới hạn MRL thị trường."
-                  businessRuleCodes={["BR-02", "BR-06", "BR-07", "BR-14"]}
                 />
               </L>
             </ProtectedRoute>
@@ -657,7 +654,6 @@ export const router = createBrowserRouter(
                   titleEn="Blend Plan Review"
                   roles={["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Customer Manager kiểm tra đánh giá tuân thủ (PASS) và phê duyệt kế hoạch rút gạo từ silo trước khi cho phép công nhân thực thi."
-                  businessRuleCodes={["BR-07", "BR-08", "BR-14"]}
                 />
               </L>
             </ProtectedRoute>
@@ -679,7 +675,6 @@ export const router = createBrowserRouter(
                   titleEn="Blend Plan Review Detail"
                   roles={["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Kiểm tra chi tiết tỷ lệ thành phần các lô, cận dư lượng 95%, và biên an toàn được áp dụng trước khi ký duyệt."
-                  businessRuleCodes={["BR-07", "BR-08", "BR-14"]}
                 />
               </L>
             </ProtectedRoute>
@@ -697,7 +692,6 @@ export const router = createBrowserRouter(
                   titleEn="Containers Overview"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Theo dõi tiến độ xếp các container xuất khẩu thuộc các đơn hàng đang triển khai."
-                  businessRuleCodes={["BR-16"]}
                 />
               </L>
             </ProtectedRoute>
@@ -715,7 +709,6 @@ export const router = createBrowserRouter(
                   titleEn="Container Loading"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Ghi nhận số lượng bao gạo thực tế đưa vào container theo đúng phương án đã duyệt. Khấu trừ số dư bảo lưu."
-                  businessRuleCodes={["BR-02", "BR-08", "BR-16"]}
                 />
               </L>
             </ProtectedRoute>
@@ -733,7 +726,6 @@ export const router = createBrowserRouter(
                   titleEn="Container Closure"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Xác nhận đủ 25.000 kg, kiểm tra không bị HOLD, gắn số seal niêm chì và tự động phát hành bộ hồ sơ tuân thủ bất biến."
-                  businessRuleCodes={["BR-15", "BR-16"]}
                 />
               </L>
             </ProtectedRoute>
@@ -751,7 +743,6 @@ export const router = createBrowserRouter(
                   titleEn="Shipment Documents and Dossier"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Xuất chứng thư tuân thủ, bảng kê tỷ lệ nguồn gốc đóng góp và phụ lục kiểm định cho các container đã đóng niêm."
-                  businessRuleCodes={["BR-13", "BR-16"]}
                 />
               </L>
             </ProtectedRoute>
@@ -769,7 +760,6 @@ export const router = createBrowserRouter(
                   titleEn="Container Compliance Dossier"
                   roles={["CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Xem và xuất bản file hồ sơ tuân thủ chính thức của container kèm snapshot bằng chứng phòng lab."
-                  businessRuleCodes={["BR-13", "BR-16"]}
                 />
               </L>
             </ProtectedRoute>
@@ -793,7 +783,6 @@ export const router = createBrowserRouter(
                   titleEn="Traceback"
                   roles={["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"]}
                   descriptionVi="Truy vết xuôi từ kết quả xét nghiệm xấu đến đúng container bị ảnh hưởng; truy vết ngược từ container về danh sách các thửa ruộng và tỷ lệ đóng góp %."
-                  businessRuleCodes={["BR-08", "BR-10", "BR-17"]}
                 />
               </L>
             </ProtectedRoute>

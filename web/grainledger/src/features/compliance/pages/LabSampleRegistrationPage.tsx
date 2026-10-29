@@ -348,7 +348,7 @@ export const LabSampleRegistrationPage: React.FC<
           </Link>
           <span>/</span>
           <span className="text-ink-primary font-semibold">
-            {t("compliance.labSample.breadcrumb", "Mẫu xét nghiệm (SC-23)")}
+            {t("compliance.labSample.breadcrumb", "Mẫu xét nghiệm")}
           </span>
         </div>
 
@@ -358,14 +358,14 @@ export const LabSampleRegistrationPage: React.FC<
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-accent-primary/30 bg-accent-primary/10 hover:bg-accent-primary/15 text-accent-primary transition shadow-xs"
             title={t(
               "compliance.labSample.switchResults",
-              "Chuyển sang Kết quả xét nghiệm (SC-24)",
+              "Chuyển sang Kết quả xét nghiệm",
             )}
           >
             <TestTube size={14} weight="bold" />
             <span>
               {t(
                 "compliance.labSample.switchResults",
-                "Chuyển sang Kết quả xét nghiệm (SC-24)",
+                "Chuyển sang Kết quả xét nghiệm",
               )}
             </span>
             <ArrowRight size={13} weight="bold" />
@@ -420,7 +420,7 @@ export const LabSampleRegistrationPage: React.FC<
                   <span>
                     {t(
                       "compliance.labSample.btnRegisterNew",
-                      "Đăng ký mẫu mới (SC-23)",
+                      "Đăng ký mẫu mới",
                     )}
                   </span>
                 </>
@@ -521,7 +521,7 @@ export const LabSampleRegistrationPage: React.FC<
 
       {/* Main View Switcher */}
       {activeTab === "CREATE" ? (
-        /* Create Sample Registration Form (SC-23) */
+        /* Create Sample Registration Form */
         <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl shadow-xs overflow-hidden">
           <div className="p-5 border-b border-ink-tertiary/15 bg-surface-raised/40 flex items-center justify-between">
             <div className="space-y-0.5">
@@ -530,7 +530,7 @@ export const LabSampleRegistrationPage: React.FC<
                 <span>
                   {t(
                     "compliance.labSample.formTitle",
-                    "Đăng Ký Mẫu Niêm Phong Mới Gửi Phòng Lab (SC-23)",
+                    "Đăng Ký Mẫu Niêm Phong Mới Gửi Phòng Lab",
                   )}
                 </span>
               </h2>
@@ -880,7 +880,7 @@ export const LabSampleRegistrationPage: React.FC<
                 <span>
                   {t(
                     "compliance.labSample.auditStandardNote",
-                    "Mẫu sẽ được mã hóa Barcode và lưu vết kiểm toán bất biến theo chuẩn BR-19.",
+                    "Mẫu sẽ được mã hóa Barcode và lưu vết kiểm toán bất biến theo chuẩn.",
                   )}
                 </span>
               </div>
@@ -905,7 +905,7 @@ export const LabSampleRegistrationPage: React.FC<
                       ? t("common.processing", "Đang xử lý...")
                       : t(
                           "compliance.labSample.btnSubmitSeal",
-                          "Niêm phong & Tạo hồ sơ gửi Lab (SC-23)",
+                          "Niêm phong & Tạo hồ sơ gửi Lab",
                         )}
                   </span>
                 </button>
@@ -914,7 +914,7 @@ export const LabSampleRegistrationPage: React.FC<
           </form>
         </div>
       ) : (
-        /* List Samples View (SC-23) */
+        /* List Samples View */
         <div className="space-y-4">
           {/* Filter Bar */}
           <div className="bg-surface-base border border-ink-tertiary/20 rounded-xl p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">

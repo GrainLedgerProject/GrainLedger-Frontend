@@ -17,7 +17,6 @@ export interface PlaceholderPageProps {
   roles: UserRole[];
   descriptionVi: string;
   descriptionEn?: string;
-  businessRuleCodes?: string[];
 }
 
 export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
@@ -26,7 +25,6 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
   roles,
   descriptionVi,
   descriptionEn,
-  businessRuleCodes = ["BR-01", "BR-05"],
 }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -95,14 +93,6 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
                 )}
               </h4>
               <div className="flex flex-wrap gap-2">
-                {businessRuleCodes.map((code) => (
-                  <span
-                    key={code}
-                    className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-functional-balanced-bg text-accent-primary border border-accent-primary/30"
-                  >
-                    {code}
-                  </span>
-                ))}
               </div>
               <p className="text-xs text-ink-secondary">
                 {t(

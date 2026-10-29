@@ -152,7 +152,7 @@ export const ledgerEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  // Quarantine Holds (BR-15)
+  // Quarantine Holds
   getHolds: () => apiFetch<unknown>('/api/ledger/holds'),
   issueHold: (req: HoldRequest | unknown) =>
     apiFetch<unknown>('/api/ledger/holds', {
@@ -175,7 +175,7 @@ export const ledgerEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  // Corrections & Reconciliations (BR-12)
+  // Corrections & Reconciliations
   getCorrections: () => apiFetch<unknown>('/api/ledger/corrections'),
   createCorrection: (req: unknown) =>
     apiFetch<unknown>('/api/ledger/corrections', {
@@ -281,7 +281,7 @@ export const ledgerEndpoints = {
   getResiduePreview: (lotId: string) =>
     apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-preview`),
 
-  // Receiving Thresholds (BR-07)
+  // Receiving Thresholds
   getReceivingThresholds: () => apiFetch<unknown>('/api/ledger/receiving-thresholds'),
   getReceivingThresholdCompanies: () => apiFetch<unknown>('/api/ledger/receiving-thresholds/companies'),
   getReceivingThresholdHistory: () => apiFetch<unknown>('/api/ledger/receiving-thresholds/history'),

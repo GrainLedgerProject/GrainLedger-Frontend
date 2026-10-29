@@ -14,7 +14,7 @@ export interface StalePlanBannerProps {
 
 /**
  * StalePlanBanner
- * Warning banner for blend plans in STALE state (BR-14 / MSG08).
+ * Warning banner for blend plans in STALE state.
  * A stale plan cannot authorize processing or loading without a fresh passing review.
  */
 export const StalePlanBanner: React.FC<StalePlanBannerProps> = ({
