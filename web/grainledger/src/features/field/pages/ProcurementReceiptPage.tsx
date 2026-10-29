@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
@@ -61,12 +61,17 @@ interface ProcurementReceiptItem {
 export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isOnline, setPendingOfflineCount } = useUiStore();
+  const isOnline = useUiStore((state) => state.isOnline);
+  const setPendingOfflineCount = useUiStore((state) => state.setPendingOfflineCount);
   const [receipts, setReceipts] = useState<ProcurementReceiptItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Concurrency and mount guards to prevent race conditions & memory leaks
+  const isFetchingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   // Reference data for creation
   const [farmers, setFarmers] = useState<CachedFarmer[]>([]);
@@ -85,7 +90,9 @@ export const ProcurementReceiptPage: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -94,6 +101,8 @@ export const ProcurementReceiptPage: React.FC = () => {
         getCachedFarmers(),
         getCachedRefData(),
       ]);
+
+      if (!isMountedRef.current) return;
 
       if (cachedFarmers && cachedFarmers.length > 0) {
         setFarmers(cachedFarmers);
@@ -104,6 +113,8 @@ export const ProcurementReceiptPage: React.FC = () => {
 
       // 2. Read queued offline procurements to show in receipts list
       const queued = await getQueuedProcurements().catch(() => []);
+      if (!isMountedRef.current) return;
+
       const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
         const item = q.request.payload.items?.[0];
         const matchedFarmer = (cachedFarmers || []).find(
@@ -140,31 +151,36 @@ export const ProcurementReceiptPage: React.FC = () => {
           procurementEndpoints.getProcurementReferenceData().catch(() => null),
         ]);
 
+        if (!isMountedRef.current) return;
+
         const serverReceipts = Array.isArray(receiptsRes)
           ? receiptsRes
-          : (receiptsRes as any)?.items || [];
+          : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items || [];
 
         setReceipts([...pendingItems, ...serverReceipts]);
 
         if (farmersRes) {
           const farmerList = Array.isArray(farmersRes)
-            ? farmersRes
-            : (farmersRes as any)?.items || [];
+            ? (farmersRes as CachedFarmer[])
+            : (farmersRes as { items?: CachedFarmer[] })?.items || [];
           if (farmerList.length > 0) {
             setFarmers(farmerList);
-            void saveCachedFarmers(farmerList);
+            // Pass notify = false to avoid circular event feedback loop
+            void saveCachedFarmers(farmerList, false);
           }
         }
 
         if (refRes) {
           setRefData(refRes as CachedReferenceData);
-          void saveCachedRefData(refRes as CachedReferenceData);
+          // Pass notify = false to avoid circular event feedback loop
+          void saveCachedRefData(refRes as CachedReferenceData, false);
         }
       } else {
         // Offline mode: show pending offline receipts
         setReceipts(pendingItems);
       }
     } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -176,25 +192,141 @@ export const ProcurementReceiptPage: React.FC = () => {
         );
       }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+      isFetchingRef.current = false;
     }
-  };
+  }, [isOnline, t]);
 
   useEffect(() => {
-    void loadData();
+    isMountedRef.current = true;
+    let active = true;
 
+    async function initData() {
+      try {
+        const [cachedFarmers, cachedRef] = await Promise.all([
+          getCachedFarmers(),
+          getCachedRefData(),
+        ]);
+        if (!active) return;
+        if (cachedFarmers && cachedFarmers.length > 0) {
+          setFarmers(cachedFarmers);
+        }
+        if (cachedRef) {
+          setRefData(cachedRef);
+        }
+
+        const queued = await getQueuedProcurements().catch(() => []);
+        if (!active) return;
+        const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
+          const item = q.request.payload.items?.[0];
+          const matchedFarmer = (cachedFarmers || []).find(
+            (f) => f.id === q.request.payload.farmerId
+          );
+          return {
+            id: q.id,
+            code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
+            farmerId: q.request.payload.farmerId,
+            farmerName:
+              matchedFarmer?.name ||
+              t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
+            receivedAt: q.capturedAt,
+            isOfflinePending: true,
+            items: item
+              ? [
+                  {
+                    lineNo: 1,
+                    measuredValue: item.measuredValue,
+                    measuredUnit: item.measuredUnit,
+                    moisturePercent: item.moisturePercent,
+                    lotId: item.lotId,
+                  },
+                ]
+              : [],
+          };
+        });
+
+        if (isOnline) {
+          const [receiptsRes, farmersRes, refRes] = await Promise.all([
+            procurementEndpoints.getProcurements().catch(() => []),
+            procurementEndpoints.getFarmers({ pageSize: 100 }).catch(() => null),
+            procurementEndpoints.getProcurementReferenceData().catch(() => null),
+          ]);
+          if (!active) return;
+
+          const serverReceipts = Array.isArray(receiptsRes)
+            ? receiptsRes
+            : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items || [];
+
+          setReceipts([...pendingItems, ...serverReceipts]);
+
+          if (farmersRes) {
+            const farmerList = Array.isArray(farmersRes)
+              ? (farmersRes as CachedFarmer[])
+              : (farmersRes as { items?: CachedFarmer[] })?.items || [];
+            if (farmerList.length > 0) {
+              setFarmers(farmerList);
+              void saveCachedFarmers(farmerList, false);
+            }
+          }
+
+          if (refRes) {
+            setRefData(refRes as CachedReferenceData);
+            void saveCachedRefData(refRes as CachedReferenceData, false);
+          }
+        } else {
+          setReceipts(pendingItems);
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(
+            t(
+              "field.receipt.errorLoad",
+              "Không thể tải danh sách phiếu thu mua.",
+            ),
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initData();
+
+    // Re-load receipts list when procurement offline queue changes
     const unsubQueue = onProcurementQueueChanged(() => {
       void loadData();
     });
-    const unsubCache = onOfflineCacheUpdated(() => {
-      void loadData();
+
+    // When cache is updated externally (e.g. background sync), ONLY update reference data
+    // from local storage/IndexedDB. NEVER call loadData() or hit the network.
+    const unsubCache = onOfflineCacheUpdated(async () => {
+      const [cachedFarmers, cachedRef] = await Promise.all([
+        getCachedFarmers(),
+        getCachedRefData(),
+      ]);
+      if (!isMountedRef.current) return;
+      if (cachedFarmers && cachedFarmers.length > 0) {
+        setFarmers(cachedFarmers);
+      }
+      if (cachedRef) {
+        setRefData(cachedRef);
+      }
     });
 
     return () => {
+      active = false;
+      isMountedRef.current = false;
       unsubQueue();
       unsubCache();
     };
-  }, [isOnline]);
+  }, [isOnline, loadData, t]);
 
   const handleOpenCreate = () => {
     const defaultSiteId =

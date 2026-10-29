@@ -162,8 +162,9 @@ export async function getCachedFarmers(): Promise<CachedFarmer[]> {
 
 /**
  * Saves farmer list to IndexedDB and LocalStorage for offline use.
+ * @param notify Whether to broadcast cache update event (default: true). Set to false when saving from within a fetch handler to avoid feedback loops.
  */
-export async function saveCachedFarmers(farmers: CachedFarmer[]): Promise<void> {
+export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true): Promise<void> {
   if (!farmers || farmers.length === 0) return;
 
   // Mirror to LocalStorage for instant synchronous access
@@ -180,7 +181,9 @@ export async function saveCachedFarmers(farmers: CachedFarmer[]): Promise<void> 
     await withStore(STORES.OFFLINE_CACHE, "readwrite", (store) =>
       store.put({ key: "farmers", value: farmers, updatedAt: new Date().toISOString() })
     );
-    notifyCacheUpdated();
+    if (notify) {
+      notifyCacheUpdated();
+    }
   } catch (err) {
     logger.warn("Failed to write farmers to IndexedDB offline cache:", err);
   }
@@ -219,8 +222,9 @@ export async function getCachedRefData(): Promise<CachedReferenceData> {
 
 /**
  * Saves reference data to IndexedDB and LocalStorage
+ * @param notify Whether to broadcast cache update event (default: true). Set to false when saving from within a fetch handler to avoid feedback loops.
  */
-export async function saveCachedRefData(data: CachedReferenceData): Promise<void> {
+export async function saveCachedRefData(data: CachedReferenceData, notify = true): Promise<void> {
   if (!data) return;
 
   if (typeof localStorage !== "undefined") {
@@ -235,7 +239,9 @@ export async function saveCachedRefData(data: CachedReferenceData): Promise<void
     await withStore(STORES.OFFLINE_CACHE, "readwrite", (store) =>
       store.put({ key: "reference_data", value: data, updatedAt: new Date().toISOString() })
     );
-    notifyCacheUpdated();
+    if (notify) {
+      notifyCacheUpdated();
+    }
   } catch (err) {
     logger.warn("Failed to write reference data to IndexedDB offline cache:", err);
   }

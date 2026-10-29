@@ -14,7 +14,7 @@ export default defineConfig({
         enabled: true,
       },
       manifest: {
-        name: "GrainLedger Hiện trường",
+        name: "GrainLedger",
         short_name: "GrainLedger",
         description: "Ghi nhận thu mua lúa tại nông hộ, kể cả khi mất kết nối.",
         id: "/",
@@ -26,9 +26,9 @@ export default defineConfig({
         lang: "vi",
         icons: [
           {
-            src: "pwa-icon.svg",
+            src: "pwa-icon.png",
             sizes: "any",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any maskable",
           },
         ],

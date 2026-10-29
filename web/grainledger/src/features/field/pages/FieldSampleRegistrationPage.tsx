@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   sampleEndpoints,
@@ -17,7 +17,6 @@ import {
   QrCode,
   ShieldCheck,
   Truck,
-  FileText,
   Calendar,
 } from "@phosphor-icons/react";
 
@@ -55,7 +54,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
   const [laboratoryName, setLaboratoryName] = useState("Viện Kiểm Nghiệm NIFC");
   const [sealCondition, setSealCondition] = useState("NGUYÊN VẸN");
 
-  const loadSamples = async () => {
+  const loadSamples = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -97,11 +96,62 @@ export const FieldSampleRegistrationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    void loadSamples();
-  }, []);
+    let active = true;
+
+    async function initSamples() {
+      try {
+        const res = await sampleEndpoints.getSamples();
+        if (!active) return;
+        if (Array.isArray(res) && res.length > 0) {
+          setSamples(res as SampleItem[]);
+        } else {
+          setSamples([
+            {
+              id: "smp-001",
+              code: "SMP-MK-2026-081",
+              sealCode: "SEAL-A8820",
+              sourceLotId: "LOT-TM-2026-001",
+              collectedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+              materialDescription: "Lúa tươi Jasmine 85 độ ẩm 22.4%",
+              handoverStatus: "SEALED",
+            },
+            {
+              id: "smp-002",
+              code: "SMP-MK-2026-082",
+              sealCode: "SEAL-B1194",
+              sourceLotId: "LOT-TM-2026-002",
+              collectedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+              materialDescription: "Lúa tươi ST25 vùng trồng Mỹ Tú",
+              handoverStatus: "DELIVERED_LAB",
+              laboratoryName: "Viện Kiểm Nghiệm NIFC",
+            },
+          ]);
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(
+            t("field.samples.errorLoad", "Không thể tải danh sách mẫu thu mua."),
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initSamples();
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const handleCreateSample = async (e: React.FormEvent) => {
     e.preventDefault();

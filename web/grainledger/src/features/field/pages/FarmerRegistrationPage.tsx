@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { procurementEndpoints, type FarmerInput } from "@/api/procurement";
+import { procurementEndpoints } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import {
@@ -39,7 +39,7 @@ interface FarmerRecord {
 export const FarmerRegistrationPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { isOnline } = useUiStore();
+  const isOnline = useUiStore((state) => state.isOnline);
   const [farmers, setFarmers] = useState<FarmerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,25 +56,24 @@ export const FarmerRegistrationPage: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const loadFarmers = async () => {
+  // Manual reload / refresh handler used by user actions (reload button, submit, delete)
+  const loadFarmers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Immediately read cached farmers
       const cached = await getCachedFarmers();
       if (cached && cached.length > 0) {
         setFarmers(cached as FarmerRecord[]);
       }
 
-      // 2. If online, fetch fresh farmers from server
       if (isOnline) {
         const params: Record<string, string | number> = { pageSize: 50 };
         if (searchQuery) params.search = searchQuery;
         const res = await procurementEndpoints.getFarmers(params);
-        const items = Array.isArray(res) ? res : (res as any)?.items || [];
-        setFarmers(items);
+        const items = Array.isArray(res) ? res : (res as { items?: FarmerRecord[] })?.items || [];
+        setFarmers(items as FarmerRecord[]);
         if (items.length > 0) {
-          void saveCachedFarmers(items as CachedFarmer[]);
+          void saveCachedFarmers(items as CachedFarmer[], false);
         }
       }
     } catch (err: unknown) {
@@ -91,11 +90,58 @@ export const FarmerRegistrationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isOnline, searchQuery, t]);
 
+  // Synchronize effect with external system (network / cache) using active cancellation flag
   useEffect(() => {
-    void loadFarmers();
-  }, [searchQuery, isOnline]);
+    let active = true;
+
+    async function syncFarmers() {
+      try {
+        // 1. Immediately read cached farmers
+        const cached = await getCachedFarmers();
+        if (!active) return;
+        if (cached && cached.length > 0) {
+          setFarmers(cached as FarmerRecord[]);
+        }
+
+        // 2. If online, fetch fresh farmers from server
+        if (isOnline) {
+          const params: Record<string, string | number> = { pageSize: 50 };
+          if (searchQuery) params.search = searchQuery;
+          const res = await procurementEndpoints.getFarmers(params);
+          if (!active) return;
+          const items = Array.isArray(res) ? res : (res as { items?: FarmerRecord[] })?.items || [];
+          setFarmers(items as FarmerRecord[]);
+          if (items.length > 0) {
+            void saveCachedFarmers(items as CachedFarmer[], false);
+          }
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(
+            t(
+              "field.farmer.errLoad",
+              "Không thể tải danh sách nông hộ từ máy chủ.",
+            ),
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void syncFarmers();
+
+    return () => {
+      active = false;
+    };
+  }, [searchQuery, isOnline, t]);
 
   const handleOpenCreate = () => {
     setEditingFarmer(null);
