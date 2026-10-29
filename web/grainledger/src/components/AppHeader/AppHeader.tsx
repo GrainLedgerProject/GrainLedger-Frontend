@@ -287,76 +287,82 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
             <AnimatePresence>
               {isUserMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  className="absolute right-0 mt-2 w-72 bg-surface-base/90 backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-3"
-                >
-                  {/* User Profile Header in Menu */}
-                  <div className="space-y-1.5 pb-3 border-b border-ink-tertiary/20 dark:border-surface-overlay">
-                    <p className="font-bold text-sm text-ink-primary truncate">
-                      {user?.displayName ||
-                        t("header.notLoggedIn", "Chưa đăng nhập")}
-                    </p>
-                    <p className="text-ink-tertiary truncate font-mono text-[11px]">
-                      {user?.email ||
-                        t("header.guestEmail", "guest@grainledger.local")}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      {user && <RoleChip role={user.role} size="sm" />}
-                      {user && isCustomerSide(user.role) && (
-                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
-                          {user.organizationName || "Rice"}
-                        </span>
-                      )}
+                <>
+                  <div
+                    className="fixed inset-0 h-screen w-screen"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                    className="absolute right-0 mt-2 w-72 bg-surface-base backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-3"
+                  >
+                    {/* User Profile Header in Menu */}
+                    <div className="space-y-1.5 pb-3 border-b border-ink-tertiary/20 dark:border-surface-overlay">
+                      <p className="font-bold text-sm text-ink-primary truncate">
+                        {user?.displayName ||
+                          t("header.notLoggedIn", "Chưa đăng nhập")}
+                      </p>
+                      <p className="text-ink-tertiary truncate font-mono text-[11px]">
+                        {user?.email ||
+                          t("header.guestEmail", "guest@grainledger.local")}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        {user && <RoleChip role={user.role} size="sm" />}
+                        {user && isCustomerSide(user.role) && (
+                          <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
+                            {user.organizationName || "Rice"}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Navigation Links */}
-                  <div className="space-y-1">
-                    <Link
-                      to="/settings/profile"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
-                    >
-                      <User
-                        size={16}
-                        weight="bold"
-                        className="text-ink-secondary text-ink-tertiary"
-                      />
-                      <span>{t("nav.profile", "Thông tin cá nhân")}</span>
-                    </Link>
+                    {/* Navigation Links */}
+                    <div className="space-y-1">
+                      <Link
+                        to="/settings/profile"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
+                      >
+                        <User
+                          size={16}
+                          weight="bold"
+                          className="text-ink-secondary text-ink-tertiary"
+                        />
+                        <span>{t("nav.profile", "Thông tin cá nhân")}</span>
+                      </Link>
 
-                    <Link
-                      to="/settings/security"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
-                    >
-                      <LockSimple
-                        size={16}
-                        weight="bold"
-                        className="text-ink-secondary text-ink-tertiary"
-                      />
-                      <span>{t("nav.security", "Bảo mật tài khoản")}</span>
-                    </Link>
-                  </div>
+                      <Link
+                        to="/settings/security"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
+                      >
+                        <LockSimple
+                          size={16}
+                          weight="bold"
+                          className="text-ink-secondary text-ink-tertiary"
+                        />
+                        <span>{t("nav.security", "Bảo mật tài khoản")}</span>
+                      </Link>
+                    </div>
 
-                  <div className="border-t border-ink-tertiary/20 dark:border-surface-overlay pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        setIsLogoutModalOpen(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
-                    >
-                      <SignOut size={16} weight="bold" />
-                      <span>{t("nav.signOut", "Đăng xuất")}</span>
-                    </button>
-                  </div>
-                </motion.div>
+                    <div className="border-t border-ink-tertiary/20 dark:border-surface-overlay pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
+                      >
+                        <SignOut size={16} weight="bold" />
+                        <span>{t("nav.signOut", "Đăng xuất")}</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>

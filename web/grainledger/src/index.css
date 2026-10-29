@@ -133,7 +133,7 @@
   border: var(--glass-border-dark);
 }
 
-/* Subtle parchment grain texture overlay — now ultra-subtle dot grid */
+/* Subtle parchment grain texture overlay */
 .bg-parchment-grain {
   background-color: var(--color-surface-base);
 }

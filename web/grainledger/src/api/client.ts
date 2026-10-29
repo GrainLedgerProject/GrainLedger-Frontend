@@ -7,7 +7,10 @@ import { useAuthStore } from '@/app/store/authStore';
 import { useUiStore } from '@/app/store/uiStore';
 import { normalizeUserRole } from '@/shared/types/roles';
 import { COOKIE_KEYS, getCookie } from '@/shared/utils/cookies';
+import { isJwtExpired } from '@/shared/utils/jwt';
 import { logger } from '@/shared/utils/logger';
+
+export { isJwtExpired };
 
 export interface ProblemDetails {
   type?: string | null;
@@ -29,49 +32,24 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Check if a JWT is expired or within 15 seconds of expiring.
- * Returns false for mock tokens or unparseable non-JWT tokens.
- */
-export function isJwtExpired(token: string | null): boolean {
-  if (!token) return true;
-  if (token.startsWith('mock-')) return false;
-
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return false;
-
-    // Decode Base64Url
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-
-    const payload = JSON.parse(jsonPayload);
-    if (typeof payload.exp === 'number') {
-      // 15-second safety buffer before true expiry
-      return Date.now() >= payload.exp * 1000 - 15000;
-    }
-  } catch {
-    return false;
-  }
-  return false;
-}
-
 /** Single-flight mutex for token refresh so concurrent requests share the exact same refresh cycle */
 let refreshPromise: Promise<string | null> | null = null;
 
 /**
  * Executes a token refresh cycle against POST /api/auth/refresh.
  * Rotates the single-use refresh token, updates cookies and Zustand store.
+ * IMPORTANT: Does NOT log out the user on network errors or when offline.
  */
 export async function requestTokenRefresh(): Promise<string | null> {
   // If a refresh is already in flight, reuse the ongoing promise
   if (refreshPromise) {
     return refreshPromise;
+  }
+
+  // If offline, do NOT attempt network refresh and do NOT log out
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    logger.info('Device is offline, skipping token refresh attempt.');
+    return null;
   }
 
   const { refreshToken: stateRefreshToken, setTokens, setUser, logout } = useAuthStore.getState();
@@ -96,7 +74,10 @@ export async function requestTokenRefresh(): Promise<string | null> {
 
       if (!res.ok) {
         logger.warn(`Token refresh endpoint responded with status ${res.status}`);
-        logout();
+        // Only log out if the backend explicitly rejected authentication (401 or 403)
+        if (res.status === 401 || res.status === 403) {
+          logout();
+        }
         return null;
       }
 
@@ -106,7 +87,6 @@ export async function requestTokenRefresh(): Promise<string | null> {
 
       if (!newAccessToken) {
         logger.warn('Refresh response did not return a valid accessToken');
-        logout();
         return null;
       }
 
@@ -131,8 +111,8 @@ export async function requestTokenRefresh(): Promise<string | null> {
       logger.info('Token refresh successfully completed and cookies updated.');
       return newAccessToken;
     } catch (err) {
-      logger.error('Unexpected error during token refresh execution:', err);
-      logout();
+      logger.warn('Token refresh failed due to network error, session preserved for offline usage:', err);
+      // DO NOT call logout() on network error to prevent kicking user out while offline
       return null;
     } finally {
       refreshPromise = null;
@@ -162,8 +142,11 @@ export async function apiFetch<T>(
 
   // Proactive Token Refresh:
   // If access token is expired (or missing) but a valid real refresh token exists, refresh before sending
+  // Only attempt when device is online to prevent offline timeouts/errors
+  const isOnline = typeof navigator === 'undefined' || navigator.onLine;
   if (
     !isAuthEndpoint &&
+    isOnline &&
     refreshToken &&
     !refreshToken.startsWith('mock-') &&
     isJwtExpired(accessToken)
@@ -230,14 +213,19 @@ export async function apiFetch<T>(
           throw new ApiError(0, 'Lỗi kết nối khi gửi lại yêu cầu sau khi cấp mới token.');
         }
       } else {
-        useAuthStore.getState().logout();
+        // Only logout if online and server actually rejected token
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
+          useAuthStore.getState().logout();
+        }
         throw new ApiError(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }
     } else if (isMock) {
       logger.info(`Endpoint ${url} returned 401 for mock session, falling back safely.`);
       throw new ApiError(401, 'Phiên cục bộ chưa kết nối máy chủ backend. Chuyển sang dữ liệu mô phỏng.');
     } else {
-      useAuthStore.getState().logout();
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        useAuthStore.getState().logout();
+      }
       throw new ApiError(401, 'Yêu cầu đăng nhập để tiếp tục.');
     }
   }
@@ -260,4 +248,3 @@ export async function apiFetch<T>(
 
   return data as T;
 }
-

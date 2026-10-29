@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   procurementEndpoints,
   type RegisterProcurementRequest,
@@ -7,8 +8,19 @@ import {
 import { ApiError } from "@/api/client";
 import {
   getQueuedProcurementCount,
+  getQueuedProcurements,
+  onProcurementQueueChanged,
   queueProcurement,
 } from "@/pwa/procurementQueue";
+import {
+  getCachedFarmers,
+  getCachedRefData,
+  onOfflineCacheUpdated,
+  saveCachedFarmers,
+  saveCachedRefData,
+  type CachedFarmer,
+  type CachedReferenceData,
+} from "@/pwa/offlineCache";
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
@@ -21,11 +33,11 @@ import {
   CheckCircle,
   WarningCircle,
   X,
-  Scales,
   Drop,
   User,
   Calendar,
   Warehouse,
+  CloudSlash,
 } from "@phosphor-icons/react";
 
 interface ProcurementReceiptItem {
@@ -36,6 +48,7 @@ interface ProcurementReceiptItem {
   commodityName?: string;
   receivedAt: string;
   totalQuantityKg?: number;
+  isOfflinePending?: boolean;
   items?: Array<{
     lineNo: number;
     measuredValue: string;
@@ -47,6 +60,7 @@ interface ProcurementReceiptItem {
 
 export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { isOnline, setPendingOfflineCount } = useUiStore();
   const [receipts, setReceipts] = useState<ProcurementReceiptItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,10 +69,8 @@ export const ProcurementReceiptPage: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Reference data for creation
-  const [farmers, setFarmers] = useState<
-    Array<{ id: string; name: string; code: string }>
-  >([]);
-  const [refData, setRefData] = useState<any>(null);
+  const [farmers, setFarmers] = useState<CachedFarmer[]>([]);
+  const [refData, setRefData] = useState<CachedReferenceData | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,22 +89,81 @@ export const ProcurementReceiptPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [receiptsRes, farmersRes, refRes] = await Promise.all([
-        procurementEndpoints.getProcurements().catch(() => []),
-        procurementEndpoints.getFarmers({ pageSize: 100 }).catch(() => []),
-        procurementEndpoints.getProcurementReferenceData().catch(() => null),
+      // 1. Immediately read cached farmers & reference data so dropdowns are always ready
+      const [cachedFarmers, cachedRef] = await Promise.all([
+        getCachedFarmers(),
+        getCachedRefData(),
       ]);
 
-      const items = Array.isArray(receiptsRes)
-        ? receiptsRes
-        : (receiptsRes as any)?.items || [];
-      const farmerList = Array.isArray(farmersRes)
-        ? farmersRes
-        : (farmersRes as any)?.items || [];
+      if (cachedFarmers && cachedFarmers.length > 0) {
+        setFarmers(cachedFarmers);
+      }
+      if (cachedRef) {
+        setRefData(cachedRef);
+      }
 
-      setReceipts(items);
-      setFarmers(farmerList);
-      setRefData(refRes);
+      // 2. Read queued offline procurements to show in receipts list
+      const queued = await getQueuedProcurements().catch(() => []);
+      const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
+        const item = q.request.payload.items?.[0];
+        const matchedFarmer = (cachedFarmers || []).find(
+          (f) => f.id === q.request.payload.farmerId
+        );
+        return {
+          id: q.id,
+          code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
+          farmerId: q.request.payload.farmerId,
+          farmerName:
+            matchedFarmer?.name ||
+            t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
+          receivedAt: q.capturedAt,
+          isOfflinePending: true,
+          items: item
+            ? [
+                {
+                  lineNo: 1,
+                  measuredValue: item.measuredValue,
+                  measuredUnit: item.measuredUnit,
+                  moisturePercent: item.moisturePercent,
+                  lotId: item.lotId,
+                },
+              ]
+            : [],
+        };
+      });
+
+      // 3. If online, fetch fresh server data
+      if (isOnline) {
+        const [receiptsRes, farmersRes, refRes] = await Promise.all([
+          procurementEndpoints.getProcurements().catch(() => []),
+          procurementEndpoints.getFarmers({ pageSize: 100 }).catch(() => null),
+          procurementEndpoints.getProcurementReferenceData().catch(() => null),
+        ]);
+
+        const serverReceipts = Array.isArray(receiptsRes)
+          ? receiptsRes
+          : (receiptsRes as any)?.items || [];
+
+        setReceipts([...pendingItems, ...serverReceipts]);
+
+        if (farmersRes) {
+          const farmerList = Array.isArray(farmersRes)
+            ? farmersRes
+            : (farmersRes as any)?.items || [];
+          if (farmerList.length > 0) {
+            setFarmers(farmerList);
+            void saveCachedFarmers(farmerList);
+          }
+        }
+
+        if (refRes) {
+          setRefData(refRes as CachedReferenceData);
+          void saveCachedRefData(refRes as CachedReferenceData);
+        }
+      } else {
+        // Offline mode: show pending offline receipts
+        setReceipts(pendingItems);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -111,7 +182,19 @@ export const ProcurementReceiptPage: React.FC = () => {
 
   useEffect(() => {
     void loadData();
-  }, []);
+
+    const unsubQueue = onProcurementQueueChanged(() => {
+      void loadData();
+    });
+    const unsubCache = onOfflineCacheUpdated(() => {
+      void loadData();
+    });
+
+    return () => {
+      unsubQueue();
+      unsubCache();
+    };
+  }, [isOnline]);
 
   const handleOpenCreate = () => {
     const defaultSiteId =
@@ -189,7 +272,7 @@ export const ProcurementReceiptPage: React.FC = () => {
         setSuccessMsg(
           t(
             "field.receipt.savedOffline",
-            "Đã lưu phiếu trên thiết bị. Phiếu sẽ tự đồng bộ khi có mạng.",
+            "Đã lưu phiếu trên thiết bị. Phiếu sẽ tự đồng bộ khi có kết nối mạng.",
           ),
         );
       } else {
@@ -209,17 +292,18 @@ export const ProcurementReceiptPage: React.FC = () => {
       await loadData();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 0) {
-        // A connection can disappear after Save; keep the exact operation ID for a safe retry.
+        // A connection can disappear after Save; queue to IndexedDB for safe automatic retry
         if (request) {
           await queueProcurement(request);
           setPendingOfflineCount(await getQueuedProcurementCount());
           setSuccessMsg(
             t(
               "field.receipt.savedOffline",
-              "Kết nối bị gián đoạn; phiếu đã được lưu trên thiết bị và sẽ tự đồng bộ.",
+              "Kết nối bị gián đoạn; phiếu đã được lưu an toàn trên thiết bị và sẽ tự đồng bộ.",
             ),
           );
           setIsModalOpen(false);
+          await loadData();
         }
       } else if (err instanceof Error) {
         setError(err.message);
@@ -282,6 +366,36 @@ export const ProcurementReceiptPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Offline Status Notice */}
+      {!isOnline && (
+        <div className="p-3.5 rounded-xl bg-functional-stale-bg border border-functional-stale-border/60 text-accent-warning text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <CloudSlash size={20} weight="fill" className="shrink-0" />
+            <div>
+              <p className="font-bold text-ink-primary">
+                {t(
+                  "field.receipt.offlineTitle",
+                  "Chế độ hiện trường ngoại tuyến (Offline)"
+                )}
+              </p>
+              <p className="text-ink-secondary text-[11px] mt-0.5">
+                {t(
+                  "field.receipt.offlineDesc",
+                  "Đang dùng dữ liệu nông hộ lưu cục bộ trên máy. Mọi phiếu lập mới sẽ tự động lưu vào hàng đợi và đồng bộ khi có mạng."
+                )}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/field/sync")}
+            className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 text-ink-primary font-semibold text-[11px] hover:bg-surface-raised transition-colors shrink-0"
+          >
+            {t("field.receipt.viewQueue", "Xem hàng đợi đồng bộ")}
+          </button>
+        </div>
+      )}
+
       {/* Alerts */}
       {error && (
         <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
@@ -322,6 +436,11 @@ export const ProcurementReceiptPage: React.FC = () => {
               {filteredReceipts.length}
             </strong>
           </div>
+          {farmers.length > 0 && (
+            <div className="text-ink-tertiary">
+              ({farmers.length} {t("field.receipt.farmersCached", "nông hộ sẵn sàng")})
+            </div>
+          )}
         </div>
       </div>
 
@@ -418,13 +537,23 @@ export const ProcurementReceiptPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <StatusBadge
-                          status="BALANCED"
-                          label={t(
-                            "field.receipt.sourceLotCreated",
-                            "Đã lập Lô nguồn",
-                          )}
-                        />
+                        {r.isOfflinePending ? (
+                          <StatusBadge
+                            status="PENDING"
+                            label={t(
+                              "field.receipt.pendingOfflineSync",
+                              "Chờ đồng bộ",
+                            )}
+                          />
+                        ) : (
+                          <StatusBadge
+                            status="BALANCED"
+                            label={t(
+                              "field.receipt.sourceLotCreated",
+                              "Đã lập Lô nguồn",
+                            )}
+                          />
+                        )}
                       </td>
                     </tr>
                   );
@@ -436,144 +565,148 @@ export const ProcurementReceiptPage: React.FC = () => {
       </div>
 
       {/* Create Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}>
-          <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}
+      >
+        <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {t(
+                "field.receipt.modalTitle",
+                "Lập Phiếu Thu Mua Lúa Tươi Mới",
+              )}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("field.receipt.farmerLabel", "Chọn Nông hộ bán lúa *")}
+              </label>
+              <select
+                required
+                value={formData.farmerId}
+                onChange={(e) =>
+                  setFormData({ ...formData, farmerId: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              >
+                <option value="">
+                  {t(
+                    "field.receipt.selectFarmerPlaceholder",
+                    "-- Chọn Nông hộ --",
+                  )}
+                </option>
+                {farmers.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} ({f.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t(
+                    "field.receipt.weightLabel",
+                    "Khối lượng cân thực tế (kg) *",
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={formData.measuredWeightKg}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        measuredWeightKg: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-bold"
+                  />
+                  <span className="absolute right-3 top-2 text-ink-tertiary">
+                    kg
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t(
+                    "field.receipt.moistureLabel",
+                    "Độ ẩm đo tại điểm cân (%) *",
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={formData.moisturePercent}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        moisturePercent: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
+                  />
+                  <span className="absolute right-3 top-2 text-ink-tertiary">
+                    %
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-[11px] text-ink-secondary">
+              <div className="flex items-center gap-1.5 font-semibold text-accent-primary">
+                <Warehouse size={14} />
+                <span>
+                  {t(
+                    "field.receipt.policyTitle",
+                    "Quy trình bảo toàn dòng chảy khối lượng (BR-04)",
+                  )}
+                </span>
+              </div>
+              <p>
                 {t(
-                  "field.receipt.modalTitle",
-                  "Lập Phiếu Thu Mua Lúa Tươi Mới",
+                  "field.receipt.policyDesc",
+                  "Khối lượng lúa tươi ghi nhận tại đây sẽ là căn cứ đối soát ban đầu khi xe tải chở lúa cập bến nhà máy sấy Tiền Giang.",
                 )}
-              </h3>
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("field.receipt.submitting", "Đang ghi nhận...")
+                  : t("field.receipt.submitBtn", "Lập Phiếu & Tạo Lô Nguồn")}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.receipt.farmerLabel", "Chọn Nông hộ bán lúa *")}
-                </label>
-                <select
-                  required
-                  value={formData.farmerId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, farmerId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                >
-                  <option value="">
-                    {t(
-                      "field.receipt.selectFarmerPlaceholder",
-                      "-- Chọn Nông hộ --",
-                    )}
-                  </option>
-                  {farmers.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    {t(
-                      "field.receipt.weightLabel",
-                      "Khối lượng cân thực tế (kg) *",
-                    )}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      value={formData.measuredWeightKg}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          measuredWeightKg: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-bold"
-                    />
-                    <span className="absolute right-3 top-2 text-ink-tertiary">
-                      kg
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    {t(
-                      "field.receipt.moistureLabel",
-                      "Độ ẩm đo tại điểm cân (%) *",
-                    )}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.1"
-                      required
-                      value={formData.moisturePercent}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          moisturePercent: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
-                    />
-                    <span className="absolute right-3 top-2 text-ink-tertiary">
-                      %
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-[11px] text-ink-secondary">
-                <div className="flex items-center gap-1.5 font-semibold text-accent-primary">
-                  <Warehouse size={14} />
-                  <span>
-                    {t(
-                      "field.receipt.policyTitle",
-                      "Quy trình bảo toàn dòng chảy khối lượng (BR-04)",
-                    )}
-                  </span>
-                </div>
-                <p>
-                  {t(
-                    "field.receipt.policyDesc",
-                    "Khối lượng lúa tươi ghi nhận tại đây sẽ là căn cứ đối soát ban đầu khi xe tải chở lúa cập bến nhà máy sấy Tiền Giang.",
-                  )}
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("field.receipt.submitting", "Đang ghi nhận...")
-                    : t("field.receipt.submitBtn", "Lập Phiếu & Tạo Lô Nguồn")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

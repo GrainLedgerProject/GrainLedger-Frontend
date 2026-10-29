@@ -6,7 +6,7 @@ import { useUiStore } from "@/app/store/uiStore";
 import { Sun, Moon, Globe, ArrowRight } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 
-export const AppleNavbar: React.FC = () => {
+export const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuthStore();
   const { theme, toggleTheme, language, setLanguage } = useUiStore();

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { useUiStore } from './app/store/uiStore';
+import { syncOfflineCache } from './pwa/offlineCache';
 import { getQueuedProcurementCount, onProcurementQueueChanged, syncQueuedProcurements } from './pwa/procurementQueue';
 
 const queryClient = new QueryClient({
@@ -25,11 +26,18 @@ export function App() {
     };
     const synchronize = () => {
       void syncQueuedProcurements().finally(refreshCount);
+      void syncOfflineCache();
     };
 
     refreshCount();
     const unsubscribe = onProcurementQueueChanged(refreshCount);
-    if (navigator.onLine) synchronize();
+
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      synchronize();
+    } else {
+      void syncOfflineCache();
+    }
+
     window.addEventListener('online', synchronize);
     return () => {
       window.removeEventListener('online', synchronize);

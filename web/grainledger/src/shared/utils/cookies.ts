@@ -1,6 +1,6 @@
 /**
  * Cookie Utilities for Secure Session & Token Management
- * Stores accessToken and refreshToken in browser cookies with SameSite=Lax and Path=/
+ * Stores accessToken, refreshToken, and user profile in browser cookies with SameSite=Lax and Path=/
  */
 
 export const COOKIE_KEYS = {
@@ -12,12 +12,12 @@ export const COOKIE_KEYS = {
 
 /**
  * Set a cookie with specified expiration, path, and secure attributes.
- * If days is undefined or 0, sets a session cookie (removed when browser closes).
+ * Defaults to 30 days expiration so offline/PWA usage is supported across app restarts.
  */
 export function setCookie(
   name: string,
   value: string,
-  days?: number,
+  days = 30,
   path = '/'
 ): void {
   if (typeof document === 'undefined') return;

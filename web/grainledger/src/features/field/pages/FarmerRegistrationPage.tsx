@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints, type FarmerInput } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
+import { useUiStore } from "@/app/store/uiStore";
+import {
+  getCachedFarmers,
+  saveCachedFarmers,
+  type CachedFarmer,
+} from "@/pwa/offlineCache";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
@@ -17,6 +23,7 @@ import {
   CheckCircle,
   WarningCircle,
   X,
+  CloudSlash,
 } from "@phosphor-icons/react";
 
 interface FarmerRecord {
@@ -32,6 +39,7 @@ interface FarmerRecord {
 export const FarmerRegistrationPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { isOnline } = useUiStore();
   const [farmers, setFarmers] = useState<FarmerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,12 +60,23 @@ export const FarmerRegistrationPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string | number> = { pageSize: 50 };
-      if (searchQuery) params.search = searchQuery;
-      const res = await procurementEndpoints.getFarmers(params);
-      // The API may return an array directly or an object with items
-      const items = Array.isArray(res) ? res : (res as any)?.items || [];
-      setFarmers(items);
+      // 1. Immediately read cached farmers
+      const cached = await getCachedFarmers();
+      if (cached && cached.length > 0) {
+        setFarmers(cached as FarmerRecord[]);
+      }
+
+      // 2. If online, fetch fresh farmers from server
+      if (isOnline) {
+        const params: Record<string, string | number> = { pageSize: 50 };
+        if (searchQuery) params.search = searchQuery;
+        const res = await procurementEndpoints.getFarmers(params);
+        const items = Array.isArray(res) ? res : (res as any)?.items || [];
+        setFarmers(items);
+        if (items.length > 0) {
+          void saveCachedFarmers(items as CachedFarmer[]);
+        }
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -76,7 +95,7 @@ export const FarmerRegistrationPage: React.FC = () => {
 
   useEffect(() => {
     void loadFarmers();
-  }, [searchQuery]);
+  }, [searchQuery, isOnline]);
 
   const handleOpenCreate = () => {
     setEditingFarmer(null);
@@ -235,6 +254,24 @@ export const FarmerRegistrationPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Offline Notice */}
+      {!isOnline && (
+        <div className="p-3.5 rounded-xl bg-functional-stale-bg border border-functional-stale-border/60 text-accent-warning text-xs flex items-center gap-2.5 shadow-xs">
+          <CloudSlash size={20} weight="fill" className="shrink-0" />
+          <div>
+            <p className="font-bold text-ink-primary">
+              {t("field.farmer.offlineTitle", "Chế độ hiện trường ngoại tuyến")}
+            </p>
+            <p className="text-ink-secondary text-[11px] mt-0.5">
+              {t(
+                "field.farmer.offlineDesc",
+                "Hiển thị danh sách nông hộ đã lưu trên thiết bị để hỗ trợ lập phiếu thu mua ngoại tuyến."
+              )}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Alert Notices */}
       {error && (

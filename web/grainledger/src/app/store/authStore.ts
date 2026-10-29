@@ -7,6 +7,7 @@ import {
   getCookie,
   setCookie,
 } from '@/shared/utils/cookies';
+import { extractUserProfileFromJwt, isJwtValidFormat } from '@/shared/utils/jwt';
 import { create } from 'zustand';
 
 export interface UserProfile {
@@ -155,25 +156,58 @@ const parseUserFromCookie = (): UserProfile | null => {
   }
 };
 
-const initialUser = parseUserFromCookie();
-const initialAccess =
-  getCookie(COOKIE_KEYS.ACCESS_TOKEN) ||
+const initialAccessCookie = getCookie(COOKIE_KEYS.ACCESS_TOKEN);
+const initialRefreshCookie = getCookie(COOKIE_KEYS.REFRESH_TOKEN);
+
+let initialUser = parseUserFromCookie();
+
+// If user cookie is absent but we have a valid JWT access token, extract user from JWT claims!
+if (!initialUser && initialAccessCookie && isJwtValidFormat(initialAccessCookie)) {
+  const jwtUser = extractUserProfileFromJwt(initialAccessCookie);
+  if (jwtUser) {
+    initialUser = jwtUser;
+    // Persist extracted profile into cookie with 30 days expiry so offline mode works instantly
+    setCookie(COOKIE_KEYS.USER, JSON.stringify(jwtUser), 30);
+  }
+}
+
+// If user cookie is absent but token is a mock token, resolve demo profile
+if (!initialUser && initialAccessCookie?.startsWith('mock-access-token-')) {
+  const roleKey = initialAccessCookie.replace('mock-access-token-', '').toUpperCase();
+  const demoProfile = Object.values(DEMO_USERS).find((u) => u.role.toUpperCase() === roleKey);
+  if (demoProfile) {
+    initialUser = demoProfile;
+    setCookie(COOKIE_KEYS.USER, JSON.stringify(demoProfile), 30);
+  }
+}
+
+const resolvedAccess =
+  initialAccessCookie ||
   (initialUser?.id?.startsWith('user-') ? `mock-access-token-${initialUser.role.toLowerCase()}` : null);
-const initialRefresh =
-  getCookie(COOKIE_KEYS.REFRESH_TOKEN) ||
+const resolvedRefresh =
+  initialRefreshCookie ||
   (initialUser?.id?.startsWith('user-') ? `mock-refresh-token-${initialUser.role.toLowerCase()}` : null);
+
+// Authenticated if we have a valid user profile and at least one valid/persisted token
+const isSessionAuthenticated = Boolean(
+  initialUser &&
+  (
+    (resolvedAccess && isJwtValidFormat(resolvedAccess)) ||
+    (resolvedRefresh && isJwtValidFormat(resolvedRefresh))
+  )
+);
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: initialUser,
-  accessToken: initialAccess,
-  refreshToken: initialRefresh,
-  isAuthenticated: !!(initialUser && (initialAccess || initialRefresh)),
+  accessToken: resolvedAccess,
+  refreshToken: resolvedRefresh,
+  isAuthenticated: isSessionAuthenticated,
   isLoading: false,
   hasUnsavedDrafts: false,
 
   setUser: (user) => {
     if (user) {
-      setCookie(COOKIE_KEYS.USER, JSON.stringify(user), 7);
+      setCookie(COOKIE_KEYS.USER, JSON.stringify(user), 30);
     } else {
       deleteCookie(COOKIE_KEYS.USER);
     }
@@ -181,8 +215,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setTokens: (access, refresh, rememberMe = true) => {
-    const accessDays = rememberMe ? 7 : undefined;
-    const refreshDays = rememberMe ? 30 : undefined;
+    const accessDays = rememberMe ? 30 : 7;
+    const refreshDays = 30;
 
     if (access) {
       setCookie(COOKIE_KEYS.ACCESS_TOKEN, access, accessDays);
@@ -205,8 +239,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     const access = tokens?.access || `mock-access-token-${user.role.toLowerCase()}`;
     const refresh = tokens?.refresh || `mock-refresh-token-${user.role.toLowerCase()}`;
 
-    const accessDays = rememberMe ? 7 : undefined;
-    const refreshDays = rememberMe ? 30 : undefined;
+    // Ensure tokens and user profile persist for offline usage
+    const accessDays = rememberMe ? 30 : 7;
+    const refreshDays = 30;
 
     // Store exclusively in Cookies
     setCookie(COOKIE_KEYS.USER, JSON.stringify(user), accessDays);
@@ -255,7 +290,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => {
       if (!state.user) return state;
       const updatedUser = { ...state.user, ...updates };
-      setCookie(COOKIE_KEYS.USER, JSON.stringify(updatedUser), 7);
+      setCookie(COOKIE_KEYS.USER, JSON.stringify(updatedUser), 30);
       return { user: updatedUser };
     });
   },

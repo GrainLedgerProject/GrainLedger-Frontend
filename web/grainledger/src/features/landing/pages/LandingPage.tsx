@@ -7,7 +7,7 @@
  * and high-performance code-split sections.
  */
 import React from "react";
-import { AppleNavbar } from "../components/AppleNavbar";
+import { Navbar } from "../components/Navbar";
 import { HeroSection } from "../components/HeroSection";
 import { ProblemSection } from "../components/ProblemSection";
 import { BentoGridFeatures } from "../components/BentoGridFeatures";
@@ -20,7 +20,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface-base dark:bg-canvas-dark text-ink-primary dark:text-canvas-light font-sans selection:bg-accent-primary/20 selection:text-accent-primary transition-colors duration-300">
       {/* 1. Sticky Apple Liquid Glass Navbar */}
-      <AppleNavbar />
+      <Navbar />
 
       <main>
         {/* 2. Hero Section with Cinematic Glow */}
