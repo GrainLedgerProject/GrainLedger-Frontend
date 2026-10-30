@@ -7,14 +7,17 @@
  * and high-performance code-split sections.
  */
 import React from "react";
-import { Navbar } from "../components/Navbar";
-import { HeroSection } from "../components/HeroSection";
-import { ProblemSection } from "../components/ProblemSection";
-import { BentoGridFeatures } from "../components/BentoGridFeatures";
-import { ComparisonBento } from "../components/ComparisonBento";
-import { LiveSimulatorSection } from "../components/LiveSimulatorSection";
-import { EcosystemSection } from "../components/EcosystemSection";
-import { LandingCtaFooter } from "../components/LandingCtaFooter";
+
+import {
+  Navbar,
+  HeroSection,
+  ProblemSection,
+  BentoGridFeatures,
+  ComparisonBento,
+  LiveSimulatorSection,
+  EcosystemSection,
+  LandingCtaFooter,
+} from "../components";
 
 export const LandingPage: React.FC = () => {
   return (

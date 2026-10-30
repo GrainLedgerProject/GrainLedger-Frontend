@@ -1,10 +1,16 @@
 /**
  * Offline Reference Data & Farmer Cache
- * Persists farmer lists and procurement reference catalogs in IndexedDB & LocalStorage
+ * Persists farmer lists, receiving options, commodities, mass units and plot seasons
  * Enables creating procurement receipts completely offline with zero network connectivity.
  */
 
-import { procurementEndpoints } from "@/api/procurement";
+import {
+  procurementEndpoints,
+  type ProcurementCommodity,
+  type ProcurementMassUnit,
+  type ProcurementReceivingOption,
+  type ProcurementReferenceResponse,
+} from "@/api/procurement";
 import { logger } from "@/shared/utils/logger";
 import { STORES, withStore } from "./db";
 
@@ -17,11 +23,32 @@ export interface CachedFarmer {
   totalAreaHa?: number;
 }
 
+export interface CachedPlotSeason {
+  id: string;
+  plotId: string;
+  seasonId?: string;
+  plotCode?: string;
+  seasonName?: string;
+  riceVariety?: string;
+}
+
+export interface CachedPlot {
+  id: string;
+  farmerId: string;
+  code: string;
+  areaHa?: number;
+}
+
 export interface CachedReferenceData {
+  receivingOptions?: ProcurementReceivingOption[];
+  commodity?: ProcurementCommodity;
+  massUnits?: ProcurementMassUnit[];
+  plotSeasons?: CachedPlotSeason[];
+  plots?: CachedPlot[];
+  // Backwards compatibility for legacy views
   collectionSites?: Array<{ id: string; name: string; code?: string }>;
   receivingLocations?: Array<{ id: string; name: string; code?: string }>;
   commodities?: Array<{ id: string; name: string; code?: string }>;
-  plotSeasons?: Array<{ id: string; name: string; riceVariety?: string }>;
 }
 
 const LOCAL_STORAGE_FARMERS_KEY = "grainledger_cached_farmers";
@@ -41,7 +68,7 @@ export function onOfflineCacheUpdated(listener: () => void) {
 }
 
 /**
- * Reads cached farmers: first from IndexedDB, then fallback to LocalStorage, then SEED_FARMERS.
+ * Reads cached farmers: first from IndexedDB, then fallback to LocalStorage.
  */
 export async function getCachedFarmers(): Promise<CachedFarmer[]> {
   try {
@@ -76,21 +103,19 @@ export async function getCachedFarmers(): Promise<CachedFarmer[]> {
 
 /**
  * Saves farmer list to IndexedDB and LocalStorage for offline use.
- * @param notify Whether to broadcast cache update event (default: true). Set to false when saving from within a fetch handler to avoid feedback loops.
+ * @param notify Whether to broadcast cache update event (default: true).
  */
 export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true): Promise<void> {
   if (!farmers || farmers.length === 0) return;
 
-  // Mirror to LocalStorage for instant synchronous access
   if (typeof localStorage !== "undefined") {
     try {
       localStorage.setItem(LOCAL_STORAGE_FARMERS_KEY, JSON.stringify(farmers));
     } catch {
-      // ignore quota exceeded
+      // ignore
     }
   }
 
-  // Persist to IndexedDB
   try {
     await withStore(STORES.OFFLINE_CACHE, "readwrite", (store) =>
       store.put({ key: "farmers", value: farmers, updatedAt: new Date().toISOString() })
@@ -136,7 +161,6 @@ export async function getCachedRefData(): Promise<CachedReferenceData | null> {
 
 /**
  * Saves reference data to IndexedDB and LocalStorage
- * @param notify Whether to broadcast cache update event (default: true). Set to false when saving from within a fetch handler to avoid feedback loops.
  */
 export async function saveCachedRefData(data: CachedReferenceData, notify = true): Promise<void> {
   if (!data) return;
@@ -163,7 +187,7 @@ export async function saveCachedRefData(data: CachedReferenceData, notify = true
 
 /**
  * Synchronizes offline cache with server when online.
- * Fetches fresh farmer list and reference data, storing them locally.
+ * Fetches fresh farmer list, reference options, plot seasons, and plots, storing them locally.
  */
 export async function syncOfflineCache(): Promise<{ farmersCount: number; success: boolean }> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -173,9 +197,11 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
 
   try {
     logger.info("Synchronizing offline reference data and farmer catalog...");
-    const [farmersRes, refRes] = await Promise.all([
+    const [farmersRes, refRes, plotSeasonsRes, plotsRes] = await Promise.all([
       procurementEndpoints.getFarmers({ pageSize: 200 }).catch(() => null),
       procurementEndpoints.getProcurementReferenceData().catch(() => null),
+      procurementEndpoints.getPlotSeasons({ pageSize: 100 }).catch(() => null),
+      procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
     ]);
 
     let farmersCount = 0;
@@ -186,15 +212,29 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
         : (farmersRes as { items?: CachedFarmer[] })?.items || [];
 
       if (items.length > 0) {
-        await saveCachedFarmers(items);
+        await saveCachedFarmers(items, false);
         farmersCount = items.length;
       }
     }
 
     if (refRes) {
-      await saveCachedRefData(refRes as CachedReferenceData);
+      const plotSeasonItems = Array.isArray(plotSeasonsRes)
+        ? plotSeasonsRes
+        : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
+      const plotItems = Array.isArray(plotsRes)
+        ? plotsRes
+        : (plotsRes as { items?: CachedPlot[] })?.items || [];
+
+      const compositeRefData: CachedReferenceData = {
+        ...(refRes as ProcurementReferenceResponse),
+        plotSeasons: plotSeasonItems,
+        plots: plotItems,
+      };
+
+      await saveCachedRefData(compositeRefData, false);
     }
 
+    notifyCacheUpdated();
     logger.info(`Offline cache synchronized: ${farmersCount} farmers cached.`);
     return { farmersCount, success: true };
   } catch (err) {
@@ -202,4 +242,3 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
     return { farmersCount: 0, success: false };
   }
 }
-

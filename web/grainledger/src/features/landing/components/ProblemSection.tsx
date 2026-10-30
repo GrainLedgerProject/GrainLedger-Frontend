@@ -53,7 +53,7 @@ export const ProblemSection: React.FC = () => {
           <h2 className="font-sans text-3xl sm:text-5xl font-extrabold tracking-[-0.03em] text-ink-primary leading-tight">
             Xuất khẩu gạo là bài toán truy vết & rủi ro dư lượng lớn nhất ĐBSCL.
           </h2>
-          <p className="text-base text-ink-secondary text-ink-tertiary leading-relaxed pt-1">
+          <p className="text-base text-ink-secondary leading-relaxed pt-1">
             Một container gạo xuất khẩu là sự hòa trộn của hàng trăm thửa ruộng
             nhỏ sau khi đưa vào lò sấy và silo công nghiệp. Khi một kết quả kiểm
             nghiệm xấu về muộn, các phương pháp quản lý bằng giấy hoặc Excel
@@ -81,7 +81,7 @@ export const ProblemSection: React.FC = () => {
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase font-semibold text-ink-tertiary text-ink-tertiary">
+                  <span className="text-[11px] font-mono uppercase font-semibold text-ink-tertiary">
                     {card.badge}
                   </span>
                 </div>

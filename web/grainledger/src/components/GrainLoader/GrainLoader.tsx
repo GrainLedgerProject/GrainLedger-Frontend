@@ -95,7 +95,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
       </div>
 
       {label && (
-        <span className="text-xs font-semibold tracking-widest text-ink-secondary">
+        <span className="text-xs font-semibold tracking-widest text-white">
           {label}
         </span>
       )}

@@ -34,7 +34,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export const SignInPage: React.FC = () => {
   const { t } = useTranslation();
-  const { isAuthenticated, user, loginSuccess } = useAuthStore();
+  const { isAuthenticated, user, accessToken, loginSuccess } = useAuthStore();
   const { theme, toggleTheme, language, setLanguage } = useUiStore();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -62,14 +62,14 @@ export const SignInPage: React.FC = () => {
 
   // Auto-redirect to dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && accessToken) {
       const isSelfRedirect = !returnUrl || returnUrl.startsWith("/sign-in");
       const targetPath = isSelfRedirect ? "/home" : returnUrl;
       navigate(targetPath, { replace: true });
     }
-  }, [isAuthenticated, user, returnUrl, navigate]);
+  }, [isAuthenticated, user, accessToken, returnUrl, navigate]);
 
-  if (isAuthenticated && user) {
+  if (isAuthenticated && user && accessToken) {
     return (
       <div className="min-h-screen bg-parchment-grain flex flex-col justify-center items-center">
         <GrainLoader
@@ -124,9 +124,7 @@ export const SignInPage: React.FC = () => {
             password: values.password,
           });
           await navigator.credentials.store(cred as Credential);
-        } catch {
-          // Fallback tự nhiên theo browser heuristics
-        }
+        } catch {}
       }
       // Determine redirect destination
       const targetPath = returnUrl || getRedirectPathForRole(user.role);
@@ -275,19 +273,15 @@ export const SignInPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Form Level Error Message (MSG12) */}
+          {/* Form Level Error Message */}
           {authError && (
             <div
-              className="mb-5 p-3 rounded-md bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-start gap-2.5 animate-ledger-shake"
+              className="mb-5 p-3 rounded-md bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex justify-start items-center gap-2.5 animate-ledger-shake"
               role="alert"
             >
-              <WarningCircle
-                size={18}
-                weight="fill"
-                className="shrink-0 mt-0.5"
-              />
-              <div className="flex-1">
-                <span>{authError}</span>
+              <WarningCircle size={18} weight="fill" className="shrink-0" />
+              <div>
+                <span className="leading-none text-center">{authError}</span>
               </div>
             </div>
           )}

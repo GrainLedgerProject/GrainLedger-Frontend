@@ -1,5 +1,4 @@
 import type { UserRole } from '@/shared/types/roles';
-import { normalizeUserRole, ROLE_DEFINITIONS } from '@/shared/types/roles';
 import {
   clearAuthCookies,
   COOKIE_KEYS,
@@ -18,7 +17,7 @@ export interface UserProfile {
   role: UserRole;
   organizationId?: string;
   organizationName?: string;
-  organizationColor?: string; // e.g. var(--color-company-a)
+  organizationColor?: string;
   assignedFacilities?: string[];
   isActive: boolean;
   permissions: string[];
@@ -36,98 +35,10 @@ interface AuthState {
   setUser: (user: UserProfile | null) => void;
   setTokens: (access: string | null, refresh: string | null, rememberMe?: boolean) => void;
   setHasUnsavedDrafts: (hasDrafts: boolean) => void;
-  loginSuccess: (user: UserProfile, tokens?: { access: string; refresh: string }, rememberMe?: boolean) => void;
+  loginSuccess: (user: UserProfile, tokens: { access: string; refresh: string }, rememberMe?: boolean) => void;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
-
-// Predefined Demo Profiles for all 7 roles to allow immediate testing & verification
-export const DEMO_USERS: Record<UserRole, UserProfile> = {
-  MILL_ADMIN: {
-    id: 'user-ma-01',
-    email: 'admin@grainledger.local',
-    displayName: 'Lê Văn Quản Trị',
-    phoneNumber: '0901 234 567',
-    role: 'MILL_ADMIN',
-    organizationId: 'org-mill-01',
-    organizationName: 'Nhà máy Xay xát Lúa gạo Tiền Giang',
-    assignedFacilities: ['Dây chuyền A - Tiền Giang', 'Kho Silo Cụm 1'],
-    isActive: true,
-    permissions: ['identity.manage', 'platform.configure', 'trace.read.all'],
-  },
-  MILL_MANAGER: {
-    id: 'user-mm-01',
-    email: 'mill.manager@grainledger.local',
-    displayName: 'Trần Quốc Quản Lý',
-    phoneNumber: '0912 345 678',
-    role: 'MILL_MANAGER',
-    organizationId: 'org-mill-01',
-    organizationName: 'Nhà máy Xay xát Lúa gạo Tiền Giang',
-    assignedFacilities: ['Dây chuyền A - Tiền Giang'],
-    isActive: true,
-    permissions: ['platform.read', 'lots.read.all', 'conversions.confirm', 'corrections.reconcile', 'holds.process'],
-  },
-  MILL_OPERATOR: {
-    id: 'user-mo-01',
-    email: 'mill.operator@grainledger.local',
-    displayName: 'Nguyễn Tấn Vận Hành',
-    phoneNumber: '0923 456 789',
-    role: 'MILL_OPERATOR',
-    organizationId: 'org-mill-01',
-    organizationName: 'Nhà máy Xay xát Lúa gạo Tiền Giang',
-    assignedFacilities: ['Dây chuyền A - Tiền Giang'],
-    isActive: true,
-    permissions: ['platform.read', 'lots.read.facility', 'lots.receive', 'conversions.write'],
-  },
-  CUSTOMER_PROCUREMENT_OFFICER: {
-    id: 'user-po-01',
-    email: 'purchasing@grainledger.local',
-    displayName: 'Võ Minh Thu Mua',
-    phoneNumber: '0934 567 890',
-    role: 'CUSTOMER_PROCUREMENT_OFFICER',
-    organizationId: 'org-cust-01',
-    organizationName: 'Công ty CP Xuất nhập khẩu Mekong Rice',
-    organizationColor: 'var(--color-company-a)',
-    isActive: true,
-    permissions: ['farms.write', 'purchases.write', 'history.read'],
-  },
-  CUSTOMER_MANAGER: {
-    id: 'user-cm-01',
-    email: 'customer.manager@grainledger.local',
-    displayName: 'Đặng Hoàng Giám Đốc',
-    phoneNumber: '0945 678 901',
-    role: 'CUSTOMER_MANAGER',
-    organizationId: 'org-cust-01',
-    organizationName: 'Công ty CP Xuất nhập khẩu Mekong Rice',
-    organizationColor: 'var(--color-company-a)',
-    isActive: true,
-    permissions: ['farms.read', 'lots.read.tenant', 'lab.write', 'blend.approve', 'holds.manage', 'trace.read.tenant'],
-  },
-  CUSTOMER_EXPORT_OFFICER: {
-    id: 'user-eo-01',
-    email: 'export@grainledger.local',
-    displayName: 'Phạm Thanh Xuất Khẩu',
-    phoneNumber: '0956 789 012',
-    role: 'CUSTOMER_EXPORT_OFFICER',
-    organizationId: 'org-cust-01',
-    organizationName: 'Công ty CP Xuất nhập khẩu Mekong Rice',
-    organizationColor: 'var(--color-company-a)',
-    isActive: true,
-    permissions: ['mrl.read', 'lots.read.tenant', 'blend.propose', 'containers.write', 'trace.read.tenant'],
-  },
-  AUTHORIZED_STOCK_VIEWER: {
-    id: 'user-sv-01',
-    email: 'stock.viewer@grainledger.local',
-    displayName: 'Kiểm Toán Viên Độc Lập',
-    phoneNumber: '0967 890 123',
-    role: 'AUTHORIZED_STOCK_VIEWER',
-    organizationId: 'org-cust-01',
-    organizationName: 'Công ty CP Xuất nhập khẩu Mekong Rice',
-    organizationColor: 'var(--color-company-a)',
-    isActive: true,
-    permissions: ['stock.view.only'],
-  },
-};
 
 // Immediate cleanup of any legacy auth data from localStorage
 if (typeof window !== 'undefined') {
@@ -161,40 +72,23 @@ const initialRefreshCookie = getCookie(COOKIE_KEYS.REFRESH_TOKEN);
 
 let initialUser = parseUserFromCookie();
 
-// If user cookie is absent but we have a valid JWT access token, extract user from JWT claims!
+// If user cookie is absent but we have a valid JWT access token, extract user from JWT claims
 if (!initialUser && initialAccessCookie && isJwtValidFormat(initialAccessCookie)) {
   const jwtUser = extractUserProfileFromJwt(initialAccessCookie);
   if (jwtUser) {
     initialUser = jwtUser;
-    // Persist extracted profile into cookie with 30 days expiry so offline mode works instantly
     setCookie(COOKIE_KEYS.USER, JSON.stringify(jwtUser), 30);
   }
 }
 
-// If user cookie is absent but token is a mock token, resolve demo profile
-if (!initialUser && initialAccessCookie?.startsWith('mock-access-token-')) {
-  const roleKey = initialAccessCookie.replace('mock-access-token-', '').toUpperCase();
-  const demoProfile = Object.values(DEMO_USERS).find((u) => u.role.toUpperCase() === roleKey);
-  if (demoProfile) {
-    initialUser = demoProfile;
-    setCookie(COOKIE_KEYS.USER, JSON.stringify(demoProfile), 30);
-  }
-}
+const resolvedAccess = initialAccessCookie || null;
+const resolvedRefresh = initialRefreshCookie || null;
 
-const resolvedAccess =
-  initialAccessCookie ||
-  (initialUser?.id?.startsWith('user-') ? `mock-access-token-${initialUser.role.toLowerCase()}` : null);
-const resolvedRefresh =
-  initialRefreshCookie ||
-  (initialUser?.id?.startsWith('user-') ? `mock-refresh-token-${initialUser.role.toLowerCase()}` : null);
-
-// Authenticated if we have a valid user profile and at least one valid/persisted token
+// Only authenticate if user profile exists AND a valid accessToken value is present
 const isSessionAuthenticated = Boolean(
   initialUser &&
-  (
-    (resolvedAccess && isJwtValidFormat(resolvedAccess)) ||
-    (resolvedRefresh && isJwtValidFormat(resolvedRefresh))
-  )
+  resolvedAccess &&
+  isJwtValidFormat(resolvedAccess)
 );
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -211,7 +105,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     } else {
       deleteCookie(COOKIE_KEYS.USER);
     }
-    set({ user, isAuthenticated: !!user });
+    set((state) => ({
+      user,
+      isAuthenticated: Boolean(user && state.accessToken && isJwtValidFormat(state.accessToken)),
+    }));
   },
 
   setTokens: (access, refresh, rememberMe = true) => {
@@ -230,16 +127,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       deleteCookie(COOKIE_KEYS.REFRESH_TOKEN);
     }
 
-    set({ accessToken: access, refreshToken: refresh });
+    set((state) => ({
+      accessToken: access,
+      refreshToken: refresh,
+      isAuthenticated: Boolean(state.user && access && isJwtValidFormat(access)),
+    }));
   },
 
   setHasUnsavedDrafts: (hasDrafts) => set({ hasUnsavedDrafts: hasDrafts }),
 
   loginSuccess: (user, tokens, rememberMe = true) => {
-    const access = tokens?.access || `mock-access-token-${user.role.toLowerCase()}`;
-    const refresh = tokens?.refresh || `mock-refresh-token-${user.role.toLowerCase()}`;
+    const access = tokens.access;
+    const refresh = tokens.refresh;
 
-    // Ensure tokens and user profile persist for offline usage
     const accessDays = rememberMe ? 30 : 7;
     const refreshDays = 30;
 
@@ -250,7 +150,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({
       user,
-      isAuthenticated: true,
+      isAuthenticated: Boolean(user && access && isJwtValidFormat(access)),
       accessToken: access,
       refreshToken: refresh,
       isLoading: false,

@@ -11,7 +11,7 @@ let inFlightCheck: Promise<boolean> | null = null;
  */
 export async function checkBackendHealth(): Promise<boolean> {
   // If the browser is completely offline, no need to attempt HTTP
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
     return false;
   }
 
@@ -21,20 +21,23 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 
   inFlightCheck = (async () => {
-    const checkEndpoint = async (url: string, timeoutMs: number): Promise<boolean> => {
+    const checkEndpoint = async (
+      url: string,
+      timeoutMs: number,
+    ): Promise<boolean> => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
         const response = await fetch(url, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            Accept: 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
+            Accept: "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
           },
           signal: controller.signal,
-          cache: 'no-store',
+          cache: "no-store",
         });
         clearTimeout(timeoutId);
 
@@ -44,8 +47,8 @@ export async function checkBackendHealth(): Promise<boolean> {
         }
 
         // Avoid false-positive SPA index.html fallback
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('text/html')) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
           return false;
         }
 
@@ -56,14 +59,8 @@ export async function checkBackendHealth(): Promise<boolean> {
       }
     };
 
-    // Primary check: /api/health
-    const apiOk = await checkEndpoint('/api/health', 3500);
-    if (apiOk) {
-      return true;
-    }
-
     // Fallback check: /health directly
-    const directOk = await checkEndpoint('/health', 2500);
+    const directOk = await checkEndpoint("/health", 2500);
     return directOk;
   })().finally(() => {
     inFlightCheck = null;

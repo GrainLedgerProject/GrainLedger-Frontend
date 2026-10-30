@@ -12,6 +12,7 @@ export * from './GlobalSearchModal/GlobalSearchModal';
 export * from './GrainLoader/GrainLoader';
 export * from './HoldBanner/HoldBanner';
 export * from './LedgerRejectionCard/LedgerRejectionCard';
+export * from './MapLocationPicker/MapLocationPicker';
 export * from './MassValue/MassValue';
 export * from './Modal';
 export * from './NetworkStatusIndicator/NetworkStatusIndicator';

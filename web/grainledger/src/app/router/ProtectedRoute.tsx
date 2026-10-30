@@ -14,12 +14,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
 }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, accessToken } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // If not authenticated, redirect to sign-in with returnUrl
-  if (!isAuthenticated || !user) {
+  // If not authenticated, or no user profile, or no accessToken, redirect to sign-in with returnUrl
+  // In offline mode: ONLY allow access into protected routes (/home, etc.) if a valid accessToken value exists!
+  if (!isAuthenticated || !user || !accessToken) {
     if (location.pathname.startsWith("/sign-in")) {
       return null;
     }

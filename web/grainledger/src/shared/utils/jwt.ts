@@ -3,11 +3,10 @@ import { normalizeUserRole } from "@/shared/types/roles";
 
 /**
  * Safely decodes base64url-encoded payload of a standard JWT.
- * Returns null if token is null, malformed, or mock token.
+ * Returns null if token is null, malformed, or not a valid 3-part JWT.
  */
 export function decodeJwtPayload(token: string | null): Record<string, any> | null {
   if (!token || typeof token !== "string") return null;
-  if (token.startsWith("mock-")) return null;
 
   try {
     const parts = token.split(".");
@@ -28,22 +27,20 @@ export function decodeJwtPayload(token: string | null): Record<string, any> | nu
 }
 
 /**
- * Checks if a token looks like a valid JWT structure or valid mock token.
+ * Checks if a token is a structurally valid 3-part JWT string.
  */
 export function isJwtValidFormat(token: string | null): boolean {
-  if (!token) return false;
-  if (token.startsWith("mock-")) return true;
+  if (!token || typeof token !== "string") return false;
   const parts = token.split(".");
-  return parts.length === 3;
+  return parts.length === 3 && parts.every((p) => p.length > 0);
 }
 
 /**
  * Check if a JWT is expired or within bufferSeconds of expiring.
- * Returns false for mock tokens or non-JWT tokens.
+ * Returns true if token is missing or expired, false if valid.
  */
 export function isJwtExpired(token: string | null, bufferSeconds = 15): boolean {
   if (!token) return true;
-  if (token.startsWith("mock-")) return false;
 
   const payload = decodeJwtPayload(token);
   if (!payload || typeof payload.exp !== "number") return false;
@@ -52,7 +49,7 @@ export function isJwtExpired(token: string | null, bufferSeconds = 15): boolean 
 }
 
 /**
- * Reconstructs a UserProfile from the claims in a JWT token.
+ * Reconstructs a UserProfile from the claims in a real backend JWT token.
  * Handles standard OIDC claims, ASP.NET Core Identity claims, and custom claims.
  */
 export function extractUserProfileFromJwt(token: string | null): UserProfile | null {
@@ -66,7 +63,7 @@ export function extractUserProfileFromJwt(token: string | null): UserProfile | n
     payload.nameid ||
     payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
     payload.id ||
-    `user-jwt-${Date.now()}`;
+    `user-${Date.now()}`;
 
   const email =
     payload.email ||
@@ -119,4 +116,3 @@ export function extractUserProfileFromJwt(token: string | null): UserProfile | n
     permissions,
   };
 }
-

@@ -3,14 +3,11 @@
  * Generated & typed according to OpenAPI 3.1.1 specification
  * Base URL: http://localhost:5080 (or proxied via /api)
  */
-import { useAuthStore } from '@/app/store/authStore';
-import { useUiStore } from '@/app/store/uiStore';
-import { normalizeUserRole } from '@/shared/types/roles';
-import { COOKIE_KEYS, getCookie } from '@/shared/utils/cookies';
-import { isJwtExpired } from '@/shared/utils/jwt';
-import { logger } from '@/shared/utils/logger';
-
-export { isJwtExpired };
+import { useAuthStore } from "@/app/store/authStore";
+import { useUiStore } from "@/app/store/uiStore";
+import { normalizeUserRole } from "@/shared/types/roles";
+import { COOKIE_KEYS, getCookie } from "@/shared/utils/cookies";
+import { logger } from "@/shared/utils/logger";
 
 export interface ProblemDetails {
   type?: string | null;
@@ -26,10 +23,42 @@ export class ApiError extends Error {
 
   constructor(status: number, message: string, problem?: ProblemDetails) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.problem = problem;
   }
+}
+
+/**
+ * Check if a JWT is expired or within 15 seconds of expiring.
+ * Returns false for mock tokens or unparseable non-JWT tokens.
+ */
+export function isJwtExpired(token: string | null): boolean {
+  if (!token) return true;
+  if (token.startsWith("mock-")) return false;
+
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+
+    // Decode Base64Url
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    if (typeof payload.exp === "number") {
+      // 15-second safety buffer before true expiry
+      return Date.now() >= payload.exp * 1000 - 15000;
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 /** Single-flight mutex for token refresh so concurrent requests share the exact same refresh cycle */
@@ -38,7 +67,6 @@ let refreshPromise: Promise<string | null> | null = null;
 /**
  * Executes a token refresh cycle against POST /api/auth/refresh.
  * Rotates the single-use refresh token, updates cookies and Zustand store.
- * IMPORTANT: Does NOT log out the user on network errors or when offline.
  */
 export async function requestTokenRefresh(): Promise<string | null> {
   // If a refresh is already in flight, reuse the ongoing promise
@@ -46,47 +74,51 @@ export async function requestTokenRefresh(): Promise<string | null> {
     return refreshPromise;
   }
 
-  // If offline, do NOT attempt network refresh and do NOT log out
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    logger.info('Device is offline, skipping token refresh attempt.');
-    return null;
-  }
+  const {
+    refreshToken: stateRefreshToken,
+    setTokens,
+    setUser,
+    logout,
+  } = useAuthStore.getState();
+  const refreshToken =
+    stateRefreshToken || getCookie(COOKIE_KEYS.REFRESH_TOKEN);
 
-  const { refreshToken: stateRefreshToken, setTokens, setUser, logout } = useAuthStore.getState();
-  const refreshToken = stateRefreshToken || getCookie(COOKIE_KEYS.REFRESH_TOKEN);
-
-  if (!refreshToken || refreshToken.startsWith('mock-')) {
+  if (!refreshToken || refreshToken.startsWith("mock-")) {
     return null;
   }
 
   refreshPromise = (async () => {
     try {
-      logger.info('Performing single-flight refresh token rotation...');
-      const res = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
+      logger.info("Performing single-flight refresh token rotation...");
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({ refreshToken }),
       });
 
       if (!res.ok) {
-        logger.warn(`Token refresh endpoint responded with status ${res.status}`);
-        // Only log out if the backend explicitly rejected authentication (401 or 403)
-        if (res.status === 401 || res.status === 403) {
-          logout();
-        }
+        logger.warn(
+          `Token refresh endpoint responded with status ${res.status}`,
+        );
+        logout();
         return null;
       }
 
       const data = await res.json();
-      const newAccessToken = (data.accessToken || data.AccessToken) as string | undefined;
-      const newRefreshToken = (data.refreshToken || data.RefreshToken || refreshToken) as string;
+      const newAccessToken = (data.accessToken || data.AccessToken) as
+        | string
+        | undefined;
+      const newRefreshToken = (data.refreshToken ||
+        data.RefreshToken ||
+        refreshToken) as string;
 
       if (!newAccessToken) {
-        logger.warn('Refresh response did not return a valid accessToken');
+        logger.warn("Refresh response did not return a valid accessToken");
+        logout();
         return null;
       }
 
@@ -101,18 +133,20 @@ export async function requestTokenRefresh(): Promise<string | null> {
           displayName: userDto.displayName || userDto.DisplayName,
           phoneNumber: userDto.phoneNumber || userDto.PhoneNumber || undefined,
           role: normalizeUserRole(userDto.role || userDto.Role),
-          organizationId: userDto.organizationId || userDto.OrganizationId || undefined,
-          organizationName: userDto.organizationName || userDto.OrganizationName || undefined,
+          organizationId:
+            userDto.organizationId || userDto.OrganizationId || undefined,
+          organizationName:
+            userDto.organizationName || userDto.OrganizationName || undefined,
           isActive: userDto.isActive ?? userDto.IsActive ?? true,
           permissions: userDto.permissions || userDto.Permissions || [],
         });
       }
 
-      logger.info('Token refresh successfully completed and cookies updated.');
+      logger.info("Token refresh successfully completed and cookies updated.");
       return newAccessToken;
     } catch (err) {
-      logger.warn('Token refresh failed due to network error, session preserved for offline usage:', err);
-      // DO NOT call logout() on network error to prevent kicking user out while offline
+      logger.error("Unexpected error during token refresh execution:", err);
+      logout();
       return null;
     } finally {
       refreshPromise = null;
@@ -125,33 +159,35 @@ export async function requestTokenRefresh(): Promise<string | null> {
 /** Base fetch wrapper with Bearer token injection, CSRF and refresh handling */
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const isAuthEndpoint =
-    endpoint.includes('/api/auth/login') ||
-    endpoint.includes('/api/auth/web-login') ||
-    endpoint.includes('/api/auth/refresh') ||
-    endpoint.includes('/api/auth/register') ||
-    endpoint.includes('/api/auth/verify-email') ||
-    endpoint.includes('/api/auth/resend-verification') ||
-    endpoint.includes('/api/auth/forgot-password') ||
-    endpoint.includes('/api/auth/reset-password');
+    endpoint.includes("/api/auth/login") ||
+    endpoint.includes("/api/auth/web-login") ||
+    endpoint.includes("/api/auth/refresh") ||
+    endpoint.includes("/api/auth/register") ||
+    endpoint.includes("/api/auth/verify-email") ||
+    endpoint.includes("/api/auth/resend-verification") ||
+    endpoint.includes("/api/auth/forgot-password") ||
+    endpoint.includes("/api/auth/reset-password");
 
-  let accessToken = useAuthStore.getState().accessToken || getCookie(COOKIE_KEYS.ACCESS_TOKEN);
-  const refreshToken = useAuthStore.getState().refreshToken || getCookie(COOKIE_KEYS.REFRESH_TOKEN);
+  let accessToken =
+    useAuthStore.getState().accessToken || getCookie(COOKIE_KEYS.ACCESS_TOKEN);
+  const refreshToken =
+    useAuthStore.getState().refreshToken ||
+    getCookie(COOKIE_KEYS.REFRESH_TOKEN);
 
   // Proactive Token Refresh:
   // If access token is expired (or missing) but a valid real refresh token exists, refresh before sending
-  // Only attempt when device is online to prevent offline timeouts/errors
-  const isOnline = typeof navigator === 'undefined' || navigator.onLine;
   if (
     !isAuthEndpoint &&
-    isOnline &&
     refreshToken &&
-    !refreshToken.startsWith('mock-') &&
+    !refreshToken.startsWith("mock-") &&
     isJwtExpired(accessToken)
   ) {
-    logger.info(`Access token expired or missing for ${endpoint}, proactively refreshing...`);
+    logger.info(
+      `Access token expired or missing for ${endpoint}, proactively refreshing...`,
+    );
     const refreshedToken = await requestTokenRefresh();
     if (refreshedToken) {
       accessToken = refreshedToken;
@@ -159,22 +195,22 @@ export async function apiFetch<T>(
   }
 
   const headers = new Headers(options.headers || {});
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
+  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
   }
 
   if (accessToken) {
-    headers.set('Authorization', `Bearer ${accessToken}`);
+    headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
   // Include cookies automatically in cross-origin / same-origin API requests
   const fetchOptions: RequestInit = {
-    credentials: 'include',
+    credentials: "include",
     ...options,
     headers,
   };
 
-  const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
   let response: Response;
   try {
@@ -183,50 +219,66 @@ export async function apiFetch<T>(
     logger.warn(`Network error on ${url}:`, netErr);
     useUiStore.getState().setOnline(false);
     useUiStore.getState().setBackendConnected(false);
-    throw new ApiError(0, 'Không thể kết nối đến máy chủ backend (Port 5080).');
+    throw new ApiError(0, "Không thể kết nối đến máy chủ backend (Port 5080).");
   }
 
   // Update backend connection status based on HTTP response
   if (response.status >= 502 && response.status <= 504) {
     useUiStore.getState().setOnline(false);
     useUiStore.getState().setBackendConnected(false);
-  } else if (!useUiStore.getState().isBackendConnected && response.status < 500) {
+  } else if (
+    !useUiStore.getState().isBackendConnected &&
+    response.status < 500
+  ) {
     useUiStore.getState().setBackendConnected(true);
   }
 
   // Reactive Token Refresh:
   // If 401 Unauthorized is returned from backend on a protected endpoint, execute single-flight refresh
   if (response.status === 401 && !isAuthEndpoint) {
-    const isMock = accessToken?.startsWith('mock-') || refreshToken?.startsWith('mock-');
+    const isMock =
+      accessToken?.startsWith("mock-") || refreshToken?.startsWith("mock-");
 
     if (refreshToken && !isMock) {
-      logger.info(`Endpoint ${url} returned 401, triggering single-flight token refresh...`);
+      logger.info(
+        `Endpoint ${url} returned 401, triggering single-flight token refresh...`,
+      );
       const newAccessToken = await requestTokenRefresh();
 
       if (newAccessToken) {
         // Retry original request with fresh access token and credentials
-        headers.set('Authorization', `Bearer ${newAccessToken}`);
+        headers.set("Authorization", `Bearer ${newAccessToken}`);
         try {
-          response = await fetch(url, { ...options, headers, credentials: 'include' });
+          response = await fetch(url, {
+            ...options,
+            headers,
+            credentials: "include",
+          });
         } catch (retryErr) {
           logger.warn(`Retry failed after token refresh on ${url}:`, retryErr);
-          throw new ApiError(0, 'Lỗi kết nối khi gửi lại yêu cầu sau khi cấp mới token.');
+          throw new ApiError(
+            0,
+            "Lỗi kết nối khi gửi lại yêu cầu sau khi cấp mới token.",
+          );
         }
       } else {
-        // Only logout if online and server actually rejected token
-        if (typeof navigator !== 'undefined' && navigator.onLine) {
-          useAuthStore.getState().logout();
-        }
-        throw new ApiError(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        useAuthStore.getState().logout();
+        throw new ApiError(
+          401,
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+        );
       }
     } else if (isMock) {
-      logger.info(`Endpoint ${url} returned 401 for mock session, falling back safely.`);
-      throw new ApiError(401, 'Phiên cục bộ chưa kết nối máy chủ backend. Chuyển sang dữ liệu mô phỏng.');
+      logger.info(
+        `Endpoint ${url} returned 401 for mock session, falling back safely.`,
+      );
+      throw new ApiError(
+        401,
+        "Phiên cục bộ chưa kết nối máy chủ backend. Chuyển sang dữ liệu mô phỏng.",
+      );
     } else {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        useAuthStore.getState().logout();
-      }
-      throw new ApiError(401, 'Yêu cầu đăng nhập để tiếp tục.');
+      useAuthStore.getState().logout();
+      throw new ApiError(401, "Yêu cầu đăng nhập để tiếp tục.");
     }
   }
 
@@ -236,13 +288,16 @@ export async function apiFetch<T>(
   }
 
   // Parse JSON response or problem details
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json') || contentType.includes('application/problem+json');
+  const contentType = response.headers.get("content-type") || "";
+  const isJson =
+    contentType.includes("application/json") ||
+    contentType.includes("application/problem+json");
   const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
     const problem = data as ProblemDetails;
-    const msg = problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
+    const msg =
+      problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
     throw new ApiError(response.status, msg, problem);
   }
 

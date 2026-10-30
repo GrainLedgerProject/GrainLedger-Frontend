@@ -141,7 +141,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
         ) : (
           <div className="divide-y divide-ink-tertiary/10">
             {records.map((record) => {
-              const item = record.request.payload.items[0];
+              const item = record.request.payload?.items?.[0];
               return (
                 <article key={record.id} className="p-4 sm:p-5 flex gap-3">
                   <div className="p-2 h-fit rounded-xl bg-accent-primary/10 text-accent-primary">
@@ -157,7 +157,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
                       </span>
                     </div>
                     <p className="font-mono text-[11px] text-ink-secondary mt-1">
-                      {item.measuredValue} kg · Độ ẩm {item.moisturePercent}%
+                      {item?.measuredValue || "0"} kg · Độ ẩm {item?.moisturePercent || "0"}%
                     </p>
                     <p className="text-[11px] text-ink-tertiary mt-1">
                       Ghi nhận{" "}

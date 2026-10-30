@@ -199,10 +199,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
                 <span className="inline-flex items-center gap-1">
                   <Users size={14} className="text-ink-tertiary" />
                   <span>
-                    {t(
-                      "admin.orgs.tenantIsolation",
-                      "Cô lập Tenant riêng biệt",
-                    )}
+                    {t("admin.orgs.tenantIsolation", "Cô lập Tenant")}
                   </span>
                 </span>
                 <span className="font-bold text-accent-primary">ISO 22095</span>
@@ -213,88 +210,90 @@ export const CustomerOrganizationsPage: React.FC = () => {
       )}
 
       {/* Create Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("admin.orgs.modalTitle", "Tạo doanh nghiệp") }>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {t(
-                  "admin.orgs.modalTitle",
-                  "Thiết lập Doanh nghiệp Khách hàng Mới",
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={t("admin.orgs.modalTitle", "Tạo doanh nghiệp")}
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {t(
+                "admin.orgs.modalTitle",
+                "Thiết lập Doanh nghiệp Khách hàng Mới",
+              )}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreate} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("admin.orgs.nameLabel", "Tên Công ty / Đơn vị *")}
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t(
+                  "admin.orgs.namePlaceholder",
+                  "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền",
                 )}
-              </h3>
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("admin.orgs.kindLabel", "Phân loại tổ chức *")}
+              </label>
+              <select
+                value={kind}
+                onChange={(e) => setKind(e.target.value as "Mill" | "Customer")}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              >
+                <option value="Customer">
+                  {t(
+                    "admin.orgs.kindCustomer",
+                    "Khách hàng Xuất khẩu (Customer Exporter)",
+                  )}
+                </option>
+                <option value="Mill">
+                  {t(
+                    "admin.orgs.kindMill",
+                    "Ban Điều hành Nhà máy (Mill Operator)",
+                  )}
+                </option>
+              </select>
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("admin.orgs.creating", "Đang tạo...")
+                  : t("admin.orgs.submitBtn", "Tạo doanh nghiệp")}
               </button>
             </div>
-
-            <form onSubmit={handleCreate} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("admin.orgs.nameLabel", "Tên Công ty / Đơn vị *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t(
-                    "admin.orgs.namePlaceholder",
-                    "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền",
-                  )}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("admin.orgs.kindLabel", "Phân loại tổ chức *")}
-                </label>
-                <select
-                  value={kind}
-                  onChange={(e) =>
-                    setKind(e.target.value as "Mill" | "Customer")
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                >
-                  <option value="Customer">
-                    {t(
-                      "admin.orgs.kindCustomer",
-                      "Khách hàng Xuất khẩu (Customer Exporter)",
-                    )}
-                  </option>
-                  <option value="Mill">
-                    {t(
-                      "admin.orgs.kindMill",
-                      "Ban Điều hành Nhà máy (Mill Operator)",
-                    )}
-                  </option>
-                </select>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("admin.orgs.creating", "Đang tạo...")
-                    : t("admin.orgs.submitBtn", "Tạo doanh nghiệp")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

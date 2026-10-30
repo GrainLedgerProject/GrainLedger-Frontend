@@ -33,38 +33,151 @@ export interface RegisterPlotRequest {
   };
 }
 
-export interface ProcurementInput {
-  farmerId: string;
-  plotSeasonId: string;
-  commodityId: string;
-  receivingLocationId: string;
-  measuredGrossKg: string;
-  moisturePercent: string;
+/**
+ * Line item schema for procurement receipt
+ * Corresponds to ProcurementLineInput in backend specification
+ */
+export interface ProcurementLineInput {
+  itemId: string; // uuid
+  lineNo: number; // int32 >= 1
+  plotSeasonId: string; // uuid
+  measuredValue: string | null; // decimal string e.g. "5000.000"
+  measuredUnit: string | null; // "KG" | "G" | "T"
+  moisturePercent: string | null; // decimal string e.g. "24.5"
+  lotId: string; // uuid
+  sourceLotId: string; // uuid
 }
 
+/**
+ * Main procurement payload schema
+ * Corresponds to ProcurementInput in backend specification
+ */
+export interface ProcurementInput {
+  entityId: string; // uuid
+  farmerId: string; // uuid
+  collectionSiteId: string; // uuid
+  receivingLocationId: string; // uuid
+  commodityId: string; // uuid
+  receivedAt: string; // date-time ISO string
+  items: ProcurementLineInput[] | null;
+}
+
+/**
+ * Request body for POST /api/procurements
+ * Corresponds to RegisterProcurementRequest in OpenAPI specification
+ */
 export interface RegisterProcurementRequest {
-  deviceId?: string | null;
-  clientOperationId: string;
+  deviceId: string | null;
+  clientOperationId: string; // uuid
+  capturedAt: string; // date-time ISO string
+  payloadSchemaVersion: number; // int32 e.g. 1
+  payload: ProcurementInput | null;
+}
+
+/**
+ * Initial stock recorded for line item
+ */
+export interface ProcurementInitialStock {
+  locationId: string;
+  receivedKg: string;
+}
+
+/**
+ * Line response from backend
+ */
+export interface ProcurementLineResponse {
+  id: string;
+  lineNo: number;
+  plotSeasonId: string;
+  plotId: string;
+  seasonId: string;
+  riceVariety: string;
+  measuredValue: string;
+  measuredUnit: string;
+  netMassKg: string;
+  moisturePercent: string;
+  sourceLotId: string;
+  lotId: string;
+  lotCode: string;
+  stage: string;
+  initialStock?: ProcurementInitialStock;
+}
+
+/**
+ * Full response from POST /api/procurements and GET /api/procurements/{id}
+ */
+export interface ProcurementResponse {
+  id: string;
+  code: string;
+  farmerId: string;
+  collectionSiteId: string;
+  receivingLocationId: string;
+  commodityId: string;
+  status: string;
+  receivedBy: string;
+  receivedAt: string;
   capturedAt: string;
-  payloadSchemaVersion: number;
-  payload: {
-    entityId: string;
-    farmerId: string;
-    collectionSiteId: string;
-    receivingLocationId: string;
-    commodityId: string;
-    receivedAt: string;
-    items: Array<{
-      itemId: string;
-      lineNo: number;
-      plotSeasonId: string;
-      measuredValue: string;
-      measuredUnit: string;
-      moisturePercent: string;
-      lotId: string;
-      sourceLotId: string;
-    }>;
-  };
+  recordedAt: string;
+  eventId: string;
+  totalNetMassKg: string;
+  items: ProcurementLineResponse[];
+  receivingVersion?: number;
+}
+
+/**
+ * Summary item for procurement list response
+ */
+export interface ProcurementSummary {
+  id: string;
+  code: string;
+  farmerId: string;
+  farmerName: string;
+  receivedAt: string;
+  status: string;
+  itemCount: number;
+  totalNetMassKg: string;
+}
+
+export interface ProcurementListResponse {
+  items: ProcurementSummary[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
+/**
+ * Reference data types returned by GET /api/procurement-reference-data
+ */
+export interface ProcurementReceivingOption {
+  collectionSiteId: string;
+  collectionSiteCode: string;
+  collectionSiteName: string;
+  receivingLocationId: string;
+  receivingLocationCode: string;
+}
+
+export interface ProcurementCommodity {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface ProcurementMassUnit {
+  code: string;
+  name: string;
+  kgFactor: string;
+}
+
+export interface ProcurementReferenceResponse {
+  receivingOptions: ProcurementReceivingOption[];
+  commodity: ProcurementCommodity;
+  massUnits: ProcurementMassUnit[];
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  hasMore?: boolean;
+  maxLinesPerReceipt?: number;
 }
 
 export interface RecordSprayDeclarationRequest {
@@ -144,9 +257,18 @@ export interface DeletePlotSeasonRequest {
 export interface FarmerList {}
 
 export const procurementEndpoints = {
-  getReferenceData: () => apiFetch<unknown>("/api/procurement-reference-data"),
-  getProcurementReferenceData: () =>
-    apiFetch<unknown>("/api/procurement-reference-data"),
+  getReferenceData: (params?: Record<string, string | number>) => {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return apiFetch<ProcurementReferenceResponse>(`/api/procurement-reference-data${qs}`);
+  },
+  getProcurementReferenceData: (params?: Record<string, string | number>) => {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return apiFetch<ProcurementReferenceResponse>(`/api/procurement-reference-data${qs}`);
+  },
   getSourceLot: (id: string) => apiFetch<unknown>(`/api/source-lots/${id}`),
 
   // Farmers
@@ -265,12 +387,17 @@ export const procurementEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  // Procurements
-  getProcurements: () => apiFetch<unknown>("/api/procurements"),
+  // Procurements (POST /api/procurements, GET /api/procurements)
+  getProcurements: (params?: Record<string, string | number>) => {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return apiFetch<ProcurementListResponse | ProcurementSummary[]>(`/api/procurements${qs}`);
+  },
   registerProcurement: (req: RegisterProcurementRequest) =>
-    apiFetch<unknown>("/api/procurements", {
+    apiFetch<ProcurementResponse>("/api/procurements", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  getProcurement: (id: string) => apiFetch<unknown>(`/api/procurements/${id}`),
+  getProcurement: (id: string) => apiFetch<ProcurementResponse>(`/api/procurements/${id}`),
 };

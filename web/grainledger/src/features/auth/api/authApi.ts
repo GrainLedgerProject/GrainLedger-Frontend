@@ -1,61 +1,47 @@
 import { authEndpoints } from '@/api/auth';
 import { profileEndpoints } from '@/api/profile';
-import { DEMO_USERS, type UserProfile } from '@/app/store/authStore';
+import type { UserProfile } from '@/app/store/authStore';
 import { normalizeUserRole } from '@/shared/types/roles';
 import { logger } from '@/shared/utils/logger';
 
 export const authApi = {
   /**
-   * Performs login against POST /api/auth/login.
-   * If backend is reachable, delegates to server; if in local demo mode, verifies credentials.
+   * Performs authentication exclusively against the backend API (POST /api/auth/login).
+   * All accounts and JWT tokens are real identity credentials.
    */
   login: async (
     email: string,
     password: string
-  ): Promise<{ user: UserProfile; tokens?: { access: string; refresh: string } }> => {
-    try {
-      const tokens = await authEndpoints.login({ email, password });
-      if (tokens && tokens.user) {
-        return {
-          user: {
-            id: tokens.user.id,
-            email: tokens.user.email,
-            displayName: tokens.user.displayName,
-            phoneNumber: tokens.user.phoneNumber || undefined,
-            role: normalizeUserRole(tokens.user.role),
-            organizationId: tokens.user.organizationId || undefined,
-            organizationName: tokens.user.organizationName || undefined,
-            isActive: tokens.user.isActive,
-            permissions: tokens.user.permissions || [],
-          },
-          tokens: {
-            access: tokens.accessToken || (tokens as unknown as { AccessToken: string }).AccessToken,
-            refresh: tokens.refreshToken || (tokens as unknown as { RefreshToken: string }).RefreshToken,
-          },
-        };
-      }
-    } catch (err) {
-      logger.info('Backend authentication failed or unavailable, checking verified demo accounts:', err);
+  ): Promise<{ user: UserProfile; tokens: { access: string; refresh: string } }> => {
+    const tokens = await authEndpoints.login({ email, password });
+    if (!tokens || !tokens.user) {
+      throw new Error('Đăng nhập không thành công. Phản hồi từ máy chủ không hợp lệ.');
     }
 
-    // Local Verification fallback against baselined development seed accounts
-    const normalizedEmail = email.toLowerCase().trim();
-    const demoProfile = Object.values(DEMO_USERS).find(
-      (u) => u.email.toLowerCase() === normalizedEmail
-    );
+    const access = tokens.accessToken || (tokens as unknown as { AccessToken: string }).AccessToken;
+    const refresh = tokens.refreshToken || (tokens as unknown as { RefreshToken: string }).RefreshToken;
 
-    if (demoProfile) {
-      await new Promise((res) => setTimeout(res, 200));
-      return {
-        user: demoProfile,
-        tokens: {
-          access: `mock-access-token-${demoProfile.role.toLowerCase()}`,
-          refresh: `mock-refresh-token-${demoProfile.role.toLowerCase()}`,
-        },
-      };
+    if (!access) {
+      throw new Error('Máy chủ không trả về token xác thực hợp lệ.');
     }
 
-    throw new Error('Sai email hoặc mật khẩu. Kiểm tra lại thông tin đăng nhập hoặc liên hệ Quản trị nhà máy.');
+    return {
+      user: {
+        id: tokens.user.id,
+        email: tokens.user.email,
+        displayName: tokens.user.displayName,
+        phoneNumber: tokens.user.phoneNumber || undefined,
+        role: normalizeUserRole(tokens.user.role),
+        organizationId: tokens.user.organizationId || undefined,
+        organizationName: tokens.user.organizationName || undefined,
+        isActive: tokens.user.isActive,
+        permissions: tokens.user.permissions || [],
+      },
+      tokens: {
+        access,
+        refresh: refresh || access,
+      },
+    };
   },
 
   /**

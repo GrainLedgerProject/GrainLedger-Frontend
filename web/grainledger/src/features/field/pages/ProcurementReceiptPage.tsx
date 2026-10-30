@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import {
   procurementEndpoints,
   type RegisterProcurementRequest,
+  type ProcurementResponse,
+  type ProcurementReceivingOption,
 } from "@/api/procurement";
 import { ApiError } from "@/api/client";
 import {
@@ -20,6 +22,8 @@ import {
   saveCachedRefData,
   type CachedFarmer,
   type CachedReferenceData,
+  type CachedPlotSeason,
+  type CachedPlot,
 } from "@/pwa/offlineCache";
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
@@ -38,6 +42,8 @@ import {
   Calendar,
   Warehouse,
   CloudSlash,
+  Plant,
+  MapPin,
 } from "@phosphor-icons/react";
 
 interface ProcurementReceiptItem {
@@ -48,12 +54,14 @@ interface ProcurementReceiptItem {
   commodityName?: string;
   receivedAt: string;
   totalQuantityKg?: number;
+  totalNetMassKg?: string;
+  status?: string;
   isOfflinePending?: boolean;
   items?: Array<{
     lineNo: number;
-    measuredValue: string;
-    measuredUnit: string;
-    moisturePercent: string;
+    measuredValue: string | null;
+    measuredUnit: string | null;
+    moisturePercent: string | null;
     lotId: string;
   }>;
 }
@@ -62,20 +70,24 @@ export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isOnline = useUiStore((state) => state.isOnline);
-  const setPendingOfflineCount = useUiStore((state) => state.setPendingOfflineCount);
+  const setPendingOfflineCount = useUiStore(
+    (state) => state.setPendingOfflineCount,
+  );
   const [receipts, setReceipts] = useState<ProcurementReceiptItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Concurrency and mount guards to prevent race conditions & memory leaks
+  // Concurrency and mount guards
   const isFetchingRef = useRef(false);
   const isMountedRef = useRef(true);
 
   // Reference data for creation
   const [farmers, setFarmers] = useState<CachedFarmer[]>([]);
   const [refData, setRefData] = useState<CachedReferenceData | null>(null);
+  const [allPlotSeasons, setAllPlotSeasons] = useState<CachedPlotSeason[]>([]);
+  const [allPlots, setAllPlots] = useState<CachedPlot[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,10 +97,34 @@ export const ProcurementReceiptPage: React.FC = () => {
     receivingLocationId: "",
     commodityId: "",
     plotSeasonId: "",
-    measuredWeightKg: "5000.000",
+    measuredWeightKg: "5000.0",
     moisturePercent: "24.5",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Helper to extract receiving options
+  const getReceivingOptions = useCallback(
+    (ref: CachedReferenceData | null): ProcurementReceivingOption[] => {
+      if (ref?.receivingOptions && ref.receivingOptions.length > 0) {
+        return ref.receivingOptions;
+      }
+      if (ref?.collectionSites && ref.collectionSites.length > 0) {
+        return ref.collectionSites.map((site, idx) => ({
+          collectionSiteId: site.id,
+          collectionSiteCode: site.code || `SITE-${idx + 1}`,
+          collectionSiteName: site.name || `Trạm cân ${idx + 1}`,
+          receivingLocationId:
+            ref.receivingLocations?.[idx]?.id ||
+            ref.receivingLocations?.[0]?.id ||
+            site.id,
+          receivingLocationCode:
+            ref.receivingLocations?.[idx]?.code || "LOC-MAIN",
+        }));
+      }
+      return [];
+    },
+    [],
+  );
 
   const loadData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -96,7 +132,7 @@ export const ProcurementReceiptPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Immediately read cached farmers & reference data so dropdowns are always ready
+      // 1. Immediately read cached farmers & reference data
       const [cachedFarmers, cachedRef] = await Promise.all([
         getCachedFarmers(),
         getCachedRefData(),
@@ -109,26 +145,29 @@ export const ProcurementReceiptPage: React.FC = () => {
       }
       if (cachedRef) {
         setRefData(cachedRef);
+        if (cachedRef.plotSeasons) setAllPlotSeasons(cachedRef.plotSeasons);
+        if (cachedRef.plots) setAllPlots(cachedRef.plots);
       }
 
-      // 2. Read queued offline procurements to show in receipts list
+      // 2. Read queued offline procurements
       const queued = await getQueuedProcurements().catch(() => []);
       if (!isMountedRef.current) return;
 
       const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
-        const item = q.request.payload.items?.[0];
+        const item = q.request.payload?.items?.[0];
         const matchedFarmer = (cachedFarmers || []).find(
-          (f) => f.id === q.request.payload.farmerId
+          (f) => f.id === q.request.payload?.farmerId,
         );
         return {
           id: q.id,
           code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
-          farmerId: q.request.payload.farmerId,
+          farmerId: q.request.payload?.farmerId || "",
           farmerName:
             matchedFarmer?.name ||
             t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
           receivedAt: q.capturedAt,
           isOfflinePending: true,
+          status: "PENDING",
           items: item
             ? [
                 {
@@ -145,15 +184,26 @@ export const ProcurementReceiptPage: React.FC = () => {
 
       // 3. If online, fetch fresh server data
       if (isOnline) {
-        const [receiptsRes, farmersRes, refRes] = await Promise.all([
-          procurementEndpoints.getProcurements().catch(() => []),
-          procurementEndpoints.getFarmers({ pageSize: 100 }).catch(() => null),
-          procurementEndpoints.getProcurementReferenceData().catch(() => null),
-        ]);
+        const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
+          await Promise.all([
+            procurementEndpoints.getProcurements().catch(() => []),
+            procurementEndpoints
+              .getFarmers({ pageSize: 100 })
+              .catch(() => null),
+            procurementEndpoints
+              .getProcurementReferenceData()
+              .catch(() => null),
+            procurementEndpoints
+              .getPlotSeasons({ pageSize: 100 })
+              .catch(() => null),
+            procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
+          ]);
 
         if (!isMountedRef.current) return;
 
-        const serverReceipts = Array.isArray(receiptsRes)
+        const serverReceipts: ProcurementReceiptItem[] = Array.isArray(
+          receiptsRes,
+        )
           ? receiptsRes
           : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items || [];
 
@@ -165,18 +215,37 @@ export const ProcurementReceiptPage: React.FC = () => {
             : (farmersRes as { items?: CachedFarmer[] })?.items || [];
           if (farmerList.length > 0) {
             setFarmers(farmerList);
-            // Pass notify = false to avoid circular event feedback loop
             void saveCachedFarmers(farmerList, false);
           }
         }
 
+        const plotSeasonItems = Array.isArray(plotSeasonsRes)
+          ? (plotSeasonsRes as CachedPlotSeason[])
+          : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
+        if (plotSeasonItems.length > 0) {
+          setAllPlotSeasons(plotSeasonItems);
+        }
+
+        const plotItems = Array.isArray(plotsRes)
+          ? (plotsRes as CachedPlot[])
+          : (plotsRes as { items?: CachedPlot[] })?.items || [];
+        if (plotItems.length > 0) {
+          setAllPlots(plotItems);
+        }
+
         if (refRes) {
-          setRefData(refRes as CachedReferenceData);
-          // Pass notify = false to avoid circular event feedback loop
-          void saveCachedRefData(refRes as CachedReferenceData, false);
+          const compositeRefData: CachedReferenceData = {
+            ...refRes,
+            plotSeasons:
+              plotSeasonItems.length > 0
+                ? plotSeasonItems
+                : cachedRef?.plotSeasons,
+            plots: plotItems.length > 0 ? plotItems : cachedRef?.plots,
+          };
+          setRefData(compositeRefData);
+          void saveCachedRefData(compositeRefData, false);
         }
       } else {
-        // Offline mode: show pending offline receipts
         setReceipts(pendingItems);
       }
     } catch (err: unknown) {
@@ -215,24 +284,27 @@ export const ProcurementReceiptPage: React.FC = () => {
         }
         if (cachedRef) {
           setRefData(cachedRef);
+          if (cachedRef.plotSeasons) setAllPlotSeasons(cachedRef.plotSeasons);
+          if (cachedRef.plots) setAllPlots(cachedRef.plots);
         }
 
         const queued = await getQueuedProcurements().catch(() => []);
         if (!active) return;
         const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
-          const item = q.request.payload.items?.[0];
+          const item = q.request.payload?.items?.[0];
           const matchedFarmer = (cachedFarmers || []).find(
-            (f) => f.id === q.request.payload.farmerId
+            (f) => f.id === q.request.payload?.farmerId,
           );
           return {
             id: q.id,
             code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
-            farmerId: q.request.payload.farmerId,
+            farmerId: q.request.payload?.farmerId || "",
             farmerName:
               matchedFarmer?.name ||
               t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
             receivedAt: q.capturedAt,
             isOfflinePending: true,
+            status: "PENDING",
             items: item
               ? [
                   {
@@ -248,16 +320,28 @@ export const ProcurementReceiptPage: React.FC = () => {
         });
 
         if (isOnline) {
-          const [receiptsRes, farmersRes, refRes] = await Promise.all([
-            procurementEndpoints.getProcurements().catch(() => []),
-            procurementEndpoints.getFarmers({ pageSize: 100 }).catch(() => null),
-            procurementEndpoints.getProcurementReferenceData().catch(() => null),
-          ]);
+          const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
+            await Promise.all([
+              procurementEndpoints.getProcurements().catch(() => []),
+              procurementEndpoints
+                .getFarmers({ pageSize: 100 })
+                .catch(() => null),
+              procurementEndpoints
+                .getProcurementReferenceData()
+                .catch(() => null),
+              procurementEndpoints
+                .getPlotSeasons({ pageSize: 100 })
+                .catch(() => null),
+              procurementEndpoints
+                .getPlots({ pageSize: 100 })
+                .catch(() => null),
+            ]);
           if (!active) return;
 
           const serverReceipts = Array.isArray(receiptsRes)
             ? receiptsRes
-            : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items || [];
+            : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items ||
+              [];
 
           setReceipts([...pendingItems, ...serverReceipts]);
 
@@ -271,9 +355,31 @@ export const ProcurementReceiptPage: React.FC = () => {
             }
           }
 
+          const plotSeasonItems = Array.isArray(plotSeasonsRes)
+            ? (plotSeasonsRes as CachedPlotSeason[])
+            : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
+          if (plotSeasonItems.length > 0) {
+            setAllPlotSeasons(plotSeasonItems);
+          }
+
+          const plotItems = Array.isArray(plotsRes)
+            ? (plotsRes as CachedPlot[])
+            : (plotsRes as { items?: CachedPlot[] })?.items || [];
+          if (plotItems.length > 0) {
+            setAllPlots(plotItems);
+          }
+
           if (refRes) {
-            setRefData(refRes as CachedReferenceData);
-            void saveCachedRefData(refRes as CachedReferenceData, false);
+            const compositeRefData: CachedReferenceData = {
+              ...refRes,
+              plotSeasons:
+                plotSeasonItems.length > 0
+                  ? plotSeasonItems
+                  : cachedRef?.plotSeasons,
+              plots: plotItems.length > 0 ? plotItems : cachedRef?.plots,
+            };
+            setRefData(compositeRefData);
+            void saveCachedRefData(compositeRefData, false);
           }
         } else {
           setReceipts(pendingItems);
@@ -299,13 +405,10 @@ export const ProcurementReceiptPage: React.FC = () => {
 
     void initData();
 
-    // Re-load receipts list when procurement offline queue changes
     const unsubQueue = onProcurementQueueChanged(() => {
       void loadData();
     });
 
-    // When cache is updated externally (e.g. background sync), ONLY update reference data
-    // from local storage/IndexedDB. NEVER call loadData() or hit the network.
     const unsubCache = onOfflineCacheUpdated(async () => {
       const [cachedFarmers, cachedRef] = await Promise.all([
         getCachedFarmers(),
@@ -317,6 +420,8 @@ export const ProcurementReceiptPage: React.FC = () => {
       }
       if (cachedRef) {
         setRefData(cachedRef);
+        if (cachedRef.plotSeasons) setAllPlotSeasons(cachedRef.plotSeasons);
+        if (cachedRef.plots) setAllPlots(cachedRef.plots);
       }
     });
 
@@ -328,26 +433,69 @@ export const ProcurementReceiptPage: React.FC = () => {
     };
   }, [isOnline, loadData, t]);
 
+  // Filter plot-seasons for the currently selected farmer in formData
+  const getAvailablePlotSeasons = useCallback(
+    (selectedFarmerId: string): CachedPlotSeason[] => {
+      if (!selectedFarmerId) return allPlotSeasons;
+      const farmerPlots = allPlots.filter(
+        (p) => p.farmerId === selectedFarmerId,
+      );
+      if (farmerPlots.length === 0) return allPlotSeasons;
+      const plotIds = new Set(farmerPlots.map((p) => p.id));
+      const filtered = allPlotSeasons.filter((ps) => plotIds.has(ps.plotId));
+      return filtered.length > 0 ? filtered : allPlotSeasons;
+    },
+    [allPlots, allPlotSeasons],
+  );
+
   const handleOpenCreate = () => {
+    const selectedFarmer = farmers[0];
+    const farmerId = selectedFarmer?.id || "";
+
+    const options = getReceivingOptions(refData);
+    const defaultOption = options[0];
     const defaultSiteId =
-      refData?.collectionSites?.[0]?.id || crypto.randomUUID();
+      defaultOption?.collectionSiteId || crypto.randomUUID();
     const defaultLocId =
-      refData?.receivingLocations?.[0]?.id || crypto.randomUUID();
-    const defaultCommId = refData?.commodities?.[0]?.id || crypto.randomUUID();
+      defaultOption?.receivingLocationId || crypto.randomUUID();
+
+    const defaultCommId =
+      refData?.commodity?.id ||
+      refData?.commodities?.[0]?.id ||
+      crypto.randomUUID();
+
+    const availablePlotSeasons = getAvailablePlotSeasons(farmerId);
     const defaultPlotSeasonId =
-      refData?.plotSeasons?.[0]?.id || crypto.randomUUID();
+      availablePlotSeasons[0]?.id ||
+      allPlotSeasons[0]?.id ||
+      crypto.randomUUID();
 
     setFormData({
-      farmerId: farmers[0]?.id || "",
+      farmerId,
       collectionSiteId: defaultSiteId,
       receivingLocationId: defaultLocId,
       commodityId: defaultCommId,
       plotSeasonId: defaultPlotSeasonId,
-      measuredWeightKg: "5000.000",
+      measuredWeightKg: "5000.0",
       moisturePercent: "24.5",
     });
     setIsModalOpen(true);
   };
+
+  const handleFarmerChange = (farmerId: string) => {
+    const availablePlotSeasons = getAvailablePlotSeasons(farmerId);
+    const newPlotSeasonId =
+      availablePlotSeasons[0]?.id || formData.plotSeasonId;
+    setFormData((prev) => ({
+      ...prev,
+      farmerId,
+      plotSeasonId: newPlotSeasonId,
+    }));
+  };
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,11 +512,28 @@ export const ProcurementReceiptPage: React.FC = () => {
 
     let request: RegisterProcurementRequest | null = null;
     try {
+      // Normalize decimal format with dot for C# backend regex: ^[0-9]+(?:.[0-9]+)?$
+      const normalizedWeight = formData.measuredWeightKg
+        .trim()
+        .replace(",", ".");
+      const normalizedMoisture = formData.moisturePercent
+        .trim()
+        .replace(",", ".");
+
       const entityId = crypto.randomUUID();
       const clientOperationId = crypto.randomUUID();
       const itemId = crypto.randomUUID();
       const lotId = crypto.randomUUID();
       const sourceLotId = crypto.randomUUID();
+
+      // Ensure valid UUID fallbacks for collectionSiteId, receivingLocationId, commodityId, plotSeasonId
+      const finalCollectionSiteId =
+        formData.collectionSiteId || crypto.randomUUID();
+      const finalReceivingLocationId =
+        formData.receivingLocationId || crypto.randomUUID();
+      const finalCommodityId =
+        formData.commodityId || refData?.commodity?.id || crypto.randomUUID();
+      const finalPlotSeasonId = formData.plotSeasonId || crypto.randomUUID();
 
       request = {
         deviceId: "grainledger-web",
@@ -378,19 +543,18 @@ export const ProcurementReceiptPage: React.FC = () => {
         payload: {
           entityId,
           farmerId: formData.farmerId,
-          collectionSiteId: formData.collectionSiteId || crypto.randomUUID(),
-          receivingLocationId:
-            formData.receivingLocationId || crypto.randomUUID(),
-          commodityId: formData.commodityId || crypto.randomUUID(),
+          collectionSiteId: finalCollectionSiteId,
+          receivingLocationId: finalReceivingLocationId,
+          commodityId: finalCommodityId,
           receivedAt: new Date().toISOString(),
           items: [
             {
               itemId,
               lineNo: 1,
-              plotSeasonId: formData.plotSeasonId || crypto.randomUUID(),
-              measuredValue: formData.measuredWeightKg,
-              measuredUnit: "kg",
-              moisturePercent: formData.moisturePercent,
+              plotSeasonId: finalPlotSeasonId,
+              measuredValue: normalizedWeight,
+              measuredUnit: "KG",
+              moisturePercent: normalizedMoisture,
               lotId,
               sourceLotId,
             },
@@ -408,13 +572,15 @@ export const ProcurementReceiptPage: React.FC = () => {
           ),
         );
       } else {
-        await procurementEndpoints.registerProcurement(request);
+        const response =
+          await procurementEndpoints.registerProcurement(request);
         setSuccessMsg(
           t(
             "field.receipt.successCreated",
-            "Đã lập thành công Phiếu thu mua {{weight}} kg lúa tươi",
+            "Đã lập thành công Phiếu thu mua {{code}} ({{weight}} kg lúa tươi)",
             {
-              weight: formData.measuredWeightKg,
+              code: response?.code || "mới",
+              weight: normalizedWeight,
             },
           ),
         );
@@ -424,7 +590,6 @@ export const ProcurementReceiptPage: React.FC = () => {
       await loadData();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 0) {
-        // A connection can disappear after Save; queue to IndexedDB for safe automatic retry
         if (request) {
           await queueProcurement(request);
           setPendingOfflineCount(await getQueuedProcurementCount());
@@ -458,6 +623,9 @@ export const ProcurementReceiptPage: React.FC = () => {
       r.id.toLowerCase().includes(q)
     );
   });
+
+  const receivingOptions = getReceivingOptions(refData);
+  const currentPlotSeasons = getAvailablePlotSeasons(formData.farmerId);
 
   return (
     <div className="space-y-6">
@@ -507,13 +675,13 @@ export const ProcurementReceiptPage: React.FC = () => {
               <p className="font-bold text-ink-primary">
                 {t(
                   "field.receipt.offlineTitle",
-                  "Chế độ hiện trường ngoại tuyến (Offline)"
+                  "Chế độ hiện trường ngoại tuyến (Offline)",
                 )}
               </p>
               <p className="text-ink-secondary text-[11px] mt-0.5">
                 {t(
                   "field.receipt.offlineDesc",
-                  "Đang dùng dữ liệu nông hộ lưu cục bộ trên máy. Mọi phiếu lập mới sẽ tự động lưu vào hàng đợi và đồng bộ khi có mạng."
+                  "Đang dùng dữ liệu nông hộ lưu cục bộ trên máy. Mọi phiếu lập mới sẽ tự động lưu vào hàng đợi và đồng bộ khi có mạng.",
                 )}
               </p>
             </div>
@@ -570,7 +738,8 @@ export const ProcurementReceiptPage: React.FC = () => {
           </div>
           {farmers.length > 0 && (
             <div className="text-ink-tertiary">
-              ({farmers.length} {t("field.receipt.farmersCached", "nông hộ sẵn sàng")})
+              ({farmers.length}{" "}
+              {t("field.receipt.farmersCached", "nông hộ sẵn sàng")})
             </div>
           )}
         </div>
@@ -631,6 +800,12 @@ export const ProcurementReceiptPage: React.FC = () => {
               <tbody className="divide-y divide-ink-tertiary/10">
                 {filteredReceipts.map((r) => {
                   const firstItem = r.items?.[0];
+                  const displayWeight =
+                    firstItem?.measuredValue ||
+                    (r.totalNetMassKg ? `${r.totalNetMassKg}` : null) ||
+                    "5.000";
+                  const displayMoisture = firstItem?.moisturePercent || "24.5";
+
                   return (
                     <tr
                       key={r.id}
@@ -660,12 +835,12 @@ export const ProcurementReceiptPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-ink-primary">
-                        {firstItem?.measuredValue || "5.000,000"} kg
+                        {displayWeight} kg
                       </td>
                       <td className="py-3 px-4 font-mono">
                         <span className="inline-flex items-center gap-1 text-accent-info font-semibold">
                           <Drop size={13} />
-                          <span>{firstItem?.moisturePercent || "24.5"}%</span>
+                          <span>{displayMoisture}%</span>
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -675,6 +850,19 @@ export const ProcurementReceiptPage: React.FC = () => {
                             label={t(
                               "field.receipt.pendingOfflineSync",
                               "Chờ đồng bộ",
+                            )}
+                          />
+                        ) : r.status === "RECEIVED_MATCHED" ? (
+                          <StatusBadge
+                            status="BALANCED"
+                            label={t("field.receipt.matched", "Đã khớp kho")}
+                          />
+                        ) : r.status === "PENDING_ARRIVAL" ? (
+                          <StatusBadge
+                            status="IN_PROGRESS"
+                            label={t(
+                              "field.receipt.pendingArrival",
+                              "Chờ về nhà máy",
                             )}
                           />
                         ) : (
@@ -699,20 +887,20 @@ export const ProcurementReceiptPage: React.FC = () => {
       {/* Create Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        ariaLabel={t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}
+        onClose={handleCloseModal}
+        ariaLabel={t(
+          "field.receipt.modalTitle",
+          "Lập Phiếu Thu Mua Lúa Tươi Mới",
+        )}
       >
         <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
           <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-ink-primary">
-              {t(
-                "field.receipt.modalTitle",
-                "Lập Phiếu Thu Mua Lúa Tươi Mới",
-              )}
+              {t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}
             </h3>
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleCloseModal}
               className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
             >
               <X size={18} />
@@ -720,6 +908,7 @@ export const ProcurementReceiptPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            {/* 1. Farmer Selection */}
             <div>
               <label className="block font-semibold text-ink-secondary mb-1">
                 {t("field.receipt.farmerLabel", "Chọn Nông hộ bán lúa *")}
@@ -727,9 +916,7 @@ export const ProcurementReceiptPage: React.FC = () => {
               <select
                 required
                 value={formData.farmerId}
-                onChange={(e) =>
-                  setFormData({ ...formData, farmerId: e.target.value })
-                }
+                onChange={(e) => handleFarmerChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
               >
                 <option value="">
@@ -746,6 +933,83 @@ export const ProcurementReceiptPage: React.FC = () => {
               </select>
             </div>
 
+            {/* 2. Plot Season Selection */}
+            {currentPlotSeasons.length > 0 && (
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t(
+                    "field.receipt.plotSeasonLabel",
+                    "Thửa ruộng / Lô mùa vụ *",
+                  )}
+                </label>
+                <select
+                  required
+                  value={formData.plotSeasonId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      plotSeasonId: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                >
+                  {currentPlotSeasons.map((ps) => (
+                    <option key={ps.id} value={ps.id}>
+                      {ps.plotCode || "Thửa"} · {ps.seasonName || "Vụ mùa"} (
+                      {ps.riceVariety || "Lúa tươi"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* 3. Collection Site & Receiving Location Selection */}
+            {receivingOptions.length > 0 && (
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t(
+                    "field.receipt.receivingOptionLabel",
+                    "Điểm cân bờ ruộng & Trạm tiếp nhận *",
+                  )}
+                </label>
+                <select
+                  required
+                  value={`${formData.collectionSiteId}|${formData.receivingLocationId}`}
+                  onChange={(e) => {
+                    const [siteId, locId] = e.target.value.split("|");
+                    setFormData((prev) => ({
+                      ...prev,
+                      collectionSiteId: siteId,
+                      receivingLocationId: locId,
+                    }));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                >
+                  {receivingOptions.map((opt) => (
+                    <option
+                      key={`${opt.collectionSiteId}|${opt.receivingLocationId}`}
+                      value={`${opt.collectionSiteId}|${opt.receivingLocationId}`}
+                    >
+                      {opt.collectionSiteName || opt.collectionSiteCode} →{" "}
+                      {opt.receivingLocationCode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* 4. Commodity Info */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-[11px]">
+              <span className="text-ink-secondary flex items-center gap-1.5 font-medium">
+                <Plant size={14} className="text-accent-primary" />
+                Danh mục hàng hóa:
+              </span>
+              <span className="font-semibold text-ink-primary">
+                {refData?.commodity?.name || "Lúa tươi"}
+              </span>
+            </div>
+
+            {/* 5. Measured Weight & Moisture */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
@@ -757,18 +1021,20 @@ export const ProcurementReceiptPage: React.FC = () => {
                 <div className="relative">
                   <input
                     type="text"
+                    inputMode="decimal"
                     required
                     value={formData.measuredWeightKg}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        measuredWeightKg: e.target.value,
-                      })
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        measuredWeightKg: val,
+                      }));
+                    }}
                     className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-bold"
                   />
-                  <span className="absolute right-3 top-2 text-ink-tertiary">
-                    kg
+                  <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
+                    KG
                   </span>
                 </div>
               </div>
@@ -784,23 +1050,27 @@ export const ProcurementReceiptPage: React.FC = () => {
                   <input
                     type="number"
                     step="0.1"
+                    min="0"
+                    max="100"
                     required
                     value={formData.moisturePercent}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        moisturePercent: e.target.value,
-                      })
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        moisturePercent: val,
+                      }));
+                    }}
                     className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
                   />
-                  <span className="absolute right-3 top-2 text-ink-tertiary">
+                  <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
                     %
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Policy notice */}
             <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-[11px] text-ink-secondary">
               <div className="flex items-center gap-1.5 font-semibold text-accent-primary">
                 <Warehouse size={14} />
@@ -814,7 +1084,7 @@ export const ProcurementReceiptPage: React.FC = () => {
               <p>
                 {t(
                   "field.receipt.policyDesc",
-                  "Khối lượng lúa tươi ghi nhận tại đây sẽ là căn cứ đối soát ban đầu khi xe tải chở lúa cập bến nhà máy sấy Tiền Giang.",
+                  "Khối lượng lúa tươi ghi nhận tại đây sẽ tạo Source Lot bất biến làm căn cứ đối soát khi xe tải chở lúa cập bến nhà máy sấy.",
                 )}
               </p>
             </div>
@@ -822,7 +1092,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
                 {t("common.cancel", "Huỷ")}

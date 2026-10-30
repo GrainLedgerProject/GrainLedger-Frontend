@@ -82,7 +82,7 @@ export const RoleHomePage: React.FC = () => {
           </span>
           {user && <RoleChip role={user.role} showCode />}
           {user?.organizationName && (
-            <span className="text-ink-secondary text-ink-tertiary font-medium">
+            <span className="text-ink-secondary font-medium">
               ({user.organizationName})
             </span>
           )}
@@ -166,7 +166,7 @@ export const RoleHomePage: React.FC = () => {
                 <span className="text-ink-tertiary block mb-1">
                   Phân đoạn phụ & Hao hụt:
                 </span>
-                <span className="font-mono text-xs text-ink-secondary text-ink-tertiary">
+                <span className="font-mono text-xs text-ink-secondary">
                   8.000 kg tấm + 6.000 kg cám + 300 kg hao
                 </span>
               </div>
@@ -198,7 +198,7 @@ export const RoleHomePage: React.FC = () => {
                       <span className="font-mono font-bold block text-ink-primary">
                         REQ-CORR-001
                       </span>
-                      <span className="text-ink-secondary text-ink-tertiary text-[11px]">
+                      <span className="text-ink-secondary text-[11px]">
                         Điều chỉnh hao hụt mẻ Sấy 02 (Cần bù 50 kg)
                       </span>
                     </div>
@@ -215,7 +215,7 @@ export const RoleHomePage: React.FC = () => {
                       <span className="font-mono font-bold block text-ink-primary">
                         REQ-CORR-002
                       </span>
-                      <span className="text-ink-secondary text-ink-tertiary text-[11px]">
+                      <span className="text-ink-secondary text-[11px]">
                         Cân lại độ ẩm lô thóc tươi L3 trước khi sấy
                       </span>
                     </div>
@@ -256,7 +256,7 @@ export const RoleHomePage: React.FC = () => {
                       Container C1 (25.000 kg)
                     </span>
                   </div>
-                  <p className="text-ink-secondary text-ink-tertiary">
+                  <p className="text-ink-secondary">
                     Trộn 21.000 kg lô B1 + 4.000 kg lô gạo nguyên 5451 để đạt
                     tiêu chuẩn MRL EU Tricyclazole.
                   </p>
@@ -300,7 +300,7 @@ export const RoleHomePage: React.FC = () => {
                   1 chờ
                 </span>
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 1 yêu cầu đối soát bằng chứng mẻ sấy sai lệch 120 kg trong dung
                 sai.
               </p>
@@ -322,7 +322,7 @@ export const RoleHomePage: React.FC = () => {
                   1 chờ
                 </span>
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 1 lệnh HOLD từ Customer Manager cần nhà máy ghi nhận cách ly vật
                 lý.
               </p>
@@ -346,7 +346,7 @@ export const RoleHomePage: React.FC = () => {
                   className="text-accent-primary"
                 />
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 0 bút toán lệch ngoài dung sai. Toàn bộ dây chuyền hoạt động
                 chuẩn xác.
               </p>
@@ -440,7 +440,7 @@ export const RoleHomePage: React.FC = () => {
                   1 chờ duyệt
                 </span>
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 Phương án PLAN-001 cho Container C1 đang chờ duyệt để xếp hàng.
               </p>
               <Link
@@ -461,7 +461,7 @@ export const RoleHomePage: React.FC = () => {
                   1 lô
                 </span>
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 Lô LOT-2026-S1 đang trong diện phong toả do nghi ngờ dư lượng
                 Tricyclazole.
               </p>
@@ -479,11 +479,11 @@ export const RoleHomePage: React.FC = () => {
                 <span className="text-xs font-bold text-ink-primary">
                   Mẫu gửi phòng lab
                 </span>
-                <span className="font-mono font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-ink-secondary text-ink-tertiary text-xs">
+                <span className="font-mono font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-ink-secondary text-xs">
                   2 chờ kết quả
                 </span>
               </div>
-              <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+              <p className="text-xs text-ink-secondary leading-relaxed">
                 Mẫu LAB-TG-088 và LAB-TG-089 đã gửi viện kiểm nghiệm ISO 17025.
               </p>
               <Link
@@ -686,7 +686,7 @@ export const RoleHomePage: React.FC = () => {
           <div className="p-5 rounded-3xl bg-surface-base border border-ink-tertiary/20 shadow-apple-card flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <NetworkStatusIndicator />
-              <span className="text-xs text-ink-secondary text-ink-tertiary">
+              <span className="text-xs text-ink-secondary">
                 Dữ liệu thu mua lưu an toàn trong bộ nhớ trình duyệt cục bộ.
               </span>
             </div>
@@ -789,7 +789,7 @@ export const RoleHomePage: React.FC = () => {
                 <span className="font-mono text-4xl font-extrabold text-accent-primary">
                   4
                 </span>
-                <span className="text-xs text-ink-secondary text-ink-tertiary">
+                <span className="text-xs text-ink-secondary">
                   công ty đối tác
                 </span>
               </div>
@@ -809,7 +809,7 @@ export const RoleHomePage: React.FC = () => {
                 <span className="font-mono text-4xl font-extrabold text-accent-info">
                   28
                 </span>
-                <span className="text-xs text-ink-secondary text-ink-tertiary">
+                <span className="text-xs text-ink-secondary">
                   tài khoản hoạt động
                 </span>
               </div>
@@ -871,7 +871,7 @@ export const RoleHomePage: React.FC = () => {
                 Mở bảng tồn kho chi tiết
               </Link>
             </div>
-            <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
+            <p className="text-xs text-ink-secondary leading-relaxed">
               Bạn có quyền truy cập chỉ-đọc (read-only) để kiểm tra số dư khả
               dụng, số dư đang bảo lưu cho phương án phối trộn, và tỷ lệ phần
               trăm khối lượng đóng góp từ từng thửa ruộng.

@@ -5,17 +5,17 @@ import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator/Netw
 import { RoleChip } from "@/components/RoleChip/RoleChip";
 import { isCustomerSide } from "@/shared/types/roles";
 import {
-  Bell,
-  CaretDown,
-  Globe,
-  LockSimple,
-  MagnifyingGlass,
-  Moon,
-  Question,
-  SignOut,
-  Sun,
-  User,
-  WarningCircle,
+  BellIcon,
+  CaretDownIcon,
+  GlobeIcon,
+  LockSimpleIcon,
+  MagnifyingGlassIcon,
+  MoonIcon,
+  QuestionIcon,
+  SignOutIcon,
+  SunIcon,
+  UserIcon,
+  WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useRef, useState } from "react";
@@ -110,7 +110,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             )}
           >
             <div className="flex items-center gap-2.5">
-              <MagnifyingGlass size={15} weight="bold" />
+              <MagnifyingGlassIcon size={15} weight="bold" />
               <span>
                 {t(
                   "common.searchPlaceholder",
@@ -118,7 +118,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 )}
               </span>
             </div>
-            <kbd className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-ink-tertiary/20 dark:border-white/[0.12] text-ink-secondary text-ink-tertiary shadow-2xs">
+            <kbd className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-ink-tertiary/20 dark:border-white/[0.12] text-ink-secondary shadow-2xs">
               ⌘K
             </kbd>
           </button>
@@ -138,7 +138,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             className="md:hidden w-10 h-10 rounded-full flex items-center justify-center text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
             aria-label="Tìm kiếm"
           >
-            <MagnifyingGlass size={18} weight="bold" />
+            <MagnifyingGlassIcon size={18} weight="bold" />
           </button>
 
           {/* Notification Bell with Badge */}
@@ -149,7 +149,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               className="w-10 h-10 rounded-full flex items-center justify-center relative text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
               aria-label="Thông báo và cảnh báo HOLD"
             >
-              <Bell size={18} weight="bold" />
+              <BellIcon size={18} weight="bold" />
               {/* Badge: 2 notifications */}
               <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent-danger ring-2 ring-white dark:ring-black animate-pulse" />
             </button>
@@ -180,7 +180,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       className="block p-2 rounded bg-functional-hold-bg dark:bg-functional-hold-bg/30 border border-functional-hold-border/40 hover:border-functional-hold-border transition-colors"
                     >
                       <div className="flex items-center gap-1.5 font-bold text-accent-danger">
-                        <LockSimple size={14} weight="fill" />
+                        <LockSimpleIcon size={14} weight="fill" />
                         <span>
                           {t(
                             "header.holdAlert",
@@ -202,7 +202,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       className="block p-2 rounded bg-functional-stale-bg border border-functional-stale-border/40 hover:border-accent-warning transition-colors"
                     >
                       <div className="flex items-center gap-1.5 font-bold text-accent-warning">
-                        <WarningCircle size={14} weight="fill" />
+                        <WarningCircleIcon size={14} weight="fill" />
                         <span>
                           {t(
                             "header.planAlert",
@@ -236,9 +236,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             aria-label="Toggle dark mode"
           >
             {theme === "dark" ? (
-              <Sun size={18} weight="bold" />
+              <SunIcon size={18} weight="bold" />
             ) : (
-              <Moon size={18} weight="bold" />
+              <MoonIcon size={18} weight="bold" />
             )}
           </button>
 
@@ -250,7 +250,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             title={t("header.switchLang", "Chuyển ngôn ngữ / Switch language")}
             aria-label="Toggle language"
           >
-            <Globe size={16} weight="bold" />
+            <GlobeIcon size={16} weight="bold" />
             <span className="uppercase font-mono text-[11px]">{language}</span>
           </button>
 
@@ -261,7 +261,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             title={t("header.helpTitle", "Giới thiệu & Hướng dẫn hệ thống")}
             aria-label="Documentation"
           >
-            <Question size={18} weight="bold" />
+            <QuestionIcon size={18} weight="bold" />
           </Link>
 
           {/* User Menu Dropdown (Apple Capsule Pill) */}
@@ -278,7 +278,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <span className="hidden sm:block text-xs font-semibold text-ink-primary max-w-[120px] truncate">
                 {user?.displayName || t("header.notLoggedIn", "Người dùng")}
               </span>
-              <CaretDown
+              <CaretDownIcon
                 size={12}
                 weight="bold"
                 className="text-ink-tertiary"
@@ -326,10 +326,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
                       >
-                        <User
+                        <UserIcon
                           size={16}
                           weight="bold"
-                          className="text-ink-secondary text-ink-tertiary"
+                          className="text-ink-secondary"
                         />
                         <span>{t("nav.profile", "Thông tin cá nhân")}</span>
                       </Link>
@@ -339,10 +339,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
                       >
-                        <LockSimple
+                        <LockSimpleIcon
                           size={16}
                           weight="bold"
-                          className="text-ink-secondary text-ink-tertiary"
+                          className="text-ink-secondary"
                         />
                         <span>{t("nav.security", "Bảo mật tài khoản")}</span>
                       </Link>
@@ -357,7 +357,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
                       >
-                        <SignOut size={16} weight="bold" />
+                        <SignOutIcon size={16} weight="bold" />
                         <span>{t("nav.signOut", "Đăng xuất")}</span>
                       </button>
                     </div>
