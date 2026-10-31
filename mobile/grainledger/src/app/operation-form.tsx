@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
+import { useAppTheme, type AppTheme } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
@@ -26,6 +26,8 @@ const OPERATION_TYPES: { type: OperationType; label: string; defaultOut: string 
 ];
 
 export default function OperationFormScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { addOperation } = useMillStore();
 
@@ -75,13 +77,13 @@ export default function OperationFormScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ghi Nhận Mẻ Chế Biến</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -200,14 +202,14 @@ export default function OperationFormScreen() {
           >
             <View style={styles.balanceTop}>
               {balance.isBalanced ? (
-                <CheckCircle2 size={18} color="#059669" />
+                <CheckCircle2 size={18} color={theme.colors.success} />
               ) : (
-                <AlertOctagon size={18} color="#DC2626" />
+                <AlertOctagon size={18} color={theme.colors.destructive} />
               )}
               <Text
                 style={[
                   styles.balanceTitle,
-                  { color: balance.isBalanced ? '#065F46' : '#991B1B' },
+                  { color: balance.isBalanced ? theme.colors.success : theme.colors.destructive },
                 ]}
               >
                 {balance.isBalanced
@@ -219,7 +221,7 @@ export default function OperationFormScreen() {
             <Text
               style={[
                 styles.balanceDesc,
-                { color: balance.isBalanced ? '#047857' : '#B91C1C' },
+                { color: balance.isBalanced ? theme.colors.success : theme.colors.destructive },
               ]}
             >
               Tổng Vào ({formatMass(inputMass, 0)} kg) vs [Ra ({formatMass(outputMass, 0)} kg) + Hao hụt (
@@ -242,10 +244,10 @@ export default function OperationFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -253,22 +255,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   scroll: {
     flex: 1,
@@ -280,9 +282,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardHeader: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
     marginBottom: 12,
   },
   opTypesCol: {
@@ -292,20 +294,20 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.separator,
+    backgroundColor: theme.colors.surface,
   },
   opTypeOptionActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   opTypeLabel: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   opTypeLabelActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   inputRow: {
     flexDirection: 'row',
@@ -318,12 +320,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   balanceSuccess: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
+    backgroundColor: theme.colors.successMuted,
+    borderColor: theme.colors.success,
   },
   balanceError: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
+    backgroundColor: theme.colors.destructiveMuted,
+    borderColor: theme.colors.destructive,
   },
   balanceTop: {
     flexDirection: 'row',
@@ -331,11 +333,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   balanceTitle: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
   },
   balanceDesc: {
-    fontSize: 11,
+    ...theme.typography.body,
     marginTop: 4,
     lineHeight: 16,
   },

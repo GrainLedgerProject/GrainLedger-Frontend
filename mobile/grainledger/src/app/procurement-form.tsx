@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
+import { useAppTheme, type AppTheme } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
@@ -18,6 +18,8 @@ import { ArrowLeft } from 'lucide-react-native';
 import { toDecimal, formatMass } from '../utils/decimalMass';
 
 export default function ProcurementFormScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { farmers, plots, addReceipt } = useFieldStore();
 
@@ -74,13 +76,13 @@ export default function ProcurementFormScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Lập Phiếu Thu Mua Lúa Tươi</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -225,10 +227,10 @@ export default function ProcurementFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -236,22 +238,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   scroll: {
     flex: 1,
@@ -263,9 +265,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
     marginBottom: 12,
   },
   chipsScroll: {
@@ -273,55 +275,55 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   farmerChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginRight: 8,
   },
   farmerChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   plotChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginRight: 8,
   },
   plotChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   chipName: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   chipNameActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   chipSub: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    ...theme.typography.body,
+    color: theme.colors.secondaryLabel,
     marginTop: 2,
   },
   chipSubActive: {
-    color: Colors.primaryDark,
+    color: theme.colors.accent,
   },
   inputRow: {
     flexDirection: 'row',
     gap: 12,
   },
   totalBox: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.colors.successMuted,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: theme.colors.success,
     borderRadius: 10,
     padding: 12,
     flexDirection: 'row',
@@ -330,13 +332,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   totalLabel: {
-    fontSize: 13,
-    color: '#166534',
+    ...theme.typography.footnote,
+    color: theme.colors.success,
     fontWeight: '600',
   },
   totalValue: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: '#15803D',
+    color: theme.colors.success,
   },
 });

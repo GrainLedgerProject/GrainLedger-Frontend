@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
+import { useAppTheme, type AppTheme } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
@@ -20,6 +20,8 @@ const VARIETIES = ['ST25 Lúa Tôm', 'Jasmine 85', 'OM 5451', 'Đài Thơm 8', '
 const SEASONS = ['Đông Xuân 2026', 'Hè Thu 2026', 'Thu Đông 2026'];
 
 export default function PlotFormScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { farmers, addPlot } = useFieldStore();
 
@@ -59,13 +61,13 @@ export default function PlotFormScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Đăng ký Thửa ruộng Mới</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -174,10 +176,10 @@ export default function PlotFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -185,22 +187,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   scroll: {
     flex: 1,
@@ -212,35 +214,35 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardHeader: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
     marginBottom: 12,
   },
   farmerChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginRight: 8,
   },
   farmerChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   farmerName: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   farmerNameActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   farmerSub: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    ...theme.typography.body,
+    color: theme.colors.secondaryLabel,
     marginTop: 2,
   },
   varietiesRow: {
@@ -249,45 +251,45 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   varietyChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   varietyChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   varietyText: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: theme.colors.secondaryLabel,
   },
   varietyTextActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
     fontWeight: '700',
   },
   seasonChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   seasonChipActive: {
-    backgroundColor: Colors.accentLight,
-    borderColor: Colors.accent,
+    backgroundColor: theme.colors.warningMuted,
+    borderColor: theme.colors.warning,
   },
   seasonText: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: theme.colors.secondaryLabel,
   },
   seasonTextActive: {
-    color: Colors.accentDark,
+    color: theme.colors.warning,
     fontWeight: '700',
   },
   inputRow: {

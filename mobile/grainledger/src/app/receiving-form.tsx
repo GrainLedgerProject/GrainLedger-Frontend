@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
+import { useAppTheme, type AppTheme } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
@@ -19,6 +19,8 @@ import { toDecimal, formatMass } from '../utils/decimalMass';
 import { ArrowLeft, Warehouse } from 'lucide-react-native';
 
 export default function ReceivingFormScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { silos, addReceivingTask } = useMillStore();
   const { receipts } = useFieldStore();
@@ -74,13 +76,13 @@ export default function ReceivingFormScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cân Xe & Tiếp Nhận Lúa</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -176,7 +178,7 @@ export default function ReceivingFormScreen() {
               <Text style={styles.netLabel}>Khối lượng lúa thực nhập (Net Weight):</Text>
               <Text style={styles.netSub}>Net = Cân tổng (Gross) - Cân bì (Tare)</Text>
             </View>
-            <Text style={[styles.netVal, !isValidNet && { color: Colors.red }]}>
+            <Text style={[styles.netVal, !isValidNet && { color: theme.colors.destructive }]}>
               {isValidNet ? `${formatMass(netDec.toString(), 0)} kg` : 'Lỗi tính toán'}
             </Text>
           </View>
@@ -193,7 +195,7 @@ export default function ReceivingFormScreen() {
                 style={[styles.siloOption, isSelected && styles.siloOptionActive]}
                 onPress={() => setSelectedSiloId(silo.id)}
               >
-                <Warehouse size={20} color={isSelected ? Colors.primary : Colors.textMuted} />
+                <Warehouse size={20} color={isSelected ? theme.colors.accent : theme.colors.tertiaryLabel} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.siloName, isSelected && styles.siloNameActive]}>
                     {silo.siloName}
@@ -219,10 +221,10 @@ export default function ReceivingFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -230,22 +232,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   scroll: {
     flex: 1,
@@ -257,35 +259,35 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardHeader: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
     marginBottom: 12,
   },
   receiptChip: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginRight: 8,
   },
   receiptChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   receiptNum: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   receiptNumActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   receiptSub: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    ...theme.typography.body,
+    color: theme.colors.secondaryLabel,
     marginTop: 2,
   },
   inputRow: {
@@ -293,9 +295,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   netBox: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.colors.successMuted,
     borderWidth: 1.5,
-    borderColor: '#86EFAC',
+    borderColor: theme.colors.success,
     borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
@@ -304,23 +306,23 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   netBoxError: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
+    backgroundColor: theme.colors.destructiveMuted,
+    borderColor: theme.colors.destructive,
   },
   netLabel: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#166534',
+    color: theme.colors.success,
   },
   netSub: {
-    fontSize: 11,
-    color: '#15803D',
+    ...theme.typography.body,
+    color: theme.colors.success,
     marginTop: 1,
   },
   netVal: {
-    fontSize: 18,
+    ...theme.typography.headline,
     fontWeight: '800',
-    color: '#15803D',
+    color: theme.colors.success,
   },
   siloOption: {
     flexDirection: 'row',
@@ -329,24 +331,24 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: theme.colors.separator,
     marginBottom: 8,
   },
   siloOptionActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: theme.colors.accentMuted,
+    borderColor: theme.colors.accent,
   },
   siloName: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   siloNameActive: {
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   siloDesc: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    ...theme.typography.body,
+    color: theme.colors.secondaryLabel,
     marginTop: 2,
   },
 });

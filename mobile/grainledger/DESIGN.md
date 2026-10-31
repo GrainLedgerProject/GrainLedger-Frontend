@@ -144,3 +144,31 @@ Go, create a development build instead of editing generated native folders.
 - Verify Android tab-bar performance. Keep its opaque fallback if blur causes dropped frames.
 - Confirm whether the profile route should remain programmatically reachable but hidden from the
   five-item tab bar.
+
+
+## Implementation audit — 2026-10-31
+
+The existing app already contained the design-system foundation. This pass extends it rather than replacing styling or state management.
+
+- Stack: Expo ~58.0.21, React Native 0.88.1, React 19.3, Expo Router ~58.0.28; CNG, no checked-in native projects. New Architecture required by this RN generation. No expo-dev-client dependency.
+- Styling: StyleSheet, legacy Colors and AppleGlass alongside semantic theme. Animation: Reanimated 4.7.1. Icons: expo-symbols, vector-icons and legacy Lucide. Lists: existing ScrollView/FlatList; no FlashList or bottom-sheet dependency. Keyboard: native inputs and scroll-view handling.
+- Configuration: automatic appearance, predictive Android back, Router and splash plugins, typed routes and React Compiler enabled.
+- Screen inventory: overview, field, mill, compliance, trace, profile; login; farmer, plot, spray, procurement, receiving, operation and lab sample forms; corrections, holds, lot detail and offline queue.
+- Reusable primitives: AppText, AppIcon, Button, InputField, Card, ListRow, states, sheet surface, header, segmented controls, and legacy adapters.
+- Proposed dependency additions: none. Existing Expo blur/glass/haptics/symbols suffice; no Skia, custom font or extra native sheet package is necessary for these fixes.
+- SDK 58 blur uses blurMethod plus BlurTargetView; experimentalBlurMethod is deprecated. API 31+ blur is opt-in through an explicit small backdrop. Current Android tab bar uses the opaque fallback because it has no target.
+- SDK 58 docs confirm expo-glass-effect and expo-blur are included in Expo Go. No development build is required by this patch. A release/development native build and physical devices remain necessary for production validation.
+- Native tabs have not been substituted in this pass: the existing Router tabs, hidden profile route, and route behavior remain intact.
+- Migrated six existing business forms to adaptive semantic colors and typography; safe areas use safe-area-context. Back buttons have 48-point bounds and labels. Existing submit handlers, validation, data and routes are retained.
+- Glass now starts opaque until accessibility settings resolve, observes preference changes, and keeps both the group and surface opaque when requested. Native/blur surfaces no longer paint an opaque background over their effect. Fallback ignores translucent tint to preserve readability.
+- Added onDestructive separately from onAccent to maintain appropriate destructive-button text in both schemes.
+
+### Remaining acceptance work
+
+This is not a completed whole-app redesign or complete API integration. See API_PARITY.md for missing web API paths. Legacy colors, spacing and icons still exist outside the six migrated forms. Native tabs/large-title behavior, full token migration, maximum font scaling, contrast over variable content, screen-by-screen visual review, authentication/API integration and device performance remain open.
+
+No automated test script or test suite is configured in package.json. Type checking and lint are build-time checks, not proof of runtime correctness. Physical iOS/Android, VoiceOver/TalkBack, reduced motion/transparency and mid-range Android frame timing have not been verified in this Windows workspace.
+
+Sleek design generation is pending account authorization; no Sleek render has been produced or used as an implementation reference.
+
+References: https://docs.expo.dev/versions/v58.0.0/sdk/glass-effect/ and https://docs.expo.dev/versions/v58.0.0/sdk/blur-view/ . Local package type definitions were inspected before changing native component props.
