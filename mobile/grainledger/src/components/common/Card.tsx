@@ -1,23 +1,39 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Shadows } from '../../theme/colors';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+
+import { useAppTheme } from '../../theme';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>;
+  /** @deprecated Content surfaces are intentionally opaque; glass is reserved for app chrome. */
+  glass?: boolean;
 }
 
 export const Card: React.FC<CardProps> = ({ children, style }) => {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const theme = useAppTheme();
+
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.separator,
+          borderRadius: theme.radii.lg,
+        },
+        theme.shadows.subtle,
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.small,
   },
 });

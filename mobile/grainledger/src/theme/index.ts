@@ -10,4 +10,4 @@ export {
   spacing,
   typography,
 } from './tokens';
-export type { AppTheme, ThemeColors } from './tokens';
+export type { AppTheme, ThemeColors, TypographyVariant } from './tokens';

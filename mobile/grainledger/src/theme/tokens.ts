@@ -103,6 +103,8 @@ export const typography = {
   captionStrong: type(12, 16, '600', 0.1),
 } as const;
 
+export type TypographyVariant = keyof typeof typography;
+
 export const iconSizes = { sm: 16, md: 20, lg: 24, xl: 32 } as const;
 export const layout = { compactGutter: 16, regularGutter: 24, maxContentWidth: 760, tabBarHeight: 64 } as const;
 

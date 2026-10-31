@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
   StyleSheet,
-  TextInputProps,
-  ViewStyle,
+  TextInput,
+  View,
+  type StyleProp,
+  type TextInputProps,
+  type ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+
+import { useAppTheme } from '../../theme';
+import { AppText } from '../ui/AppText';
 
 interface InputFieldProps extends TextInputProps {
   label: string;
   error?: string;
   unitSuffix?: string;
-  containerStyle?: ViewStyle;
+  containerStyle?: StyleProp<ViewStyle>;
   required?: boolean;
 }
 
@@ -24,86 +26,108 @@ export const InputField: React.FC<InputFieldProps> = ({
   containerStyle,
   required,
   style,
+  onBlur,
+  onFocus,
+  accessibilityLabel,
   ...rest
 }) => {
+  const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={[styles.container, containerStyle]}>
       <View style={styles.labelRow}>
-        <Text style={styles.label}>{label}</Text>
-        {required ? <Text style={styles.requiredMark}>*</Text> : null}
+        <AppText variant="subheadline" style={styles.label}>
+          {label}
+        </AppText>
+        {required ? (
+          <AppText variant="subheadline" color="destructive">
+            *
+          </AppText>
+        ) : null}
       </View>
 
-      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
+      <View
+        style={[
+          styles.inputWrapper,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: error
+              ? theme.colors.destructive
+              : focused
+                ? theme.colors.accent
+                : theme.colors.separator,
+            borderRadius: theme.radii.md,
+          },
+        ]}
+      >
         <TextInput
-          style={[styles.input, style]}
-          placeholderTextColor={Colors.textMuted}
+          accessibilityLabel={accessibilityLabel ?? label}
+          accessibilityState={{ disabled: rest.editable === false }}
+          allowFontScaling
+          maxFontSizeMultiplier={1.5}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          placeholderTextColor={theme.colors.tertiaryLabel}
+          selectionColor={theme.colors.accent}
+          style={[styles.input, theme.typography.body, { color: theme.colors.label }, style]}
           {...rest}
         />
         {unitSuffix ? (
-          <View style={styles.suffixContainer}>
-            <Text style={styles.suffixText}>{unitSuffix}</Text>
+          <View style={[styles.suffix, { borderLeftColor: theme.colors.separator }]}>
+            <AppText variant="subheadline" color="secondaryLabel">
+              {unitSuffix}
+            </AppText>
           </View>
         ) : null}
       </View>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? (
+        <AppText variant="caption" color="destructive" style={styles.supporting}>
+          {error}
+        </AppText>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 14,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 4,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  requiredMark: {
-    color: Colors.red,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  inputError: {
-    borderColor: Colors.red,
+    marginBottom: 16,
   },
   input: {
     flex: 1,
-    height: 48,
-    fontSize: 15,
-    color: Colors.text,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  suffixContainer: {
-    paddingLeft: 8,
-    borderLeftWidth: 1,
-    borderLeftColor: Colors.border,
+  inputWrapper: {
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    minHeight: 50,
+  },
+  label: {
+    fontWeight: '600',
+  },
+  labelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 7,
+  },
+  suffix: {
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  suffixText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  errorText: {
-    fontSize: 12,
-    color: Colors.red,
-    marginTop: 4,
-    fontWeight: '500',
+  supporting: {
+    marginTop: 5,
   },
 });

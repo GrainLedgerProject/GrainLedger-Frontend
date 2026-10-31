@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../theme/colors';
+
 import { useAuthStore } from '../../store/authStore';
 import { useOfflineStore } from '../../store/offlineStore';
+import { useAppTheme } from '../../theme';
 import { ROLE_DEFINITIONS } from '../../types/roles';
-import { Cloud, CloudOff, RefreshCw } from 'lucide-react-native';
+import { AppIcon } from '../ui/AppIcon';
+import { AppText } from '../ui/AppText';
+import { GlassSurface } from '../ui/GlassSurface';
 
 interface HeaderProps {
   title?: string;
@@ -13,67 +16,103 @@ interface HeaderProps {
   showBack?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => {
   const router = useRouter();
+  const theme = useAppTheme();
   const { activeRole } = useAuthStore();
   const { getPendingCount, isSyncing } = useOfflineStore();
-  const pendingCount = getPendingCount();
-  const roleMeta = activeRole ? ROLE_DEFINITIONS[activeRole] : undefined;
+  const pending = getPendingCount();
+  const role = activeRole ? ROLE_DEFINITIONS[activeRole] : undefined;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topRow}>
-        <View style={styles.brandContainer}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoBadgeText}>GL</Text>
-          </View>
-          <View>
-            <Text style={styles.brandTitle}>GrainLedger</Text>
-            <Text style={styles.brandSubtitle}>Hệ thống Sổ cái Nông sản</Text>
-          </View>
-        </View>
-
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.syncPill,
-              pendingCount > 0 ? styles.syncPillPending : styles.syncPillSynced,
-            ]}
-            onPress={() => router.push('/offline-queue')}
-            activeOpacity={0.7}
-          >
-            {isSyncing ? (
-              <RefreshCw size={13} color={Colors.accent} />
-            ) : pendingCount > 0 ? (
-              <CloudOff size={13} color={Colors.amber} />
-            ) : (
-              <Cloud size={13} color={Colors.emerald} />
-            )}
-            <Text
-              style={[
-                styles.syncPillText,
-                pendingCount > 0 ? styles.syncTextPending : styles.syncTextSynced,
+    <View style={styles.wrapper}>
+      <View style={styles.row}>
+        <View style={styles.brand}>
+          {showBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Trở lại"
+              hitSlop={6}
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.logo,
+                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.md },
+                pressed && styles.pressed,
               ]}
             >
-              {isSyncing ? 'Đang đồng bộ...' : pendingCount > 0 ? `${pendingCount} chờ gửi` : 'Đã đồng bộ'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.roleChip}
-            onPress={() => router.push('/(tabs)/profile')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.roleDot} />
-            <Text style={styles.roleChipText}>{roleMeta?.code || 'GL'}</Text>
-          </TouchableOpacity>
+              <AppIcon name="back" size={23} color={theme.colors.accent} />
+            </Pressable>
+          ) : (
+            <View
+              style={[
+                styles.logo,
+                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.md },
+              ]}
+            >
+              <AppIcon name="field" size={23} color={theme.colors.accent} />
+            </View>
+          )}
+          <View style={styles.brandText}>
+            <AppText variant="headline">GrainLedger</AppText>
+            <AppText variant="caption" color="secondaryLabel" style={styles.caption}>
+              Từ đồng ruộng đến thế giới
+            </AppText>
+          </View>
         </View>
+
+        <GlassSurface
+          variant="clear"
+          interactive
+          radius={theme.radii.pill}
+          style={styles.actions}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              isSyncing
+                ? 'Đang đồng bộ'
+                : pending
+                  ? `${pending} giao dịch chờ đồng bộ`
+                  : 'Đã đồng bộ. Xem hàng đợi'
+            }
+            hitSlop={4}
+            onPress={() => router.push('/offline-queue')}
+            style={({ pressed }) => [styles.control, pressed && styles.pressed]}
+          >
+            <AppIcon
+              name={pending ? 'offline' : 'sync'}
+              size={20}
+              color={pending ? theme.colors.warning : theme.colors.accent}
+            />
+            {pending > 0 ? (
+              <View style={[styles.pendingDot, { backgroundColor: theme.colors.warning }]} />
+            ) : null}
+          </Pressable>
+          <View style={[styles.divider, { backgroundColor: theme.colors.separator }]} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Mở hồ sơ cá nhân"
+            hitSlop={4}
+            onPress={() => router.push('/(tabs)/profile')}
+            style={({ pressed }) => [styles.control, pressed && styles.pressed]}
+          >
+            <AppText variant="captionStrong" color="accent" maxFontSizeMultiplier={1.25}>
+              {role?.code || 'GL'}
+            </AppText>
+          </Pressable>
+        </GlassSurface>
       </View>
 
       {title ? (
         <View style={styles.titleSection}>
-          <Text style={styles.pageTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+          <AppText variant="largeTitle" maxFontSizeMultiplier={1.35}>
+            {title}
+          </AppText>
+          {subtitle ? (
+            <AppText variant="subheadline" color="secondaryLabel" style={styles.subtitle}>
+              {subtitle}
+            </AppText>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -81,119 +120,66 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  topRow: {
-    flexDirection: 'row',
+  actions: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandContainer: {
     flexDirection: 'row',
+  },
+  brand: {
     alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
     gap: 10,
   },
-  logoBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: Colors.accent,
+  brandText: {
+    flex: 1,
+  },
+  caption: {
+    marginTop: 1,
+  },
+  control: {
     alignItems: 'center',
+    borderRadius: 24,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  logoBadgeText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  brandTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  brandSubtitle: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 11,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  syncPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    minHeight: 48,
+    minWidth: 48,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
   },
-  syncPillSynced: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderColor: 'rgba(16, 185, 129, 0.35)',
+  divider: {
+    height: 18,
+    width: StyleSheet.hairlineWidth,
   },
-  syncPillPending: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    borderColor: 'rgba(245, 158, 11, 0.4)',
-  },
-  syncPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  syncTextSynced: {
-    color: '#A7F3D0',
-  },
-  syncTextPending: {
-    color: '#FDE68A',
-  },
-  roleChip: {
-    flexDirection: 'row',
+  logo: {
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
-  roleDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.emerald,
+  pendingDot: {
+    borderRadius: 4,
+    height: 7,
+    position: 'absolute',
+    right: 9,
+    top: 9,
+    width: 7,
   },
-  roleChipText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+  pressed: {
+    opacity: 0.55,
+  },
+  row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  subtitle: {
+    marginTop: 5,
   },
   titleSection: {
-    marginTop: 14,
+    marginTop: 24,
   },
-  pageTitle: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  pageSubtitle: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 13,
-    marginTop: 2,
+  wrapper: {
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
 });

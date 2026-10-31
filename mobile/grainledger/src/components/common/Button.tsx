@@ -1,14 +1,23 @@
 import React from 'react';
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
   ActivityIndicator,
-  ViewStyle,
-  TextStyle,
+  Pressable,
+  StyleSheet,
   View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+
+import { useAppTheme } from '../../theme';
+import { haptics } from '../../utils/haptics';
+import { AppText } from '../ui/AppText';
 
 interface ButtonProps {
   title: string;
@@ -18,8 +27,8 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -33,164 +42,100 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return {
-          button: styles.btnSecondary,
-          text: styles.textSecondary,
-        };
-      case 'accent':
-        return {
-          button: styles.btnAccent,
-          text: styles.textAccent,
-        };
-      case 'outline':
-        return {
-          button: styles.btnOutline,
-          text: styles.textOutline,
-        };
-      case 'danger':
-        return {
-          button: styles.btnDanger,
-          text: styles.textDanger,
-        };
-      default:
-        return {
-          button: styles.btnPrimary,
-          text: styles.textPrimary,
-        };
-    }
+  const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const isDisabled = disabled || loading;
+  const isPrimary = variant === 'primary' || variant === 'accent' || variant === 'danger';
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const backgroundColor =
+    variant === 'danger'
+      ? theme.colors.destructive
+      : variant === 'primary' || variant === 'accent'
+        ? theme.colors.accent
+        : variant === 'secondary'
+          ? theme.colors.accentMuted
+          : 'transparent';
+
+  const foregroundColor = isPrimary
+    ? theme.colors.onAccent
+    : variant === 'secondary'
+      ? theme.colors.accent
+      : theme.colors.label;
+
+  const minHeight = size === 'small' ? 44 : size === 'large' ? 54 : 48;
+  const horizontalPadding = size === 'small' ? theme.spacing.md : theme.spacing.xl;
+
+  const setPressed = (pressed: boolean) => {
+    scale.set(
+      reduceMotion ? 1 : withSpring(pressed ? 0.97 : 1, theme.motion.spring),
+    );
   };
 
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return {
-          button: styles.sizeSmall,
-          text: styles.textSizeSmall,
-        };
-      case 'large':
-        return {
-          button: styles.sizeLarge,
-          text: styles.textSizeLarge,
-        };
-      default:
-        return {
-          button: styles.sizeMedium,
-          text: styles.textSizeMedium,
-        };
-    }
+  const handlePress = () => {
+    void haptics.selection();
+    onPress();
   };
-
-  const vStyles = getVariantStyles();
-  const sStyles = getSizeStyles();
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.base,
-        vStyles.button,
-        sStyles.button,
-        (disabled || loading) && styles.disabled,
-        style,
-      ]}
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.8}
-    >
-      {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'outline' ? Colors.primary : '#FFFFFF'}
-        />
-      ) : (
-        <View style={styles.contentRow}>
-          {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
-          <Text style={[styles.baseText, vStyles.text, sStyles.text, textStyle]}>
-            {title}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={[styles.animated, animatedStyle, style]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        disabled={isDisabled}
+        hitSlop={4}
+        onPress={handlePress}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
+        style={({ pressed }) => [
+          styles.button,
+          {
+            minHeight,
+            paddingHorizontal: horizontalPadding,
+            borderRadius: theme.radii.pill,
+            backgroundColor,
+            borderColor: variant === 'outline' ? theme.colors.separator : 'transparent',
+            opacity: isDisabled ? 0.45 : pressed ? 0.86 : 1,
+          },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={foregroundColor} />
+        ) : (
+          <View style={styles.content}>
+            {icon}
+            <AppText
+              variant={size === 'small' ? 'subheadline' : 'headline'}
+              style={[{ color: foregroundColor }, textStyle]}
+              maxFontSizeMultiplier={1.4}
+            >
+              {title}
+            </AppText>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  base: {
-    borderRadius: 12,
+  animated: {
+    alignSelf: 'auto',
+  },
+  button: {
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
   },
-  contentRow: {
+  content: {
+    alignItems: 'center',
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-  },
-  iconContainer: {
-    marginRight: 2,
-  },
-  baseText: {
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  // Variants
-  btnPrimary: {
-    backgroundColor: Colors.primary,
-  },
-  textPrimary: {
-    color: '#FFFFFF',
-  },
-  btnSecondary: {
-    backgroundColor: Colors.primarySurface,
-  },
-  textSecondary: {
-    color: Colors.primary,
-  },
-  btnAccent: {
-    backgroundColor: Colors.accent,
-  },
-  textAccent: {
-    color: '#FFFFFF',
-  },
-  btnOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  textOutline: {
-    color: Colors.text,
-  },
-  btnDanger: {
-    backgroundColor: Colors.red,
-  },
-  textDanger: {
-    color: '#FFFFFF',
-  },
-  // Sizes
-  sizeSmall: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  textSizeSmall: {
-    fontSize: 13,
-  },
-  sizeMedium: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  textSizeMedium: {
-    fontSize: 15,
-  },
-  sizeLarge: {
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-  },
-  textSizeLarge: {
-    fontSize: 16,
-  },
-  disabled: {
-    opacity: 0.5,
+    justifyContent: 'center',
   },
 });
