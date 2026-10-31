@@ -1,3 +1,5 @@
+import { spacing } from '../../theme/tokens';
+import { useMemo , useState } from 'react';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -8,8 +10,8 @@ import {
   Shield,
   KeyRound,
   Sparkles,
-} from 'lucide-react-native';
-import { useState } from 'react';
+} from '../../components/ui/named-icons';
+
 import {
   Alert,
   ScrollView,
@@ -27,17 +29,38 @@ import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useOfflineStore } from '../../store/offlineStore';
 import { AppleGlass } from '../../theme/appleGlass';
-import { useAppTheme } from '../../theme';
+import { useAppTheme, type AppTheme } from '../../theme';
 import { ROLE_DEFINITIONS, UserRole } from '../../types/roles';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  const { user, activeRole, logout, loginAsMock } = useAuthStore();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { user, activeRole, logout, loginAsMock, updateProfile } = useAuthStore();
   const { isSyncing, lastSyncedAt, syncAll, getPendingCount } = useOfflineStore();
 
   const [apiUrl, setApiUrl] = useState(api.getBaseUrl());
   const [testingConnection, setTestingConnection] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const result = await updateProfile(displayName, phoneNumber);
+      if (!result.success) {
+        Alert.alert('Chưa thể cập nhật', result.error);
+        return;
+      }
+      setEditingProfile(false);
+      Alert.alert('Đã lưu', 'Thông tin hồ sơ đã được cập nhật.');
+    } catch {
+      Alert.alert('Chưa thể cập nhật', 'Vui lòng thử lại.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
   const pendingCount = getPendingCount();
 
   const handleSaveApiUrl = async () => {
@@ -86,14 +109,14 @@ export default function ProfileScreen() {
         subtitle="Thông tin tài khoản, máy chủ kết nối và dữ liệu ngoại tuyến"
       />
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Apple Glass Profile Card */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.9)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.xl}
           elevated
           style={styles.profileCard}
@@ -116,13 +139,13 @@ export default function ProfileScreen() {
           <View style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Building size={16} color="#64748B" />
+            <Building size={16} color={theme.colors.secondaryLabel} />
             <Text style={styles.infoText}>{user?.organizationName || 'Chưa gán đơn vị'}</Text>
           </View>
 
           {user?.assignedFacilities && user.assignedFacilities.length > 0 ? (
             <View style={[styles.infoRow, { marginTop: 6 }]}>
-              <Shield size={16} color="#64748B" />
+              <Shield size={16} color={theme.colors.secondaryLabel} />
               <Text style={styles.infoText}>
                 Phạm vi: {user.assignedFacilities.join(', ')}
               </Text>
@@ -132,7 +155,7 @@ export default function ProfileScreen() {
           {user?.permissions && user.permissions.length > 0 ? (
             <View style={{ marginTop: 10 }}>
               <View style={[styles.infoRow, { marginBottom: 6 }]}>
-                <KeyRound size={16} color="#64748B" />
+                <KeyRound size={16} color={theme.colors.secondaryLabel} />
                 <Text style={styles.permissionTitle}>
                   Quyền hạn được cấp ({user.permissions.length}):
                 </Text>
@@ -148,16 +171,33 @@ export default function ProfileScreen() {
           ) : null}
         </GlassCard>
 
+        <GlassCard style={{ marginBottom: theme.spacing.lg }}>
+          {editingProfile ? (
+            <>
+              <GlassInput label="Tên hiển thị" value={displayName} onChangeText={setDisplayName} editable={!savingProfile} autoComplete="name" />
+              <GlassInput label="Số điện thoại" value={phoneNumber} onChangeText={setPhoneNumber} editable={!savingProfile} keyboardType="phone-pad" autoComplete="tel" />
+              <GlassButton title="Lưu hồ sơ" onPress={handleSaveProfile} loading={savingProfile} disabled={!displayName.trim()} />
+              <GlassButton title="Hủy" variant="secondary" disabled={savingProfile} onPress={() => setEditingProfile(false)} />
+            </>
+          ) : (
+            <GlassButton title="Chỉnh sửa hồ sơ" variant="secondary" onPress={() => {
+              setDisplayName(user?.displayName ?? '');
+              setPhoneNumber(user?.phoneNumber ?? '');
+              setEditingProfile(true);
+            }} />
+          )}
+        </GlassCard>
+
         {/* DEMO / MOCK ROLE SWITCHER */}
         <GlassCard
-          tintColor="rgba(240, 253, 244, 0.9)"
-          borderTint="rgba(52, 199, 89, 0.35)"
+          tintColor={theme.colors.surface}
+          borderTint={theme.colors.separator}
           borderRadius={AppleGlass.radii.lg}
           style={styles.roleSwitcherCard}
         >
           <View style={styles.roleSwitcherHeader}>
             <View style={styles.roleSwitcherIconBox}>
-              <Sparkles size={16} color="#166534" />
+              <Sparkles size={16} color={theme.colors.success} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleSwitcherTitle}>Chuyển đổi Vai trò Xem thử (Demo)</Text>
@@ -189,13 +229,13 @@ export default function ProfileScreen() {
 
         {/* Offline Sync Manager Card */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.88)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.syncCard}
         >
           <View style={styles.syncHeader}>
             <View style={styles.syncIconBox}>
-              <Cloud size={20} color={pendingCount > 0 ? '#D97706' : '#059669'} />
+              <Cloud size={20} color={pendingCount > 0 ? theme.colors.warning : theme.colors.success} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.syncTitle}>Quản lý Đồng bộ Ngoại tuyến</Text>
@@ -235,12 +275,12 @@ export default function ProfileScreen() {
 
         {/* Server Connection Config */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.88)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.serverCard}
         >
           <View style={styles.serverHeader}>
-            <Server size={18} color={AppleGlass.colors.brandGreen} />
+            <Server size={18} color={theme.colors.accent} />
             <Text style={styles.serverTitle}>Địa chỉ Máy chủ (API Base URL)</Text>
           </View>
 
@@ -280,7 +320,7 @@ export default function ProfileScreen() {
           title="Đăng xuất khỏi thiết bị"
           variant="danger"
           size="large"
-          icon={<LogOut size={18} color="#FFFFFF" />}
+          icon={<LogOut size={18} color={theme.colors.surface} />}
           onPress={() => {
             Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất tài khoản này?', [
               { text: 'Huỷ', style: 'cancel' },
@@ -295,214 +335,214 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppleGlass.colors.systemBackground,
+    backgroundColor: theme.colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: spacing.lg,
+    paddingBottom: spacing.huge,
   },
   profileCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   profileTop: {
     flexDirection: 'row',
-    gap: 14,
+    gap: spacing.md,
     alignItems: 'center',
   },
   avatarCircle: {
     width: 54,
     height: 54,
     borderRadius: AppleGlass.radii.pill,
-    backgroundColor: AppleGlass.colors.brandGreen,
+    backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     ...AppleGlass.shadows.glassSubtle,
   },
   avatarInitial: {
-    fontSize: 22,
+    ...theme.typography.title2,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: theme.colors.surface,
   },
   userName: {
-    fontSize: 18,
+    ...theme.typography.headline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   userEmail: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.footnote,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   roleRow: {
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 14,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   infoText: {
-    fontSize: 13,
-    color: '#334155',
+    ...theme.typography.footnote,
+    color: theme.colors.label,
     fontWeight: '500',
   },
   permissionTitle: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#475569',
+    color: theme.colors.secondaryLabel,
   },
   permissionList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: spacing.xs,
   },
   permissionBadge: {
-    backgroundColor: 'rgba(241, 245, 249, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: theme.colors.surfaceSecondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
+    borderColor: theme.colors.separator,
   },
   permissionBadgeText: {
-    fontSize: 10,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.secondaryLabel,
   },
   roleSwitcherCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   roleSwitcherHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   roleSwitcherIconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: theme.colors.successMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   roleSwitcherTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   roleSwitcherSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   roleChipsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   roleChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: AppleGlass.radii.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(52, 199, 89, 0.3)',
+    borderColor: theme.colors.accentMuted,
   },
   roleChipActive: {
-    backgroundColor: AppleGlass.colors.brandGreen,
-    borderColor: AppleGlass.colors.brandGreen,
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   roleChipText: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
   },
   roleChipTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.surface,
   },
   syncCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   syncHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   syncIconBox: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: 'rgba(241, 245, 249, 0.8)',
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   syncTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   syncSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   syncInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 12,
+    marginVertical: spacing.md,
   },
   syncInfoLabel: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   syncInfoVal: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   syncButtonsGroup: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
   },
   serverCard: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   serverHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   serverTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   serverDesc: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
     lineHeight: 16,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   serverActionsGroup: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   logoutBtn: {
-    marginBottom: 30,
+    marginBottom: spacing.xxl,
   },
 });

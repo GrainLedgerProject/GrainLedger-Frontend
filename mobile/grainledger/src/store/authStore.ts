@@ -47,16 +47,33 @@ interface AuthState {
   loginWithCredentials: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   loginAsMock: (role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (displayName: string, phoneNumber: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AUTH_USER_KEY = 'grainledger_auth_user';
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
   isLoading: true,
   activeRole: null,
+
+  updateProfile: async (displayName, phoneNumber) => {
+    const current = get().user;
+    if (!current || !displayName.trim()) return { success: false, error: 'Vui lòng nhập tên hiển thị.' };
+    if (get().token?.startsWith('mock-token-')) {
+      return { success: false, error: 'Hãy đăng nhập bằng tài khoản thật để cập nhật hồ sơ.' };
+    }
+    const res = await api.profile.updateProfile({ displayName: displayName.trim(), phoneNumber: phoneNumber.trim() || null });
+    if (res.error || !res.data) return { success: false, error: res.error || 'Không nhận được hồ sơ từ máy chủ.' };
+    // Do not restore an old session if the account changed while the request was in flight.
+    if (get().user?.id !== current.id) return { success: false, error: 'Phiên đăng nhập đã thay đổi.' };
+    const user = { ...current, displayName: res.data.displayName, phoneNumber: res.data.phoneNumber || undefined };
+    await storage.set(AUTH_USER_KEY, user);
+    set({ user });
+    return { success: true };
+  },
 
   initAuth: async () => {
     try {
