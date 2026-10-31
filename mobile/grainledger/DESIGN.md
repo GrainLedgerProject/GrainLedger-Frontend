@@ -160,7 +160,7 @@ Go, create a development build instead of editing generated native folders.
 - TypeScript strict: pass.
 - ESLint: pass without warnings.
 - npm test: 768 web/mobile endpoint parity cases plus 44 semantic contrast pairs.
-- Expo Doctor: initially 20/20 passed; two final reruns completed 19 checks but could not fetch the Expo config schema because the TLS connection to the Expo API failed. This external check remains unverified on the final tree.
+- Expo Doctor: 20/20 passed in the follow-up implementation. An earlier transient TLS failure has not reproduced in that run.
 - iOS and Android production JS/Hermes exports: pass.
 - Physical-device execution and visual layout review: pending; export success is not device validation.
 
@@ -168,8 +168,22 @@ Go, create a development build instead of editing generated native folders.
 
 - Test iOS 26 native glass, older iOS blur, Android API 31+ targeted blur and opaque fallback on a mid-range device.
 - Verify largest font sizes, VoiceOver/TalkBack, reduce transparency, high contrast, reduced motion, keyboard behavior and frame timing.
-- iOS forms now use native formSheet presentation with 50%/100% detents, a grabber and theme corner radius; Android keeps its existing modal presentation. Native large-title collapse remains pending a screen-level header presentation pass.
+- iOS forms now use native formSheet presentation with 50%/100% detents, a grabber and theme corner radius; Android keeps its existing modal presentation. The lot-detail route now uses native iOS headerLargeTitleEnabled with automatic scroll insets; collapse still needs device verification. Other custom headers remain unchanged.
 - Web-only management flows have API service coverage but still need mobile UI; see API_PARITY.md.
 - Sleek design generation remains unavailable until account authorization. No Sleek output has been presented as completed work.
 
 References: https://docs.expo.dev/versions/v58.0.0/sdk/router/native-tabs/ , https://docs.expo.dev/versions/v58.0.0/sdk/symbols/ , https://docs.expo.dev/versions/v58.0.0/sdk/glass-effect/ , https://docs.expo.dev/versions/v58.0.0/sdk/blur-view/ . Local package type definitions were checked before API changes.
+
+
+### Follow-up implementation
+
+- Corrections and audit history now have mobile UI inside the existing operations/profile routes; see API_PARITY.md for exact scope.
+- Long segmented labels were shortened for narrow screens. Segment text can wrap and Android segments have a 48dp minimum touch height through layout.minTouchTarget.
+- The correction form locks fields during submission, exposes selection state to assistive technology, and allows its multiline explanation to grow.
+- The compliance overview no longer asserts a fixed set of twelve compliant lots or assumes intact seals without supporting fields. It presents sample/report counts and recorded seal identifiers.
+- Lot detail has an empty state before accessing missing lot data. iOS uses the native detail header; Android retains its existing toolbar.
+
+Manual checks for this pass: failed correction submit preserves input; successful submit closes only after confirmation; list commit/cancel reaches the intended backend status; history handles 403/empty/malformed responses; switching accounts clears history; native lot title collapses with sufficiently long content; segmented labels remain readable at large text sizes.
+
+- Login now contains inline account registration, email verification/resend and password recovery/reset panels. They use existing InputField/Button/semantic surfaces and stay inside the current login route. Manual checks include email delivery, OTP expiry, invalid codes, rejected passwords and retry after network loss.
+- npm test includes read-only audit parsing/search and correction failure/precision tests in addition to endpoint parity and contrast checks. No credentials, OTPs or live test data are recorded by these tests.

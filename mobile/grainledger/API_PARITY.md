@@ -24,8 +24,21 @@ All eight web endpoint modules are now available through the existing mobile Api
 
 ## UI coverage and remaining verification
 
-The existing field, mill, compliance, holds and offline flows continue to use their existing methods. Profile editing now calls PUT /api/profile and persists the returned name/phone in the existing Zustand user/cache; demo sessions cannot submit a profile change.
+The existing field, mill, compliance, holds and offline flows retain their requests. New connections within existing routes:
 
-Admin/catalog management, registration/password-recovery, residue configuration, notification/history and other web-only management flows have service methods but do not yet have mobile controls. Adding all corresponding screens would expand the current navigation flow; no routes have been renamed or added in this pass.
+- Profile editing calls PUT /api/profile and persists the returned name/phone; demo sessions cannot submit a profile change.
+- The correction form now posts the web CorrectionRequest contract. Its entered variance is preserved in reconciliationNotes because that contract has no variance field. Decimal precision is preserved. Network/server failures keep the entered form and do not display success.
+- The operations section displays GET /api/ledger/corrections with explicit loading/error/empty states. Commit and cancel use the web notes payload and ask for confirmation before sending. A successful server response is followed by a reload; failed requests do not optimistically change status.
+- Profile exposes GET /api/ledger/history on demand, with local search and incremental display. Array, items and events envelopes match the web audit page. Malformed responses report an error rather than inventing events. The panel resets when the signed-in account changes.
+
+Admin/catalog management, residue configuration, notification and other web-only management flows have service methods but do not yet have mobile controls. Adding all corresponding screens would expand the current navigation flow; no routes have been renamed or added in this pass.
 
 Run authorized read/write scenarios against a real backend with appropriate roles to validate permissions, request validation, error bodies, file downloads and response shapes. No live backend mutations were executed during verification.
+
+## Additional workflow checks
+
+npm test also verifies correction request validation, exact decimal handling, response envelope validation, audit search, HTTP 403/offline failure behavior and valid empty-body success. These tests make no live requests. Read/write backend scenarios and role enforcement still require a real test environment.
+
+## Account UI coverage
+
+The existing login route now includes registration, email verification, resend verification, forgot password and reset password panels. They call the web auth contracts without changing the original sign-in handler or introducing a route. Verification/reset completion returns to sign-in and clears the parent password input. OTP and new passwords are held only in component state and cleared on completion/cancel; they are not written to storage. Duplicate in-flight submits are blocked. Empty successful responses are accepted for the void password endpoints; registration/verification require their documented response data. End-to-end email delivery, expiry, rate limits and password policy remain backend/manual checks.
