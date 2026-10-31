@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 150,
     minWidth: 0,
-    padding: 17,
+    padding: spacing.lg,
   },
   icon: {
     alignItems: 'center',
@@ -95,14 +96,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subtext: {
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
   topRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   value: {
     fontVariant: ['tabular-nums'],
@@ -111,6 +112,6 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: spacing.xs,
   },
 });

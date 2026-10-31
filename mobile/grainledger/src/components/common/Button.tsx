@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'center',
   },
 });

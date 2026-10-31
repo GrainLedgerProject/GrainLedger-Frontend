@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -34,6 +35,6 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
+    padding: spacing.lg,
   },
 });

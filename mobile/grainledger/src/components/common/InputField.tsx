@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -99,13 +100,13 @@ export const InputField: React.FC<InputFieldProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   input: {
     flex: 1,
     minHeight: 50,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   inputWrapper: {
     alignItems: 'center',
@@ -119,15 +120,15 @@ const styles = StyleSheet.create({
   labelRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
-    marginBottom: 7,
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
   suffix: {
     borderLeftWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   supporting: {
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
 });

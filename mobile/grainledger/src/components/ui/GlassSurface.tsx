@@ -40,6 +40,8 @@ export interface GlassSurfaceProps extends Omit<ViewProps, 'style'> {
 
 type BlurTargetRef = React.RefObject<ComponentRef<typeof View> | null>;
 const BlurTargetContext = createContext<BlurTargetRef | null>(null);
+type GlassDefaults = Pick<GlassSurfaceProps, 'variant' | 'tint' | 'interactive' | 'radius'>;
+const GlassDefaultsContext = createContext<GlassDefaults>({});
 
 function useTransparencyPreference(): boolean {
   // Start opaque until the asynchronous accessibility preferences resolve.
@@ -74,16 +76,21 @@ function useTransparencyPreference(): boolean {
 }
 
 export function GlassSurface({
-  variant = 'regular',
-  tint,
-  interactive = false,
-  radius,
+  variant: variantProp,
+  tint: tintProp,
+  interactive: interactiveProp,
+  radius: radiusProp,
   intensity = 72,
   style,
   children,
   ...viewProps
 }: GlassSurfaceProps) {
   const theme = useAppTheme();
+  const defaults = useContext(GlassDefaultsContext);
+  const variant = variantProp ?? defaults.variant ?? 'regular';
+  const tint = tintProp ?? defaults.tint;
+  const interactive = interactiveProp ?? defaults.interactive ?? false;
+  const radius = radiusProp ?? defaults.radius;
   const blurTarget = useContext(BlurTargetContext);
   const reduceTransparency = useTransparencyPreference();
   const resolvedRadius = radius ?? theme.radii.xl;
@@ -149,12 +156,12 @@ export function GlassSurface({
   );
 }
 
-export interface GlassGroupProps extends PropsWithChildren, Omit<ViewProps, 'children'> {
+export interface GlassGroupProps extends PropsWithChildren, Omit<GlassSurfaceProps, 'children' | 'intensity'> {
   spacing?: number;
   backdrop?: ReactNode;
 }
 
-export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProps }: GlassGroupProps) {
+export function GlassGroup({ spacing = 8, backdrop, style, children, variant, tint, interactive, radius, ...viewProps }: GlassGroupProps) {
   const targetRef = useRef<ComponentRef<typeof View> | null>(null);
   const reduceTransparency = useTransparencyPreference();
   const canUseNativeGroup =
@@ -162,9 +169,11 @@ export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProp
 
   if (canUseNativeGroup && !backdrop) {
     return (
-      <GlassContainer {...viewProps} spacing={spacing} style={style}>
-        {children}
-      </GlassContainer>
+      <GlassDefaultsContext.Provider value={{ variant, tint, interactive, radius }}>
+        <GlassContainer {...viewProps} spacing={spacing} style={style}>
+          {children}
+        </GlassContainer>
+      </GlassDefaultsContext.Provider>
     );
   }
 
@@ -175,7 +184,9 @@ export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProp
           {backdrop}
         </BlurTargetView>
         <BlurTargetContext.Provider value={targetRef}>
-          <View style={StyleSheet.absoluteFill}>{children}</View>
+          <GlassDefaultsContext.Provider value={{ variant, tint, interactive, radius }}>
+            <View style={StyleSheet.absoluteFill}>{children}</View>
+          </GlassDefaultsContext.Provider>
         </BlurTargetContext.Provider>
       </View>
     );
@@ -183,7 +194,9 @@ export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProp
 
   return (
     <View {...viewProps} style={style}>
-      {children}
+      <GlassDefaultsContext.Provider value={{ variant, tint, interactive, radius }}>
+        {children}
+      </GlassDefaultsContext.Provider>
     </View>
   );
 }

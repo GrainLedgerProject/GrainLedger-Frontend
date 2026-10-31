@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
   },
   dot: {
     borderRadius: 4,

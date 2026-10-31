@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React, { type PropsWithChildren } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -42,14 +43,14 @@ const styles = StyleSheet.create({
   grabber: {
     alignSelf: 'center',
     height: 5,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     opacity: 0.45,
     width: 36,
   },
   sheet: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
 });

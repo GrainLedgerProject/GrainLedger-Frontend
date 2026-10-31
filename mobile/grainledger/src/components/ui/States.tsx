@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -92,13 +93,13 @@ const styles = StyleSheet.create({
   loading: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 14,
+    gap: spacing.md,
     minHeight: 72,
-    padding: 16,
+    padding: spacing.lg,
   },
   loadingCopy: {
     flex: 1,
-    gap: 8,
+    gap: spacing.sm,
   },
   skeletonNarrow: {
     height: 12,
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   },
   state: {
     alignItems: 'center',
-    gap: 12,
-    padding: 28,
+    gap: spacing.md,
+    padding: spacing.xl,
   },
 });

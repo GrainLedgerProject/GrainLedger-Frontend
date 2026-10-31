@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     minHeight: 50,
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.md,
   },
   label: { fontWeight: '600', marginBottom: 7 },
   leading: { marginRight: 10 },

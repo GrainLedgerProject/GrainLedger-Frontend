@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -102,25 +103,25 @@ const styles = StyleSheet.create({
   count: {
     borderRadius: 10,
     minWidth: 20,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.zero,
   },
   row: {
     alignItems: 'stretch',
     flexDirection: 'row',
-    gap: 4,
+    gap: spacing.xs,
   },
   segment: {
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
     justifyContent: 'center',
     minHeight: 44,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   surface: {
-    padding: 4,
+    padding: spacing.xs,
   },
 });

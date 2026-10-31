@@ -8,7 +8,7 @@ export const lightColors = {
   elevatedSurface: '#FFFFFF',
   label: '#13251D',
   secondaryLabel: '#4F6258',
-  tertiaryLabel: '#6B7D73',
+  tertiaryLabel: '#5D6E64',
   separator: '#D5DDD7',
   accent: '#246B4B',
   accentMuted: '#DCEDE4',

@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -63,18 +64,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     minHeight: 44,
-    paddingRight: 12,
+    paddingRight: spacing.md,
   },
   pressed: {
     opacity: 0.55,
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   surface: {
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   toolbar: {
     alignItems: 'center',

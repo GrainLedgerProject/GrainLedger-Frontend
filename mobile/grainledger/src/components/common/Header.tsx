@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -128,13 +129,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
   },
   brandText: {
     flex: 1,
   },
   caption: {
-    marginTop: 1,
+    marginTop: spacing.zero,
   },
   control: {
     alignItems: 'center',
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 48,
     minWidth: 48,
-    paddingHorizontal: 10,
+    paddingHorizontal: spacing.sm,
   },
   divider: {
     height: 18,
@@ -168,18 +169,18 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     justifyContent: 'space-between',
   },
   subtitle: {
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
   titleSection: {
-    marginTop: 24,
+    marginTop: spacing.xl,
   },
   wrapper: {
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
 });

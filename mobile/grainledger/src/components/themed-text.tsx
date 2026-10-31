@@ -1,3 +1,4 @@
+import { typography } from '../theme/tokens';
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
@@ -26,41 +27,41 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
 const styles = StyleSheet.create({
   small: {
-    fontSize: 14,
+    ...typography.subheadline,
     lineHeight: 20,
     fontWeight: 500,
   },
   smallBold: {
-    fontSize: 14,
+    ...typography.subheadline,
     lineHeight: 20,
     fontWeight: 700,
   },
   default: {
-    fontSize: 16,
+    ...typography.callout,
     lineHeight: 24,
     fontWeight: 500,
   },
   title: {
-    fontSize: 48,
+    ...typography.body,
     fontWeight: 600,
     lineHeight: 52,
   },
   subtitle: {
-    fontSize: 32,
+    ...typography.largeTitle,
     lineHeight: 44,
     fontWeight: 600,
   },
   link: {
     lineHeight: 30,
-    fontSize: 14,
+    ...typography.subheadline,
   },
   linkPrimary: {
     lineHeight: 30,
-    fontSize: 14,
+    ...typography.subheadline,
   },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    ...typography.caption,
   },
 });
