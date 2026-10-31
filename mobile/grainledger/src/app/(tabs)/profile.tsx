@@ -25,6 +25,7 @@ import { GlassCard } from '../../components/common/GlassCard';
 import { GlassButton } from '../../components/common/GlassButton';
 import { GlassBadge } from '../../components/common/GlassBadge';
 import { GlassInput } from '../../components/common/GlassInput';
+import { AuditHistoryPanel } from '../../components/profile/AuditHistoryPanel';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useOfflineStore } from '../../store/offlineStore';
@@ -314,6 +315,8 @@ export default function ProfileScreen() {
             />
           </View>
         </GlassCard>
+
+        <AuditHistoryPanel key={user?.id ?? 'signed-out'} />
 
         {/* Logout Button */}
         <GlassButton
