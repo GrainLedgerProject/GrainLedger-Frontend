@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
+import { AccountAccessPanel } from '../components/auth/AccountAccessPanel';
 import { GlassBadge } from '../components/common/GlassBadge';
 import { InputField } from '../components/common/InputField';
 import { AppIcon, type AppIconName } from '../components/ui/AppIcon';
@@ -282,6 +283,8 @@ export default function LoginScreen() {
               style={styles.fullWidth}
             />
           </Card>
+
+          <AccountAccessPanel onReady={(address) => { setEmail(address); setPassword(''); }} />
 
           <Card style={styles.section}>
             <Pressable
