@@ -42,8 +42,9 @@ type BlurTargetRef = React.RefObject<ComponentRef<typeof View> | null>;
 const BlurTargetContext = createContext<BlurTargetRef | null>(null);
 
 function useTransparencyPreference(): boolean {
-  const [reduceTransparency, setReduceTransparency] = useState(false);
-  const [highContrast, setHighContrast] = useState(false);
+  // Start opaque until the asynchronous accessibility preferences resolve.
+  const [reduceTransparency, setReduceTransparency] = useState(Platform.OS === 'ios');
+  const [highContrast, setHighContrast] = useState(Platform.OS === 'android');
 
   useEffect(() => {
     const subscriptions: { remove: () => void }[] = [];
@@ -51,7 +52,7 @@ function useTransparencyPreference(): boolean {
     if (Platform.OS === 'ios') {
       AccessibilityInfo.isReduceTransparencyEnabled()
         .then(setReduceTransparency)
-        .catch(() => setReduceTransparency(false));
+        .catch(() => setReduceTransparency(true));
       subscriptions.push(
         AccessibilityInfo.addEventListener('reduceTransparencyChanged', setReduceTransparency),
       );
@@ -60,7 +61,7 @@ function useTransparencyPreference(): boolean {
     if (Platform.OS === 'android') {
       AccessibilityInfo.isHighTextContrastEnabled()
         .then(setHighContrast)
-        .catch(() => setHighContrast(false));
+        .catch(() => setHighContrast(true));
       subscriptions.push(
         AccessibilityInfo.addEventListener('highTextContrastChanged', setHighContrast),
       );
@@ -94,7 +95,6 @@ export function GlassSurface({
     {
       borderRadius: resolvedRadius,
       borderColor: theme.colors.glassBorder,
-      backgroundColor: theme.colors.elevatedSurface,
     },
     style,
   ];
@@ -142,8 +142,7 @@ export function GlassSurface({
   }
 
   return (
-    <View {...viewProps} style={surfaceStyle}>
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: resolvedTint }]} />
+    <View {...viewProps} style={[surfaceStyle, { backgroundColor: theme.colors.elevatedSurface }]}>
       <View pointerEvents="none" style={[styles.specular, { backgroundColor: theme.colors.glassHighlight }]} />
       {children}
     </View>
@@ -157,8 +156,9 @@ export interface GlassGroupProps extends PropsWithChildren, Omit<ViewProps, 'chi
 
 export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProps }: GlassGroupProps) {
   const targetRef = useRef<ComponentRef<typeof View> | null>(null);
+  const reduceTransparency = useTransparencyPreference();
   const canUseNativeGroup =
-    Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+    Platform.OS === 'ios' && !reduceTransparency && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 
   if (canUseNativeGroup && !backdrop) {
     return (
@@ -190,6 +190,7 @@ export function GlassGroup({ spacing = 8, backdrop, style, children, ...viewProp
 
 const styles = StyleSheet.create({
   surface: {
+    borderCurve: 'continuous',
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
   },

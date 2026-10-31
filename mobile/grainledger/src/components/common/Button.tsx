@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -61,13 +62,13 @@ export const Button: React.FC<ButtonProps> = ({
           ? theme.colors.accentMuted
           : 'transparent';
 
-  const foregroundColor = isPrimary
+  const foregroundColor = variant === 'danger' ? theme.colors.onDestructive : isPrimary
     ? theme.colors.onAccent
     : variant === 'secondary'
       ? theme.colors.accent
       : theme.colors.label;
 
-  const minHeight = size === 'small' ? 44 : size === 'large' ? 54 : 48;
+  const minHeight = size === 'small' ? (Platform.OS === 'android' ? 48 : 44) : size === 'large' ? 54 : 48;
   const horizontalPadding = size === 'small' ? theme.spacing.md : theme.spacing.xl;
 
   const setPressed = (pressed: boolean) => {
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
+    flexShrink: 1,
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
