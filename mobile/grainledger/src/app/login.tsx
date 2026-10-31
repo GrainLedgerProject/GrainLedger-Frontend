@@ -1,46 +1,72 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
   Alert,
-  TouchableOpacity,
-  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
-import { Card } from '../components/common/Card';
-import { InputField } from '../components/common/InputField';
-import { Button } from '../components/common/Button';
-import { useAuthStore } from '../store/authStore';
-import { api } from '../services/api';
-import {
-  Server,
-  Sliders,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  AlertTriangle,
-  Zap,
-} from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DEV_ACCOUNTS = [
-  { label: 'Thu mua (PO)', email: 'purchasing@grainledger.local' },
-  { label: 'Vận hành (MO)', email: 'mill.operator@grainledger.local' },
-  { label: 'Quản lý (MM)', email: 'mill.manager@grainledger.local' },
-  { label: 'Quản trị (Admin)', email: 'admin@grainledger.local' },
+import { Button } from '../components/common/Button';
+import { Card } from '../components/common/Card';
+import { GlassBadge } from '../components/common/GlassBadge';
+import { InputField } from '../components/common/InputField';
+import { AppIcon, type AppIconName } from '../components/ui/AppIcon';
+import { AppText } from '../components/ui/AppText';
+import { api } from '../services/api';
+import { useAuthStore } from '../store/authStore';
+import { useAppTheme } from '../theme';
+import { type UserRole } from '../types/roles';
+
+const MOCK_ROLES: {
+  role: UserRole;
+  title: string;
+  subtitle: string;
+  icon: AppIconName;
+}[] = [
+  {
+    role: 'CUSTOMER_PROCUREMENT_OFFICER',
+    title: 'Cán bộ Thu mua',
+    subtitle: 'Thực địa, nông hộ, phiếu cân',
+    icon: 'field',
+  },
+  {
+    role: 'MILL_OPERATOR',
+    title: 'Vận hành Nhà máy',
+    subtitle: 'Cân xe, sấy, xay xát, đóng bao',
+    icon: 'mill',
+  },
+  {
+    role: 'MILL_MANAGER',
+    title: 'Quản đốc Nhà máy',
+    subtitle: 'Đối soát dung sai, tồn kho silo',
+    icon: 'settings',
+  },
+  {
+    role: 'CUSTOMER_MANAGER',
+    title: 'Quản lý Tuân thủ',
+    subtitle: 'Kiểm định MRL Lab & phát lệnh HOLD',
+    icon: 'compliance',
+  },
+  {
+    role: 'MILL_ADMIN',
+    title: 'Quản trị viên',
+    subtitle: 'Cấu hình toàn quyền hệ thống',
+    icon: 'warning',
+  },
 ];
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { loginWithCredentials, isLoading } = useAuthStore();
+  const theme = useAppTheme();
+  const { loginWithCredentials, loginAsMock, isLoading } = useAuthStore();
 
   const [email, setEmail] = useState('purchasing@grainledger.local');
   const [password, setPassword] = useState('Grainledger@1');
-
-  // Dev Server Configuration State
   const [showDevSettings, setShowDevSettings] = useState(false);
   const [serverUrl, setServerUrl] = useState(api.getBaseUrl());
   const [testingServer, setTestingServer] = useState(false);
@@ -55,12 +81,28 @@ export default function LoginScreen() {
     const res = await loginWithCredentials(email, password);
     if (res.success) {
       router.replace('/(tabs)');
-    } else {
-      Alert.alert(
-        'Đăng nhập thất bại',
-        res.error || 'Vui lòng kiểm tra lại tài khoản hoặc kết nối máy chủ.'
-      );
+      return;
     }
+
+    Alert.alert(
+      'Không thể kết nối máy chủ',
+      `${res.error || 'Máy chủ đang ngoại tuyến'}.\n\nBạn có muốn đăng nhập bằng tài khoản Demo Mock để xem thử toàn bộ giao diện không?`,
+      [
+        { text: 'Thử lại', style: 'cancel' },
+        {
+          text: 'Dùng Tài khoản Demo',
+          onPress: async () => {
+            await loginAsMock('CUSTOMER_PROCUREMENT_OFFICER');
+            router.replace('/(tabs)');
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDirectMockLogin = async (role: UserRole) => {
+    await loginAsMock(role);
+    router.replace('/(tabs)');
   };
 
   const handleSaveServerUrl = async () => {
@@ -74,7 +116,6 @@ export default function LoginScreen() {
     setTestingServer(true);
     setServerStatus('idle');
 
-    // Ping health endpoint on the entered or saved server
     await api.setBaseUrl(serverUrl);
     const normalized = api.getBaseUrl();
     setServerUrl(normalized);
@@ -86,459 +127,399 @@ export default function LoginScreen() {
       setServerStatus('ok');
       Alert.alert(
         'Kết nối thành công',
-        `Máy chủ đang phản hồi tốt!\nURL: ${normalized}\nTrạng thái: ${
+        `Máy chủ backend đang phản hồi tốt!\nURL: ${normalized}\nTrạng thái: ${
           typeof res.data === 'object' && res.data.status ? res.data.status : 'OK'
-        }`
+        }`,
       );
-    } else {
-      setServerStatus('error');
-      Alert.alert(
-        'Không thể kết nối',
-        `Không thể kết nối tới ${normalized}.\n\nLỗi: ${
-          res.error || 'Timeout hoặc máy chủ không phản hồi'
-        }\n\nGợi ý: Kiểm tra lại backend .NET đang chạy cổng 5080 và dùng 10.0.2.2 cho máy ảo Android.`
-      );
+      return;
     }
+
+    setServerStatus('error');
+    Alert.alert(
+      'Không thể kết nối',
+      `Không thể kết nối tới ${normalized}.\n\nLỗi: ${
+        res.error || 'Timeout hoặc máy chủ không phản hồi'
+      }\n\nGợi ý: Bạn có thể chọn ngay một trong các "Tài khoản Demo" bên dưới để trải nghiệm đầy đủ giao diện ứng dụng!`,
+    );
   };
 
   const handleSelectPreset = (url: string) => {
     setServerUrl(url);
-    api.setBaseUrl(url);
+    void api.setBaseUrl(url);
     setServerStatus('idle');
   };
 
-  const handleFillAccount = (devEmail: string) => {
-    setEmail(devEmail);
-    setPassword('Grainledger@1');
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        {/* Brand Header */}
-        <View style={styles.brandSection}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>GL</Text>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.brandSection}>
+            <View
+              style={[
+                styles.logo,
+                { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg },
+                theme.shadows.floating,
+              ]}
+            >
+              <AppText variant="title2" style={{ color: theme.colors.onAccent }}>
+                GL
+              </AppText>
+            </View>
+            <AppText variant="title1" align="center" maxFontSizeMultiplier={1.35}>
+              GrainLedger
+            </AppText>
+            <AppText
+              variant="subheadline"
+              color="secondaryLabel"
+              align="center"
+              style={styles.brandSubtitle}
+            >
+              Sổ cái và kiểm định tuân thủ MRL cho chuỗi lúa gạo Mekong
+            </AppText>
           </View>
-          <Text style={styles.title}>GrainLedger</Text>
-          <Text style={styles.subtitle}>Hệ thống Sổ cái & Truy xuất Nguồn gốc Lúa gạo</Text>
-        </View>
 
-        {/* Credentials Form */}
-        <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Đăng nhập tài khoản</Text>
-
-          <InputField
-            label="Email công tác"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            required
-          />
-
-          <InputField
-            label="Mật khẩu"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            required
-          />
-
-          <Button
-            title="Đăng nhập"
-            size="large"
-            loading={isLoading}
-            onPress={handleLogin}
-            style={{ marginTop: 8 }}
-          />
-        </Card>
-
-        {/* Developer Server Configuration Card */}
-        <Card style={styles.devCard}>
-          <TouchableOpacity
-            style={styles.devHeaderToggle}
-            onPress={() => setShowDevSettings(!showDevSettings)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.devHeaderLeft}>
-              <View style={styles.devIconWrap}>
-                <Sliders size={16} color={Colors.accent} />
+          <Card style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: theme.colors.successMuted, borderRadius: theme.radii.sm },
+                ]}
+              >
+                <AppIcon name="field" size={20} color={theme.colors.success} />
               </View>
-              <View>
-                <View style={styles.devTitleRow}>
-                  <Text style={styles.devTitle}>Cấu hình Server (Dev)</Text>
-                  {serverStatus === 'ok' ? (
-                    <View style={styles.statusPillOk}>
-                      <CheckCircle2 size={11} color="#047857" />
-                      <Text style={styles.statusPillOkText}>Online</Text>
-                    </View>
-                  ) : serverStatus === 'error' ? (
-                    <View style={styles.statusPillError}>
-                      <AlertTriangle size={11} color="#B91C1C" />
-                      <Text style={styles.statusPillErrorText}>Lỗi</Text>
-                    </View>
-                  ) : null}
+              <View style={styles.flex}>
+                <View style={styles.titleRow}>
+                  <AppText variant="headline" style={styles.flex}>
+                    Xem thử theo vai trò
+                  </AppText>
+                  <GlassBadge status="COMPLETED" label="Không cần backend" />
                 </View>
-                <Text style={styles.devCurrentUrl} numberOfLines={1}>
-                  {api.getBaseUrl()}
-                </Text>
+                <AppText variant="footnote" color="secondaryLabel" style={styles.headingCaption}>
+                  Chọn một vai trò để khám phá dữ liệu mẫu và các luồng nghiệp vụ.
+                </AppText>
               </View>
             </View>
 
+            <View
+              style={[
+                styles.roleList,
+                { borderColor: theme.colors.separator, borderRadius: theme.radii.md },
+              ]}
+            >
+              {MOCK_ROLES.map((item, index) => (
+                <Pressable
+                  key={item.role}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.title}. ${item.subtitle}`}
+                  onPress={() => void handleDirectMockLogin(item.role)}
+                  style={({ pressed }) => [
+                    styles.roleRow,
+                    index < MOCK_ROLES.length - 1 && {
+                      borderBottomColor: theme.colors.separator,
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                    },
+                    pressed && { backgroundColor: theme.colors.surfaceSecondary },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.roleIcon,
+                      { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.sm },
+                    ]}
+                  >
+                    <AppIcon name={item.icon} size={19} color={theme.colors.accent} />
+                  </View>
+                  <View style={styles.flex}>
+                    <AppText variant="subheadline" style={styles.rowTitle}>
+                      {item.title}
+                    </AppText>
+                    <AppText variant="caption" color="secondaryLabel">
+                      {item.subtitle}
+                    </AppText>
+                  </View>
+                  <AppIcon name="forward" size={16} color={theme.colors.tertiaryLabel} />
+                </Pressable>
+              ))}
+            </View>
+          </Card>
+
+          <Card style={styles.section}>
+            <AppText variant="title3" style={styles.cardTitle}>
+              Đăng nhập doanh nghiệp
+            </AppText>
+            <InputField
+              label="Email công vụ"
+              required
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+            <InputField
+              label="Mật khẩu"
+              required
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="current-password"
+            />
+            <Button
+              title="Đăng nhập máy chủ"
+              variant="primary"
+              size="large"
+              loading={isLoading}
+              onPress={() => void handleLogin()}
+              style={styles.fullWidth}
+            />
+          </Card>
+
+          <Card style={styles.section}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showDevSettings }}
+              accessibilityLabel="Cấu hình máy chủ backend"
+              hitSlop={4}
+              onPress={() => setShowDevSettings((current) => !current)}
+              style={({ pressed }) => [styles.devHeader, pressed && styles.pressed]}
+            >
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: theme.colors.warningMuted, borderRadius: theme.radii.sm },
+                ]}
+              >
+                <AppIcon name="settings" size={19} color={theme.colors.warning} />
+              </View>
+              <View style={styles.flex}>
+                <View style={styles.titleRow}>
+                  <AppText variant="subheadline" style={styles.rowTitle}>
+                    Cấu hình máy chủ
+                  </AppText>
+                  {serverStatus !== 'idle' ? (
+                    <GlassBadge
+                      status={serverStatus === 'ok' ? 'PASS' : 'FAIL'}
+                      label={serverStatus === 'ok' ? 'Online' : 'Lỗi'}
+                    />
+                  ) : null}
+                </View>
+                <AppText variant="caption" color="secondaryLabel" numberOfLines={1}>
+                  {api.getBaseUrl()}
+                </AppText>
+              </View>
+              <AppIcon
+                name={showDevSettings ? 'hidden' : 'visible'}
+                size={18}
+                color={theme.colors.tertiaryLabel}
+              />
+            </Pressable>
+
             {showDevSettings ? (
-              <ChevronUp size={18} color={Colors.textSecondary} />
-            ) : (
-              <ChevronDown size={18} color={Colors.textSecondary} />
-            )}
-          </TouchableOpacity>
-
-          {showDevSettings && (
-            <View style={styles.devBody}>
-              <View style={styles.divider} />
-
-              <Text style={styles.fieldLabel}>Địa chỉ API Backend:</Text>
-              <View style={styles.urlInputRow}>
-                <Server size={16} color={Colors.textSecondary} />
-                <TextInput
-                  style={styles.urlInput}
+              <View
+                style={[styles.devBody, { borderTopColor: theme.colors.separator }]}
+              >
+                <InputField
+                  label="Địa chỉ API Backend"
                   value={serverUrl}
-                  onChangeText={(val) => {
-                    setServerUrl(val);
+                  onChangeText={(value) => {
+                    setServerUrl(value);
                     setServerStatus('idle');
                   }}
-                  placeholder="http://10.0.2.2:5080 hoặc IP máy"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholder="http://10.0.2.2:5080 hoặc IP LAN"
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-              </View>
 
-              {/* Quick Presets */}
-              <Text style={styles.presetsLabel}>Chọn nhanh địa chỉ thường dùng:</Text>
-              <View style={styles.presetsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.presetBtn,
-                    serverUrl.includes('10.0.2.2') && styles.presetBtnActive,
-                  ]}
-                  onPress={() => handleSelectPreset('http://10.0.2.2:5080')}
-                >
-                  <Text
-                    style={[
-                      styles.presetText,
-                      serverUrl.includes('10.0.2.2') && styles.presetTextActive,
-                    ]}
-                  >
-                    10.0.2.2 (Máy ảo)
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.presetBtn,
-                    serverUrl.includes('localhost') && styles.presetBtnActive,
-                  ]}
-                  onPress={() => handleSelectPreset('http://localhost:5080')}
-                >
-                  <Text
-                    style={[
-                      styles.presetText,
-                      serverUrl.includes('localhost') && styles.presetTextActive,
-                    ]}
-                  >
-                    localhost:5080
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionBtnRow}>
-                <Button
-                  title="Lưu URL"
-                  size="small"
-                  variant="outline"
-                  style={{ flex: 1 }}
-                  onPress={handleSaveServerUrl}
-                />
-                <Button
-                  title="Kiểm tra kết nối"
-                  size="small"
-                  variant="primary"
-                  loading={testingServer}
-                  style={{ flex: 1 }}
-                  onPress={handleTestConnection}
-                />
-              </View>
-
-              {/* Quick Account Fill for dev convenience */}
-              <View style={styles.accountQuickSection}>
-                <View style={styles.accountQuickHeader}>
-                  <Zap size={14} color={Colors.accent} />
-                  <Text style={styles.accountQuickTitle}>Điền nhanh tài khoản mẫu:</Text>
-                </View>
-                <View style={styles.accountChipGrid}>
-                  {DEV_ACCOUNTS.map((acc) => (
-                    <TouchableOpacity
-                      key={acc.email}
-                      style={[
-                        styles.accountChip,
-                        email === acc.email && styles.accountChipActive,
-                      ]}
-                      onPress={() => handleFillAccount(acc.email)}
-                    >
-                      <Text
-                        style={[
-                          styles.accountChipText,
-                          email === acc.email && styles.accountChipTextActive,
+                <AppText variant="captionStrong" color="secondaryLabel" style={styles.presetLabel}>
+                  Địa chỉ thường dùng
+                </AppText>
+                <View style={styles.presetRow}>
+                  {[
+                    { label: 'Máy ảo Android', url: 'http://10.0.2.2:5080' },
+                    { label: 'Localhost', url: 'http://localhost:5080' },
+                  ].map((preset) => {
+                    const selected = serverUrl.includes(
+                      preset.url.includes('10.0.2.2') ? '10.0.2.2' : 'localhost',
+                    );
+                    return (
+                      <Pressable
+                        key={preset.url}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => handleSelectPreset(preset.url)}
+                        style={({ pressed }) => [
+                          styles.preset,
+                          {
+                            backgroundColor: selected
+                              ? theme.colors.accent
+                              : theme.colors.surfaceSecondary,
+                            borderRadius: theme.radii.pill,
+                          },
+                          pressed && styles.pressed,
                         ]}
                       >
-                        {acc.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <AppText
+                          variant="captionStrong"
+                          maxFontSizeMultiplier={1.3}
+                          style={{
+                            color: selected
+                              ? theme.colors.onAccent
+                              : theme.colors.secondaryLabel,
+                          }}
+                        >
+                          {preset.label}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.actions}>
+                  <Button
+                    title="Lưu URL"
+                    size="small"
+                    variant="secondary"
+                    style={styles.flex}
+                    onPress={() => void handleSaveServerUrl()}
+                  />
+                  <Button
+                    title="Kiểm tra"
+                    size="small"
+                    variant="primary"
+                    loading={testingServer}
+                    style={styles.flex}
+                    onPress={() => void handleTestConnection()}
+                  />
                 </View>
               </View>
-            </View>
-          )}
-        </Card>
-      </ScrollView>
+            ) : null}
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    padding: 20,
-    justifyContent: 'center',
-    minHeight: '100%',
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
   },
   brandSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
   },
-  logoBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 12,
-  },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '800',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-    maxWidth: 280,
-  },
-  card: {
-    marginBottom: 14,
+  brandSubtitle: {
+    marginTop: 7,
+    maxWidth: 330,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.text,
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  devCard: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-    padding: 12,
-  },
-  devHeaderToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  devHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  devIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  devTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  devTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-  devCurrentUrl: {
-    fontSize: 11,
-    color: '#B45309',
-    marginTop: 2,
-    maxWidth: 210,
-  },
-  statusPillOk: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
-  },
-  statusPillOkText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#047857',
-  },
-  statusPillError: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
-  },
-  statusPillErrorText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#B91C1C',
+  container: {
+    alignSelf: 'center',
+    maxWidth: 640,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    width: '100%',
   },
   devBody: {
-    marginTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 16,
+    paddingTop: 18,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#FDE68A',
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 6,
-  },
-  urlInputRow: {
-    flexDirection: 'row',
+  devHeader: {
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 42,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 48,
   },
-  urlInput: {
+  flex: {
     flex: 1,
-    fontSize: 13,
-    color: Colors.text,
   },
-  presetsLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#B45309',
-    marginTop: 10,
-    marginBottom: 6,
+  fullWidth: {
+    alignSelf: 'stretch',
   },
-  presetsRow: {
-    flexDirection: 'row',
-    gap: 8,
+  headingCaption: {
+    marginTop: 4,
   },
-  presetBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-  },
-  presetBtnActive: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  presetText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#92400E',
-  },
-  presetTextActive: {
-    color: '#FFFFFF',
-  },
-  actionBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-  },
-  accountQuickSection: {
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#FDE68A',
-  },
-  accountQuickHeader: {
-    flexDirection: 'row',
+  logo: {
     alignItems: 'center',
-    gap: 5,
+    height: 64,
+    justifyContent: 'center',
+    marginBottom: 16,
+    width: 64,
+  },
+  preset: {
+    minHeight: 40,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+  },
+  presetLabel: {
     marginBottom: 8,
   },
-  accountQuickTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-  accountChipGrid: {
+  presetRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
+    marginBottom: 16,
   },
-  accountChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
+  pressed: {
+    opacity: 0.6,
   },
-  accountChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+  roleIcon: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
-  accountChipText: {
-    fontSize: 11,
+  roleList: {
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  roleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 11,
+    minHeight: 64,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  rowTitle: {
     fontWeight: '600',
-    color: Colors.textSecondary,
   },
-  accountChipTextActive: {
-    color: '#FFFFFF',
+  safeArea: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 16,
+    padding: 20,
+  },
+  sectionHeading: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  sectionIcon: {
+    alignItems: 'center',
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
 });

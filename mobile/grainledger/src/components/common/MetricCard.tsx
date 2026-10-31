@@ -1,15 +1,31 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-interface MetricCardProps {
+import { useAppTheme, type ThemeColors } from '../../theme';
+import { AppText } from '../ui/AppText';
+import { Card } from './Card';
+
+export interface MetricCardProps {
   label: string;
   value: string | number;
   unit?: string;
   subtext?: string;
   icon?: React.ReactNode;
-  variant?: 'primary' | 'accent' | 'emerald' | 'amber';
+  variant?: 'primary' | 'accent' | 'emerald' | 'amber' | 'red' | 'blue';
+  style?: StyleProp<ViewStyle>;
 }
+
+const toneByVariant: Record<
+  NonNullable<MetricCardProps['variant']>,
+  { foreground: keyof ThemeColors; background: keyof ThemeColors }
+> = {
+  primary: { foreground: 'accent', background: 'accentMuted' },
+  accent: { foreground: 'warning', background: 'warningMuted' },
+  amber: { foreground: 'warning', background: 'warningMuted' },
+  emerald: { foreground: 'success', background: 'successMuted' },
+  red: { foreground: 'destructive', background: 'destructiveMuted' },
+  blue: { foreground: 'info', background: 'infoMuted' },
+};
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   label,
@@ -18,110 +34,83 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   subtext,
   icon,
   variant = 'primary',
+  style,
 }) => {
-  const getColors = () => {
-    switch (variant) {
-      case 'accent':
-        return {
-          bg: '#FFFBEB',
-          border: '#FDE68A',
-          iconBg: '#FEF3C7',
-          iconColor: Colors.accent,
-        };
-      case 'emerald':
-        return {
-          bg: '#ECFDF5',
-          border: '#A7F3D0',
-          iconBg: '#D1FAE5',
-          iconColor: Colors.emerald,
-        };
-      case 'amber':
-        return {
-          bg: '#FFF7ED',
-          border: '#FED7AA',
-          iconBg: '#FFEDD5',
-          iconColor: '#EA580C',
-        };
-      default:
-        return {
-          bg: '#F0FDF4',
-          border: '#BBF7D0',
-          iconBg: Colors.primarySurface,
-          iconColor: Colors.primary,
-        };
-    }
-  };
-
-  const scheme = getColors();
+  const theme = useAppTheme();
+  const tone = toneByVariant[variant];
 
   return (
-    <View style={[styles.card, { backgroundColor: scheme.bg, borderColor: scheme.border }]}>
+    <Card style={[styles.container, style]}>
       <View style={styles.topRow}>
-        <Text style={styles.label}>{label}</Text>
+        <AppText variant="footnote" color="secondaryLabel" style={styles.label}>
+          {label}
+        </AppText>
         {icon ? (
-          <View style={[styles.iconWrapper, { backgroundColor: scheme.iconBg }]}>
+          <View
+            style={[
+              styles.icon,
+              {
+                backgroundColor: theme.colors[tone.background],
+                borderRadius: theme.radii.sm,
+              },
+            ]}
+          >
             {icon}
           </View>
         ) : null}
       </View>
-
       <View style={styles.valueRow}>
-        <Text style={styles.value}>{value}</Text>
-        {unit ? <Text style={styles.unit}>{unit}</Text> : null}
+        <AppText variant="title1" style={styles.value} maxFontSizeMultiplier={1.25}>
+          {value}
+        </AppText>
+        {unit ? (
+          <AppText variant="captionStrong" color="secondaryLabel">
+            {unit}
+          </AppText>
+        ) : null}
       </View>
-
-      {subtext ? <Text style={styles.subtext}>{subtext}</Text> : null}
-    </View>
+      {subtext ? (
+        <AppText variant="caption" color="secondaryLabel" style={styles.subtext}>
+          {subtext}
+        </AppText>
+      ) : null}
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
+  container: {
     flex: 1,
-    minWidth: 150,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
+    minHeight: 150,
+    minWidth: 0,
+    padding: 17,
   },
-  topRow: {
-    flexDirection: 'row',
+  icon: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  iconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  value: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-  unit: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
+    flex: 1,
   },
   subtext: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 4,
+    marginTop: 5,
+  },
+  topRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  value: {
+    fontVariant: ['tabular-nums'],
+  },
+  valueRow: {
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
   },
 });

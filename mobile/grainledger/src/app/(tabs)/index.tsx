@@ -1,113 +1,184 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
+  Pressable,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../theme/colors';
-import { Header } from '../../components/common/Header';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { GlassBadge } from '../../components/common/GlassBadge';
+import { Header } from '../../components/common/Header';
 import { MetricCard } from '../../components/common/MetricCard';
-import { StatusBadge } from '../../components/common/StatusBadge';
+import { AppIcon, type AppIconName } from '../../components/ui/AppIcon';
+import { AppText } from '../../components/ui/AppText';
 import { useAuthStore } from '../../store/authStore';
+import { useComplianceStore } from '../../store/complianceStore';
 import { useFieldStore } from '../../store/fieldStore';
 import { useMillStore } from '../../store/millStore';
 import { useOfflineStore } from '../../store/offlineStore';
+import { useRiskStore } from '../../store/riskStore';
+import { useAppTheme, type ThemeColors } from '../../theme';
 import { formatMass } from '../../utils/decimalMass';
-import {
-  FileText,
-  UserPlus,
-  Scale,
-  Cpu,
-  QrCode,
-  ArrowRight,
-  TrendingUp,
-  Warehouse,
-  CheckCircle2,
-  AlertCircle,
-  Truck,
-} from 'lucide-react-native';
+
+type QuickAction = {
+  title: string;
+  subtitle: string;
+  route:
+    | '/procurement-form'
+    | '/receiving-form'
+    | '/(tabs)/compliance'
+    | '/hold-management';
+  icon: AppIconName;
+  foreground: keyof ThemeColors;
+  background: keyof ThemeColors;
+};
+
+const QUICK_ACTIONS: QuickAction[] = [
+  {
+    title: 'Phiếu thu mua',
+    subtitle: 'Lập biên nhận lúa',
+    route: '/procurement-form',
+    icon: 'field',
+    foreground: 'success',
+    background: 'successMuted',
+  },
+  {
+    title: 'Cân xe tiếp nhận',
+    subtitle: 'Tiếp nhận tại cổng',
+    route: '/receiving-form',
+    icon: 'mill',
+    foreground: 'warning',
+    background: 'warningMuted',
+  },
+  {
+    title: 'Kiểm định MRL',
+    subtitle: 'Mẫu Lab và niêm chì',
+    route: '/(tabs)/compliance',
+    icon: 'compliance',
+    foreground: 'info',
+    background: 'infoMuted',
+  },
+  {
+    title: 'Lệnh HOLD',
+    subtitle: 'Quản trị rủi ro',
+    route: '/hold-management',
+    icon: 'warning',
+    foreground: 'destructive',
+    background: 'destructiveMuted',
+  },
+];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const { user } = useAuthStore();
-  const { farmers, receipts, fetchFieldData, isLoading: fieldLoading } = useFieldStore();
+  const { receipts, fetchFieldData, isLoading: fieldLoading } = useFieldStore();
   const { receivingTasks, silos, fetchMillData, isLoading: millLoading } = useMillStore();
+  const { samples, reports, fetchComplianceData } = useComplianceStore();
+  const { holds, fetchHolds } = useRiskStore();
   const { getPendingCount } = useOfflineStore();
 
   const isRefreshing = fieldLoading || millLoading;
+  const pendingOffline = getPendingCount();
+
   const onRefresh = async () => {
-    await Promise.all([fetchFieldData(), fetchMillData()]);
+    await Promise.all([
+      fetchFieldData(),
+      fetchMillData(),
+      fetchComplianceData(),
+      fetchHolds(),
+    ]);
   };
 
   const totalProcuredToday = receipts.reduce(
-    (acc, r) => acc + (parseFloat(r.measuredGrossKg) || 0),
-    0
+    (acc, receipt) => acc + (parseFloat(receipt.measuredGrossKg) || 0),
+    0,
   );
   const pendingWeighCount = receivingTasks.filter(
-    (t) => t.status === 'PENDING_WEIGH'
+    (task) => task.status === 'PENDING_WEIGH',
   ).length;
+  const activeHoldsCount = holds.filter((hold) => hold.status === 'ACTIVE_HOLD').length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      edges={['top', 'left', 'right']}
+      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+    >
       <Header />
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: theme.layout.tabBarHeight + 32 + insets.bottom },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
+            onRefresh={() => void onRefresh()}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.greetingText}>Xin chào,</Text>
-          <Text style={styles.userNameText}>{user?.displayName || 'Cán bộ vận hành'}</Text>
-          <Text style={styles.orgText}>{user?.organizationName || 'GrainLedger Mekong'}</Text>
+        <View style={styles.welcome}>
+          <AppText variant="captionStrong" color="secondaryLabel" style={styles.eyebrow}>
+            KHÔNG GIAN VẬN HÀNH
+          </AppText>
+          <AppText variant="largeTitle" maxFontSizeMultiplier={1.3}>
+            Tổng quan
+          </AppText>
+          <AppText variant="title3" style={styles.userName}>
+            {user?.displayName || 'Cán bộ Vận hành Chuỗi'}
+          </AppText>
+          <AppText variant="footnote" color="accent" style={styles.organization}>
+            {user?.organizationName || 'Tập đoàn Lương thực GrainLedger'}
+          </AppText>
         </View>
 
-        {/* Offline Banner if any */}
-        {getPendingCount() > 0 ? (
-          <TouchableOpacity
-            style={styles.offlineBanner}
+        {pendingOffline > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${pendingOffline} giao dịch đang chờ đồng bộ`}
             onPress={() => router.push('/offline-queue')}
-            activeOpacity={0.8}
+            style={({ pressed }) => [styles.bannerPressable, pressed && styles.pressed]}
           >
-            <AlertCircle size={18} color="#B45309" />
-            <View style={styles.offlineBannerTextCol}>
-              <Text style={styles.offlineBannerTitle}>
-                Có {getPendingCount()} giao dịch chờ gửi lên máy chủ
-              </Text>
-              <Text style={styles.offlineBannerSub}>
-                Nhấn để xem và đồng bộ dữ liệu ngoại tuyến
-              </Text>
-            </View>
-            <ArrowRight size={16} color="#B45309" />
-          </TouchableOpacity>
+            <Card
+              style={[
+                styles.offlineBanner,
+                {
+                  backgroundColor: theme.colors.warningMuted,
+                  borderColor: theme.colors.warning,
+                },
+              ]}
+            >
+              <AppIcon name="offline" size={21} color={theme.colors.warning} />
+              <View style={styles.flex}>
+                <AppText variant="subheadline" style={{ color: theme.colors.warning }}>
+                  {pendingOffline} giao dịch chờ gửi
+                </AppText>
+                <AppText variant="caption" style={{ color: theme.colors.warning }}>
+                  Chạm để mở hàng đợi đồng bộ
+                </AppText>
+              </View>
+              <AppIcon name="forward" size={16} color={theme.colors.warning} />
+            </Card>
+          </Pressable>
         ) : null}
 
-        {/* Key Metrics Grid */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Chỉ số vận hành</Text>
-          <Text style={styles.sectionBadge}>Hôm nay</Text>
-        </View>
-
-        <View style={styles.metricsGrid}>
+        <SectionHeading title="Hoạt động hôm nay" trailing="Hôm nay" />
+        <View style={styles.metricGrid}>
           <MetricCard
             label="Thu mua lúa tươi"
             value={formatMass(totalProcuredToday, 0)}
             unit="kg"
             subtext={`${receipts.length} chuyến hàng`}
-            icon={<TrendingUp size={16} color={Colors.primary} />}
+            icon={<AppIcon name="field" size={17} color={theme.colors.success} />}
             variant="primary"
           />
           <MetricCard
@@ -115,354 +186,376 @@ export default function HomeScreen() {
             value={pendingWeighCount}
             unit="xe"
             subtext="Tại cổng nhà máy"
-            icon={<Truck size={16} color={Colors.accent} />}
-            variant="accent"
-          />
-        </View>
-
-        <View style={[styles.metricsGrid, { marginTop: 10 }]}>
-          <MetricCard
-            label="Nông hộ liên kết"
-            value={farmers.length}
-            unit="hộ"
-            subtext="Vùng nguyên liệu Mekong"
-            icon={<CheckCircle2 size={16} color={Colors.emerald} />}
-            variant="emerald"
-          />
-          <MetricCard
-            label="Silo đang hoạt động"
-            value={silos.length}
-            unit="silo"
-            subtext="Sức chứa 340 tấn"
-            icon={<Warehouse size={16} color="#EA580C" />}
+            icon={<AppIcon name="mill" size={17} color={theme.colors.warning} />}
             variant="amber"
           />
         </View>
-
-        {/* Quick Action Shortcuts */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
+        <View style={styles.metricGrid}>
+          <MetricCard
+            label="Kiểm định MRL"
+            value={reports.length}
+            unit="báo cáo"
+            subtext={`${samples.length} mẫu niêm chì`}
+            icon={<AppIcon name="compliance" size={17} color={theme.colors.success} />}
+            variant="emerald"
+          />
+          <MetricCard
+            label="Silo hoạt động"
+            value={silos.length}
+            unit="silo"
+            subtext={activeHoldsCount > 0 ? `${activeHoldsCount} silo cách ly` : '100% đạt chuẩn'}
+            icon={
+              <AppIcon
+                name={activeHoldsCount > 0 ? 'warning' : 'mill'}
+                size={17}
+                color={
+                  activeHoldsCount > 0 ? theme.colors.destructive : theme.colors.info
+                }
+              />
+            }
+            variant={activeHoldsCount > 0 ? 'red' : 'blue'}
+          />
         </View>
 
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
-            onPress={() => router.push('/procurement-form')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: Colors.primarySurface }]}>
-              <FileText size={20} color={Colors.primary} />
-            </View>
-            <Text style={styles.actionCardTitle}>Phiếu thu mua</Text>
-            <Text style={styles.actionCardSub}>Lập phiếu lúa tươi</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
-            onPress={() => router.push('/receiving-form')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
-              <Scale size={20} color={Colors.accent} />
-            </View>
-            <Text style={styles.actionCardTitle}>Cân xe lúa</Text>
-            <Text style={styles.actionCardSub}>Tiếp nhận tại cổng</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-            onPress={() => router.push('/operation-form')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#DBEAFE' }]}>
-              <Cpu size={20} color="#2563EB" />
-            </View>
-            <Text style={styles.actionCardTitle}>Mẻ chế biến</Text>
-            <Text style={styles.actionCardSub}>Sấy / Xay xát / Trộn</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}
-            onPress={() => router.push('/farmer-form')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#F3E8FF' }]}>
-              <UserPlus size={20} color="#9333EA" />
-            </View>
-            <Text style={styles.actionCardTitle}>Thêm nông hộ</Text>
-            <Text style={styles.actionCardSub}>Đăng ký thực địa</Text>
-          </TouchableOpacity>
+        <SectionHeading title="Thao tác nhanh" />
+        <View style={styles.quickGrid}>
+          {QUICK_ACTIONS.map((action) => (
+            <Pressable
+              key={action.route}
+              accessibilityRole="button"
+              accessibilityLabel={`${action.title}. ${action.subtitle}`}
+              onPress={() => router.push(action.route)}
+              style={({ pressed }) => [styles.quickItem, pressed && styles.pressed]}
+            >
+              <Card style={styles.quickCard}>
+                <View
+                  style={[
+                    styles.quickIcon,
+                    {
+                      backgroundColor: theme.colors[action.background],
+                      borderRadius: theme.radii.md,
+                    },
+                  ]}
+                >
+                  <AppIcon
+                    name={action.icon}
+                    size={21}
+                    color={theme.colors[action.foreground]}
+                  />
+                </View>
+                <AppText variant="subheadline" style={styles.quickTitle}>
+                  {action.title}
+                </AppText>
+                <AppText variant="footnote" color="secondaryLabel">
+                  {action.subtitle}
+                </AppText>
+              </Card>
+            </Pressable>
+          ))}
         </View>
 
-        {/* Recent Procurements & Mill Activity */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Phiếu thu mua gần đây</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/field')}>
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
-          </TouchableOpacity>
-        </View>
+        <SectionHeading
+          title="Thu mua gần đây"
+          actionLabel="Xem tất cả"
+          onAction={() => router.push('/(tabs)/field')}
+        />
+        {receipts.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <View
+              style={[
+                styles.emptyIcon,
+                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.lg },
+              ]}
+            >
+              <AppIcon name="field" size={28} color={theme.colors.accent} />
+            </View>
+            <AppText variant="headline" align="center">
+              Sẵn sàng cho chuyến hàng đầu tiên
+            </AppText>
+            <AppText variant="subheadline" color="secondaryLabel" align="center">
+              Các phiếu thu mua mới sẽ xuất hiện tại đây.
+            </AppText>
+            <Button
+              title="Lập phiếu thu mua"
+              variant="secondary"
+              onPress={() => router.push('/procurement-form')}
+            />
+          </Card>
+        ) : null}
 
         {receipts.slice(0, 2).map((receipt) => (
           <Card key={receipt.id} style={styles.receiptCard}>
             <View style={styles.receiptHeader}>
-              <View>
-                <Text style={styles.receiptNumber}>{receipt.receiptNumber}</Text>
-                <Text style={styles.receiptFarmer}>{receipt.farmerName}</Text>
+              <View style={styles.flex}>
+                <AppText variant="subheadline" style={styles.receiptNumber}>
+                  {receipt.receiptNumber}
+                </AppText>
+                <AppText variant="footnote" color="secondaryLabel">
+                  {receipt.farmerName}
+                </AppText>
               </View>
-              <StatusBadge status={receipt.status} />
+              <GlassBadge status={receipt.status} />
             </View>
-
-            <View style={styles.receiptDivider} />
-
-            <View style={styles.receiptDetailsRow}>
-              <View style={styles.detailCol}>
-                <Text style={styles.detailLabel}>Loại hàng</Text>
-                <Text style={styles.detailValue}>{receipt.commodityName}</Text>
-              </View>
-              <View style={styles.detailCol}>
-                <Text style={styles.detailLabel}>Khối lượng</Text>
-                <Text style={[styles.detailValue, { color: Colors.primary, fontWeight: '800' }]}>
-                  {formatMass(receipt.measuredGrossKg, 0)} kg
-                </Text>
-              </View>
-              <View style={styles.detailCol}>
-                <Text style={styles.detailLabel}>Độ ẩm</Text>
-                <Text style={styles.detailValue}>{receipt.moisturePercent}%</Text>
-              </View>
+            <View style={[styles.separator, { backgroundColor: theme.colors.separator }]} />
+            <View style={styles.details}>
+              <Detail label="Loại hàng" value={receipt.commodityName} />
+              <Detail
+                label="Khối lượng"
+                value={`${formatMass(receipt.measuredGrossKg, 0)} kg`}
+                accent
+              />
+              <Detail label="Độ ẩm" value={`${receipt.moisturePercent}%`} />
             </View>
           </Card>
         ))}
 
-        {/* Traceability Callout */}
-        <Card style={styles.traceBannerCard}>
-          <View style={styles.traceBannerRow}>
-            <View style={styles.traceIconWrapper}>
-              <QrCode size={28} color="#FFFFFF" />
+        <Card
+          style={[
+            styles.traceCard,
+            {
+              backgroundColor: theme.colors.accent,
+              borderColor: theme.colors.accent,
+            },
+          ]}
+        >
+          <View style={styles.traceRow}>
+            <View
+              style={[
+                styles.traceIcon,
+                { backgroundColor: theme.colors.glassHighlight, borderRadius: theme.radii.md },
+              ]}
+            >
+              <AppIcon name="trace" size={25} color={theme.colors.onAccent} />
             </View>
-            <View style={styles.traceBannerTextCol}>
-              <Text style={styles.traceBannerTitle}>Tra cứu nguồn gốc & MRL</Text>
-              <Text style={styles.traceBannerDesc}>
-                Kiểm tra chuỗi truy xuất hành trình hạt gạo từ đồng ruộng đến bàn ăn.
-              </Text>
+            <View style={styles.flex}>
+              <AppText variant="headline" style={{ color: theme.colors.onAccent }}>
+                Truy xuất nguồn gốc hai chiều
+              </AppText>
+              <AppText
+                variant="footnote"
+                style={[styles.traceDescription, { color: theme.colors.onAccent }]}
+              >
+                Kiểm tra hành trình hạt gạo từ đồng ruộng Mekong đến container xuất khẩu.
+              </AppText>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.traceBannerButton}
+          <Button
+            title="Quét mã và tra cứu"
+            variant="secondary"
             onPress={() => router.push('/(tabs)/trace')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.traceBannerButtonText}>Quét & Tra cứu ngay</Text>
-            <ArrowRight size={16} color="#FFFFFF" />
-          </TouchableOpacity>
+            style={styles.traceButton}
+          />
         </Card>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function SectionHeading({
+  title,
+  trailing,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  trailing?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <View style={styles.sectionHeading}>
+      <AppText variant="title3">{title}</AppText>
+      {trailing ? (
+        <View
+          style={[
+            styles.headingPill,
+            { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.pill },
+          ]}
+        >
+          <AppText variant="captionStrong" color="secondaryLabel">
+            {trailing}
+          </AppText>
+        </View>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={onAction}
+          style={({ pressed }) => [styles.headingAction, pressed && styles.pressed]}
+        >
+          <AppText variant="subheadline" color="accent">
+            {actionLabel}
+          </AppText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function Detail({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <View style={styles.detail}>
+      <AppText variant="caption" color="secondaryLabel">
+        {label}
+      </AppText>
+      <AppText variant="footnote" color={accent ? 'accent' : 'label'} style={styles.detailValue}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
+  bannerPressable: {
+    marginBottom: 4,
+  },
+  content: {
+    alignSelf: 'center',
+    maxWidth: 760,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    width: '100%',
+  },
+  detail: {
     flex: 1,
-    backgroundColor: Colors.background,
+    minWidth: 88,
   },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  welcomeSection: {
-    marginBottom: 16,
-  },
-  greetingText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  userNameText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.3,
-  },
-  orgText: {
-    fontSize: 13,
-    color: Colors.primary,
+  detailValue: {
     fontWeight: '600',
     marginTop: 2,
   },
-  offlineBanner: {
+  details: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  offlineBannerTextCol: {
+  emptyCard: {
+    alignItems: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  emptyIcon: {
+    alignItems: 'center',
+    height: 54,
+    justifyContent: 'center',
+    width: 54,
+  },
+  eyebrow: {
+    letterSpacing: 1.3,
+    marginBottom: 5,
+  },
+  flex: {
     flex: 1,
   },
-  offlineBannerTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400E',
+  headingAction: {
+    justifyContent: 'center',
+    minHeight: 44,
   },
-  offlineBannerSub: {
-    fontSize: 11,
-    color: '#B45309',
-    marginTop: 1,
+  headingPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  sectionBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    backgroundColor: Colors.cardSubtle,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  metricsGrid: {
+  metricGrid: {
     flexDirection: 'row',
     gap: 10,
+    marginBottom: 10,
   },
-  quickActionsGrid: {
+  offlineBanner: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+  },
+  organization: {
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  pressed: {
+    opacity: 0.62,
+  },
+  quickCard: {
+    minHeight: 142,
+    padding: 17,
+  },
+  quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  actionCard: {
-    width: '48%',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-  },
-  actionIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+  quickIcon: {
     alignItems: 'center',
+    height: 40,
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    width: 40,
   },
-  actionCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
+  quickItem: {
+    flexBasis: '46%',
+    flexGrow: 1,
+    minWidth: 145,
   },
-  actionCardSub: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginTop: 2,
+  quickTitle: {
+    fontWeight: '600',
+    marginBottom: 2,
   },
   receiptCard: {
     marginBottom: 10,
+    padding: 17,
   },
   receiptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  receiptNumber: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  receiptFarmer: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  receiptDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: 10,
-  },
-  receiptDetailsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  detailCol: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginBottom: 2,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  traceBannerCard: {
-    backgroundColor: Colors.primaryDark,
-    borderColor: 'transparent',
-    marginTop: 16,
-    padding: 16,
-  },
-  traceBannerRow: {
     flexDirection: 'row',
     gap: 12,
-    alignItems: 'center',
   },
-  traceIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  receiptNumber: {
+    fontWeight: '700',
   },
-  traceBannerTextCol: {
+  safeArea: {
     flex: 1,
   },
-  traceBannerTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  traceBannerDesc: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 12,
-    marginTop: 3,
-    lineHeight: 16,
-  },
-  traceBannerButton: {
-    marginTop: 14,
-    backgroundColor: Colors.accent,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
+  sectionHeading: {
     alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
     gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 28,
   },
-  traceBannerButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 13,
+  },
+  traceButton: {
+    alignSelf: 'stretch',
+    marginTop: 16,
+  },
+  traceCard: {
+    marginBottom: 20,
+    marginTop: 20,
+    padding: 20,
+  },
+  traceDescription: {
+    marginTop: 4,
+    opacity: 0.82,
+  },
+  traceIcon: {
+    alignItems: 'center',
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  traceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 13,
+  },
+  userName: {
+    marginTop: 10,
+  },
+  welcome: {
+    marginBottom: 16,
   },
 });
