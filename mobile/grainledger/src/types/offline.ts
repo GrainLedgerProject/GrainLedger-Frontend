@@ -4,6 +4,9 @@ export type OfflineActionType =
   | 'RECORD_SPRAY'
   | 'CREATE_PROCUREMENT'
   | 'FIELD_SAMPLE'
+  | 'LAB_SAMPLE'
+  | 'QUARANTINE_HOLD'
+  | 'CORRECTION_REQUEST'
   | 'MILL_RECEIVING'
   | 'MILL_OPERATION';
 

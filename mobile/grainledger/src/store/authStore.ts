@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserRole, normalizeUserRole } from '../types/roles';
+import { UserRole, normalizeUserRole, ROLE_DEFINITIONS } from '../types/roles';
 import { storage } from '../services/storage';
 import { api } from '../services/api';
 
@@ -45,6 +45,7 @@ interface AuthState {
 
   initAuth: () => Promise<void>;
   loginWithCredentials: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  loginAsMock: (role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -63,6 +64,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       const savedToken = await storage.get<string>('grainledger_token');
       if (savedToken) {
         api.setToken(savedToken);
+
+        // If it's a mock token or offline session, load saved user immediately
+        if (savedToken.startsWith('mock-token-')) {
+          const savedUser = await storage.get<UserProfile>(AUTH_USER_KEY);
+          if (savedUser) {
+            set({
+              user: savedUser,
+              token: savedToken,
+              activeRole: savedUser.role,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return;
+          }
+        }
+
         const res = await api.request<SessionUserDto>('/api/auth/session');
         if (res.data && !res.isMock) {
           const role = normalizeUserRole(res.data.role);
@@ -167,6 +184,43 @@ export const useAuthStore = create<AuthState>((set) => ({
       success: false,
       error: res.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại tài khoản và mật khẩu.',
     };
+  },
+
+  loginAsMock: async (role: UserRole = 'CUSTOMER_PROCUREMENT_OFFICER') => {
+    set({ isLoading: true });
+    const roleMeta = ROLE_DEFINITIONS[role];
+    const mockUser: UserProfile = {
+      id: `mock-user-${role.toLowerCase().replace(/_/g, '-')}`,
+      email: `${role.toLowerCase().replace(/_/g, '.')}@grainledger.local`,
+      displayName: `${roleMeta?.labelVi || 'Cán bộ'} (Demo)`,
+      phoneNumber: '0912 345 678',
+      role,
+      organizationId: 'org-mekong-01',
+      organizationName: 'GrainLedger Mekong Corp',
+      assignedFacilities: ['Nhà máy Tiền Giang', 'Kho Cái Bè', 'Trạm Rạch Miễu'],
+      isActive: true,
+      permissions: [
+        'PROCUREMENT_CREATE',
+        'RECEIVING_MEASURE',
+        'OPERATION_RECORD',
+        'HOLD_ISSUE',
+        'MRL_VERIFY',
+        'TRACE_VIEW',
+        'CORRECTION_RECONCILE',
+      ],
+    };
+
+    const mockToken = `mock-token-${Date.now()}`;
+    api.setToken(mockToken);
+    await storage.set(AUTH_USER_KEY, mockUser);
+
+    set({
+      user: mockUser,
+      token: mockToken,
+      activeRole: role,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   },
 
   logout: async () => {

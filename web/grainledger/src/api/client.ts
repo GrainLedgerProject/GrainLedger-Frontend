@@ -219,7 +219,10 @@ export async function apiFetch<T>(
     logger.warn(`Network error on ${url}:`, netErr);
     useUiStore.getState().setOnline(false);
     useUiStore.getState().setBackendConnected(false);
-    throw new ApiError(0, "Không thể kết nối đến máy chủ backend (Port 5080).");
+    throw new ApiError(
+      0,
+      "Không thể kết nối đến máy chủ backend. Chuyển sang chế độ Offline.",
+    );
   }
 
   // Update backend connection status based on HTTP response
