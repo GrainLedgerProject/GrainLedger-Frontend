@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -411,37 +412,37 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   brandSection: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: spacing.xl,
   },
   brandSubtitle: {
-    marginTop: 7,
+    marginTop: spacing.sm,
     maxWidth: 330,
   },
   cardTitle: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   container: {
     alignSelf: 'center',
     maxWidth: 640,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xxl,
     width: '100%',
   },
   devBody: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: 16,
-    paddingTop: 18,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
   },
   devHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     minHeight: 48,
   },
   flex: {
@@ -451,28 +452,28 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   headingCaption: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   logo: {
     alignItems: 'center',
     height: 64,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     width: 64,
   },
   preset: {
     minHeight: 40,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   presetLabel: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   presetRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   pressed: {
     opacity: 0.6,
@@ -490,10 +491,10 @@ const styles = StyleSheet.create({
   roleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 11,
+    gap: spacing.md,
     minHeight: 64,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   rowTitle: {
     fontWeight: '600',
@@ -502,14 +503,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: 16,
-    padding: 20,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
   },
   sectionHeading: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   sectionIcon: {
     alignItems: 'center',
@@ -520,6 +521,6 @@ const styles = StyleSheet.create({
   titleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
 });

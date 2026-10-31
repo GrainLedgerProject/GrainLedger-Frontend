@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { spacing } from '../../theme/tokens';
+import React, { useMemo , useState } from 'react';
+
 import {
   View,
   Text,
@@ -16,20 +18,21 @@ import { GlassSegmentedControl } from '../../components/common/GlassSegmentedCon
 import { useMillStore } from '../../store/millStore';
 import { formatMass } from '../../utils/decimalMass';
 import { AppleGlass } from '../../theme/appleGlass';
-import { useAppTheme } from '../../theme';
+import { useAppTheme, type AppTheme } from '../../theme';
 import {
   Truck,
   ArrowRight,
   Inbox,
   Warehouse,
   Sliders,
-} from 'lucide-react-native';
+} from '../../components/ui/named-icons';
 
 type MillSubTab = 'receiving' | 'operations' | 'silos';
 
 export default function MillScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [activeTab, setActiveTab] = useState<MillSubTab>('receiving');
   const {
     receivingTasks,
@@ -74,7 +77,7 @@ export default function MillScreen() {
           {activeTab === 'operations' && (
             <GlassButton
               title="Hiệu chỉnh"
-              icon={<Sliders size={14} color="#0F172A" />}
+              icon={<Sliders size={14} color={theme.colors.label} />}
               size="small"
               variant="secondary"
               onPress={() => router.push('/correction-form')}
@@ -94,7 +97,7 @@ export default function MillScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.contentScroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -112,11 +115,11 @@ export default function MillScreen() {
           <View>
             {receivingTasks.length === 0 ? (
               <GlassCard style={{ alignItems: 'center', padding: 32 }}>
-                <Inbox size={40} color="#94A3B8" />
-                <Text style={{ marginTop: 12, fontSize: 14, fontWeight: '700', color: '#0F172A' }}>
+                <Inbox size={40} color={theme.colors.tertiaryLabel} />
+                <Text style={{ marginTop: spacing.md, ...theme.typography.subheadline, fontWeight: '700', color: theme.colors.label }}>
                   Chưa có phiếu tiếp nhận xe nào
                 </Text>
-                <Text style={{ marginTop: 4, fontSize: 12, color: '#64748B', textAlign: 'center' }}>
+                <Text style={{ marginTop: spacing.xs, ...theme.typography.caption, color: theme.colors.secondaryLabel, textAlign: 'center' }}>
                   Kéo xuống để tải lại từ máy chủ hoặc cân xe lúa tươi mới.
                 </Text>
               </GlassCard>
@@ -143,7 +146,7 @@ export default function MillScreen() {
                   <View style={styles.infoCol}>
                     <Text style={styles.infoLabel}>Xe vận chuyển</Text>
                     <View style={styles.flexRow}>
-                      <Truck size={14} color="#64748B" />
+                      <Truck size={14} color={theme.colors.secondaryLabel} />
                       <Text style={styles.plateText}>{t.vehiclePlate}</Text>
                     </View>
                   </View>
@@ -157,7 +160,7 @@ export default function MillScreen() {
                 <View style={[styles.rowBetween, { marginTop: 10 }]}>
                   <View style={styles.infoCol}>
                     <Text style={styles.infoLabel}>Khối lượng tịnh (Net)</Text>
-                    <Text style={[styles.infoVal, { color: AppleGlass.colors.brandGreen, fontWeight: '800' }]}>
+                    <Text style={[styles.infoVal, { color: theme.colors.accent, fontWeight: '800' }]}>
                       {formatMass(t.netWeightKg, 0)} kg
                     </Text>
                   </View>
@@ -212,12 +215,12 @@ export default function MillScreen() {
                     <Text style={styles.opFlowMass}>{formatMass(op.inputMassKg, 0)} kg</Text>
                   </View>
 
-                  <ArrowRight size={18} color="#94A3B8" />
+                  <ArrowRight size={18} color={theme.colors.tertiaryLabel} />
 
                   <View style={styles.opFlowSide}>
                     <Text style={styles.opFlowLabel}>ĐẦU RA</Text>
                     <Text style={styles.opFlowCode}>{op.outputLotCode}</Text>
-                    <Text style={[styles.opFlowMass, { color: AppleGlass.colors.brandGreen }]}>
+                    <Text style={[styles.opFlowMass, { color: theme.colors.accent }]}>
                       {formatMass(op.outputMassKg, 0)} kg
                     </Text>
                   </View>
@@ -246,15 +249,15 @@ export default function MillScreen() {
                 return (
                   <GlassCard
                     key={silo.id}
-                    tintColor={isHold ? 'rgba(254, 242, 242, 0.9)' : 'rgba(255, 255, 255, 0.85)'}
-                    borderTint={isHold ? 'rgba(239, 68, 68, 0.4)' : AppleGlass.colors.glassBorderLight}
+                    tintColor={isHold ? theme.colors.surfaceSecondary : theme.colors.surface}
+                    borderTint={isHold ? theme.colors.destructiveMuted : theme.colors.glassBorder}
                     borderRadius={AppleGlass.radii.lg}
                     style={styles.siloCard}
                     interactive
                   >
                     <View style={styles.siloHeader}>
                       <View style={styles.siloIcon}>
-                        <Warehouse size={18} color={isHold ? '#DC2626' : AppleGlass.colors.brandGreen} />
+                        <Warehouse size={18} color={isHold ? theme.colors.destructive : theme.colors.accent} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.siloName}>{silo.siloName}</Text>
@@ -277,7 +280,7 @@ export default function MillScreen() {
                             styles.gaugeFill,
                             {
                               width: `${percent}%`,
-                              backgroundColor: isHold ? '#EF4444' : percent > 85 ? '#F59E0B' : '#10B981',
+                              backgroundColor: isHold ? theme.colors.destructive : percent > 85 ? theme.colors.warning : theme.colors.success,
                             },
                           ]}
                         />
@@ -299,43 +302,43 @@ export default function MillScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppleGlass.colors.systemBackground,
+    backgroundColor: theme.colors.background,
   },
   segmentedContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: theme.colors.surface,
   },
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: theme.colors.surface,
   },
   actionPromptText: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
     fontWeight: '500',
     flex: 1,
   },
   actionButtonsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   contentScroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: spacing.lg,
+    paddingBottom: spacing.huge,
   },
   itemCard: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -343,19 +346,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   itemCode: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   itemSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 10,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.sm,
   },
   rowBetween: {
     flexDirection: 'row',
@@ -365,116 +368,116 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginBottom: spacing.xxs,
   },
   infoVal: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   flexRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs,
   },
   plateText: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   taskActions: {
-    marginTop: 12,
-    paddingTop: 10,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 232, 240, 0.8)',
+    borderTopColor: theme.colors.separator,
   },
   opFlowBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderRadius: AppleGlass.radii.md,
-    padding: 12,
+    padding: spacing.md,
   },
   opFlowSide: {
     flex: 1,
   },
   opFlowLabel: {
-    fontSize: 10,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#64748B',
-    marginBottom: 2,
+    color: theme.colors.secondaryLabel,
+    marginBottom: spacing.xxs,
   },
   opFlowCode: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   opFlowMass: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#475569',
-    marginTop: 2,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   lossRow: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   lossText: {
-    fontSize: 11,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
     fontStyle: 'italic',
   },
   silosGrid: {
-    gap: 12,
+    gap: spacing.md,
   },
   siloCard: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   siloHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
   },
   siloIcon: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: theme.colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   siloName: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   siloCode: {
-    fontSize: 11,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   gaugeContainer: {
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   gaugeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   gaugePercent: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   gaugeDetail: {
-    fontSize: 11,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   gaugeTrack: {
     height: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.separator,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -485,15 +488,15 @@ const styles = StyleSheet.create({
   siloFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
   siloCommodity: {
-    fontSize: 12,
-    color: '#475569',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   siloMoisture: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
   },
 });

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { spacing } from '../theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo , useState } from 'react';
+import { useAppTheme, type AppTheme } from '../theme';
+
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -21,7 +24,7 @@ import {
   AlertOctagon,
   CheckCircle,
   FileText,
-} from 'lucide-react-native';
+} from '../components/ui/named-icons';
 
 type HoldReasonCategory =
   | 'MRL_EXCEEDANCE'
@@ -37,6 +40,8 @@ const HOLD_REASONS: { id: HoldReasonCategory; label: string; defaultDesc: string
 ];
 
 export default function HoldManagementScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { holds, issueHold, respondToHold } = useRiskStore();
   const { traceLots } = useMillStore();
 
@@ -136,7 +141,7 @@ export default function HoldManagementScreen() {
         />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -151,7 +156,7 @@ export default function HoldManagementScreen() {
 
             {activeHolds.length === 0 ? (
               <GlassCard style={styles.emptyCard}>
-                <CheckCircle size={36} color="#059669" />
+                <CheckCircle size={36} color={theme.colors.success} />
                 <Text style={styles.emptyTitle}>Không có Lô hàng Bị Cách ly</Text>
                 <Text style={styles.emptySub}>
                   Tất cả các lô hàng tại nhà máy đều đạt tiêu chuẩn an toàn thực phẩm.
@@ -161,15 +166,15 @@ export default function HoldManagementScreen() {
               activeHolds.map((hold) => (
                 <GlassCard
                   key={hold.id}
-                  tintColor="rgba(254, 242, 242, 0.9)"
-                  borderTint="rgba(239, 68, 68, 0.4)"
+                  tintColor={theme.colors.surface}
+                  borderTint={theme.colors.separator}
                   borderRadius={AppleGlass.radii.lg}
                   elevated
                   style={styles.itemCard}
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.headerLeft}>
-                      <AlertOctagon size={22} color="#DC2626" />
+                      <AlertOctagon size={22} color={theme.colors.destructive} />
                       <View>
                         <Text style={styles.targetCode}>{hold.targetCode}</Text>
                         <Text style={styles.categoryText}>
@@ -197,7 +202,7 @@ export default function HoldManagementScreen() {
 
                   {hold.evidenceReference ? (
                     <View style={styles.evidenceRow}>
-                      <FileText size={12} color="#475569" />
+                      <FileText size={12} color={theme.colors.secondaryLabel} />
                       <Text style={styles.evidenceText}>Bằng chứng: {hold.evidenceReference}</Text>
                     </View>
                   ) : null}
@@ -228,14 +233,14 @@ export default function HoldManagementScreen() {
             {resolvedHolds.map((hold) => (
               <GlassCard
                 key={hold.id}
-                tintColor="rgba(240, 253, 244, 0.85)"
-                borderTint="rgba(52, 199, 89, 0.3)"
+                tintColor={theme.colors.surface}
+                borderTint={theme.colors.separator}
                 borderRadius={AppleGlass.radii.lg}
                 style={styles.itemCard}
               >
                 <View style={styles.cardHeader}>
                   <View style={styles.headerLeft}>
-                    <CheckCircle size={20} color="#059669" />
+                    <CheckCircle size={20} color={theme.colors.success} />
                     <View>
                       <Text style={styles.targetCode}>{hold.targetCode}</Text>
                       <Text style={styles.categoryText}>{hold.reasonCategory}</Text>
@@ -262,7 +267,7 @@ export default function HoldManagementScreen() {
         {activeTab === 'create' && (
           <View>
             <GlassCard
-              tintColor="rgba(255, 255, 255, 0.9)"
+              tintColor={theme.colors.surface}
               borderRadius={AppleGlass.radii.lg}
               style={styles.formCard}
             >
@@ -331,7 +336,7 @@ export default function HoldManagementScreen() {
                 value={evidenceRef}
                 onChangeText={setEvidenceRef}
                 placeholder="VD: LAB-REP-26019 hoặc PHIEU-CAN-88"
-                leftIcon={<FileText size={18} color="#64748B" />}
+                leftIcon={<FileText size={18} color={theme.colors.secondaryLabel} />}
               />
 
               <GlassButton
@@ -351,59 +356,59 @@ export default function HoldManagementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F4F8',
+    backgroundColor: theme.colors.background,
   },
   tabBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: theme.colors.surface,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   sectionCount: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.secondaryLabel,
   },
   emptyCard: {
-    padding: 30,
+    padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 20,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   emptySub: {
-    fontSize: 13,
-    color: '#64748B',
+    ...theme.typography.footnote,
+    color: theme.colors.secondaryLabel,
     textAlign: 'center',
     lineHeight: 18,
   },
   itemCard: {
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -413,151 +418,151 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
     flex: 1,
   },
   targetCode: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   categoryText: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 1,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.zero,
   },
   reasonBox: {
-    backgroundColor: 'rgba(254, 226, 226, 0.6)',
-    padding: 10,
+    backgroundColor: theme.colors.surfaceSecondary,
+    padding: spacing.sm,
     borderRadius: AppleGlass.radii.sm,
-    marginTop: 10,
+    marginTop: spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: '#DC2626',
+    borderLeftColor: theme.colors.destructive,
   },
   reasonText: {
-    fontSize: 13,
-    color: '#991B1B',
+    ...theme.typography.footnote,
+    color: theme.colors.destructive,
     lineHeight: 18,
     fontWeight: '500',
   },
   resolvedBox: {
-    backgroundColor: '#ECFDF5',
-    padding: 10,
+    backgroundColor: theme.colors.successMuted,
+    padding: spacing.sm,
     borderRadius: AppleGlass.radii.sm,
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   resolvedLabel: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#047857',
-    marginBottom: 2,
+    color: theme.colors.success,
+    marginBottom: spacing.xxs,
   },
   resolvedNotes: {
-    fontSize: 12,
-    color: '#065F46',
+    ...theme.typography.caption,
+    color: theme.colors.success,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 8,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   metaCol: {
     flex: 1,
   },
   metaLabel: {
-    fontSize: 10,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   metaVal: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#334155',
+    color: theme.colors.label,
   },
   evidenceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   evidenceText: {
-    fontSize: 11,
-    color: '#475569',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   cardActions: {
-    marginTop: 12,
-    paddingTop: 10,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 232, 240, 0.8)',
+    borderTopColor: theme.colors.separator,
   },
   formCard: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   sectionHeading: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 10,
+    color: theme.colors.label,
+    marginBottom: spacing.sm,
   },
   lotList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   lotOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   lotOptionSelected: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#F87171',
+    backgroundColor: theme.colors.destructiveMuted,
+    borderColor: theme.colors.destructive,
   },
   lotCode: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   lotCodeSelected: {
-    color: '#DC2626',
+    color: theme.colors.destructive,
   },
   lotDesc: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 14,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.md,
   },
   reasonList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   reasonOption: {
-    padding: 10,
+    padding: spacing.sm,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   reasonOptionSelected: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#F87171',
+    backgroundColor: theme.colors.destructiveMuted,
+    borderColor: theme.colors.destructive,
   },
   reasonTitle: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   reasonTitleSelected: {
-    color: '#DC2626',
+    color: theme.colors.destructive,
   },
   reasonSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
 });

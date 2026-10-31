@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
@@ -79,18 +80,18 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   item: {
     borderRadius: 24,
-    marginHorizontal: 2,
+    marginHorizontal: spacing.xxs,
   },
   label: {
-    marginTop: 1,
+    marginTop: spacing.zero,
   },
   tabBar: {
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     elevation: 12,
     left: 12,
-    paddingBottom: 6,
-    paddingTop: 6,
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.xs,
     position: 'absolute',
     right: 12,
     shadowOffset: { width: 0, height: -4 },

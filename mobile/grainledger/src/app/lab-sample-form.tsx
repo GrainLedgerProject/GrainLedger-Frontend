@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { spacing } from '../theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo , useState } from 'react';
+import { useAppTheme, type AppTheme } from '../theme';
+
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -16,7 +19,7 @@ import { GlassButton } from '../components/common/GlassButton';
 import { useComplianceStore } from '../store/complianceStore';
 import { useMillStore } from '../store/millStore';
 import { AppleGlass } from '../theme/appleGlass';
-import { Lock, FlaskConical, Building2, MapPin, Check } from 'lucide-react-native';
+import { Lock, FlaskConical, Building2, MapPin, Check } from '../components/ui/named-icons';
 
 const LAB_PARTNERS = [
   'Eurofins Sắc Ký Hải Đăng',
@@ -26,6 +29,8 @@ const LAB_PARTNERS = [
 ];
 
 export default function LabSampleFormModal() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { addSample } = useComplianceStore();
   const { traceLots } = useMillStore();
@@ -75,14 +80,14 @@ export default function LabSampleFormModal() {
         showBack
       />
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Source Lot Picker */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.85)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.card}
         >
@@ -105,7 +110,7 @@ export default function LabSampleFormModal() {
                     </Text>
                     <Text style={styles.lotProduct}>{lot.productType}</Text>
                   </View>
-                  {isSelected && <Check size={18} color={AppleGlass.colors.brandGreen} />}
+                  {isSelected && <Check size={18} color={theme.colors.accent} />}
                 </TouchableOpacity>
               );
             })}
@@ -114,7 +119,7 @@ export default function LabSampleFormModal() {
 
         {/* Seal and Security Details */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.85)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.card}
         >
@@ -125,7 +130,7 @@ export default function LabSampleFormModal() {
             value={sealCode}
             onChangeText={setSealCode}
             placeholder="VD: SEAL-VN-88492"
-            leftIcon={<Lock size={18} color="#047857" />}
+            leftIcon={<Lock size={18} color={theme.colors.success} />}
           />
 
           <GlassInput
@@ -133,7 +138,7 @@ export default function LabSampleFormModal() {
             value={materialDescription}
             onChangeText={setMaterialDescription}
             placeholder="VD: Lúa tươi ST25 sau thu hoạch"
-            leftIcon={<FlaskConical size={18} color="#3B82F6" />}
+            leftIcon={<FlaskConical size={18} color={theme.colors.info} />}
           />
 
           <GlassInput
@@ -141,13 +146,13 @@ export default function LabSampleFormModal() {
             value={collectionLocation}
             onChangeText={setCollectionLocation}
             placeholder="VD: Nhà máy Xay xát Tiền Giang"
-            leftIcon={<MapPin size={18} color="#D97706" />}
+            leftIcon={<MapPin size={18} color={theme.colors.warning} />}
           />
         </GlassCard>
 
         {/* Lab Partner Selection */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.85)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.card}
         >
@@ -165,7 +170,7 @@ export default function LabSampleFormModal() {
                   ]}
                   onPress={() => setLabName(lab)}
                 >
-                  <Building2 size={16} color={isSelected ? AppleGlass.colors.brandGreen : '#64748B'} />
+                  <Building2 size={16} color={isSelected ? theme.colors.accent : theme.colors.secondaryLabel} />
                   <Text style={[styles.labText, isSelected && styles.labTextSelected]}>
                     {lab}
                   </Text>
@@ -190,85 +195,85 @@ export default function LabSampleFormModal() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F4F8',
+    backgroundColor: theme.colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   card: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sectionHeading: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 12,
+    color: theme.colors.label,
+    marginBottom: spacing.md,
     letterSpacing: -0.2,
   },
   lotList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   lotOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   lotOptionSelected: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
+    backgroundColor: theme.colors.successMuted,
+    borderColor: theme.colors.success,
   },
   lotCode: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   lotCodeSelected: {
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
   },
   lotProduct: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   labOptions: {
-    gap: 8,
+    gap: spacing.sm,
   },
   labOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
+    gap: spacing.sm,
+    padding: spacing.md,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   labOptionSelected: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
+    backgroundColor: theme.colors.successMuted,
+    borderColor: theme.colors.success,
   },
   labText: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '600',
-    color: '#334155',
+    color: theme.colors.label,
     flex: 1,
   },
   labTextSelected: {
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
     fontWeight: '700',
   },
   submitBtn: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 });

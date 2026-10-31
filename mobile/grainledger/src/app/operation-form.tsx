@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -16,7 +17,7 @@ import { Button } from '../components/common/Button';
 import { useMillStore } from '../store/millStore';
 import { OperationType } from '../types/mill';
 import { checkMassBalance, formatMass } from '../utils/decimalMass';
-import { ArrowLeft, CheckCircle2, AlertOctagon } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, AlertOctagon } from '../components/ui/named-icons';
 
 const OPERATION_TYPES: { type: OperationType; label: string; defaultOut: string }[] = [
   { type: 'DRYING', label: '1. Sấy lúa khô (Hạ ẩm)', defaultOut: 'Lúa khô ST25 (14% ẩm)' },
@@ -76,7 +77,7 @@ export default function OperationFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ghi Nhận Mẻ Chế Biến</Text>
@@ -237,7 +238,7 @@ export default function OperationFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 10, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -253,8 +254,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.separator,
@@ -276,22 +277,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   card: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     ...theme.typography.subheadline,
     fontWeight: '700',
     color: theme.colors.label,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   opTypesCol: {
-    gap: 8,
+    gap: spacing.sm,
   },
   opTypeOption: {
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
@@ -311,13 +312,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   balanceBox: {
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 10,
     borderWidth: 1.5,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   balanceSuccess: {
     backgroundColor: theme.colors.successMuted,
@@ -330,7 +331,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   balanceTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   balanceTitle: {
     ...theme.typography.footnote,
@@ -338,7 +339,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   balanceDesc: {
     ...theme.typography.body,
-    marginTop: 4,
+    marginTop: spacing.xs,
     lineHeight: 16,
   },
 });

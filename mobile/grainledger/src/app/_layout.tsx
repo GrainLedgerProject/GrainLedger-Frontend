@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -12,6 +13,13 @@ import { useRiskStore } from '../store/riskStore';
 
 function AppNavigator() {
   const theme = useAppTheme();
+  const formPresentation = {
+    presentation: Platform.OS === 'ios' ? 'formSheet' as const : 'modal' as const,
+    sheetAllowedDetents: [0.5, 1],
+    sheetInitialDetentIndex: 1,
+    sheetGrabberVisible: true,
+    sheetCornerRadius: theme.radii.sheet,
+  };
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading, initAuth } = useAuthStore();
@@ -52,15 +60,15 @@ function AppNavigator() {
         }}
       >
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="farmer-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="plot-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="spray-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="procurement-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="receiving-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="operation-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="lab-sample-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="hold-management" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="correction-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="farmer-form" options={formPresentation} />
+        <Stack.Screen name="plot-form" options={formPresentation} />
+        <Stack.Screen name="spray-form" options={formPresentation} />
+        <Stack.Screen name="procurement-form" options={formPresentation} />
+        <Stack.Screen name="receiving-form" options={formPresentation} />
+        <Stack.Screen name="operation-form" options={formPresentation} />
+        <Stack.Screen name="lab-sample-form" options={formPresentation} />
+        <Stack.Screen name="hold-management" options={formPresentation} />
+        <Stack.Screen name="correction-form" options={formPresentation} />
         <Stack.Screen name="lot-detail" options={{ presentation: 'card' }} />
         <Stack.Screen name="offline-queue" options={{ presentation: 'card' }} />
         <Stack.Screen name="login" options={{ presentation: 'card' }} />

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { spacing } from '../../theme/tokens';
+import React, { useMemo , useState } from 'react';
+
 import {
   View,
   Text,
@@ -15,7 +17,7 @@ import { GlassBadge } from '../../components/common/GlassBadge';
 import { useMillStore } from '../../store/millStore';
 import { formatMass } from '../../utils/decimalMass';
 import { AppleGlass } from '../../theme/appleGlass';
-import { useAppTheme } from '../../theme';
+import { useAppTheme, type AppTheme } from '../../theme';
 import {
   Search,
   QrCode,
@@ -23,10 +25,11 @@ import {
   CheckCircle2,
   Check,
   Sparkles,
-} from 'lucide-react-native';
+} from '../../components/ui/named-icons';
 
 export default function TraceScreen() {
   const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { traceLots, getLotByCode, isLoading, fetchMillData } = useMillStore();
   const [searchInput, setSearchInput] = useState('');
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
@@ -50,11 +53,11 @@ export default function TraceScreen() {
       {/* Apple Glass Search and Scan Bar */}
       <View style={styles.searchContainer}>
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.85)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.pill}
           contentStyle={styles.searchBarInner}
         >
-          <Search size={18} color="#64748B" />
+          <Search size={18} color={theme.colors.secondaryLabel} />
           <TextInput
             style={[styles.input, { color: theme.colors.label }]}
             placeholder="Nhập mã lô hàng (VD: RAW-...)"
@@ -64,7 +67,7 @@ export default function TraceScreen() {
             onSubmitEditing={handleSearch}
           />
           <TouchableOpacity style={styles.scanBtn} onPress={handleSearch} activeOpacity={0.7}>
-            <QrCode size={18} color={AppleGlass.colors.brandGreen} />
+            <QrCode size={18} color={theme.colors.accent} />
           </TouchableOpacity>
         </GlassCard>
 
@@ -98,7 +101,7 @@ export default function TraceScreen() {
         ) : null}
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -115,7 +118,7 @@ export default function TraceScreen() {
           <View>
             {/* Lot Summary Glass Hero Card */}
             <GlassCard
-              tintColor="rgba(255, 255, 255, 0.9)"
+              tintColor={theme.colors.surface}
               borderRadius={AppleGlass.radii.xl}
               elevated
               style={styles.lotHeroCard}
@@ -141,8 +144,8 @@ export default function TraceScreen() {
                 <View style={styles.heroStatItem}>
                   <Text style={styles.heroStatLabel}>Độ thuần chủng</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Sparkles size={14} color="#D97706" />
-                    <Text style={[styles.heroStatVal, { color: '#D97706' }]}>
+                    <Sparkles size={14} color={theme.colors.warning} />
+                    <Text style={[styles.heroStatVal, { color: theme.colors.warning }]}>
                       {currentLot.purityScore}%
                     </Text>
                   </View>
@@ -157,14 +160,14 @@ export default function TraceScreen() {
 
             {/* MRL Compliance Banner */}
             <GlassCard
-              tintColor="rgba(240, 253, 244, 0.9)"
-              borderTint="rgba(52, 199, 89, 0.4)"
+              tintColor={theme.colors.surface}
+              borderTint={theme.colors.separator}
               borderRadius={AppleGlass.radii.lg}
               style={styles.mrlCard}
             >
               <View style={styles.mrlHeader}>
                 <View style={styles.mrlIconBox}>
-                  <ShieldCheck size={24} color="#166534" />
+                  <ShieldCheck size={24} color={theme.colors.success} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.mrlTitle}>Chứng nhận Dư lượng MRL Đạt chuẩn</Text>
@@ -178,15 +181,15 @@ export default function TraceScreen() {
 
               <View style={styles.mrlChecklist}>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#166534" />
+                  <Check size={14} color={theme.colors.success} />
                   <Text style={styles.mrlItemText}>Azoxystrobin: 0.02 mg/kg (Ngưỡng 2.0)</Text>
                 </View>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#166534" />
+                  <Check size={14} color={theme.colors.success} />
                   <Text style={styles.mrlItemText}>Tricyclazole: Không phát hiện (LOD &lt; 0.01)</Text>
                 </View>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#166534" />
+                  <Check size={14} color={theme.colors.success} />
                   <Text style={styles.mrlItemText}>Kim loại nặng (Cadmium, Chì): Đạt an toàn</Text>
                 </View>
               </View>
@@ -238,7 +241,7 @@ export default function TraceScreen() {
                 <View key={idx} style={styles.timelineStep}>
                   <View style={styles.timelineLeft}>
                     <View style={styles.timelineDot}>
-                      <CheckCircle2 size={12} color="#FFFFFF" />
+                      <CheckCircle2 size={12} color={theme.colors.surface} />
                     </View>
                     {idx < currentLot.history.length - 1 && (
                       <View style={styles.timelineLine} />
@@ -267,75 +270,75 @@ export default function TraceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppleGlass.colors.systemBackground,
+    backgroundColor: theme.colors.background,
   },
   searchContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(226, 232, 240, 0.8)',
+    borderBottomColor: theme.colors.separator,
   },
   searchBarInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    gap: spacing.sm,
   },
   input: {
     flex: 1,
-    fontSize: 14,
-    color: '#0F172A',
-    paddingVertical: 8,
+    ...theme.typography.subheadline,
+    color: theme.colors.label,
+    paddingVertical: spacing.sm,
   },
   scanBtn: {
-    padding: 6,
+    padding: spacing.xs,
     borderRadius: 8,
-    backgroundColor: 'rgba(15, 56, 40, 0.08)',
+    backgroundColor: theme.colors.accentMuted,
   },
   suggestionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    gap: 8,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   suggestLabel: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   chip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: AppleGlass.radii.pill,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
+    borderColor: theme.colors.separator,
   },
   chipActive: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
+    backgroundColor: theme.colors.successMuted,
+    borderColor: theme.colors.success,
   },
   chipText: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.secondaryLabel,
   },
   chipTextActive: {
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
     fontWeight: '700',
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: spacing.lg,
+    paddingBottom: spacing.huge,
   },
   lotHeroCard: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   heroTop: {
     flexDirection: 'row',
@@ -343,19 +346,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   heroCode: {
-    fontSize: 17,
+    ...theme.typography.body,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   heroProduct: {
-    fontSize: 13,
-    color: '#475569',
-    marginTop: 2,
+    ...theme.typography.footnote,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 12,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.md,
   },
   heroStatsRow: {
     flexDirection: 'row',
@@ -365,70 +368,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroStatLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginBottom: spacing.xxs,
   },
   heroStatVal: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   mrlCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   mrlHeader: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     alignItems: 'center',
   },
   mrlIconBox: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: theme.colors.successMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mrlTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#166534',
+    color: theme.colors.success,
   },
   mrlSub: {
-    fontSize: 12,
-    color: '#15803D',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.success,
+    marginTop: spacing.xxs,
   },
   mrlDivider: {
     height: 1,
-    backgroundColor: 'rgba(52, 199, 89, 0.25)',
-    marginVertical: 10,
+    backgroundColor: theme.colors.accentMuted,
+    marginVertical: spacing.sm,
   },
   mrlChecklist: {
-    gap: 6,
+    gap: spacing.xs,
   },
   mrlItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs,
   },
   mrlItemText: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#166534',
+    color: theme.colors.success,
   },
   sectionHeaderRow: {
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   originCard: {
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   originTop: {
     flexDirection: 'row',
@@ -436,53 +439,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   originFarmer: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   originPlot: {
-    fontSize: 12,
-    color: '#475569',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   originPercentBadge: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: theme.colors.successMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: theme.colors.successMuted,
   },
   originPercentText: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '800',
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
   },
   originDivider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 8,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.sm,
   },
   originFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   originVariety: {
-    fontSize: 12,
-    color: '#475569',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   originHarvest: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   timelineCard: {
-    padding: 16,
-    marginBottom: 16,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
   timelineStep: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   timelineLeft: {
     alignItems: 'center',
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: AppleGlass.colors.brandGreen,
+    backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -500,8 +503,8 @@ const styles = StyleSheet.create({
   timelineLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#CBD5E1',
-    marginTop: 4,
+    backgroundColor: theme.colors.separator,
+    marginTop: spacing.xs,
     marginBottom: -16,
   },
   timelineRight: {
@@ -513,32 +516,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stepTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   stepTime: {
-    fontSize: 11,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   stepOperator: {
-    fontSize: 12,
-    color: AppleGlass.colors.brandGreen,
+    ...theme.typography.caption,
+    color: theme.colors.accent,
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   stepDetail: {
-    fontSize: 12,
-    color: '#475569',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
     lineHeight: 16,
   },
   emptyContainer: {
-    padding: 30,
+    padding: spacing.xxl,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: '#64748B',
+    ...theme.typography.subheadline,
+    color: theme.colors.secondaryLabel,
   },
 });

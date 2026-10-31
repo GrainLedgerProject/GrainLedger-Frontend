@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { spacing } from '../theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo , useState } from 'react';
+import { useAppTheme, type AppTheme } from '../theme';
+
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -15,9 +18,11 @@ import { GlassInput } from '../components/common/GlassInput';
 import { GlassButton } from '../components/common/GlassButton';
 import { useMillStore } from '../store/millStore';
 import { AppleGlass } from '../theme/appleGlass';
-import { Scale, FileText, Check } from 'lucide-react-native';
+import { Scale, FileText, Check } from '../components/ui/named-icons';
 
 export default function CorrectionFormModal() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { operations } = useMillStore();
 
@@ -55,14 +60,14 @@ export default function CorrectionFormModal() {
         showBack
       />
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Step 1: Select Operation */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.9)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.card}
         >
@@ -85,7 +90,7 @@ export default function CorrectionFormModal() {
                       Vào: {op.inputMassKg} kg ➔ Ra: {op.outputMassKg} kg
                     </Text>
                   </View>
-                  {isSelected && <Check size={18} color={AppleGlass.colors.brandGreen} />}
+                  {isSelected && <Check size={18} color={theme.colors.accent} />}
                 </TouchableOpacity>
               );
             })}
@@ -94,7 +99,7 @@ export default function CorrectionFormModal() {
 
         {/* Step 2: Variance & Reasons */}
         <GlassCard
-          tintColor="rgba(255, 255, 255, 0.9)"
+          tintColor={theme.colors.surface}
           borderRadius={AppleGlass.radii.lg}
           style={styles.card}
         >
@@ -105,7 +110,7 @@ export default function CorrectionFormModal() {
             value={varianceKg}
             onChangeText={setVarianceKg}
             keyboardType="decimal-pad"
-            leftIcon={<Scale size={18} color="#D97706" />}
+            leftIcon={<Scale size={18} color={theme.colors.warning} />}
           />
 
           <GlassInput
@@ -122,7 +127,7 @@ export default function CorrectionFormModal() {
             value={reconciliationNotes}
             onChangeText={setReconciliationNotes}
             placeholder="Biện pháp hiệu chuẩn đã thực hiện"
-            leftIcon={<FileText size={18} color="#64748B" />}
+            leftIcon={<FileText size={18} color={theme.colors.secondaryLabel} />}
           />
         </GlassCard>
 
@@ -141,54 +146,54 @@ export default function CorrectionFormModal() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F4F8',
+    backgroundColor: theme.colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   card: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sectionHeading: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 12,
+    color: theme.colors.label,
+    marginBottom: spacing.md,
   },
   opList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   opOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   opOptionSelected: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
+    backgroundColor: theme.colors.successMuted,
+    borderColor: theme.colors.success,
   },
   opCode: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   opCodeSelected: {
-    color: AppleGlass.colors.brandGreen,
+    color: theme.colors.accent,
   },
   opSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
 });

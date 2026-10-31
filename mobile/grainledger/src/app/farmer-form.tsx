@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -14,7 +15,7 @@ import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
 import { useFieldStore } from '../store/fieldStore';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from '../components/ui/named-icons';
 
 export default function FarmerFormScreen() {
   const theme = useAppTheme();
@@ -63,7 +64,7 @@ export default function FarmerFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Đăng ký Nông hộ Mới</Text>
@@ -143,7 +144,7 @@ export default function FarmerFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 12, marginBottom: 30 }}
+          style={{ marginTop: spacing.md, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>

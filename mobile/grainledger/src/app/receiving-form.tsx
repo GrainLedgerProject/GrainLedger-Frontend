@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -16,7 +17,7 @@ import { Button } from '../components/common/Button';
 import { useMillStore } from '../store/millStore';
 import { useFieldStore } from '../store/fieldStore';
 import { toDecimal, formatMass } from '../utils/decimalMass';
-import { ArrowLeft, Warehouse } from 'lucide-react-native';
+import { ArrowLeft, Warehouse } from '../components/ui/named-icons';
 
 export default function ReceivingFormScreen() {
   const theme = useAppTheme();
@@ -75,7 +76,7 @@ export default function ReceivingFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cân Xe & Tiếp Nhận Lúa</Text>
@@ -214,7 +215,7 @@ export default function ReceivingFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 10, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -230,8 +231,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.separator,
@@ -253,25 +254,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   card: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     ...theme.typography.subheadline,
     fontWeight: '700',
     color: theme.colors.label,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   receiptChip: {
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
   },
   receiptChipActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -288,22 +289,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   receiptSub: {
     ...theme.typography.body,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   netBox: {
     backgroundColor: theme.colors.successMuted,
     borderWidth: 1.5,
     borderColor: theme.colors.success,
     borderRadius: 12,
-    padding: 12,
+    padding: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
   netBoxError: {
     backgroundColor: theme.colors.destructiveMuted,
@@ -317,7 +318,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   netSub: {
     ...theme.typography.body,
     color: theme.colors.success,
-    marginTop: 1,
+    marginTop: spacing.zero,
   },
   netVal: {
     ...theme.typography.headline,
@@ -327,12 +328,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   siloOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
+    gap: spacing.sm,
+    padding: spacing.md,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   siloOptionActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -349,6 +350,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   siloDesc: {
     ...theme.typography.body,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
 });

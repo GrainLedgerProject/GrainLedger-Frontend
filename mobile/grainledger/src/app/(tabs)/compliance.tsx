@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { spacing } from '../../theme/tokens';
+import React, { useMemo , useState } from 'react';
+
 import {
   View,
   Text,
@@ -16,7 +18,7 @@ import { GlassSegmentedControl } from '../../components/common/GlassSegmentedCon
 import { useComplianceStore } from '../../store/complianceStore';
 import { useRiskStore } from '../../store/riskStore';
 import { AppleGlass } from '../../theme/appleGlass';
-import { useAppTheme } from '../../theme';
+import { useAppTheme, type AppTheme } from '../../theme';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -25,11 +27,12 @@ import {
   CheckCircle2,
   Lock,
   Info,
-} from 'lucide-react-native';
+} from '../../components/ui/named-icons';
 
 export default function ComplianceScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { samples, reports, rules, isLoading, fetchComplianceData, confirmReport } = useComplianceStore();
   const { holds } = useRiskStore();
   const [activeTab, setActiveTab] = useState<'samples' | 'reports' | 'standards'>('samples');
@@ -55,7 +58,7 @@ export default function ComplianceScreen() {
         />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -70,15 +73,15 @@ export default function ComplianceScreen() {
       >
         {/* Apple Glass Hero Card - MRL Compliance Health Status */}
         <GlassCard
-          tintColor="rgba(240, 253, 244, 0.88)"
-          borderTint="rgba(52, 199, 89, 0.35)"
+          tintColor={theme.colors.surface}
+          borderTint={theme.colors.separator}
           borderRadius={AppleGlass.radii.xl}
           elevated
           style={styles.heroCard}
         >
           <View style={styles.heroTop}>
             <View style={styles.heroIconBox}>
-              <ShieldCheck size={28} color="#166534" />
+              <ShieldCheck size={28} color={theme.colors.success} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.heroRow}>
@@ -109,7 +112,7 @@ export default function ComplianceScreen() {
               <Text
                 style={[
                   styles.statValue,
-                  { color: activeHoldsCount > 0 ? AppleGlass.colors.systemRed : AppleGlass.colors.systemGreen },
+                  { color: activeHoldsCount > 0 ? theme.colors.destructive : theme.colors.success },
                 ]}
               >
                 {activeHoldsCount} cảnh báo
@@ -123,7 +126,7 @@ export default function ComplianceScreen() {
               title="Đăng ký mẫu mới"
               variant="primary"
               size="medium"
-              icon={<PlusCircle size={16} color="#FFFFFF" />}
+              icon={<PlusCircle size={16} color={theme.colors.surface} />}
               onPress={() => router.push('/lab-sample-form')}
               style={{ flex: 1 }}
             />
@@ -131,7 +134,7 @@ export default function ComplianceScreen() {
               title="Quản lý HOLD"
               variant="secondary"
               size="medium"
-              icon={<AlertTriangle size={16} color={AppleGlass.colors.systemOrange} />}
+              icon={<AlertTriangle size={16} color={theme.colors.warning} />}
               onPress={() => router.push('/hold-management')}
               style={{ flex: 1 }}
             />
@@ -165,7 +168,7 @@ export default function ComplianceScreen() {
 
                 <View style={styles.sealBox}>
                   <View style={styles.sealRow}>
-                    <Lock size={14} color="#047857" />
+                    <Lock size={14} color={theme.colors.success} />
                     <Text style={styles.sealText}>Mã Niêm chì: {item.sealCode}</Text>
                   </View>
                   <Text style={styles.sealStatus}>Niêm phong nguyên vẹn (Intact)</Text>
@@ -218,7 +221,7 @@ export default function ComplianceScreen() {
                 </View>
 
                 <View style={styles.standardTag}>
-                  <FileText size={13} color="#2563EB" />
+                  <FileText size={13} color={theme.colors.info} />
                   <Text style={styles.standardText}>Quy chuẩn: {report.statedStandard}</Text>
                 </View>
 
@@ -248,7 +251,7 @@ export default function ComplianceScreen() {
                               styles.gaugeFill,
                               {
                                 width: `${Math.min(ratio, 100)}%`,
-                                backgroundColor: isSafe ? '#10B981' : '#EF4444',
+                                backgroundColor: isSafe ? theme.colors.success : theme.colors.destructive,
                               },
                             ]}
                           />
@@ -276,7 +279,7 @@ export default function ComplianceScreen() {
                     />
                   ) : (
                     <View style={styles.confirmedBadge}>
-                      <CheckCircle2 size={13} color="#059669" />
+                      <CheckCircle2 size={13} color={theme.colors.success} />
                       <Text style={styles.confirmedText}>Đã đối soát & ký duyệt</Text>
                     </View>
                   )}
@@ -294,12 +297,12 @@ export default function ComplianceScreen() {
             </View>
 
             <GlassCard
-              tintColor="rgba(248, 250, 252, 0.85)"
+              tintColor={theme.colors.surface}
               borderRadius={AppleGlass.radii.lg}
               style={{ marginBottom: 12 }}
             >
               <View style={styles.infoRow}>
-                <Info size={16} color="#0284C7" />
+                <Info size={16} color={theme.colors.info} />
                 <Text style={styles.infoText}>
                   Hệ thống tự động áp dụng Biên an toàn 10% - 15% để bảo đảm hàng hoá không bị từ chối tại cảng biển quốc tế.
                 </Text>
@@ -331,13 +334,13 @@ export default function ComplianceScreen() {
                   </View>
                   <View style={styles.ruleStatCol}>
                     <Text style={styles.ruleStatLabel}>Biên an toàn áp dụng</Text>
-                    <Text style={[styles.ruleStatVal, { color: AppleGlass.colors.systemOrange }]}>
+                    <Text style={[styles.ruleStatVal, { color: theme.colors.warning }]}>
                       -{rule.safetyMarginPercent}%
                     </Text>
                   </View>
                   <View style={styles.ruleStatCol}>
                     <Text style={styles.ruleStatLabel}>Ngưỡng chốt chặn</Text>
-                    <Text style={[styles.ruleStatVal, { color: AppleGlass.colors.brandGreen }]}>
+                    <Text style={[styles.ruleStatVal, { color: theme.colors.accent }]}>
                       {rule.effectiveThreshold} mg/kg
                     </Text>
                   </View>
@@ -351,36 +354,36 @@ export default function ComplianceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppleGlass.colors.systemBackground,
+    backgroundColor: theme.colors.background,
   },
   tabBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: theme.colors.surface,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: spacing.lg,
+    paddingBottom: spacing.huge,
   },
   heroCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   heroTop: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     alignItems: 'flex-start',
   },
   heroIconBox: {
     width: 46,
     height: 46,
     borderRadius: AppleGlass.radii.md,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: theme.colors.successMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -388,29 +391,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   heroTitle: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
     flex: 1,
   },
   heroSubtitle: {
-    fontSize: 12,
-    color: '#475569',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
     lineHeight: 17,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    marginVertical: 12,
+    backgroundColor: theme.colors.accentMuted,
+    marginVertical: spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   statItem: {
     flex: 1,
@@ -419,44 +422,44 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: theme.colors.separator,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginBottom: spacing.xxs,
     fontWeight: '500',
   },
   statValue: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   actionButtonGroup: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 4,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
   sectionTitle: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
     letterSpacing: -0.2,
   },
   sectionCount: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.secondaryLabel,
   },
   itemCard: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -467,25 +470,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sampleCode: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   sourceLot: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.secondaryLabel,
   },
   sealBox: {
-    backgroundColor: '#ECFDF5',
-    padding: 10,
+    backgroundColor: theme.colors.successMuted,
+    padding: spacing.sm,
     borderRadius: AppleGlass.radii.sm,
-    marginTop: 10,
+    marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: theme.colors.successMuted,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -493,84 +496,84 @@ const styles = StyleSheet.create({
   sealRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs,
   },
   sealText: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#065F46',
+    color: theme.colors.success,
   },
   sealStatus: {
-    fontSize: 11,
-    color: '#047857',
+    ...theme.typography.caption,
+    color: theme.colors.success,
     fontWeight: '500',
   },
   cardDetails: {
-    marginTop: 10,
-    gap: 4,
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
   detailText: {
-    fontSize: 12,
-    color: '#334155',
+    ...theme.typography.caption,
+    color: theme.colors.label,
   },
   detailLabel: {
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.secondaryLabel,
   },
   standardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: spacing.xs,
+    backgroundColor: theme.colors.infoMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: 8,
     alignSelf: 'flex-start',
-    marginTop: 6,
-    marginBottom: 10,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   standardText: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#1D4ED8',
+    color: theme.colors.info,
   },
   substanceTable: {
-    backgroundColor: 'rgba(241, 245, 249, 0.6)',
+    backgroundColor: theme.colors.surfaceSecondary,
     borderRadius: AppleGlass.radii.md,
-    padding: 10,
-    gap: 8,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
   tableHeader: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#475569',
+    color: theme.colors.secondaryLabel,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   substanceRow: {
-    backgroundColor: '#FFFFFF',
-    padding: 8,
+    backgroundColor: theme.colors.surface,
+    padding: spacing.sm,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.7)',
+    borderColor: theme.colors.separator,
   },
   substanceHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   substanceName: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   gaugeBackground: {
     height: 6,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.separator,
     borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   gaugeFill: {
     height: '100%',
@@ -581,40 +584,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   gaugeSubtext: {
-    fontSize: 10,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   reportFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 8,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 232, 240, 0.7)',
+    borderTopColor: theme.colors.separator,
   },
   footerDate: {
-    fontSize: 11,
-    color: '#64748B',
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
   },
   confirmedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   confirmedText: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: '#059669',
+    color: theme.colors.success,
   },
   infoRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     alignItems: 'center',
   },
   infoText: {
-    fontSize: 12,
-    color: '#0369A1',
+    ...theme.typography.caption,
+    color: theme.colors.info,
     flex: 1,
     lineHeight: 16,
   },
@@ -624,30 +627,30 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   ruleName: {
-    fontSize: 15,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
   ruleCode: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   marketBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: theme.colors.warningMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
     borderRadius: 6,
   },
   marketText: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: '#B45309',
+    color: theme.colors.warning,
   },
   ruleDivider: {
     height: 1,
-    backgroundColor: 'rgba(226, 232, 240, 0.8)',
-    marginVertical: 10,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.sm,
   },
   ruleStats: {
     flexDirection: 'row',
@@ -657,13 +660,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ruleStatLabel: {
-    fontSize: 10,
-    color: '#64748B',
-    marginBottom: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginBottom: spacing.xxs,
   },
   ruleStatVal: {
-    fontSize: 13,
+    ...theme.typography.footnote,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.label,
   },
 });

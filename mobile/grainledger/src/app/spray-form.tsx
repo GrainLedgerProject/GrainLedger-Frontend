@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -14,7 +15,7 @@ import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
 import { useFieldStore } from '../store/fieldStore';
-import { ArrowLeft, ShieldAlert } from 'lucide-react-native';
+import { ArrowLeft, ShieldAlert } from '../components/ui/named-icons';
 
 const PESTICIDE_CATALOG = [
   { name: 'Amistar Top 325SC', substance: 'Azoxystrobin + Difenoconazole', phi: 14, defaultRate: '0.5', unit: 'lít/ha' },
@@ -80,7 +81,7 @@ export default function SprayFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Khai báo Phun thuốc BVTV</Text>
@@ -200,7 +201,7 @@ export default function SprayFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 10, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -216,8 +217,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.separator,
@@ -239,25 +240,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   card: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     ...theme.typography.subheadline,
     fontWeight: '700',
     color: theme.colors.label,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   plotChip: {
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
   },
   plotChipActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -274,17 +275,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   plotChipSub: {
     ...theme.typography.body,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   pestItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 10,
+    padding: spacing.sm,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     backgroundColor: theme.colors.surface,
   },
   pestItemActive: {
@@ -302,12 +303,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   pestSub: {
     ...theme.typography.caption,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   phiTag: {
     backgroundColor: theme.colors.warningMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: 6,
   },
   phiTagText: {
@@ -317,18 +318,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   safetyBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: spacing.sm,
     backgroundColor: theme.colors.warningMuted,
     borderWidth: 1,
     borderColor: theme.colors.warning,
     borderRadius: 10,
-    padding: 12,
-    marginTop: 6,
+    padding: spacing.md,
+    marginTop: spacing.xs,
   },
   safetyTitle: {
     ...theme.typography.footnote,
@@ -338,7 +339,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   safetyDesc: {
     ...theme.typography.caption,
     color: theme.colors.warning,
-    marginTop: 2,
+    marginTop: spacing.xxs,
     lineHeight: 16,
   },
 });

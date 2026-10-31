@@ -1,3 +1,4 @@
+import { spacing } from '../../theme/tokens';
 import React from 'react';
 import {
   Pressable,
@@ -111,7 +112,7 @@ export default function HomeScreen() {
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
     >
       <Header />
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         contentContainerStyle={[
           styles.content,
           { paddingBottom: theme.layout.tabBarHeight + 32 + insets.bottom },
@@ -410,13 +411,13 @@ function Detail({ label, value, accent = false }: { label: string; value: string
 
 const styles = StyleSheet.create({
   bannerPressable: {
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   content: {
     alignSelf: 'center',
     maxWidth: 760,
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     width: '100%',
   },
   detail: {
@@ -425,17 +426,17 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   details: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.md,
   },
   emptyCard: {
     alignItems: 'center',
-    gap: 12,
-    padding: 24,
+    gap: spacing.md,
+    padding: spacing.xl,
   },
   emptyIcon: {
     alignItems: 'center',
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     letterSpacing: 1.3,
-    marginBottom: 5,
+    marginBottom: spacing.xs,
   },
   flex: {
     flex: 1,
@@ -455,41 +456,41 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   headingPill: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   metricGrid: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   offlineBanner: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    padding: 14,
+    gap: spacing.md,
+    padding: spacing.md,
   },
   organization: {
     fontWeight: '600',
-    marginTop: 3,
+    marginTop: spacing.xxs,
   },
   pressed: {
     opacity: 0.62,
   },
   quickCard: {
     minHeight: 142,
-    padding: 17,
+    padding: spacing.lg,
   },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
   quickIcon: {
     alignItems: 'center',
     height: 40,
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
     width: 40,
   },
   quickItem: {
@@ -499,16 +500,16 @@ const styles = StyleSheet.create({
   },
   quickTitle: {
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   receiptCard: {
-    marginBottom: 10,
-    padding: 17,
+    marginBottom: spacing.sm,
+    padding: spacing.lg,
   },
   receiptHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   receiptNumber: {
     fontWeight: '700',
@@ -519,26 +520,26 @@ const styles = StyleSheet.create({
   sectionHeading: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 28,
+    marginBottom: spacing.md,
+    marginTop: spacing.xl,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 13,
+    marginVertical: spacing.md,
   },
   traceButton: {
     alignSelf: 'stretch',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   traceCard: {
-    marginBottom: 20,
-    marginTop: 20,
-    padding: 20,
+    marginBottom: spacing.lg,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
   },
   traceDescription: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     opacity: 0.82,
   },
   traceIcon: {
@@ -550,12 +551,12 @@ const styles = StyleSheet.create({
   traceRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 13,
+    gap: spacing.md,
   },
   userName: {
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   welcome: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
 });

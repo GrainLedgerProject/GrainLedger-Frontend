@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -14,7 +15,7 @@ import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
 import { useFieldStore } from '../store/fieldStore';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from '../components/ui/named-icons';
 
 const VARIETIES = ['ST25 Lúa Tôm', 'Jasmine 85', 'OM 5451', 'Đài Thơm 8', 'Nàng Hoa 9'];
 const SEASONS = ['Đông Xuân 2026', 'Hè Thu 2026', 'Thu Đông 2026'];
@@ -60,7 +61,7 @@ export default function PlotFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Đăng ký Thửa ruộng Mới</Text>
@@ -169,7 +170,7 @@ export default function PlotFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 10, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -185,8 +186,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.separator,
@@ -208,25 +209,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   card: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     ...theme.typography.subheadline,
     fontWeight: '700',
     color: theme.colors.label,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   farmerChip: {
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
   },
   farmerChipActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -243,19 +244,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   farmerSub: {
     ...theme.typography.body,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   varietiesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   varietyChip: {
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: theme.colors.separator,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: 8,
   },
   varietyChipActive: {
@@ -275,8 +276,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: theme.colors.separator,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: 8,
   },
   seasonChipActive: {
@@ -294,7 +295,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
 });

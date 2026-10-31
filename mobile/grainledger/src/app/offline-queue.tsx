@@ -1,22 +1,26 @@
-import React from 'react';
+import { spacing } from '../theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo } from 'react';
+import { useAppTheme, type AppTheme } from '../theme';
+
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../theme/colors';
 import { Card } from '../components/common/Card';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Button } from '../components/common/Button';
 import { useOfflineStore } from '../store/offlineStore';
-import { ArrowLeft, RefreshCw, Trash2, Cloud, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Trash2, Cloud, CheckCircle } from '../components/ui/named-icons';
 
 export default function OfflineQueueScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { queue, isSyncing, syncAll, retryItem, clearCompleted, getPendingCount } =
     useOfflineStore();
@@ -31,8 +35,8 @@ export default function OfflineQueueScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
+          <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Hàng Đợi Ngoại Tuyến</Text>
         <TouchableOpacity
@@ -42,14 +46,14 @@ export default function OfflineQueueScreen() {
             Alert.alert('Đã dọn dẹp', 'Đã xóa các mục đã đồng bộ thành công.');
           }}
         >
-          <Trash2 size={18} color={Colors.textSecondary} />
+          <Trash2 size={18} color={theme.colors.secondaryLabel} />
         </TouchableOpacity>
       </View>
 
       {/* Top Summary Banner */}
       <View style={styles.summaryBanner}>
         <View style={styles.summaryIconBox}>
-          <Cloud size={24} color={pendingCount > 0 ? Colors.accent : Colors.emerald} />
+          <Cloud size={24} color={pendingCount > 0 ? theme.colors.accent : theme.colors.success} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.summaryTitle}>
@@ -66,7 +70,7 @@ export default function OfflineQueueScreen() {
       <View style={styles.actionRow}>
         <Button
           title={isSyncing ? 'Đang truyền...' : 'Đồng bộ tất cả'}
-          icon={<RefreshCw size={16} color="#FFFFFF" />}
+          icon={<RefreshCw size={16} color={theme.colors.surface} />}
           loading={isSyncing}
           variant="primary"
           style={{ flex: 1 }}
@@ -74,14 +78,14 @@ export default function OfflineQueueScreen() {
         />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {queue.length === 0 ? (
           <View style={styles.emptyBox}>
-            <CheckCircle size={40} color={Colors.emerald} />
+            <CheckCircle size={40} color={theme.colors.success} />
             <Text style={styles.emptyTitle}>Hàng đợi trống</Text>
             <Text style={styles.emptySub}>Không có giao dịch nào đang chờ gửi.</Text>
           </View>
@@ -111,7 +115,7 @@ export default function OfflineQueueScreen() {
                       Alert.alert('Thành công', 'Đã đồng bộ mục này.');
                     }}
                   >
-                    <RefreshCw size={13} color={Colors.primary} />
+                    <RefreshCw size={13} color={theme.colors.accent} />
                     <Text style={styles.retryText}>Thử lại</Text>
                   </TouchableOpacity>
                 ) : (
@@ -126,84 +130,84 @@ export default function OfflineQueueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clearBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 18,
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   summaryBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    gap: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: theme.colors.separator,
   },
   summaryIconBox: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: theme.colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   summaryTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '800',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   summarySub: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
     lineHeight: 16,
   },
   actionRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: theme.colors.surface,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   itemCard: {
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   cardTop: {
     flexDirection: 'row',
@@ -211,19 +215,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   itemTitle: {
-    fontSize: 14,
+    ...theme.typography.subheadline,
     fontWeight: '700',
-    color: Colors.text,
+    color: theme.colors.label,
   },
   itemSummary: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+    ...theme.typography.caption,
+    color: theme.colors.secondaryLabel,
+    marginTop: spacing.xxs,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: 10,
+    backgroundColor: theme.colors.separator,
+    marginVertical: spacing.sm,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -231,42 +235,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeText: {
-    fontSize: 11,
-    color: Colors.textMuted,
+    ...theme.typography.caption,
+    color: theme.colors.tertiaryLabel,
   },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primarySurface,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: spacing.xs,
+    backgroundColor: theme.colors.accentMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: 8,
   },
   retryText: {
-    fontSize: 12,
+    ...theme.typography.caption,
     fontWeight: '700',
-    color: Colors.primary,
+    color: theme.colors.accent,
   },
   syncedText: {
-    fontSize: 11,
+    ...theme.typography.caption,
     fontWeight: '600',
-    color: Colors.emerald,
+    color: theme.colors.success,
   },
   emptyBox: {
-    padding: 40,
+    padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyTitle: {
-    fontSize: 16,
+    ...theme.typography.callout,
     fontWeight: '700',
-    color: Colors.text,
-    marginTop: 12,
+    color: theme.colors.label,
+    marginTop: spacing.md,
   },
   emptySub: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    marginTop: 4,
+    ...theme.typography.footnote,
+    color: theme.colors.tertiaryLabel,
+    marginTop: spacing.xs,
   },
 });

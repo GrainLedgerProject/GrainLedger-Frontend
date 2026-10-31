@@ -1,3 +1,4 @@
+import { spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -14,7 +15,7 @@ import { Card } from '../components/common/Card';
 import { InputField } from '../components/common/InputField';
 import { Button } from '../components/common/Button';
 import { useFieldStore } from '../store/fieldStore';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from '../components/ui/named-icons';
 import { toDecimal, formatMass } from '../utils/decimalMass';
 
 export default function ProcurementFormScreen() {
@@ -75,7 +76,7 @@ export default function ProcurementFormScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Lập Phiếu Thu Mua Lúa Tươi</Text>
@@ -220,7 +221,7 @@ export default function ProcurementFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: 10, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: 30 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -236,8 +237,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.separator,
@@ -259,29 +260,29 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   sectionCard: {
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   cardTitle: {
     ...theme.typography.subheadline,
     fontWeight: '700',
     color: theme.colors.label,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   chipsScroll: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   farmerChip: {
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
   },
   farmerChipActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -292,9 +293,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
   },
   plotChipActive: {
     backgroundColor: theme.colors.accentMuted,
@@ -311,25 +312,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   chipSub: {
     ...theme.typography.body,
     color: theme.colors.secondaryLabel,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   chipSubActive: {
     color: theme.colors.accent,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   totalBox: {
     backgroundColor: theme.colors.successMuted,
     borderWidth: 1,
     borderColor: theme.colors.success,
     borderRadius: 10,
-    padding: 12,
+    padding: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   totalLabel: {
     ...theme.typography.footnote,
