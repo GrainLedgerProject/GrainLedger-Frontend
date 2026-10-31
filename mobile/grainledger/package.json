@@ -48,7 +48,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node scripts/check-api-parity.cjs && node scripts/check-design-contrast.cjs"
+    "test": "node scripts/check-api-parity.cjs && node scripts/check-design-contrast.cjs && node scripts/check-corrections.cjs"
   },
   "private": true
 }

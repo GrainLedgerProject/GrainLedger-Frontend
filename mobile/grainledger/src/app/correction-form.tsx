@@ -17,6 +17,8 @@ import { GlassCard } from '../components/common/GlassCard';
 import { GlassInput } from '../components/common/GlassInput';
 import { GlassButton } from '../components/common/GlassButton';
 import { useMillStore } from '../store/millStore';
+import { api } from '../services/api';
+import { buildCorrectionRequest, submitCorrection } from '../services/corrections';
 import { AppleGlass } from '../theme/appleGlass';
 import { Scale, FileText, Check } from '../components/ui/named-icons';
 
@@ -35,18 +37,18 @@ export default function CorrectionFormModal() {
   const selectedOp = operations.find((o) => o.id === selectedOpId) || operations[0];
 
   const handleSubmit = async () => {
-    if (!reason.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập lý do hiệu chỉnh chênh lệch.');
-      return;
-    }
-
+    if (loading) return;
     setLoading(true);
     try {
+      const request = buildCorrectionRequest(selectedOp?.id ?? '', reason, varianceKg, reconciliationNotes);
+      await submitCorrection(request, api.request.bind(api));
       Alert.alert(
         'Thành công',
         `Yêu cầu hiệu chỉnh cho công đoạn ${selectedOp?.code || 'vận hành'} đã được gửi tới Quản đốc duyệt.`,
         [{ text: 'Đóng', onPress: () => router.back() }]
       );
+    } catch (error: unknown) {
+      Alert.alert('Chưa gửi được yêu cầu', error instanceof Error ? error.message : 'Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -79,6 +81,10 @@ export default function CorrectionFormModal() {
               return (
                 <TouchableOpacity
                   key={op.id}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`${op.code}, ${op.operationType}`}
+                  accessibilityState={{ selected: isSelected, disabled: loading }}
+                  disabled={loading}
                   style={[styles.opOption, isSelected && styles.opOptionSelected]}
                   onPress={() => setSelectedOpId(op.id)}
                 >
@@ -108,6 +114,7 @@ export default function CorrectionFormModal() {
           <GlassInput
             label="Khối lượng chênh lệch cần bù trừ (kg) *"
             value={varianceKg}
+            editable={!loading}
             onChangeText={setVarianceKg}
             keyboardType="decimal-pad"
             leftIcon={<Scale size={18} color={theme.colors.warning} />}
@@ -116,15 +123,17 @@ export default function CorrectionFormModal() {
           <GlassInput
             label="Lý do sai lệch kỹ thuật *"
             value={reason}
+            editable={!loading}
             onChangeText={setReason}
             multiline
             numberOfLines={2}
-            style={{ height: 60, textAlignVertical: 'top' }}
+            style={{ minHeight: 60, textAlignVertical: 'top' }}
           />
 
           <GlassInput
             label="Ghi chú đối soát đối ứng"
             value={reconciliationNotes}
+            editable={!loading}
             onChangeText={setReconciliationNotes}
             placeholder="Biện pháp hiệu chuẩn đã thực hiện"
             leftIcon={<FileText size={18} color={theme.colors.secondaryLabel} />}

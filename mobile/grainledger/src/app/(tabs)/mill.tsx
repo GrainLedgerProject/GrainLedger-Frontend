@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
+import { CorrectionsPanel } from '../../components/mill/CorrectionsPanel';
 import { GlassCard } from '../../components/common/GlassCard';
 import { GlassButton } from '../../components/common/GlassButton';
 import { GlassBadge } from '../../components/common/GlassBadge';
@@ -235,6 +236,8 @@ export default function MillScreen() {
             ))}
           </View>
         )}
+
+        {activeTab === 'operations' ? <CorrectionsPanel /> : null}
 
         {/* TAB 3: SILOS */}
         {activeTab === 'silos' && (
