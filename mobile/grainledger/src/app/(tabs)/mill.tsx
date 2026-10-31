@@ -4,86 +4,94 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
-import { Card } from '../../components/common/Card';
-import { StatusBadge } from '../../components/common/StatusBadge';
-import { Button } from '../../components/common/Button';
+import { GlassCard } from '../../components/common/GlassCard';
+import { GlassButton } from '../../components/common/GlassButton';
+import { GlassBadge } from '../../components/common/GlassBadge';
+import { GlassSegmentedControl } from '../../components/common/GlassSegmentedControl';
 import { useMillStore } from '../../store/millStore';
 import { formatMass } from '../../utils/decimalMass';
+import { AppleGlass } from '../../theme/appleGlass';
+import { useAppTheme } from '../../theme';
 import {
-  Plus,
   Truck,
   ArrowRight,
-  CheckCircle,
   Inbox,
+  Warehouse,
+  Sliders,
 } from 'lucide-react-native';
 
 type MillSubTab = 'receiving' | 'operations' | 'silos';
 
 export default function MillScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const [activeTab, setActiveTab] = useState<MillSubTab>('receiving');
-  const { receivingTasks, operations, silos, updateReceivingTaskStatus, isLoading, fetchMillData } = useMillStore();
+  const {
+    receivingTasks,
+    operations,
+    silos,
+    updateReceivingTaskStatus,
+    isLoading,
+    fetchMillData,
+  } = useMillStore();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Header title="Vận hành Nhà máy" subtitle="Tiếp nhận xe lúa, chế biến và tồn kho Silo" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <Header
+        title="Vận hành Nhà máy"
+        subtitle="Tiếp nhận xe lúa, chế biến và quản lý silo tồn kho"
+      />
 
-      {/* Sub Tabs */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tabItem, activeTab === 'receiving' && styles.tabItemActive]}
-          onPress={() => setActiveTab('receiving')}
-        >
-          <Text style={[styles.tabText, activeTab === 'receiving' && styles.tabTextActive]}>
-            Tiếp nhận xe ({receivingTasks.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabItem, activeTab === 'operations' && styles.tabItemActive]}
-          onPress={() => setActiveTab('operations')}
-        >
-          <Text style={[styles.tabText, activeTab === 'operations' && styles.tabTextActive]}>
-            Mẻ chế biến ({operations.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabItem, activeTab === 'silos' && styles.tabItemActive]}
-          onPress={() => setActiveTab('silos')}
-        >
-          <Text style={[styles.tabText, activeTab === 'silos' && styles.tabTextActive]}>
-            Tồn kho Silo ({silos.length})
-          </Text>
-        </TouchableOpacity>
+      {/* Apple Glass Segmented Control */}
+      <View style={styles.segmentedContainer}>
+        <GlassSegmentedControl
+          segments={[
+            { id: 'receiving', label: 'Tiếp nhận xe', count: receivingTasks.length },
+            { id: 'operations', label: 'Mẻ chế biến', count: operations.length },
+            { id: 'silos', label: 'Tồn kho Silo', count: silos.length },
+          ]}
+          activeId={activeTab}
+          onSelect={(id) => setActiveTab(id as MillSubTab)}
+        />
       </View>
 
-      {/* Action Bar */}
+      {/* Action Strip */}
       <View style={styles.actionBar}>
         <Text style={styles.actionPromptText}>
           {activeTab === 'receiving'
             ? 'Danh sách xe chờ cân và nhập silo'
             : activeTab === 'operations'
-            ? 'Các công đoạn: Sấy, Xát, Trộn, Đóng bao'
+            ? 'Công đoạn: Sấy, Xát, Trộn, Đóng bao'
             : 'Tổng sức chứa và vị trí lưu trữ'}
         </Text>
 
-        <Button
-          title={activeTab === 'receiving' ? 'Cân xe mới' : activeTab === 'operations' ? 'Ghi nhận mẻ' : 'Cập nhật'}
-          icon={<Plus size={16} color="#FFFFFF" />}
-          size="small"
-          onPress={() => {
-            if (activeTab === 'receiving') router.push('/receiving-form');
-            else if (activeTab === 'operations') router.push('/operation-form');
-          }}
-        />
+        <View style={styles.actionButtonsRow}>
+          {activeTab === 'operations' && (
+            <GlassButton
+              title="Hiệu chỉnh"
+              icon={<Sliders size={14} color="#0F172A" />}
+              size="small"
+              variant="secondary"
+              onPress={() => router.push('/correction-form')}
+            />
+          )}
+
+          <GlassButton
+            title={activeTab === 'receiving' ? '+ Cân xe' : activeTab === 'operations' ? '+ Mẻ mới' : '+ Lệnh HOLD'}
+            size="small"
+            variant="primary"
+            onPress={() => {
+              if (activeTab === 'receiving') router.push('/receiving-form');
+              else if (activeTab === 'operations') router.push('/operation-form');
+              else router.push('/hold-management');
+            }}
+          />
+        </View>
       </View>
 
       <ScrollView
@@ -94,32 +102,39 @@ export default function MillScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={fetchMillData}
-            colors={[Colors.primary]}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
           />
         }
       >
-        {/* RECEIVING TAB */}
+        {/* TAB 1: RECEIVING TASKS */}
         {activeTab === 'receiving' && (
           <View>
             {receivingTasks.length === 0 ? (
-              <Card style={{ alignItems: 'center', padding: 32 }}>
-                <Inbox size={40} color={Colors.textMuted} />
-                <Text style={{ marginTop: 12, fontSize: 14, fontWeight: '700', color: Colors.text }}>
+              <GlassCard style={{ alignItems: 'center', padding: 32 }}>
+                <Inbox size={40} color="#94A3B8" />
+                <Text style={{ marginTop: 12, fontSize: 14, fontWeight: '700', color: '#0F172A' }}>
                   Chưa có phiếu tiếp nhận xe nào
                 </Text>
-                <Text style={{ marginTop: 4, fontSize: 12, color: Colors.textSecondary, textAlign: 'center' }}>
+                <Text style={{ marginTop: 4, fontSize: 12, color: '#64748B', textAlign: 'center' }}>
                   Kéo xuống để tải lại từ máy chủ hoặc cân xe lúa tươi mới.
                 </Text>
-              </Card>
+              </GlassCard>
             ) : null}
+
             {receivingTasks.map((t) => (
-              <Card key={t.id} style={styles.itemCard}>
+              <GlassCard
+                key={t.id}
+                borderRadius={AppleGlass.radii.lg}
+                style={styles.itemCard}
+                interactive
+              >
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.itemCode}>{t.code}</Text>
                     <Text style={styles.itemSub}>{t.supplierName}</Text>
                   </View>
-                  <StatusBadge status={t.status} />
+                  <GlassBadge status={t.status} />
                 </View>
 
                 <View style={styles.cardDivider} />
@@ -128,7 +143,7 @@ export default function MillScreen() {
                   <View style={styles.infoCol}>
                     <Text style={styles.infoLabel}>Xe vận chuyển</Text>
                     <View style={styles.flexRow}>
-                      <Truck size={14} color={Colors.textSecondary} />
+                      <Truck size={14} color="#64748B" />
                       <Text style={styles.plateText}>{t.vehiclePlate}</Text>
                     </View>
                   </View>
@@ -139,166 +154,144 @@ export default function MillScreen() {
                   </View>
                 </View>
 
-                <View style={styles.cardDivider} />
-
-                <View style={styles.weightGrid}>
-                  <View style={styles.weightBox}>
-                    <Text style={styles.weightLabel}>Cân bì xe (Tare)</Text>
-                    <Text style={styles.weightVal}>{formatMass(t.tareWeightKg, 0)} kg</Text>
-                  </View>
-
-                  <View style={styles.weightBox}>
-                    <Text style={styles.weightLabel}>Cân tổng (Gross)</Text>
-                    <Text style={styles.weightVal}>{formatMass(t.grossWeightKg, 0)} kg</Text>
-                  </View>
-
-                  <View style={[styles.weightBox, { backgroundColor: '#F0FDF4' }]}>
-                    <Text style={[styles.weightLabel, { color: Colors.primary }]}>Lúa thực (Net)</Text>
-                    <Text style={[styles.weightVal, { color: Colors.primary, fontWeight: '800' }]}>
+                <View style={[styles.rowBetween, { marginTop: 10 }]}>
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Khối lượng tịnh (Net)</Text>
+                    <Text style={[styles.infoVal, { color: AppleGlass.colors.brandGreen, fontWeight: '800' }]}>
                       {formatMass(t.netWeightKg, 0)} kg
                     </Text>
                   </View>
+
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Độ ẩm đo tại cân</Text>
+                    <Text style={styles.infoVal}>{t.moisturePercent}%</Text>
+                  </View>
                 </View>
 
+                {/* Inline Action for Receiving Task */}
                 {t.status === 'PENDING_WEIGH' && (
-                  <View style={styles.cardActionRow}>
-                    <Button
-                      title="Xác nhận cân và nạp Silo"
-                      size="small"
+                  <View style={styles.taskActions}>
+                    <GlassButton
+                      title="Xác nhận Cân & Cho Xả Silo"
                       variant="primary"
-                      style={{ flex: 1 }}
-                      onPress={() => updateReceivingTaskStatus(t.id, 'WEIGHED')}
+                      size="small"
+                      onPress={() => updateReceivingTaskStatus(t.id, 'UNLOADED')}
+                      fullWidth
                     />
                   </View>
                 )}
-              </Card>
+              </GlassCard>
             ))}
           </View>
         )}
 
-        {/* OPERATIONS TAB */}
+        {/* TAB 2: OPERATIONS */}
         {activeTab === 'operations' && (
           <View>
             {operations.map((op) => (
-              <Card key={op.id} style={styles.itemCard}>
+              <GlassCard
+                key={op.id}
+                borderRadius={AppleGlass.radii.lg}
+                style={styles.itemCard}
+                interactive
+              >
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.itemCode}>{op.code}</Text>
-                    <Text style={styles.itemSub}>{op.facilityName}</Text>
+                    <Text style={styles.itemSub}>Công đoạn: {op.operationType}</Text>
                   </View>
-                  <StatusBadge status={op.status} />
+                  <GlassBadge status={op.status} />
                 </View>
 
                 <View style={styles.cardDivider} />
 
                 <View style={styles.opFlowBox}>
-                  <View style={styles.opFlowCol}>
-                    <Text style={styles.flowLabel}>Đầu vào (Input)</Text>
-                    <Text style={styles.flowLotCode}>{op.inputLotCode}</Text>
-                    <Text style={styles.flowMass}>{formatMass(op.inputMassKg, 0)} kg</Text>
+                  <View style={styles.opFlowSide}>
+                    <Text style={styles.opFlowLabel}>ĐẦU VÀO</Text>
+                    <Text style={styles.opFlowCode}>{op.inputLotCode}</Text>
+                    <Text style={styles.opFlowMass}>{formatMass(op.inputMassKg, 0)} kg</Text>
                   </View>
 
-                  <View style={styles.flowArrowCol}>
-                    <View style={styles.flowArrowCircle}>
-                      <ArrowRight size={16} color={Colors.primary} />
-                    </View>
-                    <Text style={styles.flowTypeBadge}>{op.operationType}</Text>
-                  </View>
+                  <ArrowRight size={18} color="#94A3B8" />
 
-                  <View style={styles.opFlowCol}>
-                    <Text style={styles.flowLabel}>Đầu ra (Output)</Text>
-                    <Text style={styles.flowLotCode}>{op.outputLotCode}</Text>
-                    <Text style={[styles.flowMass, { color: Colors.primary }]}>
+                  <View style={styles.opFlowSide}>
+                    <Text style={styles.opFlowLabel}>ĐẦU RA</Text>
+                    <Text style={styles.opFlowCode}>{op.outputLotCode}</Text>
+                    <Text style={[styles.opFlowMass, { color: AppleGlass.colors.brandGreen }]}>
                       {formatMass(op.outputMassKg, 0)} kg
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.cardDivider} />
-
                 <View style={styles.lossRow}>
-                  <View style={styles.lossCol}>
-                    <Text style={styles.lossLabel}>Hao hụt khai báo</Text>
-                    <Text style={styles.lossVal}>
-                      {formatMass(op.declaredLossKg, 0)} kg
-                    </Text>
-                  </View>
-
-                  <View style={styles.lossCol}>
-                    <Text style={styles.lossLabel}>Bảo toàn khối lượng (BR-01)</Text>
-                    <View style={styles.flexRow}>
-                      <CheckCircle size={14} color="#059669" />
-                      <Text style={styles.balancedText}>Đạt cân bằng (0.00 kg)</Text>
-                    </View>
-                  </View>
+                  <Text style={styles.lossText}>
+                    Hao hụt ghi nhận: {op.declaredLossKg} kg ({op.lossReason})
+                  </Text>
                 </View>
-
-                {op.lossReason ? (
-                  <Text style={styles.lossReasonText}>Lý do: {op.lossReason}</Text>
-                ) : null}
-              </Card>
+              </GlassCard>
             ))}
           </View>
         )}
 
-        {/* SILOS TAB */}
+        {/* TAB 3: SILOS */}
         {activeTab === 'silos' && (
           <View>
-            {silos.map((silo) => {
-              const current = parseFloat(silo.currentMassKg) || 0;
-              const percent = Math.min(100, Math.round((current / silo.capacityKg) * 100));
+            <View style={styles.silosGrid}>
+              {silos.map((silo) => {
+                const current = parseFloat(silo.currentMassKg) || 0;
+                const capacity = silo.capacityKg || 50000;
+                const percent = Math.min(Math.round((current / capacity) * 100), 100);
+                const isHold = silo.status === 'HOLD';
 
-              return (
-                <Card key={silo.id} style={styles.itemCard}>
-                  <View style={styles.cardHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemCode}>{silo.siloName}</Text>
-                      <Text style={styles.itemSub}>{silo.facilityName}</Text>
+                return (
+                  <GlassCard
+                    key={silo.id}
+                    tintColor={isHold ? 'rgba(254, 242, 242, 0.9)' : 'rgba(255, 255, 255, 0.85)'}
+                    borderTint={isHold ? 'rgba(239, 68, 68, 0.4)' : AppleGlass.colors.glassBorderLight}
+                    borderRadius={AppleGlass.radii.lg}
+                    style={styles.siloCard}
+                    interactive
+                  >
+                    <View style={styles.siloHeader}>
+                      <View style={styles.siloIcon}>
+                        <Warehouse size={18} color={isHold ? '#DC2626' : AppleGlass.colors.brandGreen} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.siloName}>{silo.siloName}</Text>
+                        <Text style={styles.siloCode}>{silo.siloCode}</Text>
+                      </View>
+                      <GlassBadge status={silo.status} size="small" />
                     </View>
-                    <StatusBadge status={silo.status} />
-                  </View>
 
-                  <View style={styles.cardDivider} />
+                    {/* Silo Liquid Level Gauge */}
+                    <View style={styles.gaugeContainer}>
+                      <View style={styles.gaugeHeader}>
+                        <Text style={styles.gaugePercent}>{percent}% dung lượng</Text>
+                        <Text style={styles.gaugeDetail}>
+                          {formatMass(current, 0)} / {formatMass(capacity, 0)} kg
+                        </Text>
+                      </View>
+                      <View style={styles.gaugeTrack}>
+                        <View
+                          style={[
+                            styles.gaugeFill,
+                            {
+                              width: `${percent}%`,
+                              backgroundColor: isHold ? '#EF4444' : percent > 85 ? '#F59E0B' : '#10B981',
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
 
-                  <View style={styles.siloInfoRow}>
-                    <View>
+                    <View style={styles.siloFooter}>
                       <Text style={styles.siloCommodity}>{silo.commodityType}</Text>
                       <Text style={styles.siloMoisture}>Độ ẩm: {silo.moisturePercent}</Text>
                     </View>
-
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.siloCapacityText}>
-                        <Text style={{ fontWeight: '800', color: Colors.primary }}>
-                          {formatMass(silo.currentMassKg, 0)}
-                        </Text>{' '}
-                        / {formatMass(silo.capacityKg, 0)} kg
-                      </Text>
-                      <Text style={styles.siloPercentText}>{percent}% sức chứa</Text>
-                    </View>
-                  </View>
-
-                  {/* Capacity Bar */}
-                  <View style={styles.capacityBarTrack}>
-                    <View
-                      style={[
-                        styles.capacityBarFill,
-                        {
-                          width: `${percent}%`,
-                          backgroundColor:
-                            silo.status === 'HOLD'
-                              ? Colors.red
-                              : percent > 85
-                              ? Colors.accent
-                              : Colors.primary,
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  <Text style={styles.lastUpdatedText}>Cập nhật: {silo.lastUpdated}</Text>
-                </Card>
-              );
-            })}
+                  </GlassCard>
+                );
+              })}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -309,55 +302,37 @@ export default function MillScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: AppleGlass.colors.systemBackground,
   },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabItemActive: {
-    borderBottomColor: Colors.primary,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  tabTextActive: {
-    color: Colors.primary,
-    fontWeight: '700',
+  segmentedContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   actionPromptText: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#64748B',
+    fontWeight: '500',
     flex: 1,
-    marginRight: 8,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   contentScroll: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   itemCard: {
     marginBottom: 12,
@@ -365,21 +340,21 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   itemCode: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.text,
+    color: '#0F172A',
   },
   itemSub: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#64748B',
     marginTop: 2,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: Colors.divider,
+    backgroundColor: 'rgba(226, 232, 240, 0.8)',
     marginVertical: 10,
   },
   rowBetween: {
@@ -391,163 +366,134 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: '#64748B',
     marginBottom: 2,
   },
   infoVal: {
     fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  plateText: {
-    fontSize: 13,
     fontWeight: '700',
-    color: Colors.text,
-    marginLeft: 4,
+    color: '#0F172A',
   },
   flexRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
-  weightGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  weightBox: {
-    flex: 1,
-    backgroundColor: Colors.cardSubtle,
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
-  },
-  weightLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  weightVal: {
+  plateText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.text,
-    marginTop: 2,
+    color: '#0F172A',
   },
-  cardActionRow: {
+  taskActions: {
     marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(226, 232, 240, 0.8)',
   },
   opFlowBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.cardSubtle,
-    borderRadius: 12,
-    padding: 10,
+    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    borderRadius: AppleGlass.radii.md,
+    padding: 12,
   },
-  opFlowCol: {
+  opFlowSide: {
     flex: 1,
   },
-  flowLabel: {
+  opFlowLabel: {
     fontSize: 10,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  flowLotCode: {
-    fontSize: 12,
     fontWeight: '700',
-    color: Colors.text,
-    marginTop: 2,
+    color: '#64748B',
+    marginBottom: 2,
   },
-  flowMass: {
+  opFlowCode: {
     fontSize: 13,
     fontWeight: '800',
+    color: '#0F172A',
+  },
+  opFlowMass: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
     marginTop: 2,
   },
-  flowArrowCol: {
-    alignItems: 'center',
-    paddingHorizontal: 8,
+  lossRow: {
+    marginTop: 8,
   },
-  flowArrowCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+  lossText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontStyle: 'italic',
+  },
+  silosGrid: {
+    gap: 12,
+  },
+  siloCard: {
+    marginBottom: 8,
+  },
+  siloHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  siloIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flowTypeBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.primary,
-    marginTop: 4,
+  siloName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  lossRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  lossCol: {
-    flex: 1,
-  },
-  lossLabel: {
+  siloCode: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: '#64748B',
   },
-  lossVal: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.text,
-    marginTop: 2,
-  },
-  balancedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#059669',
-    marginLeft: 4,
-  },
-  lossReasonText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-    marginTop: 6,
-  },
-  siloInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  gaugeContainer: {
+    marginTop: 12,
     marginBottom: 8,
   },
-  siloCommodity: {
-    fontSize: 14,
+  gaugeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  gaugePercent: {
+    fontSize: 12,
     fontWeight: '700',
-    color: Colors.text,
+    color: '#0F172A',
   },
-  siloMoisture: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  siloCapacityText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  siloPercentText: {
+  gaugeDetail: {
     fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    marginTop: 2,
+    color: '#64748B',
   },
-  capacityBarTrack: {
+  gaugeTrack: {
     height: 8,
-    backgroundColor: Colors.border,
+    backgroundColor: '#E2E8F0',
     borderRadius: 4,
     overflow: 'hidden',
-    marginVertical: 6,
   },
-  capacityBarFill: {
+  gaugeFill: {
     height: '100%',
     borderRadius: 4,
   },
-  lastUpdatedText: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 4,
+  siloFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  siloCommodity: {
+    fontSize: 12,
+    color: '#475569',
+  },
+  siloMoisture: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: AppleGlass.colors.brandGreen,
   },
 });

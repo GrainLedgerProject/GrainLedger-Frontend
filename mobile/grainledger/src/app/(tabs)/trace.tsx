@@ -6,15 +6,16 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
-import { Card } from '../../components/common/Card';
-import { StatusBadge } from '../../components/common/StatusBadge';
+import { GlassCard } from '../../components/common/GlassCard';
+import { GlassBadge } from '../../components/common/GlassBadge';
 import { useMillStore } from '../../store/millStore';
 import { formatMass } from '../../utils/decimalMass';
+import { AppleGlass } from '../../theme/appleGlass';
+import { useAppTheme } from '../../theme';
 import {
   Search,
   QrCode,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react-native';
 
 export default function TraceScreen() {
+  const theme = useAppTheme();
   const { traceLots, getLotByCode, isLoading, fetchMillData } = useMillStore();
   const [searchInput, setSearchInput] = useState('');
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
@@ -39,40 +41,57 @@ export default function TraceScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Header title="Truy xuất Nguồn gốc" subtitle="Tra cứu chuỗi hành trình và kiểm định MRL" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <Header
+        title="Truy xuất Nguồn gốc"
+        subtitle="Tra cứu chuỗi hành trình & kiểm định MRL bất biến"
+      />
 
-      {/* Search and Scan Input */}
+      {/* Apple Glass Search and Scan Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search size={18} color={Colors.textMuted} />
+        <GlassCard
+          tintColor="rgba(255, 255, 255, 0.85)"
+          borderRadius={AppleGlass.radii.pill}
+          contentStyle={styles.searchBarInner}
+        >
+          <Search size={18} color="#64748B" />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: theme.colors.label }]}
             placeholder="Nhập mã lô hàng (VD: RAW-...)"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.colors.tertiaryLabel}
             value={searchInput}
             onChangeText={setSearchInput}
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity style={styles.scanBtn} onPress={handleSearch}>
-            <QrCode size={18} color={Colors.primary} />
+          <TouchableOpacity style={styles.scanBtn} onPress={handleSearch} activeOpacity={0.7}>
+            <QrCode size={18} color={AppleGlass.colors.brandGreen} />
           </TouchableOpacity>
-        </View>
+        </GlassCard>
 
         {/* Suggestion Chips */}
         {traceLots.length > 0 ? (
           <View style={styles.suggestionRow}>
-            <Text style={styles.suggestLabel}>Lô hàng thực tế:</Text>
+            <Text style={styles.suggestLabel}>Lô khả dụng:</Text>
             {traceLots.slice(0, 3).map((lot) => (
               <TouchableOpacity
                 key={lot.id}
-                style={[styles.chip, currentLot?.id === lot.id && { borderColor: Colors.primary }]}
+                style={[
+                  styles.chip,
+                  currentLot?.id === lot.id && styles.chipActive,
+                ]}
                 onPress={() => {
                   setSearchInput(lot.lotCode);
                   setSelectedLotId(lot.id);
                 }}
               >
-                <Text style={styles.chipText}>{lot.lotCode}</Text>
+                <Text
+                  style={[
+                    styles.chipText,
+                    currentLot?.id === lot.id && styles.chipTextActive,
+                  ]}
+                >
+                  {lot.lotCode}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -87,27 +106,33 @@ export default function TraceScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={fetchMillData}
-            colors={[Colors.primary]}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
           />
         }
       >
         {currentLot ? (
           <View>
-            {/* Lot Summary Card */}
-            <Card style={styles.lotHeroCard}>
+            {/* Lot Summary Glass Hero Card */}
+            <GlassCard
+              tintColor="rgba(255, 255, 255, 0.9)"
+              borderRadius={AppleGlass.radii.xl}
+              elevated
+              style={styles.lotHeroCard}
+            >
               <View style={styles.heroTop}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.heroCode}>{currentLot.lotCode}</Text>
                   <Text style={styles.heroProduct}>{currentLot.productType}</Text>
                 </View>
-                <StatusBadge status={currentLot.status} size="medium" />
+                <GlassBadge status={currentLot.status} size="medium" />
               </View>
 
               <View style={styles.heroDivider} />
 
               <View style={styles.heroStatsRow}>
                 <View style={styles.heroStatItem}>
-                  <Text style={styles.heroStatLabel}>Khối lượng</Text>
+                  <Text style={styles.heroStatLabel}>Khối lượng hiện tại</Text>
                   <Text style={styles.heroStatVal}>
                     {formatMass(currentLot.currentMassKg, 0)} kg
                   </Text>
@@ -128,13 +153,18 @@ export default function TraceScreen() {
                   <Text style={styles.heroStatVal}>{currentLot.createdDate}</Text>
                 </View>
               </View>
-            </Card>
+            </GlassCard>
 
             {/* MRL Compliance Banner */}
-            <Card style={styles.mrlCard}>
+            <GlassCard
+              tintColor="rgba(240, 253, 244, 0.9)"
+              borderTint="rgba(52, 199, 89, 0.4)"
+              borderRadius={AppleGlass.radii.lg}
+              style={styles.mrlCard}
+            >
               <View style={styles.mrlHeader}>
                 <View style={styles.mrlIconBox}>
-                  <ShieldCheck size={24} color="#059669" />
+                  <ShieldCheck size={24} color="#166534" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.mrlTitle}>Chứng nhận Dư lượng MRL Đạt chuẩn</Text>
@@ -148,19 +178,19 @@ export default function TraceScreen() {
 
               <View style={styles.mrlChecklist}>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#059669" />
+                  <Check size={14} color="#166534" />
                   <Text style={styles.mrlItemText}>Azoxystrobin: 0.02 mg/kg (Ngưỡng 2.0)</Text>
                 </View>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#059669" />
+                  <Check size={14} color="#166534" />
                   <Text style={styles.mrlItemText}>Tricyclazole: Không phát hiện (LOD &lt; 0.01)</Text>
                 </View>
                 <View style={styles.mrlItem}>
-                  <Check size={14} color="#059669" />
+                  <Check size={14} color="#166534" />
                   <Text style={styles.mrlItemText}>Kim loại nặng (Cadmium, Chì): Đạt an toàn</Text>
                 </View>
               </View>
-            </Card>
+            </GlassCard>
 
             {/* Farmer Origin Composition */}
             <View style={styles.sectionHeaderRow}>
@@ -168,7 +198,12 @@ export default function TraceScreen() {
             </View>
 
             {currentLot.farmerOrigins.map((origin, index) => (
-              <Card key={index} style={styles.originCard}>
+              <GlassCard
+                key={index}
+                borderRadius={AppleGlass.radii.lg}
+                style={styles.originCard}
+                interactive
+              >
                 <View style={styles.originTop}>
                   <View>
                     <Text style={styles.originFarmer}>{origin.farmerName}</Text>
@@ -187,15 +222,18 @@ export default function TraceScreen() {
                   <Text style={styles.originVariety}>Giống: {origin.variety}</Text>
                   <Text style={styles.originHarvest}>Thu hoạch: {origin.harvestDate}</Text>
                 </View>
-              </Card>
+              </GlassCard>
             ))}
 
-            {/* Supply Chain Timeline */}
+            {/* Supply Chain Timeline with Apple Glass */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Hành trình chuỗi cung ứng</Text>
+              <Text style={styles.sectionTitle}>Hành trình Chuỗi Cung ứng</Text>
             </View>
 
-            <Card style={styles.timelineCard}>
+            <GlassCard
+              borderRadius={AppleGlass.radii.lg}
+              style={styles.timelineCard}
+            >
               {currentLot.history.map((step, idx) => (
                 <View key={idx} style={styles.timelineStep}>
                   <View style={styles.timelineLeft}>
@@ -217,12 +255,12 @@ export default function TraceScreen() {
                   </View>
                 </View>
               ))}
-            </Card>
+            </GlassCard>
           </View>
         ) : (
-          <View style={styles.emptyContainer}>
+          <GlassCard style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Không tìm thấy mã lô tương ứng.</Text>
-          </View>
+          </GlassCard>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -232,32 +270,31 @@ export default function TraceScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: AppleGlass.colors.systemBackground,
   },
   searchContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: 'rgba(226, 232, 240, 0.8)',
   },
-  searchBar: {
+  searchBarInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardSubtle,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     gap: 8,
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: Colors.text,
+    color: '#0F172A',
+    paddingVertical: 8,
   },
   scanBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(15, 56, 40, 0.08)',
   },
   suggestionRow: {
     flexDirection: 'row',
@@ -267,29 +304,37 @@ const styles = StyleSheet.create({
   },
   suggestLabel: {
     fontSize: 12,
-    color: Colors.textMuted,
+    color: '#64748B',
   },
   chip: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: AppleGlass.radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+  },
+  chipActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#34D399',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: Colors.primary,
+    color: '#475569',
+  },
+  chipTextActive: {
+    color: AppleGlass.colors.brandGreen,
+    fontWeight: '700',
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   lotHeroCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: Colors.border,
     marginBottom: 12,
   },
   heroTop: {
@@ -300,16 +345,16 @@ const styles = StyleSheet.create({
   heroCode: {
     fontSize: 17,
     fontWeight: '800',
-    color: Colors.text,
+    color: '#0F172A',
   },
   heroProduct: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#475569',
     marginTop: 2,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: Colors.divider,
+    backgroundColor: 'rgba(226, 232, 240, 0.8)',
     marginVertical: 12,
   },
   heroStatsRow: {
@@ -321,17 +366,15 @@ const styles = StyleSheet.create({
   },
   heroStatLabel: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: '#64748B',
     marginBottom: 2,
   },
   heroStatVal: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
+    color: '#0F172A',
   },
   mrlCard: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
     marginBottom: 16,
   },
   mrlHeader: {
@@ -342,7 +385,7 @@ const styles = StyleSheet.create({
   mrlIconBox: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -359,7 +402,7 @@ const styles = StyleSheet.create({
   },
   mrlDivider: {
     height: 1,
-    backgroundColor: '#BBF7D0',
+    backgroundColor: 'rgba(52, 199, 89, 0.25)',
     marginVertical: 10,
   },
   mrlChecklist: {
@@ -382,7 +425,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.text,
+    color: '#0F172A',
   },
   originCard: {
     marginBottom: 10,
@@ -395,27 +438,29 @@ const styles = StyleSheet.create({
   originFarmer: {
     fontSize: 14,
     fontWeight: '800',
-    color: Colors.text,
+    color: '#0F172A',
   },
   originPlot: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#475569',
     marginTop: 2,
   },
   originPercentBadge: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: '#ECFDF5',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   originPercentText: {
     fontSize: 13,
     fontWeight: '800',
-    color: Colors.primary,
+    color: AppleGlass.colors.brandGreen,
   },
   originDivider: {
     height: 1,
-    backgroundColor: Colors.divider,
+    backgroundColor: 'rgba(226, 232, 240, 0.8)',
     marginVertical: 8,
   },
   originFooter: {
@@ -424,14 +469,15 @@ const styles = StyleSheet.create({
   },
   originVariety: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#475569',
   },
   originHarvest: {
     fontSize: 12,
-    color: Colors.textMuted,
+    color: '#64748B',
   },
   timelineCard: {
     padding: 16,
+    marginBottom: 16,
   },
   timelineStep: {
     flexDirection: 'row',
@@ -446,7 +492,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
+    backgroundColor: AppleGlass.colors.brandGreen,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -469,21 +515,21 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
+    color: '#0F172A',
   },
   stepTime: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: '#64748B',
   },
   stepOperator: {
     fontSize: 12,
-    color: Colors.primary,
+    color: AppleGlass.colors.brandGreen,
     fontWeight: '600',
     marginTop: 2,
   },
   stepDetail: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#475569',
     marginTop: 2,
     lineHeight: 16,
   },
@@ -493,6 +539,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: Colors.textMuted,
+    color: '#64748B',
   },
 });
