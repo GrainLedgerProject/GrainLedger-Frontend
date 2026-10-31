@@ -1,3 +1,11 @@
+import { createAdminEndpoints } from "./endpoints/admin";
+import { createAuthEndpoints } from "./endpoints/auth";
+import { createCatalogsEndpoints } from "./endpoints/catalogs";
+import { createComplianceEndpoints } from "./endpoints/compliance";
+import { createLedgerEndpoints } from "./endpoints/ledger";
+import { createProcurementEndpoints } from "./endpoints/procurement";
+import { createProfileEndpoints } from "./endpoints/profile";
+import { createResidueEndpoints } from "./endpoints/residue";
 import { Platform } from 'react-native';
 import { storage } from './storage';
 import { LabSample, SampleHandover, LabReport } from '../types/compliance';
@@ -101,7 +109,7 @@ export class ApiService {
       }
 
       const contentType = response.headers.get('content-type') || '';
-      let data: any = null;
+      let data: T | null = null;
       if (contentType.includes('application/json')) {
         data = (await response.json()) as T;
       } else {
@@ -114,19 +122,24 @@ export class ApiService {
       }
 
       return { data, error: null, isMock: false };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         data: null,
-        error: err?.message || 'Network request failed (offline / host unreachable)',
+        error: err instanceof Error ? err.message : 'Network request failed (offline / host unreachable)',
         isMock: true,
       };
     }
   }
 
+  public admin = createAdminEndpoints(this.request.bind(this)).adminEndpoints;
+  public auth = createAuthEndpoints(this.request.bind(this)).authEndpoints;
+  public profile = createProfileEndpoints(this.request.bind(this)).profileEndpoints;
+
   // ==========================================
   // COMPLIANCE & LAB ENDPOINTS (from Web)
   // ==========================================
   public compliance = {
+    ...createComplianceEndpoints(this.request.bind(this)).complianceEndpoints,
     getSamples: (params?: Record<string, string | number>) => {
       const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
       return this.request<{ items: LabSample[] }>(`/api/samples${qs}`);
@@ -165,6 +178,7 @@ export class ApiService {
   // LEDGER & MILL ENDPOINTS (from Web)
   // ==========================================
   public ledger = {
+    ...createLedgerEndpoints(this.request.bind(this)).ledgerEndpoints,
     getSetup: () => this.request<any>('/api/ledger/setup'),
     getLots: (params?: Record<string, any>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -233,6 +247,7 @@ export class ApiService {
   // RESIDUE EVALUATION ENDPOINTS (from Web)
   // ==========================================
   public residue = {
+    ...createResidueEndpoints(this.request.bind(this)).residueEndpoints,
     getRules: () => this.request<{ items: any[] }>('/api/residue-rules'),
     createRule: (req: any) =>
       this.request<any>('/api/residue-rules', {
@@ -256,6 +271,7 @@ export class ApiService {
   // CATALOGS & MASTER DATA ENDPOINTS (from Web)
   // ==========================================
   public catalogs = {
+    ...createCatalogsEndpoints(this.request.bind(this)).catalogEndpoints,
     getMasterData: () => this.request<any>('/api/master-data'),
     getMrlVersions: () => this.request<{ items: any[] }>('/api/mrl-versions'),
   };
@@ -264,6 +280,7 @@ export class ApiService {
   // FIELD & PROCUREMENT ENDPOINTS (from Web)
   // ==========================================
   public procurement = {
+    ...createProcurementEndpoints(this.request.bind(this)).procurementEndpoints,
     getFarmers: () => this.request<{ items: any[] }>('/api/farmers'),
     createFarmer: (req: any) =>
       this.request<any>('/api/farmers', {
