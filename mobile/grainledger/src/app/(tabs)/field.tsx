@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React, { useMemo , useState } from 'react';
 
 import {
@@ -414,7 +414,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.successMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-    borderRadius: 6,
+    borderRadius: radii.xs,
   },
   areaText: {
     ...theme.typography.caption,

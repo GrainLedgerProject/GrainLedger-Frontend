@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React, { useMemo , useState } from 'react';
 
 import {
@@ -114,7 +114,7 @@ export default function MillScreen() {
         {activeTab === 'receiving' && (
           <View>
             {receivingTasks.length === 0 ? (
-              <GlassCard style={{ alignItems: 'center', padding: 32 }}>
+              <GlassCard style={{ alignItems: 'center', padding: spacing.xxl }}>
                 <Inbox size={40} color={theme.colors.tertiaryLabel} />
                 <Text style={{ marginTop: spacing.md, ...theme.typography.subheadline, fontWeight: '700', color: theme.colors.label }}>
                   Chưa có phiếu tiếp nhận xe nào
@@ -157,7 +157,7 @@ export default function MillScreen() {
                   </View>
                 </View>
 
-                <View style={[styles.rowBetween, { marginTop: 10 }]}>
+                <View style={[styles.rowBetween, { marginTop: spacing.sm }]}>
                   <View style={styles.infoCol}>
                     <Text style={styles.infoLabel}>Khối lượng tịnh (Net)</Text>
                     <Text style={[styles.infoVal, { color: theme.colors.accent, fontWeight: '800' }]}>
@@ -443,7 +443,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   siloIcon: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
@@ -478,12 +478,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   gaugeTrack: {
     height: 8,
     backgroundColor: theme.colors.separator,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     overflow: 'hidden',
   },
   gaugeFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radii.xs,
   },
   siloFooter: {
     flexDirection: 'row',

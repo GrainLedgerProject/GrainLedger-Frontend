@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -101,7 +101,7 @@ export const GlassSegmentedControl: React.FC<GlassSegmentedControlProps> = ({
 
 const styles = StyleSheet.create({
   count: {
-    borderRadius: 10,
+    borderRadius: radii.xs,
     minWidth: 20,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.zero,

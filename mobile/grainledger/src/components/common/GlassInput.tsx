@@ -87,8 +87,8 @@ export const GlassInput: React.FC<GlassInputProps> = ({
 };
 
 const styles = StyleSheet.create({
-  error: { marginTop: 5 },
-  input: { flex: 1, minHeight: 50, paddingVertical: 10 },
+  error: { marginTop: spacing.xs },
+  input: { flex: 1, minHeight: 50, paddingVertical: spacing.sm },
   inputContainer: {
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -96,8 +96,8 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: spacing.md,
   },
-  label: { fontWeight: '600', marginBottom: 7 },
-  leading: { marginRight: 10 },
-  trailing: { marginLeft: 10 },
-  wrapper: { marginBottom: 16 },
+  label: { fontWeight: '600', marginBottom: spacing.sm },
+  leading: { marginRight: spacing.sm },
+  trailing: { marginLeft: spacing.sm },
+  wrapper: { marginBottom: spacing.lg },
 });

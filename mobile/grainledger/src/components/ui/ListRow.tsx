@@ -82,5 +82,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  subtitle: { marginTop: 2 },
+  subtitle: { marginTop: spacing.xxs },
 });

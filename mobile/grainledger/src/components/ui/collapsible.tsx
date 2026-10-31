@@ -1,3 +1,4 @@
+import { radii } from '../../theme/tokens';
 import { SymbolView } from 'expo-symbols';
 import { PropsWithChildren, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
   button: {
     width: Spacing.four,
     height: Spacing.four,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },

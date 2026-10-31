@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React, { useMemo , useState } from 'react';
 
 import {
@@ -143,7 +143,7 @@ export default function TraceScreen() {
 
                 <View style={styles.heroStatItem}>
                   <Text style={styles.heroStatLabel}>Độ thuần chủng</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                     <Sparkles size={14} color={theme.colors.warning} />
                     <Text style={[styles.heroStatVal, { color: theme.colors.warning }]}>
                       {currentLot.purityScore}%
@@ -296,7 +296,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   scanBtn: {
     padding: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.accentMuted,
   },
   suggestionRow: {
@@ -388,7 +388,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   mrlIconBox: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     backgroundColor: theme.colors.successMuted,
     alignItems: 'center',
     justifyContent: 'center',
@@ -452,7 +452,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.successMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radii.xs,
     borderWidth: 1,
     borderColor: theme.colors.successMuted,
   },
@@ -494,7 +494,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   timelineDot: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -505,7 +505,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.separator,
     marginTop: spacing.xs,
-    marginBottom: -16,
+    marginBottom: -spacing.lg,
   },
   timelineRight: {
     flex: 1,

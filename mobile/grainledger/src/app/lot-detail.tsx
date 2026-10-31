@@ -1,4 +1,4 @@
-import { spacing } from '../theme/tokens';
+import { radii, spacing } from '../theme/tokens';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useMemo } from 'react';
 import { useAppTheme, type AppTheme } from '../theme';
@@ -157,7 +157,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   backBtn: {
     width: 48,
     height: 48,
-    borderRadius: 18,
+    borderRadius: radii.md,
     backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -266,7 +266,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.accentMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radii.xs,
   },
   percentText: {
     ...theme.typography.footnote,
@@ -289,7 +289,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   dot: {
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',

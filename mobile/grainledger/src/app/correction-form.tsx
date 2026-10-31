@@ -139,7 +139,7 @@ export default function CorrectionFormModal() {
           loading={loading}
           onPress={handleSubmit}
           fullWidth
-          style={{ marginTop: 8 }}
+          style={{ marginTop: spacing.sm }}
         />
       </ScrollView>
     </SafeAreaView>

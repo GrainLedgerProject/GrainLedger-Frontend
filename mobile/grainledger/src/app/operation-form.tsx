@@ -1,4 +1,4 @@
-import { spacing } from '../theme/tokens';
+import { radii, spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -238,7 +238,7 @@ export default function OperationFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: spacing.sm, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: spacing.xxl }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -263,7 +263,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   backBtn: {
     width: 48,
     height: 48,
-    borderRadius: 18,
+    borderRadius: radii.md,
     backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -293,7 +293,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   opTypeOption: {
     padding: spacing.md,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     backgroundColor: theme.colors.surface,
@@ -316,7 +316,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   balanceBox: {
     padding: spacing.md,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     borderWidth: 1.5,
     marginTop: spacing.sm,
   },

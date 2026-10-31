@@ -144,7 +144,7 @@ export default function FarmerFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: spacing.md, marginBottom: 30 }}
+          style={{ marginTop: spacing.md, marginBottom: spacing.xxl }}
         />
       </ScrollView>
     </SafeAreaView>

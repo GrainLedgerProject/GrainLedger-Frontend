@@ -1,4 +1,4 @@
-import { spacing } from '../theme/tokens';
+import { radii, spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -221,7 +221,7 @@ export default function ProcurementFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: spacing.sm, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: spacing.xxl }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -246,7 +246,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   backBtn: {
     width: 48,
     height: 48,
-    borderRadius: 18,
+    borderRadius: radii.md,
     backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -279,7 +279,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginRight: spacing.sm,
@@ -292,7 +292,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginRight: spacing.sm,
@@ -325,7 +325,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.successMuted,
     borderWidth: 1,
     borderColor: theme.colors.success,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     padding: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',

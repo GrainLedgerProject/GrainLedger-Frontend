@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   dot: {
-    borderRadius: 4,
+    borderRadius: radii.xs,
     height: 7,
     width: 7,
   },

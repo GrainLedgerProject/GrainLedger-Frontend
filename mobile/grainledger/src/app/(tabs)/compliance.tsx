@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React, { useMemo , useState } from 'react';
 
 import {
@@ -299,7 +299,7 @@ export default function ComplianceScreen() {
             <GlassCard
               tintColor={theme.colors.surface}
               borderRadius={AppleGlass.radii.lg}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: spacing.md }}
             >
               <View style={styles.infoRow}>
                 <Info size={16} color={theme.colors.info} />
@@ -527,7 +527,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.infoMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radii.xs,
     alignSelf: 'flex-start',
     marginTop: spacing.xs,
     marginBottom: spacing.sm,
@@ -553,7 +553,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   substanceRow: {
     backgroundColor: theme.colors.surface,
     padding: spacing.sm,
-    borderRadius: 8,
+    borderRadius: radii.xs,
     borderWidth: 1,
     borderColor: theme.colors.separator,
   },
@@ -571,13 +571,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   gaugeBackground: {
     height: 6,
     backgroundColor: theme.colors.separator,
-    borderRadius: 3,
+    borderRadius: radii.xs,
     overflow: 'hidden',
     marginBottom: spacing.xs,
   },
   gaugeFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: radii.xs,
   },
   gaugeLabels: {
     flexDirection: 'row',
@@ -640,7 +640,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.warningMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-    borderRadius: 6,
+    borderRadius: radii.xs,
   },
   marketText: {
     ...theme.typography.caption,

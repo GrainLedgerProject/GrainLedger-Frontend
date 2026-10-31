@@ -1,4 +1,4 @@
-import { spacing } from '../theme/tokens';
+import { radii, spacing } from '../theme/tokens';
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -201,7 +201,7 @@ export default function SprayFormScreen() {
           size="large"
           loading={isSubmitting}
           onPress={handleSubmit}
-          style={{ marginTop: spacing.sm, marginBottom: 30 }}
+          style={{ marginTop: spacing.sm, marginBottom: spacing.xxl }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -226,7 +226,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   backBtn: {
     width: 48,
     height: 48,
-    borderRadius: 18,
+    borderRadius: radii.md,
     backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -255,7 +255,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginRight: spacing.sm,
@@ -282,7 +282,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: spacing.sm,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     borderWidth: 1.5,
     borderColor: theme.colors.separator,
     marginBottom: spacing.sm,
@@ -309,7 +309,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.warningMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 6,
+    borderRadius: radii.xs,
   },
   phiTagText: {
     ...theme.typography.body,
@@ -327,7 +327,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.warningMuted,
     borderWidth: 1,
     borderColor: theme.colors.warning,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     padding: spacing.md,
     marginTop: spacing.xs,
   },

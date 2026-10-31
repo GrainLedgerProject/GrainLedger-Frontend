@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import { useMemo , useState } from 'react';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -144,7 +144,7 @@ export default function ProfileScreen() {
           </View>
 
           {user?.assignedFacilities && user.assignedFacilities.length > 0 ? (
-            <View style={[styles.infoRow, { marginTop: 6 }]}>
+            <View style={[styles.infoRow, { marginTop: spacing.xs }]}>
               <Shield size={16} color={theme.colors.secondaryLabel} />
               <Text style={styles.infoText}>
                 Phạm vi: {user.assignedFacilities.join(', ')}
@@ -153,8 +153,8 @@ export default function ProfileScreen() {
           ) : null}
 
           {user?.permissions && user.permissions.length > 0 ? (
-            <View style={{ marginTop: 10 }}>
-              <View style={[styles.infoRow, { marginBottom: 6 }]}>
+            <View style={{ marginTop: spacing.sm }}>
+              <View style={[styles.infoRow, { marginBottom: spacing.xs }]}>
                 <KeyRound size={16} color={theme.colors.secondaryLabel} />
                 <Text style={styles.permissionTitle}>
                   Quyền hạn được cấp ({user.permissions.length}):
@@ -411,7 +411,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceSecondary,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-    borderRadius: 6,
+    borderRadius: radii.xs,
     borderWidth: 1,
     borderColor: theme.colors.separator,
   },
@@ -432,7 +432,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   roleSwitcherIconBox: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.successMuted,
     alignItems: 'center',
     justifyContent: 'center',
@@ -484,7 +484,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   syncIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',

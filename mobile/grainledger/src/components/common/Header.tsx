@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   control: {
     alignItems: 'center',
-    borderRadius: 24,
+    borderRadius: radii.lg,
     justifyContent: 'center',
     minHeight: 48,
     minWidth: 48,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   pendingDot: {
-    borderRadius: 4,
+    borderRadius: radii.xs,
     height: 7,
     position: 'absolute',
     right: 9,

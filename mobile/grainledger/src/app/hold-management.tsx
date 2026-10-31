@@ -346,7 +346,7 @@ export default function HoldManagementScreen() {
                 loading={isSubmitting}
                 onPress={handleIssueHold}
                 fullWidth
-                style={{ marginTop: 12 }}
+                style={{ marginTop: spacing.md }}
               />
             </GlassCard>
           </View>

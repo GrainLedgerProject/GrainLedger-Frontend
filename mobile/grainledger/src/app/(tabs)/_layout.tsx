@@ -1,4 +1,4 @@
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
 import React from 'react';
 import { StyleSheet, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
@@ -79,7 +79,7 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   item: {
-    borderRadius: 24,
+    borderRadius: radii.lg,
     marginHorizontal: spacing.xxs,
   },
   label: {

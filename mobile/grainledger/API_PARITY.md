@@ -1,22 +1,31 @@
-# Web/mobile API coverage audit
+# Web/mobile API coverage — 2026-10-31
 
-Source: current working tree, 2026-10-31. Path presence is not proof of method, payload, permissions, response shape, or end-to-end parity. Existing uncommitted API changes are included.
+All eight web endpoint modules are now available through the existing mobile ApiService:
 
-| Web module | Paths absent from mobile source |
-| --- | --- |
-| admin.ts | `/api/admin/organizations`<br>`/api/admin/roles`<br>`/api/admin/users`<br>`/api/admin/users/{id}/access` |
-| auth.ts | `/api/auth/csrf`<br>`/api/auth/forgot-password`<br>`/api/auth/google`<br>`/api/auth/google/complete`<br>`/api/auth/logout-all`<br>`/api/auth/refresh`<br>`/api/auth/register`<br>`/api/auth/resend-verification`<br>`/api/auth/reset-password`<br>`/api/auth/verify-email`<br>`/api/auth/web-login` |
-| catalogs.ts | `/api/active-substances`<br>`/api/active-substances/{id}`<br>`/api/commodities`<br>`/api/commodities/{id}`<br>`/api/markets`<br>`/api/markets/{id}`<br>`/api/measurement-units`<br>`/api/measurement-units/{id}`<br>`/api/mrl-versions/import`<br>`/api/mrl-versions/resolve`<br>`/api/mrl-versions/{id}`<br>`/api/mrl-versions/{id}/limits`<br>`/api/mrl-versions/{id}/limits/{id}`<br>`/api/mrl-versions/{id}/publish`<br>`/api/quality-attributes`<br>`/api/quality-attributes/{id}`<br>`/api/rice-varieties`<br>`/api/rice-varieties/{id}` |
-| compliance.ts | `/api/lab-reports/{id}/file` |
-| health.ts | No missing literal paths; verify contracts and UI coverage |
-| ledger.ts | `/api/ledger/assignments`<br>`/api/ledger/assignments/{id}/{id}`<br>`/api/ledger/compatibilities`<br>`/api/ledger/corrections/{id}/cancel`<br>`/api/ledger/corrections/{id}/commit`<br>`/api/ledger/equipment`<br>`/api/ledger/equipment/{id}`<br>`/api/ledger/equipment/{id}/retire`<br>`/api/ledger/evidence`<br>`/api/ledger/evidence/{id}`<br>`/api/ledger/facilities`<br>`/api/ledger/facilities/{id}`<br>`/api/ledger/history`<br>`/api/ledger/locations`<br>`/api/ledger/locations/{id}`<br>`/api/ledger/locations/{id}/clearance`<br>`/api/ledger/lookups`<br>`/api/ledger/lots/{id}/residue-evaluations`<br>`/api/ledger/lots/{id}/residue-evaluations/{id}`<br>`/api/ledger/mixed-bulk-policies`<br>`/api/ledger/notifications`<br>`/api/ledger/notifications/{id}/read`<br>`/api/ledger/operations/{id}`<br>`/api/ledger/policies`<br>`/api/ledger/receiving-thresholds`<br>`/api/ledger/receiving-thresholds/companies`<br>`/api/ledger/receiving-thresholds/companies/{id}`<br>`/api/ledger/receiving-thresholds/default`<br>`/api/ledger/receiving-thresholds/history`<br>`/api/ledger/receiving-thresholds/own-company`<br>`/api/ledger/receiving/{id}`<br>`/api/ledger/trace/from-lab`<br>`/api/ledger/trace/starts`<br>`/api/ledger/transfers` |
-| procurement.ts | `/api/crop-seasons`<br>`/api/crop-seasons/{id}`<br>`/api/farmers/duplicate-check`<br>`/api/farmers/{id}`<br>`/api/plot-seasons`<br>`/api/plot-seasons/{id}`<br>`/api/plots/duplicate-check`<br>`/api/plots/{id}`<br>`/api/procurement-reference-data`<br>`/api/procurements/{id}`<br>`/api/source-lots/{id}`<br>`/api/spray-declarations/{id}` |
-| profile.ts | `/api/profile` |
-| residue.ts | `/api/residue-matrix/publish`<br>`/api/residue-policy-settings/batch`<br>`/api/residue-policy-settings/{id}`<br>`/api/residue-report-selections`<br>`/api/residue-report-selections/preview`<br>`/api/residue-report-selections/{id}`<br>`/api/residue-rules/{id}` |
+| Source in web/grainledger/src/api | Mobile API namespace | Status |
+| --- | --- | --- |
+| admin.ts | api.admin | Organizations, users, roles, access |
+| auth.ts | api.auth | Registration, verification, password recovery, refresh, logout-all and existing browser auth helpers |
+| catalogs.ts | api.catalogs | Substances, markets, commodities, varieties, units, quality attributes, MRL versions/limits/import/publish |
+| compliance.ts | api.compliance | Samples, handovers, lab reports, updates and report-file endpoint |
+| ledger.ts | api.ledger | Facilities, locations, equipment, assignments, operations, holds, corrections, notifications, history, receiving, policies, transfers, evidence, trace and residue evaluations |
+| procurement.ts | api.procurement | Farmers, plots, seasons, duplicate checks, source lots and procurement reference data |
+| profile.ts | api.profile | Read and update profile; editing connected to the existing profile screen |
+| residue.ts | api.residue | Rules, policy settings, batch updates, report selections, matrix publish and report review |
 
-## Integration constraints
+## Compatibility
 
-- Preserve existing mobile requests, stores and routes. New API integration is additive and must use request/response contracts from the web source.
-- Browser cookie/CSRF and Google redirect endpoints need a mobile authentication design; literal path parity alone is insufficient.
-- Do not copy browser client.ts into React Native: it depends on document cookies and browser state.
-- API integration remains incomplete. No endpoint was invented or marked integrated by this audit.
+- Factory modules in src/services/endpoints mirror the current web source contracts. Their injected transport is the existing mobile request method, including the configured base URL and token. They do not import web state, cookies or browser globals.
+- New methods return the existing mobile { data, error, isMock } result. Existing methods take precedence when names overlap; existing screens/stores/offline requests are unchanged.
+- Web response contracts declared unknown remain unknown. Callers must narrow them before accessing fields. No DTO was guessed.
+- npm test executes 768 endpoint parity cases against the actual web modules, covering method sets, paths, query serialization, HTTP methods and request bodies. This is contract parity, not backend integration testing.
+- Browser web-login/CSRF/Google endpoints are exposed for contract completeness. Their presence does not implement native OAuth, browser cookies, deep-link callbacks or refresh-token lifecycle. Do not wire browser redirect helpers into a native login screen without the corresponding backend flow.
+- The /health check remains the existing profile connection check.
+
+## UI coverage and remaining verification
+
+The existing field, mill, compliance, holds and offline flows continue to use their existing methods. Profile editing now calls PUT /api/profile and persists the returned name/phone in the existing Zustand user/cache; demo sessions cannot submit a profile change.
+
+Admin/catalog management, registration/password-recovery, residue configuration, notification/history and other web-only management flows have service methods but do not yet have mobile controls. Adding all corresponding screens would expand the current navigation flow; no routes have been renamed or added in this pass.
+
+Run authorized read/write scenarios against a real backend with appropriate roles to validate permissions, request validation, error bodies, file downloads and response shapes. No live backend mutations were executed during verification.
