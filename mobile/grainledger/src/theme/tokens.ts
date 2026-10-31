@@ -108,7 +108,7 @@ export const typography = {
 export type TypographyVariant = keyof typeof typography;
 
 export const iconSizes = { sm: 16, md: 20, lg: 24, xl: 32 } as const;
-export const layout = { compactGutter: 16, regularGutter: 24, maxContentWidth: 760, tabBarHeight: 64 } as const;
+export const layout = { compactGutter: 16, regularGutter: 24, maxContentWidth: 760, tabBarHeight: 64, minTouchTarget: Platform.OS === 'android' ? 48 : 44 } as const;
 
 export const shadows = {
   subtle: {

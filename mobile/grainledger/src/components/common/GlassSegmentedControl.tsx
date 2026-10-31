@@ -1,4 +1,4 @@
-import { radii, spacing } from '../../theme/tokens';
+import { layout, radii, spacing } from '../../theme/tokens';
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -67,6 +67,8 @@ export const GlassSegmentedControl: React.FC<GlassSegmentedControlProps> = ({
                 style={{
                   color: active ? theme.colors.accent : theme.colors.secondaryLabel,
                   fontWeight: active ? '600' : '500',
+                  flexShrink: 1,
+                  textAlign: 'center',
                 }}
               >
                 {item.label}
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: layout.minTouchTarget,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },

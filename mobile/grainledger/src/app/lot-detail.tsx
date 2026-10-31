@@ -9,9 +9,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Card } from '../components/common/Card';
+import { DetailHeader } from '../components/common/DetailHeader';
+import { EmptyState } from '../components/ui/States';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { useMillStore } from '../store/millStore';
 import { formatMass } from '../utils/decimalMass';
@@ -31,19 +34,30 @@ export default function LotDetailScreen() {
 
   const lot = (params.code ? getLotByCode(params.code) : null) || traceLots[0];
 
+  if (!lot) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <EmptyState title="Chưa có dữ liệu lô hàng" message="Đồng bộ dữ liệu nhà máy rồi mở lại lô hàng." actionLabel="Quay lại" onAction={() => router.back()} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={Platform.OS === 'ios' ? ['left', 'right', 'bottom'] : ['top', 'left', 'right', 'bottom']}>
+      <DetailHeader title="Chi tiết lô hàng" fallback={
       <View style={styles.header}>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={theme.colors.label} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chi Tiết Lô Hàng & Truy Xuất</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => {}}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Chia sẻ lô hàng chưa khả dụng" accessibilityState={{ disabled: true }} disabled style={styles.backBtn}>
           <Share2 size={18} color={theme.colors.label} />
         </TouchableOpacity>
       </View>
+      } />
 
       <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+        contentInsetAdjustmentBehavior="automatic"
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

@@ -49,9 +49,9 @@ export default function ComplianceScreen() {
       <View style={styles.tabBarContainer}>
         <GlassSegmentedControl
           segments={[
-            { id: 'samples', label: 'Mẫu Lab & Niêm chì', count: samples.length },
-            { id: 'reports', label: 'Báo cáo MRL', count: reports.length },
-            { id: 'standards', label: 'Chuẩn Xuất khẩu' },
+            { id: 'samples', label: 'Mẫu lab', count: samples.length },
+            { id: 'reports', label: 'Báo cáo', count: reports.length },
+            { id: 'standards', label: 'Tiêu chuẩn' },
           ]}
           activeId={activeTab}
           onSelect={(id) => setActiveTab(id as 'samples' | 'reports' | 'standards')}
@@ -85,11 +85,11 @@ export default function ComplianceScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.heroRow}>
-                <Text style={styles.heroTitle}>Trạng thái Tuân thủ Toàn diện</Text>
-                <GlassBadge status="PASS" label="ĐẠT CHUẨN EU/US" />
+                <Text style={styles.heroTitle}>Hồ sơ mẫu & báo cáo lab</Text>
+                <GlassBadge status="IN_PROCESS" label="TỔNG HỢP HỒ SƠ" />
               </View>
               <Text style={styles.heroSubtitle}>
-                Tất cả 12 lô hàng xuất khẩu mục tiêu đều đạt ngưỡng an toàn dư lượng theo Quy định EU 396/2005.
+                Đang hiển thị {samples.length} mẫu và {reports.length} báo cáo. Kết luận của từng báo cáo được trình bày bên dưới.
               </Text>
             </View>
           </View>
@@ -171,17 +171,17 @@ export default function ComplianceScreen() {
                     <Lock size={14} color={theme.colors.success} />
                     <Text style={styles.sealText}>Mã Niêm chì: {item.sealCode}</Text>
                   </View>
-                  <Text style={styles.sealStatus}>Niêm phong nguyên vẹn (Intact)</Text>
+                  <Text style={styles.sealStatus}>Mã niêm chì theo hồ sơ lấy mẫu</Text>
                 </View>
 
                 <View style={styles.cardDetails}>
                   <Text style={styles.detailText}>
                     <Text style={styles.detailLabel}>Vật liệu: </Text>
-                    {item.materialDescription || 'Lúa tươi thu mua'}
+                    {item.materialDescription || 'Chưa ghi nhận vật liệu'}
                   </Text>
                   <Text style={styles.detailText}>
                     <Text style={styles.detailLabel}>Địa điểm: </Text>
-                    {item.collectionLocation || 'Trạm thu mua Cái Bè'}
+                    {item.collectionLocation || 'Chưa ghi nhận địa điểm'}
                   </Text>
                   <Text style={styles.detailText}>
                     <Text style={styles.detailLabel}>Thời gian: </Text>
