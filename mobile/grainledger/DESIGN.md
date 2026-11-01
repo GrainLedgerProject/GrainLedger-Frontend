@@ -35,6 +35,12 @@ The splash plugin uses the same white and soft-black backgrounds. Its SDK 58 con
 
 Palette validation: TypeScript strict, ESLint, the full npm test suite (including 44 AA semantic contrast pairs), Expo Doctor 20/20 and iOS/Android Hermes exports passed. Device appearance and native splash review remain pending.
 
+### Web development startup and refresh
+
+The server initially renders the light palette because it cannot read the browser's system preference. ThemeProvider uses React's hydration snapshot so the browser's first render matches that HTML, then follows the actual system scheme. Native platforms read the system scheme immediately. ThemeContext and useAppTheme live in context.ts separately from the provider component, preserving context identity when Fast Refresh replaces the provider.
+
+Browser verification against the development server reproduced a dark-mode hydration mismatch before the fix. After the fix, cold navigation in both schemes and a provider Fast Refresh completed without console errors or uncaught exceptions; the demo dashboard remained visible. All five tab links were exercised. These browser checks do not verify native device execution or a running backend. An existing web tab should receive a full reload after this context-module change.
+
 ### Typography
 
 `AppText` exposes the iOS-aligned scale:

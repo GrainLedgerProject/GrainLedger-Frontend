@@ -1,4 +1,5 @@
-export { AppThemeProvider, useAppTheme } from './ThemeProvider';
+export { AppThemeProvider } from './ThemeProvider';
+export { useAppTheme } from './context';
 export {
   darkColors,
   iconSizes,
