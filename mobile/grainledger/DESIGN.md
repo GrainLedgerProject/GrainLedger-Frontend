@@ -8,7 +8,7 @@ The presentation layer follows Apple HIG's clarity, deference, and depth while r
 - Content cards, forms, status badges, and long text use opaque semantic surfaces.
 - One primary action is visually dominant in each task area.
 - Interactive targets are at least 44 pt on iOS and 48 dp where Android needs the larger target.
-- Layouts use generous whitespace, short labels, and a restrained GrainLedger green accent.
+- Layouts use generous whitespace, short labels, a white/light or soft-black/dark canvas, and a restrained GrainLedger green accent.
 - Business logic, route names, data models, API calls, and navigation flow stay outside this system.
 
 ## Tokens
@@ -28,6 +28,12 @@ Use semantic names rather than literal colors:
 - `glassTint`, `glassTintClear`, `glassBorder`, `glassHighlight`: internal glass rendering
 
 Light and dark palettes are selected from the system color scheme by `AppThemeProvider`.
+
+The agreed palette uses `#FFFFFF` for the light canvas and `#101010` for the dark canvas. Content surfaces, labels, separators, scrims and glass tints are neutral gray, without a green cast. Light accent `#2F6B3A` matches `web/grainledger/src/index.css`; dark accent `#78BC83` adjusts the same green family for readable contrast. Reserve brand green for the logo, primary actions, small selected-state indicators and occasional functional links. Secondary buttons, ordinary metrics, empty/loading states and profile avatars use neutral tones. Do not fill promotional/content cards with brand green. Semantic success/warning/error colors retain their status meaning.
+
+The splash plugin uses the same white and soft-black backgrounds. Its SDK 58 config type and documentation were checked before adding the dark override. Native splash changes require a new binary and release-build review; Expo Go cannot fully reproduce them. Reference: https://docs.expo.dev/versions/v58.0.0/sdk/splash-screen/ .
+
+Palette validation: TypeScript strict, ESLint, the full npm test suite (including 44 AA semantic contrast pairs), Expo Doctor 20/20 and iOS/Android Hermes exports passed. Device appearance and native splash review remain pending.
 
 ### Typography
 
@@ -136,7 +142,7 @@ Go, create a development build instead of editing generated native folders.
 
 ## Manual decisions and checks
 
-- Confirm the current GrainLedger green accent or provide the final brand color.
+- The user confirmed white and soft-black canvases with limited web-brand green. Keep future screens within this color hierarchy.
 - Test on one iOS 26 device, one iOS 17/18 device, one Android API 31+ mid-range device, and one
   Android API 24-30 device.
 - Verify tab labels at the largest accessibility text size.
