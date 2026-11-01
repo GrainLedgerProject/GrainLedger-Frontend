@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { api } from '../../services/api';
-import { buildMrlVersion, createMrlManager, type MrlLimit, type MrlSummary } from '../../services/mrlManagement';
+import { buildMrlVersion, createMrlManager, parseMrlImport, type MrlLimit, type MrlSummary } from '../../services/mrlManagement';
 import type { CatalogItem } from '../../services/management';
 import { spacing } from '../../theme';
 import { Button } from '../common/Button';
@@ -26,6 +26,8 @@ export function MrlVersionsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importText, setImportText] = useState('');
   const [marketId, setMarketId] = useState('');
   const [commodityId, setCommodityId] = useState('');
   const [date, setDate] = useState('');
@@ -56,6 +58,16 @@ export function MrlVersionsPanel() {
     catch (reason: unknown) { setError(reason instanceof Error ? reason.message : 'Thao tác chưa hoàn tất.'); }
     finally { lock.current = false; setBusy(false); }
   };
+  const confirmImport = () => {
+    try {
+      const request = parseMrlImport(importText);
+      Alert.alert('Nhập bảng MRL?', `Dữ liệu gồm ${request.limits?.length ?? 0} giới hạn hoạt chất. Máy chủ sẽ kiểm tra thị trường, hàng hóa và mã hoạt chất.`, [
+        { text: 'Trở lại', style: 'cancel' }, { text: 'Nhập dữ liệu', onPress: () => { void run(async () => {
+          await manager.importVersion(importText); setImporting(false); setImportText(''); setNotice('Đã nhập bảng MRL.'); await load();
+        }); } },
+      ]);
+    } catch (reason: unknown) { setError(reason instanceof Error ? reason.message : 'Không thể đọc bảng MRL.'); }
+  };
 
   return <Card style={styles.card}><View style={styles.stack}>
     <AppText variant="title3" accessibilityRole="header">Phiên bản giới hạn MRL</AppText>
@@ -65,7 +77,13 @@ export function MrlVersionsPanel() {
       {notice ? <AppText color="success" accessibilityLiveRegion="polite">{notice}</AppText> : null}
       {error ? <AppText color="destructive" accessibilityRole="alert">{error}</AppText> : null}
       {loading ? <LoadingState label="Đang tải phiên bản MRL" /> : <>
-        {creating ? <View style={styles.stack}>
+        {importing ? <View style={styles.stack}>
+          <AppText variant="headline">Nhập bảng MRL từ JSON</AppText>
+          <AppText variant="footnote" color="secondaryLabel">Dán dữ liệu cùng định dạng nhập trên web: marketId, commodityId, effectiveFrom, effectiveTo, sourceRef và limits. Giá trị limitValue dùng chuỗi để giữ nguyên độ chính xác.</AppText>
+          <InputField label="Nội dung bảng MRL" value={importText} onChangeText={setImportText} editable={!busy} multiline autoCorrect={false} autoCapitalize="none" />
+          <Button title="Kiểm tra & nhập bảng MRL" loading={busy} disabled={!importText.trim()} onPress={confirmImport} />
+          <Button title="Hủy nhập dữ liệu" variant="outline" disabled={busy} onPress={() => { setImporting(false); setImportText(''); }} />
+        </View> : creating ? <View style={styles.stack}>
           <ChoiceField label="Thị trường" value={marketId} options={choices(markets)} onChange={setMarketId} disabled={busy} />
           <ChoiceField label="Hàng hóa" value={commodityId} options={choices(commodities)} onChange={setCommodityId} disabled={busy} />
           <InputField label="Ngày hiệu lực" placeholder="YYYY-MM-DD" value={date} onChangeText={setDate} editable={!busy} autoCorrect={false} />
@@ -74,8 +92,11 @@ export function MrlVersionsPanel() {
             await manager.create(buildMrlVersion(marketId, commodityId, date, source)); setCreating(false); setNotice('Đã tạo bản nháp MRL.'); await load();
           }); }} />
           <Button title="Hủy tạo bản nháp" variant="outline" disabled={busy} onPress={() => setCreating(false)} />
-        </View> : <Button title="Thêm bản nháp MRL" disabled={busy} onPress={() => { setCreating(true); setSelected(null); }} />}
-        {selected ? <View style={styles.stack}>
+        </View> : <>
+          <Button title="Thêm bản nháp MRL" disabled={busy} onPress={() => { setCreating(true); setSelected(null); }} />
+          <Button title="Nhập bảng MRL từ JSON" variant="secondary" disabled={busy} onPress={() => { setImporting(true); setSelected(null); setError(null); }} />
+        </>}
+        {creating || importing ? null : selected ? <View style={styles.stack}>
           <AppText variant="headline">{selected.marketName} · {selected.commodityName}</AppText>
           <AppText variant="footnote" color="secondaryLabel">{statusLabels[selected.status]}</AppText>
           {selected.status === 'DRAFT' ? <>

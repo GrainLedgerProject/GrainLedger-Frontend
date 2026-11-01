@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js';
-import { createCatalogsEndpoints, type CreateMrlVersionRequest, type UpsertMrlLimitRequest } from './endpoints/catalogs';
+import { createCatalogsEndpoints, type CreateMrlVersionRequest, type ImportMrlVersionRequest, type UpsertMrlLimitRequest } from './endpoints/catalogs';
 import type { ApiTransport } from './endpoints/transport';
 import { isCatalogItem, isRecord, parseManagementList, requireResult } from './management';
 
@@ -43,6 +43,33 @@ export function buildMrlLimit(value: string, unit: string): UpsertMrlLimitReques
   return { limitValue: new Decimal(normalized).toFixed(), unit: unit.trim() };
 }
 
+export function parseMrlImport(text: string): ImportMrlVersionRequest {
+  let value: unknown;
+  try { value = JSON.parse(text); }
+  catch { throw new Error('Nội dung JSON chưa hợp lệ. Vui lòng kiểm tra lại.'); }
+  if (!isRecord(value) || typeof value.marketId !== 'string' || !value.marketId.trim()
+    || typeof value.commodityId !== 'string' || !value.commodityId.trim()) {
+    throw new Error('Dữ liệu nhập cần marketId và commodityId.');
+  }
+  const nullableString = (input: unknown): input is string | null => input === null || typeof input === 'string';
+  if (!nullableString(value.effectiveFrom) || !nullableString(value.effectiveTo) || !nullableString(value.sourceRef)) {
+    throw new Error('effectiveFrom, effectiveTo và sourceRef phải là chuỗi hoặc null.');
+  }
+  if (value.limits !== null && !Array.isArray(value.limits)) throw new Error('limits phải là danh sách hoặc null.');
+  const limits = value.limits === null ? null : value.limits.map((entry: unknown) => {
+    if (!isRecord(entry) || !nullableString(entry.substanceCode) || !nullableString(entry.limitValue) || !nullableString(entry.unit)) {
+      throw new Error('Mỗi giới hạn cần substanceCode, limitValue và unit dạng chuỗi hoặc null.');
+    }
+    // Keep the contract's decimal string verbatim; converting JSON numbers loses precision.
+    if (entry.limitValue !== null && !/^\d+(?:\.\d+)?$/.test(entry.limitValue)) {
+      throw new Error('limitValue phải là chuỗi số thập phân không âm.');
+    }
+    return { substanceCode: entry.substanceCode, limitValue: entry.limitValue, unit: entry.unit };
+  });
+  return { marketId: value.marketId, commodityId: value.commodityId, effectiveFrom: value.effectiveFrom,
+    effectiveTo: value.effectiveTo, sourceRef: value.sourceRef, limits };
+}
+
 export function createMrlManager(transport: ApiTransport) {
   const api = createCatalogsEndpoints(transport).catalogEndpoints;
   return {
@@ -52,6 +79,7 @@ export function createMrlManager(transport: ApiTransport) {
         commodities: parseManagementList(requireResult(commodities), isCatalogItem), substances: parseManagementList(requireResult(substances), isCatalogItem) };
     },
     async create(request: CreateMrlVersionRequest) { requireResult(await api.createMrlVersion(request)); },
+    async importVersion(text: string) { requireResult(await api.importMrlVersion(parseMrlImport(text))); },
     async limits(id: string) { return parseManagementList(requireResult(await api.getMrlLimits(id)), isMrlLimit); },
     async saveLimit(id: string, substanceId: string, value: string, unit: string) {
       if (!substanceId) throw new Error('Vui lòng chọn hoạt chất.');
