@@ -93,6 +93,7 @@ async function run() {
   assert.equal(mrl.parseMrlVersions({ items: [{ ...version, isPublished: true }] })[0].status, 'PUBLISHED');
   assert.equal(mrl.parseMrlVersions([{ ...version, status: 'ARCHIVED' }])[0].status, 'ARCHIVED');
   assert.throws(() => mrl.parseMrlVersions([{ id: 'v1', effectiveFrom: '2026-10-31' }]));
+  assert.throws(() => mrl.parseMrlVersions([{ ...version, status: 'UNKNOWN', isPublished: false }]));
   const mrlCalls = [];
   const mrlApi = mrl.createMrlManager(async (url, options = {}) => {
     mrlCalls.push({ url, ...options });

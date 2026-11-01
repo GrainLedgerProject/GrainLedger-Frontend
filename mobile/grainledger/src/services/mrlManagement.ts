@@ -12,7 +12,8 @@ export function parseMrlVersions(value: unknown): MrlSummary[] {
   if (!Array.isArray(items)) throw new Error('Danh sách phiên bản MRL không đúng định dạng.');
   return items.map((item: unknown) => {
     if (!isRecord(item) || typeof item.id !== 'string' || typeof item.effectiveFrom !== 'string') throw new Error('Phiên bản MRL thiếu thông tin.');
-    const status = item.status === 'DRAFT' || item.status === 'PUBLISHED' || item.status === 'ARCHIVED' ? item.status
+    const status = item.status !== undefined
+      ? item.status === 'DRAFT' || item.status === 'PUBLISHED' || item.status === 'ARCHIVED' ? item.status : null
       : typeof item.isPublished === 'boolean' ? item.isPublished ? 'PUBLISHED' : 'DRAFT' : null;
     if (!status) throw new Error('Trạng thái phiên bản MRL không hợp lệ.');
     return { id: item.id, status, effectiveFrom: item.effectiveFrom,
