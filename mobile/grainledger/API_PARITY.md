@@ -31,7 +31,7 @@ The existing field, mill, compliance, holds and offline flows retain their reque
 - The operations section displays GET /api/ledger/corrections with explicit loading/error/empty states. Commit and cancel use the web notes payload and ask for confirmation before sending. A successful server response is followed by a reload; failed requests do not optimistically change status.
 - Profile exposes GET /api/ledger/history on demand, with local search and incremental display. Array, items and events envelopes match the web audit page. Malformed responses report an error rather than inventing events. The panel resets when the signed-in account changes.
 
-Admin/catalog management, residue configuration, notification and other web-only management flows have service methods but do not yet have mobile controls. Adding all corresponding screens would expand the current navigation flow; no routes have been renamed or added in this pass.
+Admin, catalog and MRL management now have controls within the existing profile/compliance routes, as described below. Residue configuration, notifications and some other web-only management flows still have service coverage only. No routes have been renamed or added.
 
 Run authorized read/write scenarios against a real backend with appropriate roles to validate permissions, request validation, error bodies, file downloads and response shapes. No live backend mutations were executed during verification.
 
@@ -42,3 +42,17 @@ npm test also verifies correction request validation, exact decimal handling, re
 ## Account UI coverage
 
 The existing login route now includes registration, email verification, resend verification, forgot password and reset password panels. They call the web auth contracts without changing the original sign-in handler or introducing a route. Verification/reset completion returns to sign-in and clears the parent password input. OTP and new passwords are held only in component state and cleared on completion/cancel; they are not written to storage. Duplicate in-flight submits are blocked. Empty successful responses are accepted for the void password endpoints; registration/verification require their documented response data. End-to-end email delivery, expiry, rate limits and password policy remain backend/manual checks.
+
+## Management UI coverage — 2026-11-01
+
+- Profile exposes on-demand organization and user management for MILL_ADMIN, matching the web route restriction. Organizations can be listed/created. Users can be searched and their role, organization and active state updated. Updates send the actual returned ETag through If-Match; a missing ETag blocks saving. HTTP 412 asks the user to reload rather than retrying with a guessed version.
+- The same profile area exposes all six master-data groups: commodities, units, substances, markets, varieties and quality attributes. Search/create/update payloads follow MasterDataPage. Delete controls exist only for commodities, units and substances, as on the web. Failed group loads clear the previous list so items cannot be edited under another group's endpoint.
+- Compliance standards exposes MRL version management to MILL_ADMIN, CUSTOMER_MANAGER and CUSTOMER_EXPORT_OFFICER, matching the web route roles. It lists versions, creates drafts, reads/updates/deletes draft limits and publishes a draft after confirmation. Published and archived limits are read-only. Both status representations present in the web source are parsed; invalid responses report errors.
+- MRL dates are validated as calendar dates before conversion to UTC. Limit input preserves decimal strings, including very small values, through the existing decimal.js dependency.
+- Panels load on demand, use semantic light/dark primitives and incremental display, and reset when the signed-in account changes. Existing stores, navigation and login behavior remain unchanged. No dependency was added.
+
+MRL bulk import also uses the web's JSON workflow, with validation against ImportMrlVersionRequest before any request, preserved decimal strings, a count preview and confirmation. Invalid JSON, missing fields and numeric limit values are rejected locally; server errors retain the pasted input.
+
+Remaining UI work includes residue rule/policy/matrix/report-review forms, notification controls and other ledger administration. The checked-in residue module declares unknown request bodies without a corresponding web form/schema; notification DTOs are also absent. These require an authoritative backend contract before a typed editor can be built. Endpoint availability alone does not establish complete feature parity.
+
+The management checks use an injected fake transport, never a live mutation: actual ETag preservation, missing-version rejection, null organization/false active state, strict response guards, all six catalog contracts, restricted deletion, MRL dates/statuses/decimal payloads, and 401/403/412/offline errors. Verify real backend authorization separately; hiding a panel is not access control.

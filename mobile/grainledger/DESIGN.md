@@ -90,6 +90,7 @@ Do not nest glass inside glass.
 - `AppIcon`: SF Symbols on iOS and Material Symbols on Android/web through one name map
 - `Button`: solid/tinted actions, spring press feedback, loading and accessibility state
 - `InputField`: opaque adaptive input with focus/error treatment
+- `ChoiceField`: labeled accessible radio choices; larger option sets include local search and incremental display
 - `Card`: opaque content surface
 - `ListRow`: minimum target, inset separator, optional disclosure
 - `GlassSegmentedControl`: compact grouped glass control
@@ -169,7 +170,7 @@ Go, create a development build instead of editing generated native folders.
 - Test iOS 26 native glass, older iOS blur, Android API 31+ targeted blur and opaque fallback on a mid-range device.
 - Verify largest font sizes, VoiceOver/TalkBack, reduce transparency, high contrast, reduced motion, keyboard behavior and frame timing.
 - iOS forms now use native formSheet presentation with 50%/100% detents, a grabber and theme corner radius; Android keeps its existing modal presentation. The lot-detail route now uses native iOS headerLargeTitleEnabled with automatic scroll insets; collapse still needs device verification. Other custom headers remain unchanged.
-- Web-only management flows have API service coverage but still need mobile UI; see API_PARITY.md.
+- Some web-only management flows still need mobile UI; organization/user access, six catalogs and MRL draft management are now implemented within existing routes. See API_PARITY.md for the exact remaining scope.
 - Sleek design generation remains unavailable until account authorization. No Sleek output has been presented as completed work.
 
 References: https://docs.expo.dev/versions/v58.0.0/sdk/router/native-tabs/ , https://docs.expo.dev/versions/v58.0.0/sdk/symbols/ , https://docs.expo.dev/versions/v58.0.0/sdk/glass-effect/ , https://docs.expo.dev/versions/v58.0.0/sdk/blur-view/ . Local package type definitions were checked before API changes.
@@ -187,3 +188,13 @@ Manual checks for this pass: failed correction submit preserves input; successfu
 
 - Login now contains inline account registration, email verification/resend and password recovery/reset panels. They use existing InputField/Button/semantic surfaces and stay inside the current login route. Manual checks include email delivery, OTP expiry, invalid codes, rejected passwords and retry after network loss.
 - npm test includes read-only audit parsing/search and correction failure/precision tests in addition to endpoint parity and contrast checks. No credentials, OTPs or live test data are recorded by these tests.
+
+### Management follow-up — 2026-11-01
+
+Profile now contains collapsed organization/user-access and master-data panels for the same administrator role allowed on the web. Compliance standards contains a collapsed MRL version/limit manager for the web's three authorized roles. These panels use opaque content surfaces; glass remains reserved for navigation and floating controls. ChoiceField provides searchable radio options without a new dependency or route.
+
+Mutations wait for the server result, prevent duplicate submissions and retain editable input on failure. Access updates require the returned ETag. Delete and publish actions ask for confirmation. Switching catalog groups clears old results before loading; changing accounts remounts the panels. Management validation covers malformed responses, decimal precision, calendar dates and permission/concurrency failures.
+
+Manual checks: organization creation; user assignment/unassignment and deactivation; two administrators editing the same user (412); absent ETag; denied permissions (403); catalog search and CRUD for each supported group; MRL draft creation, tiny decimal limits, deletion and publishing; failure while refreshing after a successful write; account/role changes; long Vietnamese labels, maximum text scaling, keyboard avoidance and screen-reader focus. No live backend mutation or physical-device validation has been performed by the automated checks.
+
+MRL bulk import follows the existing web JSON workflow. It validates the declared request fields before any network call and preserves decimal strings, including trailing zeros. A confirmation reports the number of limits; the server remains responsible for validating reference IDs and applicable rules. Invalid input and failed requests retain the pasted text. No fabricated example IDs or regulation claims are prefilled.
