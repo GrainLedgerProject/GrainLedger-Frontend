@@ -26,6 +26,8 @@ import { GlassButton } from '../../components/common/GlassButton';
 import { GlassBadge } from '../../components/common/GlassBadge';
 import { GlassInput } from '../../components/common/GlassInput';
 import { AuditHistoryPanel } from '../../components/profile/AuditHistoryPanel';
+import { AdminPanel } from '../../components/profile/AdminPanel';
+import { CatalogPanel } from '../../components/profile/CatalogPanel';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useOfflineStore } from '../../store/offlineStore';
@@ -316,6 +318,10 @@ export default function ProfileScreen() {
           </View>
         </GlassCard>
 
+        {activeRole === 'MILL_ADMIN' ? <>
+          <AdminPanel key={`admin-${user?.id ?? 'signed-out'}`} />
+          <CatalogPanel key={`catalog-${user?.id ?? 'signed-out'}`} />
+        </> : null}
         <AuditHistoryPanel key={user?.id ?? 'signed-out'} />
 
         {/* Logout Button */}
