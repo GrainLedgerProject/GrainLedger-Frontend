@@ -11,6 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
+import { MrlVersionsPanel } from '../../components/compliance/MrlVersionsPanel';
+import { useAuthStore } from '../../store/authStore';
 import { GlassCard } from '../../components/common/GlassCard';
 import { GlassButton } from '../../components/common/GlassButton';
 import { GlassBadge } from '../../components/common/GlassBadge';
@@ -35,6 +37,8 @@ export default function ComplianceScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { samples, reports, rules, isLoading, fetchComplianceData, confirmReport } = useComplianceStore();
   const { holds } = useRiskStore();
+  const activeRole = useAuthStore((state) => state.activeRole);
+  const accountId = useAuthStore((state) => state.user?.id);
   const [activeTab, setActiveTab] = useState<'samples' | 'reports' | 'standards'>('samples');
 
   const activeHoldsCount = holds.filter((h) => h.status === 'ACTIVE_HOLD').length;
@@ -292,6 +296,7 @@ export default function ComplianceScreen() {
         {/* TAB 3: STANDARDS & MRL SAFETY MARGINS */}
         {activeTab === 'standards' && (
           <View>
+            {activeRole && ['MILL_ADMIN', 'CUSTOMER_MANAGER', 'CUSTOMER_EXPORT_OFFICER'].includes(activeRole) ? <MrlVersionsPanel key={accountId ?? 'signed-out'} /> : null}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Ngưỡng Giới hạn Dư lượng (MRL Catalogs)</Text>
             </View>
@@ -304,7 +309,7 @@ export default function ComplianceScreen() {
               <View style={styles.infoRow}>
                 <Info size={16} color={theme.colors.info} />
                 <Text style={styles.infoText}>
-                  Hệ thống tự động áp dụng Biên an toàn 10% - 15% để bảo đảm hàng hoá không bị từ chối tại cảng biển quốc tế.
+                  Các ngưỡng và biên an toàn được trình bày theo hồ sơ hiện có. Hãy đối chiếu phiên bản MRL áp dụng trước khi kết luận cho một lô hàng.
                 </Text>
               </View>
             </GlassCard>
