@@ -265,10 +265,10 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.emptyIcon,
-                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.lg },
+                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.lg },
               ]}
             >
-              <AppIcon name="field" size={28} color={theme.colors.accent} />
+              <AppIcon name="field" size={28} color={theme.colors.secondaryLabel} />
             </View>
             <AppText variant="headline" align="center">
               Sẵn sàng cho chuyến hàng đầu tiên
@@ -314,8 +314,8 @@ export default function HomeScreen() {
           style={[
             styles.traceCard,
             {
-              backgroundColor: theme.colors.accent,
-              borderColor: theme.colors.accent,
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.separator,
             },
           ]}
         >
@@ -323,18 +323,18 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.traceIcon,
-                { backgroundColor: theme.colors.glassHighlight, borderRadius: theme.radii.md },
+                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.md },
               ]}
             >
-              <AppIcon name="trace" size={25} color={theme.colors.onAccent} />
+              <AppIcon name="trace" size={25} color={theme.colors.accent} />
             </View>
             <View style={styles.flex}>
-              <AppText variant="headline" style={{ color: theme.colors.onAccent }}>
+              <AppText variant="headline" color="label">
                 Truy xuất nguồn gốc hai chiều
               </AppText>
               <AppText
                 variant="footnote"
-                style={[styles.traceDescription, { color: theme.colors.onAccent }]}
+                style={[styles.traceDescription, { color: theme.colors.secondaryLabel }]}
               >
                 Kiểm tra hành trình hạt gạo từ đồng ruộng Mekong đến container xuất khẩu.
               </AppText>

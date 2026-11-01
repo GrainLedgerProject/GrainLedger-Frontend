@@ -31,10 +31,10 @@ function StateView({
       <View
         style={[
           styles.icon,
-          { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.lg },
+          { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.lg },
         ]}
       >
-        <AppIcon name={icon} size={28} color={theme.colors.accent} />
+        <AppIcon name={icon} size={28} color={theme.colors.secondaryLabel} />
       </View>
       <AppText variant="headline" align="center">
         {title}
@@ -64,7 +64,7 @@ export function LoadingState({ label = 'Đang tải dữ liệu' }: { label?: st
 
   return (
     <View accessibilityLabel={label} accessibilityRole="progressbar" style={styles.loading}>
-      <ActivityIndicator color={theme.colors.accent} />
+      <ActivityIndicator color={theme.colors.secondaryLabel} />
       <View style={styles.loadingCopy}>
         <View
           style={[

@@ -37,11 +37,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
               onPress={() => router.back()}
               style={({ pressed }) => [
                 styles.logo,
-                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.md },
+                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.md },
                 pressed && styles.pressed,
               ]}
             >
-              <AppIcon name="back" size={23} color={theme.colors.accent} />
+              <AppIcon name="back" size={23} color={theme.colors.label} />
             </Pressable>
           ) : (
             <View
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
             <AppIcon
               name={pending ? 'offline' : 'sync'}
               size={20}
-              color={pending ? theme.colors.warning : theme.colors.accent}
+              color={pending ? theme.colors.warning : theme.colors.secondaryLabel}
             />
             {pending > 0 ? (
               <View style={[styles.pendingDot, { backgroundColor: theme.colors.warning }]} />
@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
             onPress={() => router.push('/(tabs)/profile')}
             style={({ pressed }) => [styles.control, pressed && styles.pressed]}
           >
-            <AppText variant="captionStrong" color="accent" maxFontSizeMultiplier={1.25}>
+            <AppText variant="captionStrong" color="label" maxFontSizeMultiplier={1.25}>
               {role?.code || 'GL'}
             </AppText>
           </Pressable>

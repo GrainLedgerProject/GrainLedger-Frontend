@@ -20,7 +20,7 @@ const toneByVariant: Record<
   NonNullable<MetricCardProps['variant']>,
   { foreground: keyof ThemeColors; background: keyof ThemeColors }
 > = {
-  primary: { foreground: 'accent', background: 'accentMuted' },
+  primary: { foreground: 'label', background: 'surfaceSecondary' },
   accent: { foreground: 'warning', background: 'warningMuted' },
   amber: { foreground: 'warning', background: 'warningMuted' },
   emerald: { foreground: 'success', background: 'successMuted' },

@@ -60,14 +60,12 @@ export const Button: React.FC<ButtonProps> = ({
       : variant === 'primary' || variant === 'accent'
         ? theme.colors.accent
         : variant === 'secondary'
-          ? theme.colors.accentMuted
+          ? theme.colors.surfaceSecondary
           : 'transparent';
 
   const foregroundColor = variant === 'danger' ? theme.colors.onDestructive : isPrimary
     ? theme.colors.onAccent
-    : variant === 'secondary'
-      ? theme.colors.accent
-      : theme.colors.label;
+    : theme.colors.label;
 
   const minHeight = size === 'small' ? (Platform.OS === 'android' ? 48 : 44) : size === 'large' ? 54 : 48;
   const horizontalPadding = size === 'small' ? theme.spacing.md : theme.spacing.xl;

@@ -368,7 +368,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: AppleGlass.radii.pill,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: theme.colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     ...AppleGlass.shadows.glassSubtle,
@@ -376,7 +376,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   avatarInitial: {
     ...theme.typography.title2,
     fontWeight: '800',
-    color: theme.colors.surface,
+    color: theme.colors.label,
   },
   userName: {
     ...theme.typography.headline,

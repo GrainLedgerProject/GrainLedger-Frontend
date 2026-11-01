@@ -234,10 +234,10 @@ export default function LoginScreen() {
                   <View
                     style={[
                       styles.roleIcon,
-                      { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.sm },
+                      { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.sm },
                     ]}
                   >
-                    <AppIcon name={item.icon} size={19} color={theme.colors.accent} />
+                    <AppIcon name={item.icon} size={19} color={theme.colors.secondaryLabel} />
                   </View>
                   <View style={styles.flex}>
                     <AppText variant="subheadline" style={styles.rowTitle}>
