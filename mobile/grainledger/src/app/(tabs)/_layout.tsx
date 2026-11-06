@@ -1,15 +1,20 @@
-import { radii, spacing } from '../../theme/tokens';
-import React from 'react';
-import { StyleSheet, type ColorValue } from 'react-native';
-import { Tabs } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Tabs } from "expo-router";
+import { StyleSheet, type ColorValue } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { radii, spacing } from "../../theme/tokens";
 
-import { AppIcon, type AppIconName } from '../../components/ui/AppIcon';
-import { GlassSurface } from '../../components/ui/GlassSurface';
-import { useAppTheme } from '../../theme';
+import { AppIcon, type AppIconName } from "../../components/ui/AppIcon";
+import { GlassSurface } from "../../components/ui/GlassSurface";
+import { useAppTheme } from "../../theme";
 
 function createTabIcon(name: AppIconName) {
-  function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
+  function TabIcon({
+    color,
+    focused,
+  }: {
+    color: ColorValue;
+    focused: boolean;
+  }) {
     return <AppIcon name={name} color={color} size={focused ? 23 : 21} />;
   }
 
@@ -51,27 +56,31 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Tổng quan', tabBarIcon: createTabIcon('home') }}
+        options={{ title: "Tổng quan", tabBarIcon: createTabIcon("home") }}
       />
       <Tabs.Screen
         name="field"
-        options={{ title: 'Thực địa', tabBarIcon: createTabIcon('field') }}
+        options={{ title: "Thực địa", tabBarIcon: createTabIcon("field") }}
       />
       <Tabs.Screen
         name="mill"
-        options={{ title: 'Nhà máy', tabBarIcon: createTabIcon('mill') }}
+        options={{ title: "Nhà máy", tabBarIcon: createTabIcon("mill") }}
       />
       <Tabs.Screen
         name="compliance"
-        options={{ title: 'Tuân thủ', tabBarIcon: createTabIcon('compliance') }}
+        options={{ title: "Tuân thủ", tabBarIcon: createTabIcon("compliance") }}
       />
       <Tabs.Screen
         name="trace"
-        options={{ title: 'Truy xuất', tabBarIcon: createTabIcon('trace') }}
+        options={{ title: "Truy xuất", tabBarIcon: createTabIcon("trace") }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Cá nhân', href: null, tabBarIcon: createTabIcon('profile') }}
+        options={{
+          title: "Cá nhân",
+          href: null,
+          tabBarIcon: createTabIcon("profile"),
+        }}
       />
     </Tabs>
   );
@@ -86,13 +95,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.zero,
   },
   tabBar: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderTopWidth: 0,
     elevation: 12,
     left: 12,
     paddingBottom: spacing.xs,
     paddingTop: spacing.xs,
-    position: 'absolute',
+    position: "absolute",
     right: 12,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,

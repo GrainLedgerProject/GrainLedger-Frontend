@@ -1,5 +1,7 @@
+import { useColorScheme } from '../hooks/use-color-scheme';
 export const Colors = {
-  primary: '#0F382A',
+  primary: '#205E40',
+  onPrimary: '#FFFFFF',
   primaryLight: '#1B5E47',
   primaryDark: '#0A261C',
   primarySurface: '#E8F5E9',
@@ -25,8 +27,8 @@ export const Colors = {
   purpleLight: '#EDE9FE',
 
   // Neutrals
-  background: '#F8FAFC',
-  card: '#FFFFFF',
+  background: '#FFFFFF',
+  card: '#F5F5F7',
   cardSubtle: '#F1F5F9',
   border: '#E2E8F0',
   borderLight: '#F8FAFC',
@@ -34,7 +36,7 @@ export const Colors = {
 
   text: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#94A3B8',
+  textMuted: '#66666B',
   textInverse: '#FFFFFF',
 
   // Status colors
@@ -68,3 +70,6 @@ export const Shadows = {
     elevation: 6,
   },
 };
+
+const darkColors: typeof Colors = { ...Colors, background: '#101010', card: '#1D1D1F', cardSubtle: '#28282A', border: '#343436', borderLight: '#222224', divider: '#343436', text: '#F5F5F7', textSecondary: '#BEBEC3', textMuted: '#A0A0A5', primary: '#79BC8D', onPrimary: '#102217', primarySurface: '#203027' };
+export function usePalette(): typeof Colors { return useColorScheme() === 'dark' ? darkColors : Colors; }

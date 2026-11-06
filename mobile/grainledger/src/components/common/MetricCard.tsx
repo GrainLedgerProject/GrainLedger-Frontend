@@ -1,10 +1,10 @@
-import { spacing } from '../../theme/tokens';
-import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import React from "react";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { spacing } from "../../theme/tokens";
 
-import { useAppTheme, type ThemeColors } from '../../theme';
-import { AppText } from '../ui/AppText';
-import { Card } from './Card';
+import { useAppTheme, type ThemeColors } from "../../theme";
+import { AppText } from "../ui/AppText";
+import { Card } from "./Card";
 
 export interface MetricCardProps {
   label: string;
@@ -12,20 +12,20 @@ export interface MetricCardProps {
   unit?: string;
   subtext?: string;
   icon?: React.ReactNode;
-  variant?: 'primary' | 'accent' | 'emerald' | 'amber' | 'red' | 'blue';
+  variant?: "primary" | "accent" | "emerald" | "amber" | "red" | "blue";
   style?: StyleProp<ViewStyle>;
 }
 
 const toneByVariant: Record<
-  NonNullable<MetricCardProps['variant']>,
+  NonNullable<MetricCardProps["variant"]>,
   { foreground: keyof ThemeColors; background: keyof ThemeColors }
 > = {
-  primary: { foreground: 'label', background: 'surfaceSecondary' },
-  accent: { foreground: 'warning', background: 'warningMuted' },
-  amber: { foreground: 'warning', background: 'warningMuted' },
-  emerald: { foreground: 'success', background: 'successMuted' },
-  red: { foreground: 'destructive', background: 'destructiveMuted' },
-  blue: { foreground: 'info', background: 'infoMuted' },
+  primary: { foreground: "label", background: "surfaceSecondary" },
+  accent: { foreground: "warning", background: "warningMuted" },
+  amber: { foreground: "warning", background: "warningMuted" },
+  emerald: { foreground: "success", background: "successMuted" },
+  red: { foreground: "destructive", background: "destructiveMuted" },
+  blue: { foreground: "info", background: "infoMuted" },
 };
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -34,7 +34,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   unit,
   subtext,
   icon,
-  variant = 'primary',
+  variant = "primary",
   style,
 }) => {
   const theme = useAppTheme();
@@ -61,7 +61,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         ) : null}
       </View>
       <View style={styles.valueRow}>
-        <AppText variant="title1" style={styles.value} maxFontSizeMultiplier={1.25}>
+        <AppText
+          variant="title1"
+          style={styles.value}
+          maxFontSizeMultiplier={1.25}
+        >
           {value}
         </AppText>
         {unit ? (
@@ -71,7 +75,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         ) : null}
       </View>
       {subtext ? (
-        <AppText variant="caption" color="secondaryLabel" style={styles.subtext}>
+        <AppText
+          variant="caption"
+          color="secondaryLabel"
+          style={styles.subtext}
+        >
           {subtext}
         </AppText>
       ) : null}
@@ -87,9 +95,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   icon: {
-    alignItems: 'center',
+    alignItems: "center",
     height: 30,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 30,
   },
   label: {
@@ -99,19 +107,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginBottom: spacing.sm,
   },
   value: {
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
   valueRow: {
-    alignItems: 'baseline',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: "baseline",
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.xs,
   },
 });

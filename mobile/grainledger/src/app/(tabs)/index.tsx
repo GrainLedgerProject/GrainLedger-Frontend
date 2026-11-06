@@ -1,39 +1,41 @@
-import { spacing } from '../../theme/tokens';
-import React from 'react';
+import { useRouter } from "expo-router";
 import {
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { spacing } from "../../theme/tokens";
 
-import { Button } from '../../components/common/Button';
-import { Card } from '../../components/common/Card';
-import { GlassBadge } from '../../components/common/GlassBadge';
-import { Header } from '../../components/common/Header';
-import { MetricCard } from '../../components/common/MetricCard';
-import { AppIcon, type AppIconName } from '../../components/ui/AppIcon';
-import { AppText } from '../../components/ui/AppText';
-import { useAuthStore } from '../../store/authStore';
-import { useComplianceStore } from '../../store/complianceStore';
-import { useFieldStore } from '../../store/fieldStore';
-import { useMillStore } from '../../store/millStore';
-import { useOfflineStore } from '../../store/offlineStore';
-import { useRiskStore } from '../../store/riskStore';
-import { useAppTheme, type ThemeColors } from '../../theme';
-import { formatMass } from '../../utils/decimalMass';
+import { Button } from "../../components/common/Button";
+import { Card } from "../../components/common/Card";
+import { GlassBadge } from "../../components/common/GlassBadge";
+import { Header } from "../../components/common/Header";
+import { MetricCard } from "../../components/common/MetricCard";
+import { AppIcon, type AppIconName } from "../../components/ui/AppIcon";
+import { AppText } from "../../components/ui/AppText";
+import { useAuthStore } from "../../store/authStore";
+import { useComplianceStore } from "../../store/complianceStore";
+import { useFieldStore } from "../../store/fieldStore";
+import { useMillStore } from "../../store/millStore";
+import { useOfflineStore } from "../../store/offlineStore";
+import { useRiskStore } from "../../store/riskStore";
+import { useAppTheme, type ThemeColors } from "../../theme";
+import { formatMass } from "../../utils/decimalMass";
 
 type QuickAction = {
   title: string;
   subtitle: string;
   route:
-    | '/procurement-form'
-    | '/receiving-form'
-    | '/(tabs)/compliance'
-    | '/hold-management';
+    | "/procurement-form"
+    | "/receiving-form"
+    | "/(tabs)/compliance"
+    | "/hold-management";
   icon: AppIconName;
   foreground: keyof ThemeColors;
   background: keyof ThemeColors;
@@ -41,46 +43,53 @@ type QuickAction = {
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
-    title: 'Phiếu thu mua',
-    subtitle: 'Lập biên nhận lúa',
-    route: '/procurement-form',
-    icon: 'field',
-    foreground: 'success',
-    background: 'successMuted',
+    title: "Phiếu thu mua",
+    subtitle: "Lập biên nhận lúa",
+    route: "/procurement-form",
+    icon: "field",
+    foreground: "success",
+    background: "successMuted",
   },
   {
-    title: 'Cân xe tiếp nhận',
-    subtitle: 'Tiếp nhận tại cổng',
-    route: '/receiving-form',
-    icon: 'mill',
-    foreground: 'warning',
-    background: 'warningMuted',
+    title: "Cân xe tiếp nhận",
+    subtitle: "Tiếp nhận tại cổng",
+    route: "/receiving-form",
+    icon: "mill",
+    foreground: "warning",
+    background: "warningMuted",
   },
   {
-    title: 'Kiểm định MRL',
-    subtitle: 'Mẫu Lab và niêm chì',
-    route: '/(tabs)/compliance',
-    icon: 'compliance',
-    foreground: 'info',
-    background: 'infoMuted',
+    title: "Kiểm định MRL",
+    subtitle: "Mẫu Lab và niêm chì",
+    route: "/(tabs)/compliance",
+    icon: "compliance",
+    foreground: "info",
+    background: "infoMuted",
   },
   {
-    title: 'Lệnh HOLD',
-    subtitle: 'Quản trị rủi ro',
-    route: '/hold-management',
-    icon: 'warning',
-    foreground: 'destructive',
-    background: 'destructiveMuted',
+    title: "Lệnh HOLD",
+    subtitle: "Quản trị rủi ro",
+    route: "/hold-management",
+    icon: "warning",
+    foreground: "destructive",
+    background: "destructiveMuted",
   },
 ];
 
 export default function HomeScreen() {
+  const Colors = usePalette();
+  const styles = createStyles(Colors);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const { user } = useAuthStore();
   const { receipts, fetchFieldData, isLoading: fieldLoading } = useFieldStore();
-  const { receivingTasks, silos, fetchMillData, isLoading: millLoading } = useMillStore();
+  const {
+    receivingTasks,
+    silos,
+    fetchMillData,
+    isLoading: millLoading,
+  } = useMillStore();
   const { samples, reports, fetchComplianceData } = useComplianceStore();
   const { holds, fetchHolds } = useRiskStore();
   const { getPendingCount } = useOfflineStore();
@@ -102,17 +111,21 @@ export default function HomeScreen() {
     0,
   );
   const pendingWeighCount = receivingTasks.filter(
-    (task) => task.status === 'PENDING_WEIGH',
+    (task) => task.status === "PENDING_WEIGH",
   ).length;
-  const activeHoldsCount = holds.filter((hold) => hold.status === 'ACTIVE_HOLD').length;
+  const activeHoldsCount = holds.filter(
+    (hold) => hold.status === "ACTIVE_HOLD",
+  ).length;
 
   return (
     <SafeAreaView
-      edges={['top', 'left', 'right']}
+      edges={["top", "left", "right"]}
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
     >
       <Header />
-      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={[
           styles.content,
           { paddingBottom: theme.layout.tabBarHeight + 32 + insets.bottom },
@@ -128,17 +141,25 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.welcome}>
-          <AppText variant="captionStrong" color="secondaryLabel" style={styles.eyebrow}>
+          <AppText
+            variant="captionStrong"
+            color="secondaryLabel"
+            style={styles.eyebrow}
+          >
             KHÔNG GIAN VẬN HÀNH
           </AppText>
           <AppText variant="largeTitle" maxFontSizeMultiplier={1.3}>
             Tổng quan
           </AppText>
           <AppText variant="title3" style={styles.userName}>
-            {user?.displayName || 'Cán bộ Vận hành Chuỗi'}
+            {user?.displayName || "Cán bộ Vận hành Chuỗi"}
           </AppText>
-          <AppText variant="footnote" color="accent" style={styles.organization}>
-            {user?.organizationName || 'Tập đoàn Lương thực GrainLedger'}
+          <AppText
+            variant="footnote"
+            color="accent"
+            style={styles.organization}
+          >
+            {user?.organizationName || "Tập đoàn Lương thực GrainLedger"}
           </AppText>
         </View>
 
@@ -146,8 +167,11 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${pendingOffline} giao dịch đang chờ đồng bộ`}
-            onPress={() => router.push('/offline-queue')}
-            style={({ pressed }) => [styles.bannerPressable, pressed && styles.pressed]}
+            onPress={() => router.push("/offline-queue")}
+            style={({ pressed }) => [
+              styles.bannerPressable,
+              pressed && styles.pressed,
+            ]}
           >
             <Card
               style={[
@@ -160,10 +184,16 @@ export default function HomeScreen() {
             >
               <AppIcon name="offline" size={21} color={theme.colors.warning} />
               <View style={styles.flex}>
-                <AppText variant="subheadline" style={{ color: theme.colors.warning }}>
+                <AppText
+                  variant="subheadline"
+                  style={{ color: theme.colors.warning }}
+                >
                   {pendingOffline} giao dịch chờ gửi
                 </AppText>
-                <AppText variant="caption" style={{ color: theme.colors.warning }}>
+                <AppText
+                  variant="caption"
+                  style={{ color: theme.colors.warning }}
+                >
                   Chạm để mở hàng đợi đồng bộ
                 </AppText>
               </View>
@@ -179,7 +209,9 @@ export default function HomeScreen() {
             value={formatMass(totalProcuredToday, 0)}
             unit="kg"
             subtext={`${receipts.length} chuyến hàng`}
-            icon={<AppIcon name="field" size={17} color={theme.colors.success} />}
+            icon={
+              <AppIcon name="field" size={17} color={theme.colors.success} />
+            }
             variant="primary"
           />
           <MetricCard
@@ -187,7 +219,9 @@ export default function HomeScreen() {
             value={pendingWeighCount}
             unit="xe"
             subtext="Tại cổng nhà máy"
-            icon={<AppIcon name="mill" size={17} color={theme.colors.warning} />}
+            icon={
+              <AppIcon name="mill" size={17} color={theme.colors.warning} />
+            }
             variant="amber"
           />
         </View>
@@ -197,24 +231,36 @@ export default function HomeScreen() {
             value={reports.length}
             unit="báo cáo"
             subtext={`${samples.length} mẫu niêm chì`}
-            icon={<AppIcon name="compliance" size={17} color={theme.colors.success} />}
+            icon={
+              <AppIcon
+                name="compliance"
+                size={17}
+                color={theme.colors.success}
+              />
+            }
             variant="emerald"
           />
           <MetricCard
             label="Silo hoạt động"
             value={silos.length}
             unit="silo"
-            subtext={activeHoldsCount > 0 ? `${activeHoldsCount} silo cách ly` : '100% đạt chuẩn'}
+            subtext={
+              activeHoldsCount > 0
+                ? `${activeHoldsCount} silo cách ly`
+                : "100% đạt chuẩn"
+            }
             icon={
               <AppIcon
-                name={activeHoldsCount > 0 ? 'warning' : 'mill'}
+                name={activeHoldsCount > 0 ? "warning" : "mill"}
                 size={17}
                 color={
-                  activeHoldsCount > 0 ? theme.colors.destructive : theme.colors.info
+                  activeHoldsCount > 0
+                    ? theme.colors.destructive
+                    : theme.colors.info
                 }
               />
             }
-            variant={activeHoldsCount > 0 ? 'red' : 'blue'}
+            variant={activeHoldsCount > 0 ? "red" : "blue"}
           />
         </View>
 
@@ -226,7 +272,10 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${action.title}. ${action.subtitle}`}
               onPress={() => router.push(action.route)}
-              style={({ pressed }) => [styles.quickItem, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.quickItem,
+                pressed && styles.pressed,
+              ]}
             >
               <Card style={styles.quickCard}>
                 <View
@@ -258,28 +307,39 @@ export default function HomeScreen() {
         <SectionHeading
           title="Thu mua gần đây"
           actionLabel="Xem tất cả"
-          onAction={() => router.push('/(tabs)/field')}
+          onAction={() => router.push("/(tabs)/field")}
         />
         {receipts.length === 0 ? (
           <Card style={styles.emptyCard}>
             <View
               style={[
                 styles.emptyIcon,
-                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.lg },
+                {
+                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderRadius: theme.radii.lg,
+                },
               ]}
             >
-              <AppIcon name="field" size={28} color={theme.colors.secondaryLabel} />
+              <AppIcon
+                name="field"
+                size={28}
+                color={theme.colors.secondaryLabel}
+              />
             </View>
             <AppText variant="headline" align="center">
               Sẵn sàng cho chuyến hàng đầu tiên
             </AppText>
-            <AppText variant="subheadline" color="secondaryLabel" align="center">
+            <AppText
+              variant="subheadline"
+              color="secondaryLabel"
+              align="center"
+            >
               Các phiếu thu mua mới sẽ xuất hiện tại đây.
             </AppText>
             <Button
               title="Lập phiếu thu mua"
               variant="secondary"
-              onPress={() => router.push('/procurement-form')}
+              onPress={() => router.push("/procurement-form")}
             />
           </Card>
         ) : null}
@@ -297,7 +357,12 @@ export default function HomeScreen() {
               </View>
               <GlassBadge status={receipt.status} />
             </View>
-            <View style={[styles.separator, { backgroundColor: theme.colors.separator }]} />
+            <View
+              style={[
+                styles.separator,
+                { backgroundColor: theme.colors.separator },
+              ]}
+            />
             <View style={styles.details}>
               <Detail label="Loại hàng" value={receipt.commodityName} />
               <Detail
@@ -323,7 +388,10 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.traceIcon,
-                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.md },
+                {
+                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderRadius: theme.radii.md,
+                },
               ]}
             >
               <AppIcon name="trace" size={25} color={theme.colors.accent} />
@@ -334,16 +402,20 @@ export default function HomeScreen() {
               </AppText>
               <AppText
                 variant="footnote"
-                style={[styles.traceDescription, { color: theme.colors.secondaryLabel }]}
+                style={[
+                  styles.traceDescription,
+                  { color: theme.colors.secondaryLabel },
+                ]}
               >
-                Kiểm tra hành trình hạt gạo từ đồng ruộng Mekong đến container xuất khẩu.
+                Kiểm tra hành trình hạt gạo từ đồng ruộng Mekong đến container
+                xuất khẩu.
               </AppText>
             </View>
           </View>
           <Button
             title="Quét mã và tra cứu"
             variant="secondary"
-            onPress={() => router.push('/(tabs)/trace')}
+            onPress={() => router.push("/(tabs)/trace")}
             style={styles.traceButton}
           />
         </Card>
@@ -372,7 +444,10 @@ function SectionHeading({
         <View
           style={[
             styles.headingPill,
-            { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.pill },
+            {
+              backgroundColor: theme.colors.surfaceSecondary,
+              borderRadius: theme.radii.pill,
+            },
           ]}
         >
           <AppText variant="captionStrong" color="secondaryLabel">
@@ -385,7 +460,10 @@ function SectionHeading({
           accessibilityRole="button"
           hitSlop={8}
           onPress={onAction}
-          style={({ pressed }) => [styles.headingAction, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.headingAction,
+            pressed && styles.pressed,
+          ]}
         >
           <AppText variant="subheadline" color="accent">
             {actionLabel}
@@ -396,13 +474,25 @@ function SectionHeading({
   );
 }
 
-function Detail({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function Detail({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
     <View style={styles.detail}>
       <AppText variant="caption" color="secondaryLabel">
         {label}
       </AppText>
-      <AppText variant="footnote" color={accent ? 'accent' : 'label'} style={styles.detailValue}>
+      <AppText
+        variant="footnote"
+        color={accent ? "accent" : "label"}
+        style={styles.detailValue}
+      >
         {value}
       </AppText>
     </View>
@@ -414,34 +504,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   content: {
-    alignSelf: 'center',
+    alignSelf: "center",
     maxWidth: 760,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    width: '100%',
+    width: "100%",
   },
   detail: {
     flex: 1,
     minWidth: 88,
   },
   detailValue: {
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: spacing.xxs,
   },
   details: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.md,
   },
   emptyCard: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: spacing.md,
     padding: spacing.xl,
   },
   emptyIcon: {
-    alignItems: 'center',
+    alignItems: "center",
     height: 54,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 54,
   },
   eyebrow: {
@@ -452,7 +542,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headingAction: {
-    justifyContent: 'center',
+    justifyContent: "center",
     minHeight: 44,
   },
   headingPill: {
@@ -460,18 +550,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   metricGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
   offlineBanner: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.md,
     padding: spacing.md,
   },
   organization: {
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: spacing.xxs,
   },
   pressed: {
@@ -482,24 +572,24 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   quickGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   quickIcon: {
-    alignItems: 'center',
+    alignItems: "center",
     height: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: spacing.md,
     width: 40,
   },
   quickItem: {
-    flexBasis: '46%',
+    flexBasis: "46%",
     flexGrow: 1,
     minWidth: 145,
   },
   quickTitle: {
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: spacing.xxs,
   },
   receiptCard: {
@@ -507,21 +597,21 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   receiptHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.md,
   },
   receiptNumber: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   safeArea: {
     flex: 1,
   },
   sectionHeading: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginBottom: spacing.md,
     marginTop: spacing.xl,
   },
@@ -530,7 +620,7 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   traceButton: {
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     marginTop: spacing.lg,
   },
   traceCard: {
@@ -543,14 +633,14 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   traceIcon: {
-    alignItems: 'center',
+    alignItems: "center",
     height: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 48,
   },
   traceRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.md,
   },
   userName: {

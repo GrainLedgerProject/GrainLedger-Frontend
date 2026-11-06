@@ -1,15 +1,15 @@
-import { radii, spacing } from '../../theme/tokens';
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { radii, spacing } from "../../theme/tokens";
 
-import { useAuthStore } from '../../store/authStore';
-import { useOfflineStore } from '../../store/offlineStore';
-import { useAppTheme } from '../../theme';
-import { ROLE_DEFINITIONS } from '../../types/roles';
-import { AppIcon } from '../ui/AppIcon';
-import { AppText } from '../ui/AppText';
-import { GlassSurface } from '../ui/GlassSurface';
+import { useAuthStore } from "../../store/authStore";
+import { useOfflineStore } from "../../store/offlineStore";
+import { useAppTheme } from "../../theme";
+import { ROLE_DEFINITIONS } from "../../types/roles";
+import { AppIcon } from "../ui/AppIcon";
+import { AppText } from "../ui/AppText";
+import { GlassSurface } from "../ui/GlassSurface";
 
 interface HeaderProps {
   title?: string;
@@ -17,7 +17,11 @@ interface HeaderProps {
   showBack?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => {
+export const Header: React.FC<HeaderProps> = ({
+  title,
+  subtitle,
+  showBack,
+}) => {
   const router = useRouter();
   const theme = useAppTheme();
   const { activeRole } = useAuthStore();
@@ -37,7 +41,10 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
               onPress={() => router.back()}
               style={({ pressed }) => [
                 styles.logo,
-                { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radii.md },
+                {
+                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderRadius: theme.radii.md,
+                },
                 pressed && styles.pressed,
               ]}
             >
@@ -47,7 +54,10 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
             <View
               style={[
                 styles.logo,
-                { backgroundColor: theme.colors.accentMuted, borderRadius: theme.radii.md },
+                {
+                  backgroundColor: theme.colors.accentMuted,
+                  borderRadius: theme.radii.md,
+                },
               ]}
             >
               <AppIcon name="field" size={23} color={theme.colors.accent} />
@@ -55,7 +65,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
           )}
           <View style={styles.brandText}>
             <AppText variant="headline">GrainLedger</AppText>
-            <AppText variant="caption" color="secondaryLabel" style={styles.caption}>
+            <AppText
+              variant="caption"
+              color="secondaryLabel"
+              style={styles.caption}
+            >
               Từ đồng ruộng đến thế giới
             </AppText>
           </View>
@@ -71,34 +85,50 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
             accessibilityRole="button"
             accessibilityLabel={
               isSyncing
-                ? 'Đang đồng bộ'
+                ? "Đang đồng bộ"
                 : pending
                   ? `${pending} giao dịch chờ đồng bộ`
-                  : 'Đã đồng bộ. Xem hàng đợi'
+                  : "Đã đồng bộ. Xem hàng đợi"
             }
             hitSlop={4}
-            onPress={() => router.push('/offline-queue')}
+            onPress={() => router.push("/offline-queue")}
             style={({ pressed }) => [styles.control, pressed && styles.pressed]}
           >
             <AppIcon
-              name={pending ? 'offline' : 'sync'}
+              name={pending ? "offline" : "sync"}
               size={20}
-              color={pending ? theme.colors.warning : theme.colors.secondaryLabel}
+              color={
+                pending ? theme.colors.warning : theme.colors.secondaryLabel
+              }
             />
             {pending > 0 ? (
-              <View style={[styles.pendingDot, { backgroundColor: theme.colors.warning }]} />
+              <View
+                style={[
+                  styles.pendingDot,
+                  { backgroundColor: theme.colors.warning },
+                ]}
+              />
             ) : null}
           </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.colors.separator }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.colors.separator },
+            ]}
+          />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Mở hồ sơ cá nhân"
             hitSlop={4}
-            onPress={() => router.push('/(tabs)/profile')}
+            onPress={() => router.push("/(tabs)/profile")}
             style={({ pressed }) => [styles.control, pressed && styles.pressed]}
           >
-            <AppText variant="captionStrong" color="label" maxFontSizeMultiplier={1.25}>
-              {role?.code || 'GL'}
+            <AppText
+              variant="captionStrong"
+              color="label"
+              maxFontSizeMultiplier={1.25}
+            >
+              {role?.code || "GL"}
             </AppText>
           </Pressable>
         </GlassSurface>
@@ -110,7 +140,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
             {title}
           </AppText>
           {subtitle ? (
-            <AppText variant="subheadline" color="secondaryLabel" style={styles.subtitle}>
+            <AppText
+              variant="subheadline"
+              color="secondaryLabel"
+              style={styles.subtitle}
+            >
               {subtitle}
             </AppText>
           ) : null}
@@ -122,13 +156,13 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showBack }) => 
 
 const styles = StyleSheet.create({
   actions: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
   },
   brand: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
   },
   brandText: {
@@ -138,9 +172,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.zero,
   },
   control: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: radii.lg,
-    justifyContent: 'center',
+    justifyContent: "center",
     minHeight: 48,
     minWidth: 48,
     paddingHorizontal: spacing.sm,
@@ -150,15 +184,15 @@ const styles = StyleSheet.create({
     width: StyleSheet.hairlineWidth,
   },
   logo: {
-    alignItems: 'center',
+    alignItems: "center",
     height: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 44,
   },
   pendingDot: {
     borderRadius: radii.xs,
     height: 7,
-    position: 'absolute',
+    position: "absolute",
     right: 9,
     top: 9,
     width: 7,
@@ -167,10 +201,10 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   row: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.md,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   subtitle: {
     marginTop: spacing.xs,

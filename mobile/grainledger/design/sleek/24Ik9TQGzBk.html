@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GrainLedgerDashboardTối</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-destructive-foreground: var(--destructive-foreground);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-sans: var(--font-sans);
+        --font-heading: var(--font-heading, var(--font-sans));
+        --font-serif: var(--font-serif);
+        --font-mono: var(--font-mono);
+      }
+
+      @theme {
+        --radius-xs: calc(var(--radius) - 8px);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+        --radius-2xl: calc(var(--radius) + 8px);
+        --radius-3xl: calc(var(--radius) + 16px);
+        --radius-4xl: calc(var(--radius) + 24px);
+      }
+
+      * {
+        corner-shape: var(--shape, round);
+      }
+
+      .rounded-full,
+      .rounded-none,
+      .rounded-t-full,
+      .rounded-t-none,
+      .rounded-r-full,
+      .rounded-r-none,
+      .rounded-b-full,
+      .rounded-b-none,
+      .rounded-l-full,
+      .rounded-l-none,
+      .rounded-s-full,
+      .rounded-s-none,
+      .rounded-e-full,
+      .rounded-e-none,
+      .rounded-tl-full,
+      .rounded-tl-none,
+      .rounded-tr-full,
+      .rounded-tr-none,
+      .rounded-bl-full,
+      .rounded-bl-none,
+      .rounded-br-full,
+      .rounded-br-none,
+      .rounded-ss-full,
+      .rounded-ss-none,
+      .rounded-se-full,
+      .rounded-se-none,
+      .rounded-es-full,
+      .rounded-es-none,
+      .rounded-ee-full,
+      .rounded-ee-none {
+        corner-shape: round;
+      }
+
+      @utility rounded-* {
+        border-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-t-* {
+        border-top-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-top-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-r-* {
+        border-top-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-bottom-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-b-* {
+        border-bottom-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-bottom-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-l-* {
+        border-top-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-bottom-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-tl-* {
+        border-top-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-tr-* {
+        border-top-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-bl-* {
+        border-bottom-left-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-br-* {
+        border-bottom-right-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-s-* {
+        border-start-start-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-end-start-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-e-* {
+        border-start-end-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+        border-end-end-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-ss-* {
+        border-start-start-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-se-* {
+        border-start-end-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-es-* {
+        border-end-start-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+      @utility rounded-ee-* {
+        border-end-end-radius: calc(
+          --value(--radius-*, [length], [percentage]) * var(--shape-multiplier, 1)
+        );
+      }
+
+      @layer base {
+        * {
+          @apply border-border outline-ring/50;
+        }
+        body {
+          @apply bg-background text-foreground font-sans;
+        }
+      }
+
+      :root {
+        --shape: squircle;
+        --shape-multiplier: 1;
+
+        --background: #ffffff;
+        --foreground: #1c1c1e;
+        --primary: #1e5b3a;
+        --primary-foreground: #ffffff;
+        --secondary: #eeeef0;
+        --secondary-foreground: #1c1c1e;
+        --muted: #f2f2f4;
+        --muted-foreground: #6e6e73;
+        --accent: #e9f0eb;
+        --accent-foreground: #1e5b3a;
+        --destructive: #c0392b;
+        --destructive-foreground: #ffffff;
+        --card: #f4f4f6;
+        --card-foreground: #1c1c1e;
+        --popover: #ffffff;
+        --popover-foreground: #1c1c1e;
+        --border: #e5e5ea;
+        --input: #f2f2f4;
+        --ring: #1e5b3a;
+        --chart-1: #1e5b3a;
+        --chart-2: #4f8a66;
+        --chart-3: #8db39a;
+        --chart-4: #aeaeb2;
+        --chart-5: #636366;
+
+        --font-sans: "Inter", sans-serif;
+        --font-heading: "Inter", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-mono: "JetBrains Mono", monospace;
+
+        --radius: 0.75rem;
+      }
+
+      @supports (corner-shape: squircle) {
+        :root {
+          --shape-multiplier: 2.5;
+        }
+      }
+
+      /* Prevent layout shift for icons without explicit dimensions */
+      iconify-icon:not([width]):not([height]) {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+      }
+
+      /* Hide scrollbars */
+      *,
+      *::before,
+      *::after {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      *::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="min-h-screen bg-[#0B0B0C] text-[#F2F2F4] font-sans max-w-[430px] mx-auto flex flex-col"
+    >
+      <header
+        class="h-[10vh] min-h-[72px] px-5 flex items-center justify-between border-b border-[#2C2C2E] bg-[#0B0B0C]/80 backdrop-blur-md sticky top-0 z-10"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="size-9 rounded-[0.75rem] bg-[#1A2B22] flex items-center justify-center">
+            <iconify-icon
+              icon="ph:plant-fill"
+              class="text-[#4FA37A]"
+              width="20"
+              height="20"
+            ></iconify-icon>
+          </div>
+          <span class="text-[17px] font-semibold tracking-tight">GrainLedger</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            class="size-12 flex items-center justify-center rounded-[0.75rem] active:scale-95 active:bg-[#242426] transition-transform duration-200"
+            aria-label="Đồng bộ"
+          >
+            <iconify-icon
+              icon="ph:arrows-clockwise"
+              class="text-[#98989F]"
+              width="24"
+              height="24"
+            ></iconify-icon></button
+          ><button
+            class="size-12 flex items-center justify-center rounded-[0.75rem] active:scale-95 active:bg-[#242426] transition-transform duration-200"
+            aria-label="Hồ sơ"
+          >
+            <iconify-icon
+              icon="ph:user-circle"
+              class="text-[#98989F]"
+              width="24"
+              height="24"
+            ></iconify-icon>
+          </button>
+        </div>
+      </header>
+      <nav
+        class="flex border-b border-[#2C2C2E] px-2 sticky top-[10vh] bg-[#0B0B0C] z-10"
+        aria-label="Điều hướng"
+      >
+        <button class="flex-1 min-h-12 relative text-[15px] font-semibold text-[#F2F2F4]">
+          Tổng quan<span
+            class="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-[#4FA37A]"
+          ></span></button
+        ><button class="flex-1 min-h-12 text-[15px] font-medium text-[#98989F]">Thực địa</button
+        ><button class="flex-1 min-h-12 text-[15px] font-medium text-[#98989F]">Nhà máy</button
+        ><button class="flex-1 min-h-12 text-[15px] font-medium text-[#98989F]">Truy xuất</button>
+      </nav>
+      <main class="flex-1 px-5 pt-6 pb-10 flex flex-col gap-8">
+        <h1 class="font-heading text-[28px] font-bold tracking-tight">Tổng quan</h1>
+        <section class="grid grid-cols-2 gap-3">
+          <div class="rounded-[0.75rem] bg-[#1C1C1E] p-4 flex flex-col gap-3">
+            <span class="text-[13px] text-[#98989F] font-medium">Thu mua</span
+            ><span class="text-[26px] font-semibold tracking-tight">—</span>
+          </div>
+          <div class="rounded-[0.75rem] bg-[#1C1C1E] p-4 flex flex-col gap-3">
+            <span class="text-[13px] text-[#98989F] font-medium">Xe chờ</span
+            ><span class="text-[26px] font-semibold tracking-tight">—</span>
+          </div>
+          <div class="rounded-[0.75rem] bg-[#1C1C1E] p-4 flex flex-col gap-3">
+            <span class="text-[13px] text-[#98989F] font-medium">Kiểm định</span
+            ><span class="text-[26px] font-semibold tracking-tight">—</span>
+          </div>
+          <div class="rounded-[0.75rem] bg-[#1C1C1E] p-4 flex flex-col gap-3">
+            <span class="text-[13px] text-[#98989F] font-medium">Silo</span
+            ><span class="text-[26px] font-semibold tracking-tight">—</span>
+          </div>
+        </section>
+        <section class="grid grid-cols-2 gap-3">
+          <button
+            class="min-h-12 rounded-[0.75rem] bg-[#4FA37A] text-[#0B0B0C] font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] active:opacity-90 transition-transform duration-200"
+          >
+            <iconify-icon icon="ph:plus-bold" width="20" height="20"></iconify-icon>Thu mua</button
+          ><button
+            class="min-h-12 rounded-[0.75rem] bg-[#2C2C2E] text-[#F2F2F4] font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] active:bg-[#3A3A3C] transition-transform duration-200"
+          >
+            <iconify-icon icon="ph:package" width="20" height="20"></iconify-icon>Tiếp nhận
+          </button>
+        </section>
+        <section class="flex flex-col">
+          <div class="flex items-center justify-between pb-3">
+            <h2 class="font-heading text-[17px] font-semibold">Phiếu gần đây</h2>
+            <span class="text-[15px] text-[#4FA37A] font-medium">Xem tất cả</span>
+          </div>
+          <ul class="flex flex-col">
+            <li class="flex items-center justify-between min-h-14 py-3 border-t border-[#2C2C2E]">
+              <div class="flex flex-col">
+                <span class="text-[15px] font-medium">PT-2401</span
+                ><span class="text-[13px] text-[#98989F]">Hôm nay, 08:42</span>
+              </div>
+              <span class="text-[15px] text-[#98989F]">—</span>
+            </li>
+            <li class="flex items-center justify-between min-h-14 py-3 border-t border-[#2C2C2E]">
+              <div class="flex flex-col">
+                <span class="text-[15px] font-medium">PT-2400</span
+                ><span class="text-[13px] text-[#98989F]">Hôm nay, 07:15</span>
+              </div>
+              <span class="text-[15px] text-[#98989F]">—</span>
+            </li>
+            <li
+              class="flex items-center justify-between min-h-14 py-3 border-t border-b border-[#2C2C2E]"
+            >
+              <div class="flex flex-col">
+                <span class="text-[15px] font-medium">PT-2398</span
+                ><span class="text-[13px] text-[#98989F]">Hôm qua, 16:30</span>
+              </div>
+              <span class="text-[15px] text-[#98989F]">—</span>
+            </li>
+          </ul>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
+

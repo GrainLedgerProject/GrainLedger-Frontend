@@ -1,8 +1,8 @@
-import { spacing } from '../../theme/tokens';
-import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import React from "react";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { spacing } from "../../theme/tokens";
 
-import { useAppTheme } from '../../theme';
+import { useAppTheme } from "../../theme";
 
 interface CardProps {
   children: React.ReactNode;
@@ -32,9 +32,10 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: spacing.lg,
-  },
-});
+const createStyles = (Colors: typeof BaseColors) =>
+  StyleSheet.create({
+    card: {
+      borderWidth: StyleSheet.hairlineWidth,
+      padding: spacing.lg,
+    },
+  });

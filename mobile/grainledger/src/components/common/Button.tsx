@@ -1,5 +1,4 @@
-import { spacing } from '../../theme/tokens';
-import React from 'react';
+import React from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -9,23 +8,24 @@ import {
   type StyleProp,
   type TextStyle,
   type ViewStyle,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withSpring,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
+import { spacing } from "../../theme/tokens";
 
-import { useAppTheme } from '../../theme';
-import { haptics } from '../../utils/haptics';
-import { AppText } from '../ui/AppText';
+import { useAppTheme } from "../../theme";
+import { haptics } from "../../utils/haptics";
+import { AppText } from "../ui/AppText";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'danger';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "primary" | "secondary" | "accent" | "outline" | "danger";
+  size?: "small" | "medium" | "large";
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
@@ -36,8 +36,8 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
-  variant = 'primary',
-  size = 'medium',
+  variant = "primary",
+  size = "medium",
   loading = false,
   disabled = false,
   icon,
@@ -48,27 +48,39 @@ export const Button: React.FC<ButtonProps> = ({
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const isDisabled = disabled || loading;
-  const isPrimary = variant === 'primary' || variant === 'accent' || variant === 'danger';
+  const isPrimary =
+    variant === "primary" || variant === "accent" || variant === "danger";
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const backgroundColor =
-    variant === 'danger'
+    variant === "danger"
       ? theme.colors.destructive
-      : variant === 'primary' || variant === 'accent'
+      : variant === "primary" || variant === "accent"
         ? theme.colors.accent
-        : variant === 'secondary'
+        : variant === "secondary"
           ? theme.colors.surfaceSecondary
-          : 'transparent';
+          : "transparent";
 
-  const foregroundColor = variant === 'danger' ? theme.colors.onDestructive : isPrimary
-    ? theme.colors.onAccent
-    : theme.colors.label;
+  const foregroundColor =
+    variant === "danger"
+      ? theme.colors.onDestructive
+      : isPrimary
+        ? theme.colors.onAccent
+        : theme.colors.label;
 
-  const minHeight = size === 'small' ? (Platform.OS === 'android' ? 48 : 44) : size === 'large' ? 54 : 48;
-  const horizontalPadding = size === 'small' ? theme.spacing.md : theme.spacing.xl;
+  const minHeight =
+    size === "small"
+      ? Platform.OS === "android"
+        ? 48
+        : 44
+      : size === "large"
+        ? 54
+        : 48;
+  const horizontalPadding =
+    size === "small" ? theme.spacing.md : theme.spacing.xl;
 
   const setPressed = (pressed: boolean) => {
     scale.set(
@@ -99,7 +111,8 @@ export const Button: React.FC<ButtonProps> = ({
             paddingHorizontal: horizontalPadding,
             borderRadius: theme.radii.pill,
             backgroundColor,
-            borderColor: variant === 'outline' ? theme.colors.separator : 'transparent',
+            borderColor:
+              variant === "outline" ? theme.colors.separator : "transparent",
             opacity: isDisabled ? 0.45 : pressed ? 0.86 : 1,
           },
         ]}
@@ -110,7 +123,7 @@ export const Button: React.FC<ButtonProps> = ({
           <View style={styles.content}>
             {icon}
             <AppText
-              variant={size === 'small' ? 'subheadline' : 'headline'}
+              variant={size === "small" ? "subheadline" : "headline"}
               style={[{ color: foregroundColor }, textStyle]}
               maxFontSizeMultiplier={1.4}
             >
@@ -125,18 +138,18 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   animated: {
-    alignSelf: 'auto',
+    alignSelf: "auto",
   },
   button: {
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   content: {
     flexShrink: 1,
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 });

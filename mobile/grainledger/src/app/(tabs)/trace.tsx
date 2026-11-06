@@ -1,40 +1,43 @@
-import { radii, spacing } from '../../theme/tokens';
-import React, { useMemo , useState } from 'react';
+import { useMemo, useState } from "react";
+import { radii, spacing } from "../../theme/tokens";
 
 import {
-  View,
-  Text,
-  StyleSheet,
+  RefreshControl,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Header } from '../../components/common/Header';
-import { GlassCard } from '../../components/common/GlassCard';
-import { GlassBadge } from '../../components/common/GlassBadge';
-import { useMillStore } from '../../store/millStore';
-import { formatMass } from '../../utils/decimalMass';
-import { AppleGlass } from '../../theme/appleGlass';
-import { useAppTheme, type AppTheme } from '../../theme';
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { GlassBadge } from "../../components/common/GlassBadge";
+import { GlassCard } from "../../components/common/GlassCard";
+import { Header } from "../../components/common/Header";
 import {
-  Search,
-  QrCode,
-  ShieldCheck,
-  CheckCircle2,
   Check,
+  CheckCircle2,
+  QrCode,
+  Search,
+  ShieldCheck,
   Sparkles,
-} from '../../components/ui/named-icons';
+} from "../../components/ui/named-icons";
+import { useMillStore } from "../../store/millStore";
+import { useAppTheme, type AppTheme } from "../../theme";
+import { AppleGlass } from "../../theme/appleGlass";
+import { formatMass } from "../../utils/decimalMass";
 
 export default function TraceScreen() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { traceLots, getLotByCode, isLoading, fetchMillData } = useMillStore();
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState("");
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
 
-  const currentLot = (selectedLotId ? traceLots.find((l) => l.id === selectedLotId) : undefined) ?? traceLots[0];
+  const currentLot =
+    (selectedLotId
+      ? traceLots.find((l) => l.id === selectedLotId)
+      : undefined) ?? traceLots[0];
 
   const handleSearch = () => {
     const found = getLotByCode(searchInput);
@@ -44,7 +47,9 @@ export default function TraceScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+    >
       <Header
         title="Truy xuất Nguồn gốc"
         subtitle="Tra cứu chuỗi hành trình & kiểm định MRL bất biến"
@@ -66,7 +71,11 @@ export default function TraceScreen() {
             onChangeText={setSearchInput}
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity style={styles.scanBtn} onPress={handleSearch} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.scanBtn}
+            onPress={handleSearch}
+            activeOpacity={0.7}
+          >
             <QrCode size={18} color={theme.colors.accent} />
           </TouchableOpacity>
         </GlassCard>
@@ -101,7 +110,9 @@ export default function TraceScreen() {
         ) : null}
       </View>
 
-      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -126,7 +137,9 @@ export default function TraceScreen() {
               <View style={styles.heroTop}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.heroCode}>{currentLot.lotCode}</Text>
-                  <Text style={styles.heroProduct}>{currentLot.productType}</Text>
+                  <Text style={styles.heroProduct}>
+                    {currentLot.productType}
+                  </Text>
                 </View>
                 <GlassBadge status={currentLot.status} size="medium" />
               </View>
@@ -143,9 +156,20 @@ export default function TraceScreen() {
 
                 <View style={styles.heroStatItem}>
                   <Text style={styles.heroStatLabel}>Độ thuần chủng</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.xs,
+                    }}
+                  >
                     <Sparkles size={14} color={theme.colors.warning} />
-                    <Text style={[styles.heroStatVal, { color: theme.colors.warning }]}>
+                    <Text
+                      style={[
+                        styles.heroStatVal,
+                        { color: theme.colors.warning },
+                      ]}
+                    >
                       {currentLot.purityScore}%
                     </Text>
                   </View>
@@ -153,7 +177,9 @@ export default function TraceScreen() {
 
                 <View style={styles.heroStatItem}>
                   <Text style={styles.heroStatLabel}>Ngày đóng gói</Text>
-                  <Text style={styles.heroStatVal}>{currentLot.createdDate}</Text>
+                  <Text style={styles.heroStatVal}>
+                    {currentLot.createdDate}
+                  </Text>
                 </View>
               </View>
             </GlassCard>
@@ -170,7 +196,9 @@ export default function TraceScreen() {
                   <ShieldCheck size={24} color={theme.colors.success} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.mrlTitle}>Chứng nhận Dư lượng MRL Đạt chuẩn</Text>
+                  <Text style={styles.mrlTitle}>
+                    Chứng nhận Dư lượng MRL Đạt chuẩn
+                  </Text>
                   <Text style={styles.mrlSub}>
                     Phù hợp quy chuẩn xuất khẩu thị trường EU, US và Nhật Bản.
                   </Text>
@@ -182,22 +210,30 @@ export default function TraceScreen() {
               <View style={styles.mrlChecklist}>
                 <View style={styles.mrlItem}>
                   <Check size={14} color={theme.colors.success} />
-                  <Text style={styles.mrlItemText}>Azoxystrobin: 0.02 mg/kg (Ngưỡng 2.0)</Text>
+                  <Text style={styles.mrlItemText}>
+                    Azoxystrobin: 0.02 mg/kg (Ngưỡng 2.0)
+                  </Text>
                 </View>
                 <View style={styles.mrlItem}>
                   <Check size={14} color={theme.colors.success} />
-                  <Text style={styles.mrlItemText}>Tricyclazole: Không phát hiện (LOD &lt; 0.01)</Text>
+                  <Text style={styles.mrlItemText}>
+                    Tricyclazole: Không phát hiện (LOD &lt; 0.01)
+                  </Text>
                 </View>
                 <View style={styles.mrlItem}>
                   <Check size={14} color={theme.colors.success} />
-                  <Text style={styles.mrlItemText}>Kim loại nặng (Cadmium, Chì): Đạt an toàn</Text>
+                  <Text style={styles.mrlItemText}>
+                    Kim loại nặng (Cadmium, Chì): Đạt an toàn
+                  </Text>
                 </View>
               </View>
             </GlassCard>
 
             {/* Farmer Origin Composition */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Nguồn gốc Nông hộ & Thửa ruộng</Text>
+              <Text style={styles.sectionTitle}>
+                Nguồn gốc Nông hộ & Thửa ruộng
+              </Text>
             </View>
 
             {currentLot.farmerOrigins.map((origin, index) => (
@@ -211,19 +247,26 @@ export default function TraceScreen() {
                   <View>
                     <Text style={styles.originFarmer}>{origin.farmerName}</Text>
                     <Text style={styles.originPlot}>
-                      Mã: {origin.farmerCode} • Thửa {origin.plotCode} ({origin.province})
+                      Mã: {origin.farmerCode} • Thửa {origin.plotCode} (
+                      {origin.province})
                     </Text>
                   </View>
                   <View style={styles.originPercentBadge}>
-                    <Text style={styles.originPercentText}>{origin.percentage}%</Text>
+                    <Text style={styles.originPercentText}>
+                      {origin.percentage}%
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.originDivider} />
 
                 <View style={styles.originFooter}>
-                  <Text style={styles.originVariety}>Giống: {origin.variety}</Text>
-                  <Text style={styles.originHarvest}>Thu hoạch: {origin.harvestDate}</Text>
+                  <Text style={styles.originVariety}>
+                    Giống: {origin.variety}
+                  </Text>
+                  <Text style={styles.originHarvest}>
+                    Thu hoạch: {origin.harvestDate}
+                  </Text>
                 </View>
               </GlassCard>
             ))}
@@ -253,7 +296,9 @@ export default function TraceScreen() {
                       <Text style={styles.stepTitle}>{step.stage}</Text>
                       <Text style={styles.stepTime}>{step.timestamp}</Text>
                     </View>
-                    <Text style={styles.stepOperator}>Thực hiện: {step.operator}</Text>
+                    <Text style={styles.stepOperator}>
+                      Thực hiện: {step.operator}
+                    </Text>
                     <Text style={styles.stepDetail}>{step.detail}</Text>
                   </View>
                 </View>
@@ -262,7 +307,9 @@ export default function TraceScreen() {
           </View>
         ) : (
           <GlassCard style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Không tìm thấy mã lô tương ứng.</Text>
+            <Text style={styles.emptyText}>
+              Không tìm thấy mã lô tương ứng.
+            </Text>
           </GlassCard>
         )}
       </ScrollView>
@@ -270,278 +317,279 @@ export default function TraceScreen() {
   );
 }
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  searchContainer: {
-    backgroundColor: theme.colors.surface,
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.separator,
-  },
-  searchBarInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    gap: spacing.sm,
-  },
-  input: {
-    flex: 1,
-    ...theme.typography.subheadline,
-    color: theme.colors.label,
-    paddingVertical: spacing.sm,
-  },
-  scanBtn: {
-    padding: spacing.xs,
-    borderRadius: radii.xs,
-    backgroundColor: theme.colors.accentMuted,
-  },
-  suggestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  suggestLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-  },
-  chip: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: AppleGlass.radii.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.separator,
-  },
-  chipActive: {
-    backgroundColor: theme.colors.successMuted,
-    borderColor: theme.colors.success,
-  },
-  chipText: {
-    ...theme.typography.caption,
-    fontWeight: '600',
-    color: theme.colors.secondaryLabel,
-  },
-  chipTextActive: {
-    color: theme.colors.accent,
-    fontWeight: '700',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-    paddingBottom: spacing.huge,
-  },
-  lotHeroCard: {
-    marginBottom: spacing.md,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  heroCode: {
-    ...theme.typography.body,
-    fontWeight: '800',
-    color: theme.colors.label,
-  },
-  heroProduct: {
-    ...theme.typography.footnote,
-    color: theme.colors.secondaryLabel,
-    marginTop: spacing.xxs,
-  },
-  heroDivider: {
-    height: 1,
-    backgroundColor: theme.colors.separator,
-    marginVertical: spacing.md,
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  heroStatItem: {
-    flex: 1,
-  },
-  heroStatLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-    marginBottom: spacing.xxs,
-  },
-  heroStatVal: {
-    ...theme.typography.subheadline,
-    fontWeight: '700',
-    color: theme.colors.label,
-  },
-  mrlCard: {
-    marginBottom: spacing.lg,
-  },
-  mrlHeader: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-  },
-  mrlIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
-    backgroundColor: theme.colors.successMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mrlTitle: {
-    ...theme.typography.subheadline,
-    fontWeight: '800',
-    color: theme.colors.success,
-  },
-  mrlSub: {
-    ...theme.typography.caption,
-    color: theme.colors.success,
-    marginTop: spacing.xxs,
-  },
-  mrlDivider: {
-    height: 1,
-    backgroundColor: theme.colors.accentMuted,
-    marginVertical: spacing.sm,
-  },
-  mrlChecklist: {
-    gap: spacing.xs,
-  },
-  mrlItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  mrlItemText: {
-    ...theme.typography.caption,
-    fontWeight: '600',
-    color: theme.colors.success,
-  },
-  sectionHeaderRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: {
-    ...theme.typography.subheadline,
-    fontWeight: '800',
-    color: theme.colors.label,
-  },
-  originCard: {
-    marginBottom: spacing.sm,
-  },
-  originTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  originFarmer: {
-    ...theme.typography.subheadline,
-    fontWeight: '800',
-    color: theme.colors.label,
-  },
-  originPlot: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-    marginTop: spacing.xxs,
-  },
-  originPercentBadge: {
-    backgroundColor: theme.colors.successMuted,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.xs,
-    borderWidth: 1,
-    borderColor: theme.colors.successMuted,
-  },
-  originPercentText: {
-    ...theme.typography.footnote,
-    fontWeight: '800',
-    color: theme.colors.accent,
-  },
-  originDivider: {
-    height: 1,
-    backgroundColor: theme.colors.separator,
-    marginVertical: spacing.sm,
-  },
-  originFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  originVariety: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-  },
-  originHarvest: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-  },
-  timelineCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  timelineStep: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  timelineLeft: {
-    alignItems: 'center',
-    width: 20,
-  },
-  timelineDot: {
-    width: 20,
-    height: 20,
-    borderRadius: radii.xs,
-    backgroundColor: theme.colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: theme.colors.separator,
-    marginTop: spacing.xs,
-    marginBottom: -spacing.lg,
-  },
-  timelineRight: {
-    flex: 1,
-  },
-  stepHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stepTitle: {
-    ...theme.typography.subheadline,
-    fontWeight: '700',
-    color: theme.colors.label,
-  },
-  stepTime: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-  },
-  stepOperator: {
-    ...theme.typography.caption,
-    color: theme.colors.accent,
-    fontWeight: '600',
-    marginTop: spacing.xxs,
-  },
-  stepDetail: {
-    ...theme.typography.caption,
-    color: theme.colors.secondaryLabel,
-    marginTop: spacing.xxs,
-    lineHeight: 16,
-  },
-  emptyContainer: {
-    padding: spacing.xxl,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...theme.typography.subheadline,
-    color: theme.colors.secondaryLabel,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    searchContainer: {
+      backgroundColor: theme.colors.surface,
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.separator,
+    },
+    searchBarInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      gap: spacing.sm,
+    },
+    input: {
+      flex: 1,
+      ...theme.typography.subheadline,
+      color: theme.colors.label,
+      paddingVertical: spacing.sm,
+    },
+    scanBtn: {
+      padding: spacing.xs,
+      borderRadius: radii.xs,
+      backgroundColor: theme.colors.accentMuted,
+    },
+    suggestionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: spacing.sm,
+      gap: spacing.sm,
+    },
+    suggestLabel: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+    },
+    chip: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: AppleGlass.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.separator,
+    },
+    chipActive: {
+      backgroundColor: theme.colors.successMuted,
+      borderColor: theme.colors.success,
+    },
+    chipText: {
+      ...theme.typography.caption,
+      fontWeight: "600",
+      color: theme.colors.secondaryLabel,
+    },
+    chipTextActive: {
+      color: theme.colors.accent,
+      fontWeight: "700",
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: spacing.lg,
+      paddingBottom: spacing.huge,
+    },
+    lotHeroCard: {
+      marginBottom: spacing.md,
+    },
+    heroTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    heroCode: {
+      ...theme.typography.body,
+      fontWeight: "800",
+      color: theme.colors.label,
+    },
+    heroProduct: {
+      ...theme.typography.footnote,
+      color: theme.colors.secondaryLabel,
+      marginTop: spacing.xxs,
+    },
+    heroDivider: {
+      height: 1,
+      backgroundColor: theme.colors.separator,
+      marginVertical: spacing.md,
+    },
+    heroStatsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    heroStatItem: {
+      flex: 1,
+    },
+    heroStatLabel: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+      marginBottom: spacing.xxs,
+    },
+    heroStatVal: {
+      ...theme.typography.subheadline,
+      fontWeight: "700",
+      color: theme.colors.label,
+    },
+    mrlCard: {
+      marginBottom: spacing.lg,
+    },
+    mrlHeader: {
+      flexDirection: "row",
+      gap: spacing.md,
+      alignItems: "center",
+    },
+    mrlIconBox: {
+      width: 40,
+      height: 40,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.successMuted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    mrlTitle: {
+      ...theme.typography.subheadline,
+      fontWeight: "800",
+      color: theme.colors.success,
+    },
+    mrlSub: {
+      ...theme.typography.caption,
+      color: theme.colors.success,
+      marginTop: spacing.xxs,
+    },
+    mrlDivider: {
+      height: 1,
+      backgroundColor: theme.colors.accentMuted,
+      marginVertical: spacing.sm,
+    },
+    mrlChecklist: {
+      gap: spacing.xs,
+    },
+    mrlItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    mrlItemText: {
+      ...theme.typography.caption,
+      fontWeight: "600",
+      color: theme.colors.success,
+    },
+    sectionHeaderRow: {
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    sectionTitle: {
+      ...theme.typography.subheadline,
+      fontWeight: "800",
+      color: theme.colors.label,
+    },
+    originCard: {
+      marginBottom: spacing.sm,
+    },
+    originTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    originFarmer: {
+      ...theme.typography.subheadline,
+      fontWeight: "800",
+      color: theme.colors.label,
+    },
+    originPlot: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+      marginTop: spacing.xxs,
+    },
+    originPercentBadge: {
+      backgroundColor: theme.colors.successMuted,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radii.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.successMuted,
+    },
+    originPercentText: {
+      ...theme.typography.footnote,
+      fontWeight: "800",
+      color: theme.colors.accent,
+    },
+    originDivider: {
+      height: 1,
+      backgroundColor: theme.colors.separator,
+      marginVertical: spacing.sm,
+    },
+    originFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    originVariety: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+    },
+    originHarvest: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+    },
+    timelineCard: {
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    timelineStep: {
+      flexDirection: "row",
+      gap: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    timelineLeft: {
+      alignItems: "center",
+      width: 20,
+    },
+    timelineDot: {
+      width: 20,
+      height: 20,
+      borderRadius: radii.xs,
+      backgroundColor: theme.colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2,
+    },
+    timelineLine: {
+      width: 2,
+      flex: 1,
+      backgroundColor: theme.colors.separator,
+      marginTop: spacing.xs,
+      marginBottom: -spacing.lg,
+    },
+    timelineRight: {
+      flex: 1,
+    },
+    stepHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    stepTitle: {
+      ...theme.typography.subheadline,
+      fontWeight: "700",
+      color: theme.colors.label,
+    },
+    stepTime: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+    },
+    stepOperator: {
+      ...theme.typography.caption,
+      color: theme.colors.accent,
+      fontWeight: "600",
+      marginTop: spacing.xxs,
+    },
+    stepDetail: {
+      ...theme.typography.caption,
+      color: theme.colors.secondaryLabel,
+      marginTop: spacing.xxs,
+      lineHeight: 16,
+    },
+    emptyContainer: {
+      padding: spacing.xxl,
+      alignItems: "center",
+    },
+    emptyText: {
+      ...theme.typography.subheadline,
+      color: theme.colors.secondaryLabel,
+    },
+  });
