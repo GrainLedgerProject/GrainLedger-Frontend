@@ -301,13 +301,13 @@ export const FacilityConfigPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("admin.facility.tag", "CẤU HÌNH NHÀ MÁY, SILO & THIẾT BỊ")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("admin.facility.title", "Cơ sở Vật chất & Vị trí Lưu trữ Silo")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.facility.subtitle",
               "Cấu hình các silo lưu trữ, máy sấy và dây chuyền chế biến để hệ thống hạch toán dòng chảy cân bằng khối lượng.",

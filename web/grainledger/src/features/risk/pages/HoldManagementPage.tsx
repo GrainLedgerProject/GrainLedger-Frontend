@@ -164,7 +164,7 @@ export const HoldManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-danger uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-danger uppercase tracking-wider block">
             {t("risk.hold.badge", "QUẢN LÝ PHONG TỎA & CẢNH BÁO RỦI RO")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">

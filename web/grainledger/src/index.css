@@ -146,6 +146,12 @@ body {
   color: var(--color-ink-primary);
 }
 
+/* Opt in only for optional copy and decoration. Keep controls, form guidance,
+   tenant identity, operational values and all feedback visible in both modes. */
+:root[data-minimal-ui="true"] .app-workspace [data-ui-detail="secondary"] {
+  display: none;
+}
+
 /* Shared dropdown affordance, including selects rendered in modal portals.
    Reserve space for the chevron without changing leading icons or native behavior.
    Listboxes and multiple selects retain their browser presentation. */

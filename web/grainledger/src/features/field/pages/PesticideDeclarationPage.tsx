@@ -164,7 +164,7 @@ export const PesticideDeclarationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("field.pesticide.tag", "KHAI BÁO PHUN THUỐC BVTV THEO THỬA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -173,7 +173,7 @@ export const PesticideDeclarationPage: React.FC = () => {
               "Nhật ký Phun thuốc & Cảnh báo Dư lượng MRL",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.pesticide.subtitle",
               "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL.",

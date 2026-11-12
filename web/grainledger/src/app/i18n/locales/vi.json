@@ -78,6 +78,9 @@
     }
   },
   "header": {
+    "minimalMode": "Chế độ tối giản",
+    "enableMinimalMode": "Bật chế độ tối giản",
+    "disableMinimalMode": "Tắt chế độ tối giản",
     "defaultTitle": "Bàn làm việc vận hành",
     "searchTitle": "Tìm kiếm trong hệ thống (Cmd/Ctrl+K)",
     "switchToLight": "Chuyển sang chế độ sáng",

@@ -368,7 +368,7 @@ export const PendingCorrectionsPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "mill.pendingCorrections.tag",
               "HẠCH TOÁN ĐẢO NGƯỢC & BÚT TOÁN BÙ",
@@ -377,7 +377,7 @@ export const PendingCorrectionsPage: React.FC = () => {
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("mill.pendingCorrections.pageTitle", "Ghi Bút Toán Bù Sổ Cái")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.pendingCorrections.pageSubtitle",
               "Thực hiện chốt phát hành các bút toán đảo ngược (Reversal Entry) theo chuẩn cân bằng khối lượng ISO 22095 và ghi nhận điều chỉnh vào Sổ cái bất biến cho các mẻ đã hoàn tất bước đối soát bằng chứng.",

@@ -283,7 +283,7 @@ export const RoleHomePage: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-ink-primary tracking-tight">
               {t("dashboard.managerTitle", "Bàn điều hành Quản lý nhà máy")}
             </h2>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
               Giám sát cân bằng dây chuyền, xác nhận đối soát bằng chứng và xử
               lý cách ly lệnh HOLD.
             </p>
@@ -424,7 +424,7 @@ export const RoleHomePage: React.FC = () => {
               )}{" "}
               — {user?.organizationName}
             </h2>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
               Phê duyệt phương án phối trộn, theo dõi xét nghiệm dư lượng MRL và
               kích hoạt truy vết hai chiều.
             </p>
@@ -577,7 +577,7 @@ export const RoleHomePage: React.FC = () => {
                 {t("dashboard.exportOfficerTitle", "Đơn hàng & Xếp Container")}{" "}
                 — {user?.organizationName}
               </h2>
-              <p className="text-xs text-ink-tertiary mt-1">
+              <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
                 Quản lý tiến độ đơn xuất khẩu, đóng niêm container và trích xuất
                 hồ sơ tuân thủ.
               </p>
@@ -677,7 +677,7 @@ export const RoleHomePage: React.FC = () => {
                 "Bàn làm việc Thu mua Hiện trường (Field Client)",
               )}
             </h2>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
               Hỗ trợ làm việc hoàn toàn ngoại tuyến tại ruộng lúa và đồng bộ khi
               có kết nối internet.
             </p>
@@ -774,7 +774,7 @@ export const RoleHomePage: React.FC = () => {
                 "Trạng thái Hệ thống Quản trị Nhà máy",
               )}
             </h2>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
               Cấu hình cơ sở vật chất, tài khoản phân quyền và quản lý phiên bản
               bảng giới hạn MRL.
             </p>
@@ -853,7 +853,7 @@ export const RoleHomePage: React.FC = () => {
                 "Vị trí & Cơ cấu Tồn kho Khách hàng",
               )}
             </h2>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-1">
               Quyền xem độc lập dữ liệu tồn kho theo vị trí kho, silo và cơ cấu
               nguồn gốc thửa ruộng.
             </p>

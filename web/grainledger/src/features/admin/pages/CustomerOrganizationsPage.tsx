@@ -94,7 +94,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "admin.orgs.tag",
               "THIẾT LẬP RANH GIỚI KHÁCH HÀNG (TENANT ISOLATION)",
@@ -106,7 +106,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
               "Quản trị Doanh nghiệp & Khách hàng Xuất khẩu",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.orgs.subtitle",
               "Quản lý các công ty gửi lúa vào nhà máy sấy, lưu trữ silo và chế biến xuất khẩu. Dữ liệu lô hàng được cô lập 100% giữa các công ty.",

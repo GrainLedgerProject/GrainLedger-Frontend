@@ -429,7 +429,7 @@ export const ReconciliationReviewPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("mill.reconciliation.tag", "ĐỐI SOÁT & XÁC NHẬN BẰNG CHỨNG")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -438,7 +438,7 @@ export const ReconciliationReviewPage: React.FC = () => {
               "Đối Soát & Xác Nhận Bằng Chứng",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.reconciliation.pageSubtitle",
               "Thẩm định bằng chứng đo lường thực tế (phiếu cân bàn, biên bản KCS kiểm tra độ ẩm/tạp chất), so sánh mức độ sai lệch với ngưỡng dung sai chính sách và ký biên bản đối soát trước khi chuyển giao sang quy trình ghi bút toán bù sổ cái.",

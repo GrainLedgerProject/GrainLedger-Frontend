@@ -128,13 +128,13 @@ export const UserAccessManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("admin.users.tag", "PHÂN QUYỀN VAI TRÒ & TỔ CHỨC (RBAC)")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("admin.users.title", "Phân quyền Tài khoản & Ranh giới Tổ chức")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.users.subtitle",
               "Gán 6 vai trò nghiệp vụ nội bộ hoặc người xem kho, liên kết tài khoản với tổ chức và kiểm soát trạng thái hoạt động.",

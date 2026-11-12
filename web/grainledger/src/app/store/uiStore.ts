@@ -15,6 +15,7 @@ interface UiState {
   hasInitialChecked: boolean;
   pendingOfflineCount: number;
   procurementSyncMode: 'auto' | 'manual';
+  isMinimalMode: boolean;
 
   // Actions
   toggleTheme: () => void;
@@ -29,6 +30,7 @@ interface UiState {
   setBackendConnected: (connected: boolean) => void;
   setPendingOfflineCount: (count: number) => void;
   setProcurementSyncMode: (mode: 'auto' | 'manual') => void;
+  setMinimalMode: (enabled: boolean) => void;
   checkConnection: (isInitial?: boolean) => Promise<boolean>;
 }
 
@@ -38,9 +40,11 @@ const storedTheme = (localStorage.getItem('grainledger_theme') as 'light' | 'dar
 
 const storedCollapsed = localStorage.getItem('grainledger_sidebar_collapsed') === 'true';
 const storedLang = (localStorage.getItem('grainledger_lang') as 'vi' | 'en') || 'vi';
+const storedMinimalMode = localStorage.getItem('grainledger_minimal_mode') === 'true';
 
 if (typeof document !== 'undefined') {
   document.documentElement.lang = storedLang;
+  document.documentElement.dataset.minimalUi = String(storedMinimalMode);
 }
 
 // Apply initial theme class to HTML element
@@ -63,6 +67,12 @@ export const useUiStore = create<UiState>((set, get) => ({
   hasInitialChecked: false,
   pendingOfflineCount: 0,
   procurementSyncMode: localStorage.getItem('grainledger_procurement_sync_mode') === 'manual' ? 'manual' : 'auto',
+  isMinimalMode: storedMinimalMode,
+  setMinimalMode: (enabled) => {
+    localStorage.setItem('grainledger_minimal_mode', String(enabled));
+    document.documentElement.dataset.minimalUi = String(enabled);
+    set({ isMinimalMode: enabled });
+  },
 
   toggleTheme: () => {
     set((state) => {

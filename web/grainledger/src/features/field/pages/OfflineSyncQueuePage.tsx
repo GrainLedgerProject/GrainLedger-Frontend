@@ -70,13 +70,13 @@ export const OfflineSyncQueuePage: React.FC = () => {
     <div className="mx-auto space-y-6 w-full max-w-7xl">
       <header className="border-b border-ink-tertiary/15 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider">
+          <p data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider">
             Hiện trường · Offline Capable
           </p>
           <h1 className="text-2xl font-display font-bold tracking-tight text-ink-primary">
             Hàng đợi thu mua
           </h1>
-          <p className="text-xs text-ink-secondary mt-1">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-1">
             Mỗi phiếu giữ nguyên mã thao tác từ lúc cân đến khi ghi vào sổ cái,
             nên gửi lại không tạo bản ghi trùng.
           </p>

@@ -639,13 +639,13 @@ export const ProcurementReceiptPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("field.receipt.tag", "LẬP PHIẾU THU MUA & TẠO LÔ NGUỒN")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.receipt.title", "Phiếu Thu Mua Lúa Tươi Tại Bờ Ruộng")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.receipt.subtitle",
               "Ghi nhận khối lượng cân thực tế, tỷ lệ độ ẩm và sinh Lô Nguồn (Source Lot) bất biến trên sổ cái.",

@@ -441,7 +441,7 @@ export const AppSidebar: React.FC = () => {
                 <span className="font-sans font-extrabold text-base text-ink-primary tracking-tight leading-tight">
                   GrainLedger
                 </span>
-                <span className="text-[10px] text-ink-tertiary uppercase tracking-wider truncate font-mono">
+                <span data-ui-detail="secondary" className="text-[10px] text-ink-tertiary uppercase tracking-wider truncate font-mono">
                   ISO 22095 Custody
                 </span>
               </div>

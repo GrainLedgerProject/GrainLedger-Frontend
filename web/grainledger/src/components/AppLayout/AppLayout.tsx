@@ -28,7 +28,7 @@ export const AppLayout: React.FC = () => {
         </main>
 
         {/* Minimal Operational Footer — Apple-style clean */}
-        <footer className="border-t border-ink-tertiary/10 py-4 px-6 text-xs text-ink-tertiary flex flex-col sm:flex-row items-center justify-between gap-2 bg-surface-base">
+        <footer data-ui-detail="secondary" className="border-t border-ink-tertiary/10 py-4 px-6 text-xs text-ink-tertiary flex flex-col sm:flex-row items-center justify-between gap-2 bg-surface-base">
           <div className="flex items-center gap-3">
             <img
               src="/favicon.svg"

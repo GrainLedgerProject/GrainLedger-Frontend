@@ -290,7 +290,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -299,7 +299,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               "Lấy Mẫu Niêm Phong & Bàn Giao (Procurement Samples)",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.samples.subtitle",
               "Ghi nhận mã niêm chì và mã barcode của mẫu thóc đại diện được lấy tại điểm thu mua trước khi đưa về nhà máy sấy và lưu kho.",

@@ -221,7 +221,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
               "Kết Quả Thử Nghiệm MRL & Thẩm Định CoA (Lab Test Results & MRL Compliance)",
             )}
           </h1>
-          <p className="text-sm text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-sm text-ink-secondary mt-0.5">
             {t(
               "compliance.mrlCheck.pageSubtitle",
               "Thẩm định phiếu kết quả thử nghiệm (Certificate of Analysis) từ phòng lab ISO/IEC 17025, đối chiếu nồng độ hoạt chất với ngưỡng MRL xuất khẩu và kích hoạt lệnh HOLD nếu phát hiện dư lượng vượt ngưỡng.",

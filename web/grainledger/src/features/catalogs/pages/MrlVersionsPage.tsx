@@ -299,7 +299,7 @@ export const MrlVersionsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("catalogs.mrl.tag", "QUẢN LÝ BẢNG GIỚI HẠN DƯ LƯỢNG MRL")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -308,7 +308,7 @@ export const MrlVersionsPage: React.FC = () => {
               "Ngưỡng Dư lượng MRL theo Thị trường Đích",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "catalogs.mrl.subtitle",
               "Quản lý bảng ngưỡng MRL có phiên bản hiệu lực cho 6 thị trường: EU, Mỹ, Nhật Bản, Hàn Quốc, Codex, Việt Nam.",

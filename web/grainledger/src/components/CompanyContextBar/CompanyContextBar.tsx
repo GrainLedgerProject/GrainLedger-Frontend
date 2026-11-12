@@ -32,8 +32,8 @@ export const CompanyContextBar: React.FC = () => {
             title={`${t("common.colorIndicator", "Mã màu đại diện")}: ${companyName}`}
           />
           <span className="font-semibold text-accent-info">{companyName}</span>
-          <span className="text-ink-secondary">|</span>
-          <span className="text-ink-secondary">
+          <span data-ui-detail="secondary" className="text-ink-secondary">|</span>
+          <span data-ui-detail="secondary" className="text-ink-secondary">
             {t(
               "common.tenantNotice",
               "Phạm vi dữ liệu cách ly theo chuẩn ISO 22095",
@@ -41,7 +41,7 @@ export const CompanyContextBar: React.FC = () => {
           </span>
         </div>
 
-        <div className="ml-auto flex items-center gap-1 text-accent-success font-medium">
+        <div data-ui-detail="secondary" className="ml-auto flex items-center gap-1 text-accent-success font-medium">
           <ShieldCheck size={14} weight="bold" />
           <span>Tenant Isolated</span>
         </div>

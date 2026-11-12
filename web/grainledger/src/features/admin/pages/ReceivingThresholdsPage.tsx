@@ -211,7 +211,7 @@ export const ReceivingThresholdsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("admin.thresholds.tag", "QUY TẮC NGHIỆP VỤ TIẾP NHẬN")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -220,7 +220,7 @@ export const ReceivingThresholdsPage: React.FC = () => {
               "Cấu hình Ngưỡng Tiếp nhận & Dung sai theo Doanh nghiệp",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "admin.thresholds.subtitle",
               "Thiết lập biên độ sai số khối lượng cân xe, giới hạn độ ẩm và tạp chất chấp nhận khi tiếp nhận thóc vào nhà máy cho từng khách hàng.",

@@ -209,7 +209,7 @@ export const ReceivingTasksPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "mill.receiving.tag",
               "TIẾP NHẬN LÚA VỀ NHÀ MÁY (RECEIVING & ARRIVAL WORKFLOW)",

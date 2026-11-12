@@ -297,13 +297,13 @@ export const PlotRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("field.plot.badge", "ĐĂNG KÝ THỬA RUỘNG & BẢN ĐỒ GIS")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.plot.pageTitle", "Quản lý Thửa đất & Vùng trồng Lúa")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.plot.pageSubtitle",
               "Định vị toạ độ thửa đất nông hộ trên bản đồ tương tác phục vụ truy xuất nguồn gốc ISO 22095.",

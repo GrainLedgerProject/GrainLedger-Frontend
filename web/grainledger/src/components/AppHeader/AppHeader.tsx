@@ -3,6 +3,7 @@ import { useUiStore } from "@/app/store/uiStore";
 import { ConfirmPopover } from "@/components/ConfirmPopover/ConfirmPopover";
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator/NetworkStatusIndicator";
 import { RoleChip } from "@/components/RoleChip/RoleChip";
+import { MinimalModeToggle } from "@/components/MinimalModeToggle/MinimalModeToggle";
 import { isCustomerSide } from "@/shared/types/roles";
 import {
   BellIcon,
@@ -29,7 +30,6 @@ export interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  pageTitle,
   breadcrumbs,
 }) => {
   const { t } = useTranslation();
@@ -275,6 +275,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
 
           {/* Theme Toggle (Light / Dark) */}
+          <MinimalModeToggle compact />
           <button
             type="button"
             onClick={toggleTheme}
@@ -371,6 +372,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
                   {/* Navigation Links */}
                   <div className="space-y-1">
+                    <MinimalModeToggle />
                     <Link
                       to="/settings/profile"
                       onClick={() => setIsUserMenuOpen(false)}

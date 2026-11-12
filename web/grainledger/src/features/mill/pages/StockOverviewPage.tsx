@@ -110,13 +110,13 @@ export const StockOverviewPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("mill.stock.headerBadge", "SỔ CÁI TỒN KHO & ĐỊNH DANH LÔ")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("mill.stock.pageTitle", "Tồn kho theo Vị trí & Silo Lưu trữ")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.stock.pageSubtitle",
               "Giám sát số lượng tồn kho khả dụng, bảo lưu và cách ly phong tỏa (HOLD) độc lập theo từng Tenant công ty.",

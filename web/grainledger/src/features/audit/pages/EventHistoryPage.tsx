@@ -134,7 +134,7 @@ export const EventHistoryPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "audit.events.tag",
               "NHẬT KÝ ĐỐI SOÁT & BẰNG CHỨNG BẤT BIẾN (AUDIT TRAIL)",
@@ -143,7 +143,7 @@ export const EventHistoryPage: React.FC = () => {
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("audit.events.title", "Nhật ký Sự kiện Nghiệp vụ Bất biến")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "audit.events.ledgerSubtitle",
               "Tra cứu bút toán, thời gian ghi nhận, tài khoản thực hiện và dữ liệu chi tiết trong sổ cái.",

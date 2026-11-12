@@ -289,13 +289,13 @@ export const MasterDataPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("catalogs.master.badge", "DANH MỤC MASTER DATA VẬN HÀNH")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("catalogs.master.title", "Danh mục Chuẩn Hóa Chuỗi Cung Ứng")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "catalogs.master.subtitle",
               "Duy trì các danh mục dùng chung: Hàng hoá lúa gạo, đơn vị đo lường, hoạt chất BVTV, thị trường xuất khẩu.",

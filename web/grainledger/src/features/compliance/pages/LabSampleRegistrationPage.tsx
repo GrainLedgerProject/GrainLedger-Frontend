@@ -390,7 +390,7 @@ export const LabSampleRegistrationPage: React.FC<
                   "Lấy Mẫu Niêm Phong & Gửi Phòng Lab (Lab Sample Chain of Custody)",
                 )}
               </h1>
-              <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
+              <p data-ui-detail="secondary" className="text-xs sm:text-sm text-ink-secondary leading-relaxed max-w-3xl">
                 {t(
                   "compliance.labSample.pageSubtitle",
                   "Khởi tạo hồ sơ mẫu ngũ cốc đại diện theo tiêu chuẩn ISO 24333, niêm phong chì điện tử và theo dõi chuỗi hành trình bàn giao đến phòng xét nghiệm chỉ định ISO/IEC 17025.",

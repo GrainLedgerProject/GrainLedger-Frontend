@@ -558,13 +558,13 @@ export const OperationEntryPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("mill.operations.tag", "HẠCH TOÁN SỔ CÁI BẢO TOÀN KHỐI LƯỢNG")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("mill.operations.pageTitle", "Ghi nhận bước chế biến vật lý")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "mill.operations.pageSubtitle",
               "Mọi mẻ chế biến được đối chiếu bảo toàn khối lượng và ghi nhận vào sổ cái chỉ-ghi-thêm.",

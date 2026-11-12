@@ -273,13 +273,13 @@ export const FarmerRegistrationPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t("field.farmer.badge", "QUẢN LÝ NGUỒN CUNG ỨNG NÔNG HỘ")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.farmer.pageTitle", "Đăng ký Nông hộ & Hồ sơ Canh tác")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "field.farmer.pageSubtitle",
               "Quản lý định danh các nông hộ nhỏ liên kết chuỗi cung ứng lúa gạo tại Đồng bằng sông Cửu Long.",
