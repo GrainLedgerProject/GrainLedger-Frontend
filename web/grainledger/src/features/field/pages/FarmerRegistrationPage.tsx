@@ -71,7 +71,9 @@ export const FarmerRegistrationPage: React.FC = () => {
         const params: Record<string, string | number> = { pageSize: 50 };
         if (searchQuery) params.search = searchQuery;
         const res = await procurementEndpoints.getFarmers(params);
-        const items = Array.isArray(res) ? res : (res as { items?: FarmerRecord[] })?.items || [];
+        const items = Array.isArray(res)
+          ? res
+          : (res as { items?: FarmerRecord[] })?.items || [];
         setFarmers(items as FarmerRecord[]);
         if (items.length > 0) {
           void saveCachedFarmers(items as CachedFarmer[], false);
@@ -112,7 +114,9 @@ export const FarmerRegistrationPage: React.FC = () => {
           if (searchQuery) params.search = searchQuery;
           const res = await procurementEndpoints.getFarmers(params);
           if (!active) return;
-          const items = Array.isArray(res) ? res : (res as { items?: FarmerRecord[] })?.items || [];
+          const items = Array.isArray(res)
+            ? res
+            : (res as { items?: FarmerRecord[] })?.items || [];
           setFarmers(items as FarmerRecord[]);
           if (items.length > 0) {
             void saveCachedFarmers(items as CachedFarmer[], false);
@@ -287,15 +291,18 @@ export const FarmerRegistrationPage: React.FC = () => {
           <button
             type="button"
             onClick={loadFarmers}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.refresh", "Tải lại danh sách")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <UserPlus size={16} weight="bold" />
             <span>{t("field.farmer.btnAddFarmer", "Thêm Nông hộ mới")}</span>
@@ -314,7 +321,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             <p className="text-ink-secondary text-[11px] mt-0.5">
               {t(
                 "field.farmer.offlineDesc",
-                "Hiển thị danh sách nông hộ đã lưu trên thiết bị để hỗ trợ lập phiếu thu mua ngoại tuyến."
+                "Hiển thị danh sách nông hộ đã lưu trên thiết bị để hỗ trợ lập phiếu thu mua ngoại tuyến.",
               )}
             </p>
           </div>

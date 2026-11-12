@@ -2,7 +2,9 @@ import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import {
   getQueuedProcurements,
+  isProcurementSyncing,
   onProcurementQueueChanged,
+  onProcurementSyncStateChanged,
   syncQueuedProcurements,
   type QueuedProcurement,
 } from "@/pwa/procurementQueue";
@@ -14,41 +16,53 @@ import {
   MapPin,
   WarningCircle,
 } from "@phosphor-icons/react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 export const OfflineSyncQueuePage: React.FC = () => {
-  const { isOnline, setPendingOfflineCount } = useUiStore();
+  const { isOnline, setPendingOfflineCount, procurementSyncMode, setProcurementSyncMode } = useUiStore();
   const [records, setRecords] = useState<QueuedProcurement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const isSyncing = useSyncExternalStore(onProcurementSyncStateChanged, isProcurementSyncing);
   const [summary, setSummary] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [hasFailures, setHasFailures] = useState(false);
 
   const refresh = useCallback(async () => {
     const queued = await getQueuedProcurements();
     setRecords(queued);
     setPendingOfflineCount(queued.length);
     setIsLoading(false);
+    return queued.length;
   }, [setPendingOfflineCount]);
 
   useEffect(() => {
-    void refresh();
-    return onProcurementQueueChanged(() => void refresh());
-  }, [refresh]);
+    let active = true;
+    void getQueuedProcurements().then((queued) => {
+      if (!active) return;
+      setRecords(queued);
+      setPendingOfflineCount(queued.length);
+      setIsLoading(false);
+    });
+    const unsubscribe = onProcurementQueueChanged(() => void refresh());
+    return () => { active = false; unsubscribe(); };
+  }, [refresh, setPendingOfflineCount]);
 
   const synchronize = async () => {
     if (!isOnline || isSyncing) return;
-    setIsSyncing(true);
     setSummary(null);
+    setSyncError(null);
+    setHasFailures(false);
     try {
-      const result = await syncQueuedProcurements();
-      await refresh();
+      const result = await syncQueuedProcurements(() => useUiStore.getState().isOnline);
+      const remaining = await refresh();
+      setHasFailures(remaining > 0);
       setSummary(
-        result.failed
-          ? `Đã ghi sổ ${result.synced} phiếu; ${result.failed} phiếu còn chờ kết nối hoặc cần thử lại.`
+        remaining > 0
+          ? `Đã ghi sổ ${result.synced} phiếu; ${remaining} phiếu còn chờ kết nối hoặc cần thử lại.`
           : `Đã đồng bộ an toàn ${result.synced} phiếu thu mua.`,
       );
-    } finally {
-      setIsSyncing(false);
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : "Không thể đồng bộ. Phiếu vẫn được giữ trong hàng đợi để thử lại.");
     }
   };
 
@@ -71,18 +85,40 @@ export const OfflineSyncQueuePage: React.FC = () => {
           type="button"
           disabled={!isOnline || isSyncing || records.length === 0}
           onClick={() => void synchronize()}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary text-white font-semibold text-xs shadow-sm active:scale-[.98] transition-transform disabled:opacity-50"
+          aria-busy={isSyncing}
+          className="inline-flex h-10 min-w-[156px] shrink-0 items-center justify-center gap-2 px-4 rounded-xl bg-accent-primary text-white font-semibold text-xs shadow-sm active:scale-[.98] transition-transform disabled:opacity-50"
         >
-          {isSyncing ? (
-            <GrainLoader size="sm" label="Đang đồng bộ" />
-          ) : (
-            <>
-              <ArrowsClockwise size={16} />
-              <span>Đồng bộ {records.length ? `(${records.length})` : ""}</span>
-            </>
-          )}
+          <ArrowsClockwise size={16} aria-hidden="true" className={`shrink-0 ${isSyncing ? "animate-spin motion-reduce:animate-none" : ""}`} />
+          <span aria-live="polite">
+            {isSyncing ? "Đang đồng bộ" : `Đồng bộ${records.length ? ` (${records.length})` : ""}`}
+          </span>
         </button>
       </header>
+      <section className="p-4 sm:p-5 rounded-2xl border border-ink-tertiary/20 bg-surface-base shadow-xs flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p id="procurement-sync-mode-label" className="font-semibold text-sm text-ink-primary">
+            Tự động đồng bộ thu mua
+          </p>
+          <p id="procurement-sync-mode-description" className="mt-1 text-xs text-ink-secondary">
+            Bật để tự gửi khi có kết nối; tắt để đồng bộ thủ công.
+          </p>
+        </div>
+        <button
+          type="button"
+          id="procurement-sync-mode"
+          role="switch"
+          aria-checked={procurementSyncMode === "auto"}
+          aria-labelledby="procurement-sync-mode-label"
+          aria-describedby="procurement-sync-mode-description"
+          onClick={() => setProcurementSyncMode(procurementSyncMode === "auto" ? "manual" : "auto")}
+          className="group inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full"
+        >
+          <span aria-hidden="true" className={`relative h-7 w-12 rounded-full border transition-colors duration-150 group-hover:brightness-95 ${procurementSyncMode === "auto" ? "bg-accent-primary border-accent-primary" : "bg-ink-tertiary border-ink-tertiary"}`}>
+            <span className={`absolute left-[3px] top-[3px] h-5 w-5 rounded-full bg-white shadow-xs transition-transform duration-150 ${procurementSyncMode === "auto" ? "translate-x-5" : "translate-x-0"}`} />
+          </span>
+        </button>
+      </section>
+      {syncError && <p role="alert" className="p-3.5 rounded-xl bg-functional-rejected-bg text-accent-danger text-xs">{syncError}</p>}
       <section
         className={`p-4 rounded-2xl border flex items-center gap-3 ${isOnline ? "bg-functional-balanced-bg border-accent-primary/25" : "bg-functional-stale-bg border-functional-stale-border/40"}`}
         role="status"
@@ -106,8 +142,8 @@ export const OfflineSyncQueuePage: React.FC = () => {
         </div>
       </section>
       {summary && (
-        <div className="p-3.5 rounded-xl bg-functional-balanced-bg border border-functional-balanced-border text-accent-primary text-xs flex items-center gap-2">
-          <CheckCircle size={18} weight="fill" />
+        <div role="status" className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 ${hasFailures ? "bg-functional-stale-bg border-functional-stale-border text-accent-warning" : "bg-functional-balanced-bg border-functional-balanced-border text-accent-primary"}`}>
+          {hasFailures ? <WarningCircle size={18} weight="fill" /> : <CheckCircle size={18} weight="fill" />}
           <span className="font-semibold">{summary}</span>
         </div>
       )}

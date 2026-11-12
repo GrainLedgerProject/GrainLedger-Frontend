@@ -26,7 +26,8 @@ interface SprayRecord {
   evidenceRef?: string;
   items?: Array<{
     productName: string;
-    substanceId: string;  }>;
+    substanceId: string;
+  }>;
 }
 
 export const PesticideDeclarationPage: React.FC = () => {
@@ -44,7 +45,8 @@ export const PesticideDeclarationPage: React.FC = () => {
     plotSeasonId: "",
     appliedOn: new Date().toISOString().split("T")[0],
     productName: "Beam 75WP (Tricyclazole)",
-    substanceId: "",    informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+    substanceId: "",
+    informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -94,7 +96,8 @@ export const PesticideDeclarationPage: React.FC = () => {
       plotSeasonId: crypto.randomUUID(),
       appliedOn: new Date().toISOString().split("T")[0],
       productName: "Beam 75WP (Tricyclazole)",
-      substanceId: substances[0]?.id || crypto.randomUUID(),      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+      substanceId: substances[0]?.id || crypto.randomUUID(),
+      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
     });
     setIsModalOpen(true);
   };
@@ -123,7 +126,8 @@ export const PesticideDeclarationPage: React.FC = () => {
           items: [
             {
               productName: formData.productName,
-              substanceId: formData.substanceId || crypto.randomUUID(),            },
+              substanceId: formData.substanceId || crypto.randomUUID(),
+            },
           ],
         },
       });
@@ -181,15 +185,18 @@ export const PesticideDeclarationPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại dữ liệu")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>
@@ -306,108 +313,112 @@ export const PesticideDeclarationPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={t("field.pesticide.modalTitle", "Khai báo phun thuốc") }>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={t("field.pesticide.modalTitle", "Khai báo phun thuốc")}
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {t(
+                "field.pesticide.modalTitle",
+                "Ghi nhận Khai báo Phun thuốc BVTV",
+              )}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("field.pesticide.appliedDateLabel", "Ngày phun thuốc *")}
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.appliedOn}
+                onChange={(e) =>
+                  setFormData({ ...formData, appliedOn: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
                 {t(
-                  "field.pesticide.modalTitle",
-                  "Ghi nhận Khai báo Phun thuốc BVTV",
+                  "field.pesticide.productNameLabel",
+                  "Tên thương phẩm thuốc BVTV *",
                 )}
-              </h3>
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.productName}
+                onChange={(e) =>
+                  setFormData({ ...formData, productName: e.target.value })
+                }
+                placeholder={t(
+                  "field.pesticide.productNamePlaceholder",
+                  "VD: Beam 75WP, Anvil 5SC",
+                )}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t(
+                  "field.pesticide.substanceLabel",
+                  "Hoạt chất chính trong danh mục *",
+                )}
+              </label>
+              <select
+                required
+                value={formData.substanceId}
+                onChange={(e) =>
+                  setFormData({ ...formData, substanceId: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              >
+                {substances.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code})
+                  </option>
+                ))}
+                {substances.length === 0 && (
+                  <option value="TCZ001">Tricyclazole (TCZ001)</option>
+                )}
+              </select>
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("common.saving", "Đang lưu...")
+                  : t("field.pesticide.submitBtn", "Ghi nhận")}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.pesticide.appliedDateLabel", "Ngày phun thuốc *")}
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.appliedOn}
-                  onChange={(e) =>
-                    setFormData({ ...formData, appliedOn: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.pesticide.productNameLabel",
-                    "Tên thương phẩm thuốc BVTV *",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.productName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, productName: e.target.value })
-                  }
-                  placeholder={t(
-                    "field.pesticide.productNamePlaceholder",
-                    "VD: Beam 75WP, Anvil 5SC",
-                  )}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.pesticide.substanceLabel",
-                    "Hoạt chất chính trong danh mục *",
-                  )}
-                </label>
-                <select
-                  required
-                  value={formData.substanceId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, substanceId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                >
-                  {substances.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.code})
-                    </option>
-                  ))}
-                  {substances.length === 0 && (
-                    <option value="TCZ001">Tricyclazole (TCZ001)</option>
-                  )}
-                </select>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("common.saving", "Đang lưu...")
-                    : t("field.pesticide.submitBtn", "Ghi nhận")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

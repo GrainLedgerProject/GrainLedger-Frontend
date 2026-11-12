@@ -319,10 +319,13 @@ export const FacilityConfigPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại dữ liệu")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
@@ -335,7 +338,7 @@ export const FacilityConfigPage: React.FC = () => {
           <button
             type="button"
             onClick={() => handleOpenAdd("LOCATION")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>
@@ -629,112 +632,116 @@ export const FacilityConfigPage: React.FC = () => {
       )}
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={isEdit ? "Cập nhật cấu hình" : "Tạo cấu hình mới"}>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {isEdit
-                  ? `Chỉnh sửa ${modalType === "LOCATION" ? "Silo / Kho chứa" : modalType === "EQUIPMENT" ? "Thiết bị" : "Cơ sở Nhà máy"}`
-                  : modalType === "LOCATION"
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={isEdit ? "Cập nhật cấu hình" : "Tạo cấu hình mới"}
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {isEdit
+                ? `Chỉnh sửa ${modalType === "LOCATION" ? "Silo / Kho chứa" : modalType === "EQUIPMENT" ? "Thiết bị" : "Cơ sở Nhà máy"}`
+                : modalType === "LOCATION"
+                  ? t(
+                      "admin.facility.modalLocationTitle",
+                      "Thêm Silo / Kho chứa Mới",
+                    )
+                  : modalType === "EQUIPMENT"
                     ? t(
-                        "admin.facility.modalLocationTitle",
-                        "Thêm Silo / Kho chứa Mới",
+                        "admin.facility.modalEquipmentTitle",
+                        "Thêm Thiết bị / Dây chuyền Mới",
                       )
-                    : modalType === "EQUIPMENT"
-                      ? t(
-                          "admin.facility.modalEquipmentTitle",
-                          "Thêm Thiết bị / Dây chuyền Mới",
-                        )
-                      : t(
-                          "admin.facility.modalFacilityTitle",
-                          "Thêm Cơ sở Nhà máy Mới",
-                        )}
-              </h3>
+                    : t(
+                        "admin.facility.modalFacilityTitle",
+                        "Thêm Cơ sở Nhà máy Mới",
+                      )}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("admin.facility.codeLabel", "Mã Code định danh *")}
+              </label>
+              <input
+                type="text"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="VD: SILO-03, DRYER-LINE-B"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("admin.facility.nameLabel", "Tên hiển thị *")}
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="VD: Silo lưu trữ lúa khô S3"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {modalType === "LOCATION"
+                  ? t(
+                      "admin.facility.capacityInputLabel",
+                      "Sức chứa thiết kế (kg) *",
+                    )
+                  : t(
+                      "admin.facility.noteInputLabel",
+                      "Địa chỉ / Ghi chú kỹ thuật",
+                    )}
+              </label>
+              <input
+                type="text"
+                value={extra}
+                onChange={(e) => setExtra(e.target.value)}
+                placeholder={
+                  modalType === "LOCATION"
+                    ? "500000"
+                    : "Huyện Cái Bè, Tiền Giang"
+                }
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("common.saving", "Đang lưu...")
+                  : isEdit
+                    ? "Lưu thay đổi"
+                    : t("admin.facility.submitBtn", "Tạo mới")}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("admin.facility.codeLabel", "Mã Code định danh *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="VD: SILO-03, DRYER-LINE-B"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("admin.facility.nameLabel", "Tên hiển thị *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="VD: Silo lưu trữ lúa khô S3"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {modalType === "LOCATION"
-                    ? t(
-                        "admin.facility.capacityInputLabel",
-                        "Sức chứa thiết kế (kg) *",
-                      )
-                    : t(
-                        "admin.facility.noteInputLabel",
-                        "Địa chỉ / Ghi chú kỹ thuật",
-                      )}
-                </label>
-                <input
-                  type="text"
-                  value={extra}
-                  onChange={(e) => setExtra(e.target.value)}
-                  placeholder={
-                    modalType === "LOCATION"
-                      ? "500000"
-                      : "Huyện Cái Bè, Tiền Giang"
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("common.saving", "Đang lưu...")
-                    : isEdit
-                      ? "Lưu thay đổi"
-                      : t("admin.facility.submitBtn", "Tạo mới")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

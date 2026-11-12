@@ -472,13 +472,14 @@ export const AppSidebar: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileSidebarOpen(false)}
-                  className={`group relative flex items-center px-3 h-10 rounded-2xl text-xs font-medium border transition-colors duration-150 ${
-                    showExpanded ? "gap-3" : "gap-3"
+                  className={`group relative flex h-10 items-center rounded-full border text-xs font-medium transition-colors duration-150 ${
+                    showExpanded ? "justify-start gap-3 px-3" : "justify-center"
                   } ${
                     isActive
-                      ? "bg-accent-primary/10 text-accent-primary border-accent-primary/20 shadow-xs dark:bg-accent-primary/15 dark:border-accent-primary/40 dark:shadow-sm"
+                      ? "bg-accent-primary/10 text-accent-primary border-accent-primary/40 shadow-xs font-semibold dark:bg-accent-primary/15 dark:border-accent-primary/40 dark:shadow-sm"
                       : "border-transparent text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
+                  aria-label={showExpanded ? undefined : item.label}
                   aria-current={isActive ? "page" : undefined}
                 >
                   <Icon
@@ -498,7 +499,17 @@ export const AppSidebar: React.FC = () => {
                         : "opacity-0 max-w-0 pointer-events-none"
                     }`}
                   >
-                    {item.label}
+                    {
+                      <span
+                        className={
+                          showExpanded
+                            ? "min-w-0 max-w-[170px] flex-1 truncate text-left"
+                            : "hidden"
+                        }
+                      >
+                        {item.label}
+                      </span>
+                    }
                   </span>
 
                   {/* Badge indicator (expanded) */}

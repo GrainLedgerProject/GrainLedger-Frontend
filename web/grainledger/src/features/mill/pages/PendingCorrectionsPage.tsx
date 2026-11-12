@@ -47,10 +47,16 @@ function parseCorrectionsResponse(res: unknown): CorrectionRecord[] {
     return res as CorrectionRecord[];
   }
   if (res && typeof res === "object") {
-    if ("items" in res && Array.isArray((res as { items: CorrectionRecord[] }).items)) {
+    if (
+      "items" in res &&
+      Array.isArray((res as { items: CorrectionRecord[] }).items)
+    ) {
       return (res as { items: CorrectionRecord[] }).items;
     }
-    if ("corrections" in res && Array.isArray((res as { corrections: CorrectionRecord[] }).corrections)) {
+    if (
+      "corrections" in res &&
+      Array.isArray((res as { corrections: CorrectionRecord[] }).corrections)
+    ) {
       return (res as { corrections: CorrectionRecord[] }).corrections;
     }
   }
@@ -208,7 +214,8 @@ export const PendingCorrectionsPage: React.FC = () => {
     if (!selectedCorrection) return;
     const confirmed = await confirmAction({
       title: `Chốt ghi bút toán bù (${selectedCorrection.id})`,
-      description: "Hệ thống sẽ phát hành bút toán đảo ngược (Reversal Entry) vào sổ cái và mở khóa các lô hàng liên quan.",
+      description:
+        "Hệ thống sẽ phát hành bút toán đảo ngược (Reversal Entry) vào sổ cái và mở khóa các lô hàng liên quan.",
       confirmLabel: "Chốt bút toán bù",
       variant: "warning",
     });
@@ -401,7 +408,7 @@ export const PendingCorrectionsPage: React.FC = () => {
             type="button"
             onClick={fetchCorrections}
             disabled={loading}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại danh sách")}
           >
             <ArrowsClockwise
@@ -412,7 +419,7 @@ export const PendingCorrectionsPage: React.FC = () => {
 
           <Link
             to="/mill/corrections/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>

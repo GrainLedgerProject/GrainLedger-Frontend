@@ -281,7 +281,8 @@ export const BalancePolicyPage: React.FC = () => {
   const handleDeleteRule = async (id: string) => {
     const confirmed = await confirmAction({
       title: "Xóa quy tắc phối trộn",
-      description: "Bạn có chắc chắn muốn xóa quy tắc phối trộn này khỏi danh sách?",
+      description:
+        "Bạn có chắc chắn muốn xóa quy tắc phối trộn này khỏi danh sách?",
       confirmLabel: "Xóa quy tắc",
       variant: "danger",
     });
@@ -314,10 +315,13 @@ export const BalancePolicyPage: React.FC = () => {
           <button
             type="button"
             onClick={fetchPolicies}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại danh sách")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
 
           {activeTab === "compat" && (
@@ -335,7 +339,7 @@ export const BalancePolicyPage: React.FC = () => {
             type="button"
             onClick={handleSaveAll}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-60"
           >
             <FloppyDisk size={16} weight="bold" />
             <span>
@@ -678,116 +682,120 @@ export const BalancePolicyPage: React.FC = () => {
       )}
 
       {/* Modal - Thêm Quy tắc phối trộn mới (Synchronized modal pattern from CustomerOrganizationsPage) */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Thêm quy tắc phối trộn">
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                Thiết lập Quy tắc Tương thích Phối trộn Mới
-              </h3>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel="Thêm quy tắc phối trộn"
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              Thiết lập Quy tắc Tương thích Phối trộn Mới
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleAddRule} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Giống lúa cơ sở / nguồn A *
+              </label>
+              <input
+                type="text"
+                required
+                value={sourceVariety}
+                onChange={(e) => setSourceVariety(e.target.value)}
+                placeholder="VD: ST25, Jasmine 85, Nàng Hoa 9"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Giống lúa phối trộn B *
+              </label>
+              <input
+                type="text"
+                required
+                value={targetVariety}
+                onChange={(e) => setTargetVariety(e.target.value)}
+                placeholder="VD: ST24, OM 5451, IR50404"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Chính sách phối trộn *
+              </label>
+              <select
+                value={allowed ? "ALLOWED" : "PROHIBITED"}
+                onChange={(e) => setAllowed(e.target.value === "ALLOWED")}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              >
+                <option value="ALLOWED">
+                  Cho phép phối trộn (Allowed Blend)
+                </option>
+                <option value="PROHIBITED">
+                  Nghiêm cấm pha lẫn (Strictly Prohibited)
+                </option>
+              </select>
+            </div>
+
+            {allowed && (
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  Tỷ lệ phối trộn tối đa cho phép (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  max="100"
+                  value={maxRatio}
+                  onChange={(e) => setMaxRatio(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Diễn giải nghiệp vụ & Hợp đồng áp dụng
+              </label>
+              <textarea
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="VD: Áp dụng cho các đơn hàng xuất khẩu đi thị trường Đông Nam Á..."
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting ? "Đang lưu..." : "Tạo quy tắc"}
               </button>
             </div>
-
-            <form onSubmit={handleAddRule} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Giống lúa cơ sở / nguồn A *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={sourceVariety}
-                  onChange={(e) => setSourceVariety(e.target.value)}
-                  placeholder="VD: ST25, Jasmine 85, Nàng Hoa 9"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Giống lúa phối trộn B *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={targetVariety}
-                  onChange={(e) => setTargetVariety(e.target.value)}
-                  placeholder="VD: ST24, OM 5451, IR50404"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Chính sách phối trộn *
-                </label>
-                <select
-                  value={allowed ? "ALLOWED" : "PROHIBITED"}
-                  onChange={(e) => setAllowed(e.target.value === "ALLOWED")}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                >
-                  <option value="ALLOWED">
-                    Cho phép phối trộn (Allowed Blend)
-                  </option>
-                  <option value="PROHIBITED">
-                    Nghiêm cấm pha lẫn (Strictly Prohibited)
-                  </option>
-                </select>
-              </div>
-
-              {allowed && (
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    Tỷ lệ phối trộn tối đa cho phép (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="1"
-                    max="100"
-                    value={maxRatio}
-                    onChange={(e) => setMaxRatio(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Diễn giải nghiệp vụ & Hợp đồng áp dụng
-                </label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="VD: Áp dụng cho các đơn hàng xuất khẩu đi thị trường Đông Nam Á..."
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting ? "Đang lưu..." : "Tạo quy tắc"}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

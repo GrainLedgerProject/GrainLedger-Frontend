@@ -315,15 +315,18 @@ export const PlotRegistrationPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs cursor-pointer"
           >
             <Plus size={16} weight="bold" />
             <span>{t("field.plot.btnAddPlot", "Thêm Thửa ruộng mới")}</span>
@@ -357,7 +360,7 @@ export const PlotRegistrationPage: React.FC = () => {
               )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
             />
             <MagnifyingGlass
               size={16}
@@ -368,7 +371,7 @@ export const PlotRegistrationPage: React.FC = () => {
           <select
             value={selectedFarmerId}
             onChange={(e) => setSelectedFarmerId(e.target.value)}
-            className="px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-semibold text-ink-primary"
+            className="px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-semibold text-ink-primary focus:rounded-lg"
           >
             <option value="">
               {t("field.plot.allFarmers", "Tất cả Nông hộ")}

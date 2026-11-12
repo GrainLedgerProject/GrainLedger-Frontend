@@ -3,6 +3,16 @@ import { STORES, withStore } from "./db";
 
 const STORE_NAME = STORES.PROCUREMENT_QUEUE;
 const QUEUE_CHANGED = "grainledger:procurement-queue-changed";
+const SYNC_CHANGED = "grainledger:procurement-sync-changed";
+type QueueChangeReason = "queued" | "synced";
+let syncPromise: Promise<{ synced: number; failed: number }> | null = null;
+
+export const isProcurementSyncing = () => syncPromise !== null;
+
+export function onProcurementSyncStateChanged(listener: () => void) {
+  window.addEventListener(SYNC_CHANGED, listener);
+  return () => window.removeEventListener(SYNC_CHANGED, listener);
+}
 
 export interface QueuedProcurement {
   id: string;
@@ -12,16 +22,17 @@ export interface QueuedProcurement {
   lastError?: string;
 }
 
-function notifyQueueChanged() {
+function notifyQueueChanged(reason: QueueChangeReason) {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(QUEUE_CHANGED));
+    window.dispatchEvent(new CustomEvent(QUEUE_CHANGED, { detail: reason }));
   }
 }
 
-export function onProcurementQueueChanged(listener: () => void) {
+export function onProcurementQueueChanged(listener: (reason: QueueChangeReason) => void) {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener(QUEUE_CHANGED, listener);
-  return () => window.removeEventListener(QUEUE_CHANGED, listener);
+  const handleChange = (event: Event) => listener((event as CustomEvent<QueueChangeReason>).detail);
+  window.addEventListener(QUEUE_CHANGED, handleChange);
+  return () => window.removeEventListener(QUEUE_CHANGED, handleChange);
 }
 
 export async function getQueuedProcurements(): Promise<QueuedProcurement[]> {
@@ -49,11 +60,24 @@ export async function queueProcurement(request: RegisterProcurementRequest): Pro
     attempts: 0,
   };
   await withStore(STORE_NAME, "readwrite", (store) => store.put(record));
-  notifyQueueChanged();
+  notifyQueueChanged("queued");
   return record;
 }
 
-export async function syncQueuedProcurements(): Promise<{ synced: number; failed: number }> {
+// Manual and automatic triggers share one batch and preserve clientOperationId.
+export function syncQueuedProcurements(
+  shouldContinue: () => boolean = () => true,
+): Promise<{ synced: number; failed: number }> {
+  if (syncPromise) return syncPromise;
+  syncPromise = runSync(shouldContinue).finally(() => {
+    syncPromise = null;
+    window.dispatchEvent(new Event(SYNC_CHANGED));
+  });
+  window.dispatchEvent(new Event(SYNC_CHANGED));
+  return syncPromise;
+}
+
+async function runSync(shouldContinue: () => boolean): Promise<{ synced: number; failed: number }> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return { synced: 0, failed: 0 };
   }
@@ -63,6 +87,7 @@ export async function syncQueuedProcurements(): Promise<{ synced: number; failed
   let failed = 0;
 
   for (const record of records) {
+    if (!shouldContinue() || (typeof navigator !== "undefined" && !navigator.onLine)) break;
     try {
       // clientOperationId is retained from capture to make retries idempotent server-side.
       await procurementEndpoints.registerProcurement(record.request);
@@ -79,6 +104,6 @@ export async function syncQueuedProcurements(): Promise<{ synced: number; failed
     }
   }
 
-  notifyQueueChanged();
+  notifyQueueChanged("synced");
   return { synced, failed };
 }

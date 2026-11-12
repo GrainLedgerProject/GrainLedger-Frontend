@@ -14,6 +14,7 @@ interface UiState {
   isCheckingConnection: boolean;
   hasInitialChecked: boolean;
   pendingOfflineCount: number;
+  procurementSyncMode: 'auto' | 'manual';
 
   // Actions
   toggleTheme: () => void;
@@ -27,6 +28,7 @@ interface UiState {
   setOnline: (online: boolean) => void;
   setBackendConnected: (connected: boolean) => void;
   setPendingOfflineCount: (count: number) => void;
+  setProcurementSyncMode: (mode: 'auto' | 'manual') => void;
   checkConnection: (isInitial?: boolean) => Promise<boolean>;
 }
 
@@ -60,6 +62,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   isCheckingConnection: true,
   hasInitialChecked: false,
   pendingOfflineCount: 0,
+  procurementSyncMode: localStorage.getItem('grainledger_procurement_sync_mode') === 'manual' ? 'manual' : 'auto',
 
   toggleTheme: () => {
     set((state) => {
@@ -116,6 +119,10 @@ export const useUiStore = create<UiState>((set, get) => ({
       isOnline: (typeof navigator !== 'undefined' ? navigator.onLine : true) && connected,
     }),
   setPendingOfflineCount: (count) => set({ pendingOfflineCount: count }),
+  setProcurementSyncMode: (mode) => {
+    localStorage.setItem('grainledger_procurement_sync_mode', mode);
+    set({ procurementSyncMode: mode });
+  },
   checkConnection: async (isInitial?: boolean): Promise<boolean> => {
     const isFirstCheck = isInitial || !get().hasInitialChecked;
     if (isFirstCheck && !get().isCheckingConnection) {

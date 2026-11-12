@@ -78,7 +78,9 @@ export const HoldManagementPage: React.FC = () => {
         if (err instanceof Error) {
           setError(err.message);
         } else {
-          setError(t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD."));
+          setError(
+            t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD."),
+          );
         }
       } finally {
         if (active) {
@@ -180,7 +182,7 @@ export const HoldManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={loadHolds}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
             <ArrowsClockwiseIcon size={16} />

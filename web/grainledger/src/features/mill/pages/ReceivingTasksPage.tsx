@@ -232,10 +232,13 @@ export const ReceivingTasksPage: React.FC = () => {
         <button
           type="button"
           onClick={loadTasks}
-          className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+          className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
           title={t("common.reload", "Tải lại dữ liệu")}
         >
-          <ArrowsClockwise size={16} />
+          <ArrowsClockwise
+            size={16}
+            className={loading ? "motion-safe:animate-spin" : undefined}
+          />
         </button>
       </div>
 

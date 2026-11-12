@@ -103,7 +103,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 backdrop-blur-xl bg-white/70 dark:bg-surface-base/95 border-b border-ink-tertiary/20 dark:border-surface-overlay px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+      <header className="h-16 backdrop-blur-xl bg-surface-base/95 dark:bg-surface-base/95 border-b border-ink-tertiary/20 dark:border-surface-overlay px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-xs">
         {/* Left: Mobile Menu Toggle, Dynamic Title & Breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0">
           <button

@@ -42,7 +42,7 @@ export const EventHistoryPage: React.FC = () => {
   const fetchEvents = () => {
     setLoading(true);
     setError(null);
-    setReload(value => value + 1);
+    setReload((value) => value + 1);
   };
 
   const changePage = (next: number) => {
@@ -69,7 +69,11 @@ export const EventHistoryPage: React.FC = () => {
         logger.error(err);
         setEvents([]);
         setHasMore(false);
-        setError(err instanceof Error ? err.message : t("audit.events.errorLoad", "Không thể tải lịch sử sự kiện."));
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("audit.events.errorLoad", "Không thể tải lịch sử sự kiện."),
+        );
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -102,7 +106,9 @@ export const EventHistoryPage: React.FC = () => {
       case "lot":
         return <Cube className="text-accent-warning" size={16} weight="bold" />;
       case "operation":
-        return <Scales className="text-accent-primary" size={16} weight="bold" />;
+        return (
+          <Scales className="text-accent-primary" size={16} weight="bold" />
+        );
       case "receivingtask":
       case "receiving":
         return <Truck className="text-sky-500" size={16} weight="bold" />;
@@ -146,15 +152,17 @@ export const EventHistoryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-
           <button
             type="button"
             onClick={fetchEvents}
             disabled={loading}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("audit.events.btnRefresh", "Làm mới danh sách")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
         </div>
       </div>
@@ -183,7 +191,7 @@ export const EventHistoryPage: React.FC = () => {
               )}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             />
           </div>
 
@@ -191,7 +199,7 @@ export const EventHistoryPage: React.FC = () => {
             <select
               value={entityFilter}
               onChange={(e) => setEntityFilter(e.target.value)}
-              className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
+              className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             >
               <option value="ALL">
                 {t(
@@ -208,7 +216,9 @@ export const EventHistoryPage: React.FC = () => {
                   "Công đoạn chế biến (Operation)",
                 )}
               </option>
-              <option value="Event">{t("audit.events.otherEvent", "Sự kiện khác")}</option>
+              <option value="Event">
+                {t("audit.events.otherEvent", "Sự kiện khác")}
+              </option>
             </select>
           </div>
 
@@ -217,13 +227,27 @@ export const EventHistoryPage: React.FC = () => {
             <select
               value={eventTypeFilter}
               onChange={(e) => setEventTypeFilter(e.target.value)}
-              className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
+              className="min-w-0 flex-1 w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             >
               <option value="ALL">
                 {t("audit.events.filterAllTypes", "Tất cả loại sự kiện")}
               </option>
-              {["PROCUREMENT_COMMITTED", "DRYING", "MILLING", "MERGE", "BLENDING", "BAGGING", "HOLD", "HOLD_RESPONSE", "VARIANCE_CONFIRMATION", "CORRECTION_REQUEST", "CORRECTION"].map(kind => (
-                <option key={kind} value={kind}>{kind}</option>
+              {[
+                "PROCUREMENT_COMMITTED",
+                "DRYING",
+                "MILLING",
+                "MERGE",
+                "BLENDING",
+                "BAGGING",
+                "HOLD",
+                "HOLD_RESPONSE",
+                "VARIANCE_CONFIRMATION",
+                "CORRECTION_REQUEST",
+                "CORRECTION",
+              ].map((kind) => (
+                <option key={kind} value={kind}>
+                  {kind}
+                </option>
               ))}
             </select>
           </div>
@@ -368,12 +392,32 @@ export const EventHistoryPage: React.FC = () => {
       <div className="flex items-center justify-between gap-3 text-xs text-ink-secondary">
         <span>{t("audit.events.pageNumber", "Trang {{page}}", { page })}</span>
         <div className="flex gap-2">
-          <button type="button" disabled={loading || page <= 1} onClick={() => changePage(page - 1)} className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40">{t("common.previousPage", "Trang trước")}</button>
-          <button type="button" disabled={loading || !hasMore} onClick={() => changePage(page + 1)} className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40">{t("common.nextPage", "Trang sau")}</button>
+          <button
+            type="button"
+            disabled={loading || page <= 1}
+            onClick={() => changePage(page - 1)}
+            className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+          >
+            {t("common.previousPage", "Trang trước")}
+          </button>
+          <button
+            type="button"
+            disabled={loading || !hasMore}
+            onClick={() => changePage(page + 1)}
+            className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+          >
+            {t("common.nextPage", "Trang sau")}
+          </button>
         </div>
       </div>
 
-      {selectedEvent && <EventDetailsModal key={selectedEvent.rowKey} event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && (
+        <EventDetailsModal
+          key={selectedEvent.rowKey}
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 };

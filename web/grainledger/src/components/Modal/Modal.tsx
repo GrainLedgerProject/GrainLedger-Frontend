@@ -79,7 +79,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen || typeof document === 'undefined') return null;
   return createPortal(
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${className}`} role="presentation">
+    <div className={`app-workspace fixed inset-0 z-[100] flex items-center justify-center p-4 ${className}`} role="presentation">
       <button
         aria-label="Đóng hộp thoại"
         className="absolute inset-0 cursor-default bg-black/40 backdrop-blur-xs"

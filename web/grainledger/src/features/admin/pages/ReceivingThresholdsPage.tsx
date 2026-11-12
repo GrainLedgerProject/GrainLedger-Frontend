@@ -141,7 +141,8 @@ export const ReceivingThresholdsPage: React.FC = () => {
   const handleDelete = async (companyId: string) => {
     const confirmed = await confirmAction({
       title: "Xóa ngưỡng riêng",
-      description: "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
+      description:
+        "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
       confirmLabel: "Xóa ngưỡng",
       variant: "danger",
     });
@@ -231,15 +232,18 @@ export const ReceivingThresholdsPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại danh sách")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>
@@ -409,45 +413,91 @@ export const ReceivingThresholdsPage: React.FC = () => {
       )}
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={isEdit ? "Cập nhật ngưỡng tiếp nhận" : "Thiết lập ngưỡng tiếp nhận"}>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {isEdit
-                  ? "Chỉnh sửa Ngưỡng Doanh nghiệp"
-                  : "Thiết lập Ngưỡng Riêng Mới"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={
+          isEdit ? "Cập nhật ngưỡng tiếp nhận" : "Thiết lập ngưỡng tiếp nhận"
+        }
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {isEdit
+                ? "Chỉnh sửa Ngưỡng Doanh nghiệp"
+                : "Thiết lập Ngưỡng Riêng Mới"}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Doanh nghiệp Áp dụng *
+              </label>
+              <select
+                disabled={isEdit}
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none disabled:opacity-70"
               >
-                <X size={18} />
-              </button>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.kind})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Doanh nghiệp Áp dụng *
-                </label>
-                <select
-                  disabled={isEdit}
-                  value={selectedCompanyId}
-                  onChange={(e) => setSelectedCompanyId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none disabled:opacity-70"
-                >
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name} ({org.kind})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                Biên độ sai số khối lượng cân chấp nhận (±%) *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                required
+                value={weightVariance}
+                onChange={(e) =>
+                  setWeightVariance(parseFloat(e.target.value) || 0)
+                }
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+              />
+              <span className="text-[10px] text-ink-tertiary block mt-1">
+                Vượt quá biên độ này sẽ yêu cầu duyệt đối soát tại bước cân xe
+                đến.
+              </span>
+            </div>
 
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  Biên độ sai số khối lượng cân chấp nhận (±%) *
+                  Độ ẩm tối đa (%) *
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="10"
+                  max="35"
+                  required
+                  value={maxMoisture}
+                  onChange={(e) =>
+                    setMaxMoisture(parseFloat(e.target.value) || 0)
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  Tạp chất tối đa (%) *
                 </label>
                 <input
                   type="number"
@@ -455,77 +505,35 @@ export const ReceivingThresholdsPage: React.FC = () => {
                   min="0"
                   max="10"
                   required
-                  value={weightVariance}
-                  onChange={(e) =>
-                    setWeightVariance(parseFloat(e.target.value) || 0)
-                  }
+                  value={impurity}
+                  onChange={(e) => setImpurity(parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
                 />
-                <span className="text-[10px] text-ink-tertiary block mt-1">
-                  Vượt quá biên độ này sẽ yêu cầu duyệt đối soát tại bước cân xe
-                  đến.
-                </span>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    Độ ẩm tối đa (%) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="10"
-                    max="35"
-                    required
-                    value={maxMoisture}
-                    onChange={(e) =>
-                      setMaxMoisture(parseFloat(e.target.value) || 0)
-                    }
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    Tạp chất tối đa (%) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="10"
-                    required
-                    value={impurity}
-                    onChange={(e) =>
-                      setImpurity(parseFloat(e.target.value) || 0)
-                    }
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  Huỷ
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? "Đang lưu..."
-                    : isEdit
-                      ? "Lưu thay đổi"
-                      : "Áp dụng ngưỡng"}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
+              >
+                Huỷ
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? "Đang lưu..."
+                  : isEdit
+                    ? "Lưu thay đổi"
+                    : "Áp dụng ngưỡng"}
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

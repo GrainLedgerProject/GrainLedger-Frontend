@@ -236,9 +236,16 @@ export const MasterDataPage: React.FC = () => {
   };
 
   const handleDelete = async (item: any) => {
-    const supportsDeletion = ["COMMODITIES", "UNITS", "SUBSTANCES"].includes(activeTab);
+    const supportsDeletion = ["COMMODITIES", "UNITS", "SUBSTANCES"].includes(
+      activeTab,
+    );
     if (!supportsDeletion) {
-      setError(t("catalogs.master.deleteUnsupported", "Danh mục này chưa có API xoá; hãy chỉnh sửa để ngừng sử dụng thay vì xoá."));
+      setError(
+        t(
+          "catalogs.master.deleteUnsupported",
+          "Danh mục này chưa có API xoá; hãy chỉnh sửa để ngừng sử dụng thay vì xoá.",
+        ),
+      );
       return;
     }
     const confirmed = await confirmAction({
@@ -300,15 +307,18 @@ export const MasterDataPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("catalogs.master.reload", "Tải lại danh mục")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>{t("catalogs.master.addNew", "Thêm Bản Ghi Mới")}</span>
@@ -496,14 +506,18 @@ export const MasterDataPage: React.FC = () => {
                       >
                         <PencilSimple size={15} />
                       </button>
-                      {["COMMODITIES", "UNITS", "SUBSTANCES"].includes(activeTab) && <button
-                        type="button"
-                        onClick={() => handleDelete(item)}
-                        className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
-                        title={t("catalogs.master.btnDelete", "Xoá")}
-                      >
-                        <Trash size={15} />
-                      </button>}
+                      {["COMMODITIES", "UNITS", "SUBSTANCES"].includes(
+                        activeTab,
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item)}
+                          className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
+                          title={t("catalogs.master.btnDelete", "Xoá")}
+                        >
+                          <Trash size={15} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -514,109 +528,117 @@ export const MasterDataPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel={editingItem ? t("catalogs.master.modalTitleEdit", "Cập nhật bản ghi danh mục") : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}>
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {editingItem
-                  ? t(
-                      "catalogs.master.modalTitleEdit",
-                      "Cập nhật bản ghi danh mục",
-                    )
-                  : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}
-              </h3>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabel={
+          editingItem
+            ? t("catalogs.master.modalTitleEdit", "Cập nhật bản ghi danh mục")
+            : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")
+        }
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+            <h3 className="font-display font-bold text-base text-ink-primary">
+              {editingItem
+                ? t(
+                    "catalogs.master.modalTitleEdit",
+                    "Cập nhật bản ghi danh mục",
+                  )
+                : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("catalogs.master.lblCode", "Mã Code định danh *")}
+              </label>
+              <input
+                type="text"
+                required
+                disabled={Boolean(editingItem)}
+                value={formData.code}
+                onChange={(e) =>
+                  setFormData({ ...formData, code: e.target.value })
+                }
+                placeholder={t(
+                  "catalogs.master.placeholderCode",
+                  "VD: PADDY_OM5451, KG, TCZ",
+                )}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">
+                {t("catalogs.master.lblName", "Tên hiển thị đầy đủ *")}
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder={t(
+                  "catalogs.master.placeholderName",
+                  "VD: Lúa tươi OM5451, Kilogram, Tricyclazole",
+                )}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+
+            {(activeTab === "UNITS" || activeTab === "ATTRIBUTES") && (
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t(
+                    "catalogs.master.lblExtra",
+                    "Loại đại lượng / Ký hiệu đo lường",
+                  )}
+                </label>
+                <input
+                  type="text"
+                  value={formData.extra}
+                  onChange={(e) =>
+                    setFormData({ ...formData, extra: e.target.value })
+                  }
+                  placeholder={t(
+                    "catalogs.master.placeholderExtra",
+                    "VD: MASS, AREA, %",
+                  )}
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                />
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
               >
-                <X size={18} />
+                {t("catalogs.master.btnCancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+              >
+                {submitting
+                  ? t("catalogs.master.saving", "Đang lưu...")
+                  : t("catalogs.master.btnSave", "Lưu bản ghi")}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.master.lblCode", "Mã Code định danh *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  disabled={Boolean(editingItem)}
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  placeholder={t(
-                    "catalogs.master.placeholderCode",
-                    "VD: PADDY_OM5451, KG, TCZ",
-                  )}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.master.lblName", "Tên hiển thị đầy đủ *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder={t(
-                    "catalogs.master.placeholderName",
-                    "VD: Lúa tươi OM5451, Kilogram, Tricyclazole",
-                  )}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              {(activeTab === "UNITS" || activeTab === "ATTRIBUTES") && (
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    {t(
-                      "catalogs.master.lblExtra",
-                      "Loại đại lượng / Ký hiệu đo lường",
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.extra}
-                    onChange={(e) =>
-                      setFormData({ ...formData, extra: e.target.value })
-                    }
-                    placeholder={t(
-                      "catalogs.master.placeholderExtra",
-                      "VD: MASS, AREA, %",
-                    )}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                  />
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("catalogs.master.btnCancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("catalogs.master.saving", "Đang lưu...")
-                    : t("catalogs.master.btnSave", "Lưu bản ghi")}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

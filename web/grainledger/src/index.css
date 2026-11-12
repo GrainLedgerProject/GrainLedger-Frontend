@@ -13,24 +13,28 @@ html {
 
 :root {
   color-scheme: light;
-  --color-surface-canvas:     #FFFFFF;
+  --color-surface-canvas:     #EEF2F6;
   /* ── Canvas Surfaces ── */
   --color-surface-base:       #FFFFFF;
-  --color-surface-raised:     #F5F5F7;
-  --color-surface-overlay:    #EBEBEE;
-  --color-ink-primary:        #1D1D1F;
-  --color-ink-secondary:      #6E6E73;
-  --color-ink-tertiary:       #AEAEB2;
+  --color-surface-raised:     #F3F6F9;
+  --color-surface-overlay:    #E2E8F0;
+  --color-ink-primary:        #1E293B;
+  --color-ink-secondary:      #475569;
+  --color-ink-tertiary:       #5F6F82;
   --color-ink-inverse:        #FFFFFF;
   --color-canvas-dark:        #000000;
 
   /* ── Semantic Accents ── */
   --color-accent-primary:     #2F6B3A;
   --color-accent-primary-dim: #245430;
-  --color-accent-warning:     #D9A441;
+  --color-accent-warning:     #946200;
   --color-accent-danger:      #B5412B;
   --color-accent-info:        #2C4A6B;
   --color-accent-success:     #3A7D44;
+
+  --color-border-subtle:      #D5DEE8;
+  --color-border-control:     #8190A2;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='none' stroke='%23475569' stroke-width='24' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m208 96-80 80-80-80'/%3E%3C/svg%3E");
 
   /* ── Company Context Colors ── */
   --color-company-a:          #2563EB;
@@ -68,16 +72,16 @@ html {
   --radius-full: 9999px;
 
   /* ── Liquid Glass Material ── */
-  --glass-bg-light:    rgba(255, 255, 255, 0.72);
+  --glass-bg-light:    rgba(255, 255, 255, 0.94);
   --glass-bg-dark:     rgba(18, 18, 20, 0.75);
   --glass-backdrop:    blur(20px) saturate(180%);
-  --glass-border:      1px solid rgba(0, 0, 0, 0.06);
+  --glass-border:      1px solid var(--color-border-subtle);
   --glass-border-dark: 1px solid rgba(255, 255, 255, 0.08);
 
   /* ── Apple Shadows ── */
-  --shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md:    0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-xs:    0 1px 3px rgba(30, 41, 59, 0.07), 0 3px 8px rgba(30, 41, 59, 0.03);
+  --shadow-sm:    0 2px 4px rgba(30, 41, 59, 0.05), 0 6px 18px rgba(30, 41, 59, 0.07);
+  --shadow-md:    0 4px 8px rgba(30, 41, 59, 0.06), 0 12px 28px rgba(30, 41, 59, 0.10);
   --shadow-lg:    0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-xl:    0 24px 64px rgba(0, 0, 0, 0.16);
   --shadow-glow:  0 0 40px rgba(47, 107, 58, 0.15);
@@ -107,6 +111,9 @@ html {
   --color-ink-secondary:      #C2CDDA;
   --color-ink-tertiary:       #A4B3C3;
   --color-ink-inverse:        #101A23;
+  --color-border-subtle:      #344656;
+  --color-border-control:     #A4B3C3;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='none' stroke='%23C2CDDA' stroke-width='24' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m208 96-80 80-80-80'/%3E%3C/svg%3E");
 
   --color-accent-primary:     #78D6A0;
   --color-accent-primary-dim: #9AE5B9;
@@ -137,6 +144,55 @@ html {
 body {
   background-color: var(--color-surface-canvas);
   color: var(--color-ink-primary);
+}
+
+/* Shared dropdown affordance, including selects rendered in modal portals.
+   Reserve space for the chevron without changing leading icons or native behavior.
+   Listboxes and multiple selects retain their browser presentation. */
+select:not([multiple]):is(:not([size]), [size="1"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+}
+
+@media (forced-colors: active) {
+  select:not([multiple]):is(:not([size]), [size="1"]) {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
+}
+
+/* Light workspace: white panels sit above a cool, quiet canvas. Keep these
+   defaults in the component layer so explicit utility states still take priority. */
+@layer components {
+  :root:not(.dark) .app-workspace :where(div, section, article, form).bg-surface-base.border:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+@layer utilities {
+  :where(:root:not(.dark) .app-workspace) :is(.border-ink-tertiary\/10, .border-ink-tertiary\/15, .border-ink-tertiary\/20, .border-ink-tertiary\/30) {
+    border-color: var(--color-border-subtle);
+  }
+
+  :where(:root:not(.dark) .app-workspace) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):not(:focus):not([aria-invalid="true"]):is(.border-ink-tertiary\/15, .border-ink-tertiary\/20, .border-ink-tertiary\/30, .border-surface-overlay) {
+    border-color: var(--color-border-control);
+  }
+
+  :root:not(.dark) .app-workspace :where(input, textarea)::placeholder {
+    color: var(--color-ink-tertiary);
+    opacity: 1;
+  }
+
+  :root:not(.dark) .app-workspace :where(thead) {
+    background-color: var(--color-surface-raised);
+    color: var(--color-ink-secondary);
+  }
 }
 
 /* Solid status/action fills use dark ink against the brighter night palette. */

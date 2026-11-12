@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   procurementEndpoints,
   type RegisterProcurementRequest,
-  type ProcurementResponse,
   type ProcurementReceivingOption,
 } from "@/api/procurement";
 import { ApiError } from "@/api/client";
@@ -43,7 +42,6 @@ import {
   Warehouse,
   CloudSlash,
   Plant,
-  MapPin,
 } from "@phosphor-icons/react";
 
 interface ProcurementReceiptItem {
@@ -70,6 +68,7 @@ export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isOnline = useUiStore((state) => state.isOnline);
+  const procurementSyncMode = useUiStore((state) => state.procurementSyncMode);
   const setPendingOfflineCount = useUiStore(
     (state) => state.setPendingOfflineCount,
   );
@@ -567,8 +566,12 @@ export const ProcurementReceiptPage: React.FC = () => {
         setPendingOfflineCount(await getQueuedProcurementCount());
         setSuccessMsg(
           t(
-            "field.receipt.savedOffline",
-            "Đã lưu phiếu trên thiết bị. Phiếu sẽ tự đồng bộ khi có kết nối mạng.",
+            procurementSyncMode === "auto"
+              ? "field.receipt.savedOfflineAuto"
+              : "field.receipt.savedOfflineManual",
+            procurementSyncMode === "auto"
+              ? "Đã lưu phiếu trên thiết bị. Phiếu sẽ tự đồng bộ khi kết nối máy chủ trở lại."
+              : "Đã lưu phiếu trên thiết bị. Vào Hàng đợi thu mua và bấm Đồng bộ để gửi phiếu.",
           ),
         );
       } else {
@@ -595,8 +598,12 @@ export const ProcurementReceiptPage: React.FC = () => {
           setPendingOfflineCount(await getQueuedProcurementCount());
           setSuccessMsg(
             t(
-              "field.receipt.savedOffline",
-              "Kết nối bị gián đoạn; phiếu đã được lưu an toàn trên thiết bị và sẽ tự đồng bộ.",
+              procurementSyncMode === "auto"
+                ? "field.receipt.savedOfflineAuto"
+                : "field.receipt.savedOfflineManual",
+              procurementSyncMode === "auto"
+                ? "Kết nối bị gián đoạn; phiếu đã được lưu trên thiết bị và sẽ tự đồng bộ khi kết nối máy chủ trở lại."
+                : "Kết nối bị gián đoạn; phiếu đã được lưu trên thiết bị. Vào Hàng đợi thu mua và bấm Đồng bộ để gửi phiếu.",
             ),
           );
           setIsModalOpen(false);
@@ -650,15 +657,18 @@ export const ProcurementReceiptPage: React.FC = () => {
           <button
             type="button"
             onClick={loadData}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại dữ liệu")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>{t("field.receipt.createBtn", "Lập Phiếu Thu Mua mới")}</span>
@@ -680,8 +690,12 @@ export const ProcurementReceiptPage: React.FC = () => {
               </p>
               <p className="text-ink-secondary text-[11px] mt-0.5">
                 {t(
-                  "field.receipt.offlineDesc",
-                  "Đang dùng dữ liệu nông hộ lưu cục bộ trên máy. Mọi phiếu lập mới sẽ tự động lưu vào hàng đợi và đồng bộ khi có mạng.",
+                  procurementSyncMode === "auto"
+                    ? "field.receipt.offlineDescAuto"
+                    : "field.receipt.offlineDescManual",
+                  procurementSyncMode === "auto"
+                    ? "Đang dùng dữ liệu nông hộ trên thiết bị. Phiếu mới được lưu vào hàng đợi và tự đồng bộ khi kết nối máy chủ trở lại."
+                    : "Đang dùng dữ liệu nông hộ trên thiết bị. Phiếu mới được lưu vào hàng đợi; bạn cần bấm Đồng bộ để gửi.",
                 )}
               </p>
             </div>

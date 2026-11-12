@@ -39,6 +39,44 @@ beforeEach(async () => {
 });
 
 describe("Hàng đợi thu mua ngoại tuyến", () => {
+  it("shares concurrent manual and automatic sync calls", async () => {
+    await queueProcurement(request("concurrent"));
+    let release!: () => void;
+    vi.mocked(procurementEndpoints.registerProcurement).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({} as never); }),
+    );
+    const first = syncQueuedProcurements();
+    const second = syncQueuedProcurements();
+    expect(first).toBe(second);
+    await vi.waitFor(() => expect(procurementEndpoints.registerProcurement).toHaveBeenCalledTimes(1));
+    release();
+    expect(await first).toEqual({ synced: 1, failed: 0 });
+    expect(await getQueuedProcurementCount()).toBe(0);
+  });
+
+  it("finishes the current receipt and stops when automatic sync is disabled", async () => {
+    await queueProcurement(request("pause-1"));
+    await queueProcurement(request("pause-2"));
+    let enabled = true;
+    vi.mocked(procurementEndpoints.registerProcurement).mockImplementationOnce(async () => {
+      enabled = false;
+      return {} as never;
+    });
+    expect(await syncQueuedProcurements(() => enabled)).toEqual({ synced: 1, failed: 0 });
+    expect(procurementEndpoints.registerProcurement).toHaveBeenCalledTimes(1);
+    expect(await getQueuedProcurementCount()).toBe(1);
+  });
+
+  it("stops sending the remaining receipts after losing the network", async () => {
+    await queueProcurement(request("disconnect-1"));
+    await queueProcurement(request("disconnect-2"));
+    vi.mocked(procurementEndpoints.registerProcurement).mockImplementationOnce(async () => {
+      Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+      return {} as never;
+    });
+    expect(await syncQueuedProcurements()).toEqual({ synced: 1, failed: 0 });
+    expect(await getQueuedProcurementCount()).toBe(1);
+  });
   it("lưu phiếu bằng clientOperationId và không tạo bản sao khi lưu lại", async () => {
     await queueProcurement(request("op-1"));
     await queueProcurement(request("op-1"));

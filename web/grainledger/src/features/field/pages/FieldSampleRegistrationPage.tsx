@@ -136,7 +136,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
           setError(err.message);
         } else {
           setError(
-            t("field.samples.errorLoad", "Không thể tải danh sách mẫu thu mua."),
+            t(
+              "field.samples.errorLoad",
+              "Không thể tải danh sách mẫu thu mua.",
+            ),
           );
         }
       } finally {
@@ -288,10 +291,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
           <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t(
-              "field.samples.tag",
-              "THU THẬP MẪU TẠI ĐIỂM THU MUA",
-            )}
+            {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t(
@@ -311,15 +311,18 @@ export const FieldSampleRegistrationPage: React.FC = () => {
           <button
             type="button"
             onClick={loadSamples}
-            className="p-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại danh sách")}
           >
-            <ArrowsClockwise size={16} />
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "motion-safe:animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>
@@ -465,10 +468,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
-                {t(
-                  "field.samples.modalCreateTitle",
-                  "Lấy Mẫu Niêm Chì Mới",
-                )}
+                {t("field.samples.modalCreateTitle", "Lấy Mẫu Niêm Chì Mới")}
               </h3>
               <button
                 type="button"
