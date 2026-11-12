@@ -1,3 +1,6 @@
+// Preserve opacity modifiers for semantic CSS variable colors (e.g. bg-accent-primary/10).
+const themeColor = (name) => `color-mix(in srgb, var(--color-${name}) calc(<alpha-value> * 100%), transparent)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -9,39 +12,40 @@ export default {
     extend: {
       colors: {
         surface: {
-          base: 'var(--color-surface-base)',
-          raised: 'var(--color-surface-raised)',
-          overlay: 'var(--color-surface-overlay)',
+          canvas: themeColor('surface-canvas'),
+          base: themeColor('surface-base'),
+          raised: themeColor('surface-raised'),
+          overlay: themeColor('surface-overlay'),
         },
         ink: {
-          primary: 'var(--color-ink-primary)',
-          secondary: 'var(--color-ink-secondary)',
-          tertiary: 'var(--color-ink-tertiary)',
-          inverse: 'var(--color-ink-inverse)',
+          primary: themeColor('ink-primary'),
+          secondary: themeColor('ink-secondary'),
+          tertiary: themeColor('ink-tertiary'),
+          inverse: themeColor('ink-inverse'),
         },
         accent: {
-          primary: 'var(--color-accent-primary)',
-          'primary-dim': 'var(--color-accent-primary-dim)',
-          warning: 'var(--color-accent-warning)',
-          danger: 'var(--color-accent-danger)',
-          info: 'var(--color-accent-info)',
-          success: 'var(--color-accent-success)',
+          primary: themeColor('accent-primary'),
+          'primary-dim': themeColor('accent-primary-dim'),
+          warning: themeColor('accent-warning'),
+          danger: themeColor('accent-danger'),
+          info: themeColor('accent-info'),
+          success: themeColor('accent-success'),
         },
         company: {
-          a: 'var(--color-company-a)',
-          b: 'var(--color-company-b)',
-          c: 'var(--color-company-c)',
-          d: 'var(--color-company-d)',
+          a: themeColor('company-a'),
+          b: themeColor('company-b'),
+          c: themeColor('company-c'),
+          d: themeColor('company-d'),
         },
         functional: {
-          'hold-bg': 'var(--color-hold-bg)',
-          'hold-border': 'var(--color-hold-border)',
-          'stale-bg': 'var(--color-stale-bg)',
-          'stale-border': 'var(--color-stale-border)',
-          'balanced-bg': 'var(--color-balanced-bg)',
-          'balanced-border': 'var(--color-balanced-border)',
-          'rejected-bg': 'var(--color-rejected-bg)',
-          'rejected-border': 'var(--color-rejected-border)',
+          'hold-bg': themeColor('hold-bg'),
+          'hold-border': themeColor('hold-border'),
+          'stale-bg': themeColor('stale-bg'),
+          'stale-border': themeColor('stale-border'),
+          'balanced-bg': themeColor('balanced-bg'),
+          'balanced-border': themeColor('balanced-border'),
+          'rejected-bg': themeColor('rejected-bg'),
+          'rejected-border': themeColor('rejected-border'),
         }
       },
       fontFamily: {

@@ -7,14 +7,13 @@ import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { normalizeUserRole } from "@/shared/types/roles";
 import { COOKIE_KEYS, getCookie } from "@/shared/utils/cookies";
+import { isJwtExpired } from "@/shared/utils/jwt";
 import { logger } from "@/shared/utils/logger";
+import type { IssuedTokens, ProblemDetails } from './generated/schemas';
+export type { ProblemDetails } from './generated/schemas';
 
-export interface ProblemDetails {
-  type?: string | null;
-  title?: string | null;
-  status?: number | null;
-  detail?: string | null;
-  instance?: string | null;
+export interface ApiFetchOptions extends RequestInit {
+  responseType?: 'json' | 'blob' | 'text';
 }
 
 export class ApiError extends Error {
@@ -29,37 +28,7 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Check if a JWT is expired or within 15 seconds of expiring.
- * Returns false for mock tokens or unparseable non-JWT tokens.
- */
-export function isJwtExpired(token: string | null): boolean {
-  if (!token) return true;
-  if (token.startsWith("mock-")) return false;
-
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-
-    // Decode Base64Url
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(""),
-    );
-
-    const payload = JSON.parse(jsonPayload);
-    if (typeof payload.exp === "number") {
-      // 15-second safety buffer before true expiry
-      return Date.now() >= payload.exp * 1000 - 15000;
-    }
-  } catch {
-    return false;
-  }
-  return false;
-}
+export { isJwtExpired };
 
 /** Single-flight mutex for token refresh so concurrent requests share the exact same refresh cycle */
 let refreshPromise: Promise<string | null> | null = null;
@@ -108,13 +77,9 @@ export async function requestTokenRefresh(): Promise<string | null> {
         return null;
       }
 
-      const data = await res.json();
-      const newAccessToken = (data.accessToken || data.AccessToken) as
-        | string
-        | undefined;
-      const newRefreshToken = (data.refreshToken ||
-        data.RefreshToken ||
-        refreshToken) as string;
+      const data = await res.json() as IssuedTokens;
+      const newAccessToken = data.accessToken;
+      const newRefreshToken = data.refreshToken;
 
       if (!newAccessToken) {
         logger.warn("Refresh response did not return a valid accessToken");
@@ -125,20 +90,18 @@ export async function requestTokenRefresh(): Promise<string | null> {
       // Persist fresh tokens into cookies and Zustand store
       setTokens(newAccessToken, newRefreshToken);
 
-      const userDto = data.user || data.User;
+      const userDto = data.user;
       if (userDto) {
         setUser({
-          id: userDto.id || userDto.Id,
-          email: userDto.email || userDto.Email,
-          displayName: userDto.displayName || userDto.DisplayName,
-          phoneNumber: userDto.phoneNumber || userDto.PhoneNumber || undefined,
-          role: normalizeUserRole(userDto.role || userDto.Role),
-          organizationId:
-            userDto.organizationId || userDto.OrganizationId || undefined,
-          organizationName:
-            userDto.organizationName || userDto.OrganizationName || undefined,
-          isActive: userDto.isActive ?? userDto.IsActive ?? true,
-          permissions: userDto.permissions || userDto.Permissions || [],
+          id: userDto.id,
+          email: userDto.email,
+          displayName: userDto.displayName,
+          phoneNumber: userDto.phoneNumber || undefined,
+          role: normalizeUserRole(userDto.role),
+          organizationId: userDto.organizationId || undefined,
+          organizationName: userDto.organizationName || undefined,
+          isActive: userDto.isActive,
+          permissions: userDto.permissions,
         });
       }
 
@@ -159,8 +122,9 @@ export async function requestTokenRefresh(): Promise<string | null> {
 /** Base fetch wrapper with Bearer token injection, CSRF and refresh handling */
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {},
+  options: ApiFetchOptions = {},
 ): Promise<T> {
+  const { responseType = 'json', ...requestOptions } = options;
   const isAuthEndpoint =
     endpoint.includes("/api/auth/login") ||
     endpoint.includes("/api/auth/web-login") ||
@@ -195,7 +159,7 @@ export async function apiFetch<T>(
   }
 
   const headers = new Headers(options.headers || {});
-  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+  if (!headers.has("Content-Type") && options.body !== undefined && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -206,7 +170,7 @@ export async function apiFetch<T>(
   // Include cookies automatically in cross-origin / same-origin API requests
   const fetchOptions: RequestInit = {
     credentials: "include",
-    ...options,
+    ...requestOptions,
     headers,
   };
 
@@ -216,13 +180,11 @@ export async function apiFetch<T>(
   try {
     response = await fetch(url, fetchOptions);
   } catch (netErr) {
+    if (options.signal?.aborted) throw netErr;
     logger.warn(`Network error on ${url}:`, netErr);
     useUiStore.getState().setOnline(false);
     useUiStore.getState().setBackendConnected(false);
-    throw new ApiError(
-      0,
-      "Không thể kết nối đến máy chủ backend. Chuyển sang chế độ Offline.",
-    );
+    throw new ApiError(0, "Không thể kết nối đến máy chủ backend (Port 5080).");
   }
 
   // Update backend connection status based on HTTP response
@@ -253,11 +215,12 @@ export async function apiFetch<T>(
         headers.set("Authorization", `Bearer ${newAccessToken}`);
         try {
           response = await fetch(url, {
-            ...options,
+            ...requestOptions,
             headers,
             credentials: "include",
           });
         } catch (retryErr) {
+          if (options.signal?.aborted) throw retryErr;
           logger.warn(`Retry failed after token refresh on ${url}:`, retryErr);
           throw new ApiError(
             0,
@@ -286,16 +249,25 @@ export async function apiFetch<T>(
   }
 
   // Handle successful empty response (204 No Content)
-  if (response.status === 204) {
-    return {} as T;
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
   }
+
+  if (response.ok && responseType === 'blob') return await response.blob() as T;
+  if (response.ok && responseType === 'text') return await response.text() as T;
 
   // Parse JSON response or problem details
   const contentType = response.headers.get("content-type") || "";
   const isJson =
     contentType.includes("application/json") ||
     contentType.includes("application/problem+json");
-  const data = isJson ? await response.json() : null;
+  if (response.ok && !isJson) {
+    if (/application\/(pdf|octet-stream)|^(image|audio|video)\//.test(contentType)) {
+      return await response.blob() as T;
+    }
+    return (await response.text() || undefined) as T;
+  }
+  const data = isJson ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
     const problem = data as ProblemDetails;

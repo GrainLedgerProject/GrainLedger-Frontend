@@ -36,8 +36,6 @@ import { AppleGlass } from "../../theme/appleGlass";
 import { ROLE_DEFINITIONS, UserRole } from "../../types/roles";
 
 export default function ProfileScreen() {
-  const Colors = usePalette();
-  const styles = createStyles(Colors);
   const router = useRouter();
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);

@@ -38,16 +38,16 @@ export const LandingCtaFooter: React.FC = () => {
       </section>
 
       {/* Modern Apple Minimal Footer */}
-      <footer className="bg-surface-base text-ink-secondary text-ink-tertiary text-xs py-16 border-t border-ink-tertiary/20 dark:border-surface-overlay transition-colors">
+      <footer className="bg-surface-base text-ink-secondary text-xs py-16 border-t border-ink-tertiary/20 dark:border-surface-overlay transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-ink-tertiary/20 dark:border-surface-overlay">
             {/* Col 1: Brand */}
             <div className="space-y-4 md:col-span-1">
-              <div className="flex items-center h-8">
+              <div className="flex items-center">
                 <img
                   src="/icons.svg"
                   alt="GrainLedger"
-                  className="h-8 w-auto object-contain"
+                  className="w-auto object-contain"
                 />
               </div>
               <p className="text-xs text-ink-tertiary leading-relaxed">
@@ -139,19 +139,6 @@ export const LandingCtaFooter: React.FC = () => {
                 Nhà máy Xay xát Lúa gạo Tiền Giang, Đồng bằng sông Cửu Long,
                 Việt Nam.
               </p>
-              <div className="pt-2">
-                <Link
-                  to={isAuthenticated ? "/home" : "/sign-in"}
-                  className="inline-flex items-center gap-1.5 text-xs text-accent-primary font-semibold hover:underline"
-                >
-                  <span>
-                    {isAuthenticated
-                      ? "Vào Dashboard"
-                      : "Truy cập Cổng Tài khoản"}
-                  </span>
-                  <ArrowRight size={13} />
-                </Link>
-              </div>
             </div>
           </div>
 

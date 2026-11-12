@@ -77,8 +77,6 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 export default function HomeScreen() {
-  const Colors = usePalette();
-  const styles = createStyles(Colors);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();

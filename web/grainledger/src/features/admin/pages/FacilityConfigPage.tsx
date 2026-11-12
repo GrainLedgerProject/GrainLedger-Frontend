@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
@@ -181,7 +182,13 @@ export const FacilityConfigPage: React.FC = () => {
     id: string,
     label: string,
   ) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa "${label}"?`)) return;
+    const confirmed = await confirmAction({
+      title: "Xác nhận xóa",
+      description: `Bạn có chắc chắn muốn xóa "${label}"?`,
+      confirmLabel: "Xóa",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       if (type === "FACILITY") {
         await ledgerEndpoints.deleteFacility(id);
@@ -198,12 +205,13 @@ export const FacilityConfigPage: React.FC = () => {
   };
 
   const handleClearLocation = async (id: string, codeStr: string) => {
-    if (
-      !window.confirm(
-        `Xác nhận giải phóng và vệ sinh mặt bằng Silo ${codeStr}?`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: "Giải phóng Silo",
+      description: `Xác nhận giải phóng và vệ sinh mặt bằng Silo ${codeStr}?`,
+      confirmLabel: "Xác nhận",
+      variant: "warning",
+    });
+    if (!confirmed) return;
     try {
       await ledgerEndpoints.clearLocation(id, {
         cleanedAt: new Date().toISOString(),

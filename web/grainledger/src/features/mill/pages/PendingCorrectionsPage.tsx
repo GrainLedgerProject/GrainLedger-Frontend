@@ -18,6 +18,7 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
+import { confirmAction, toast } from "@/app/store/feedbackStore";
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -154,7 +155,7 @@ export const PendingCorrectionsPage: React.FC = () => {
   const handleReconcile = async () => {
     if (!selectedCorrection) return;
     if (!reviewNotes.trim()) {
-      alert(
+      toast.warning(
         "Vui lòng nhập ghi chú kết quả đối soát kỹ thuật trước khi xác nhận.",
       );
       return;
@@ -193,9 +194,9 @@ export const PendingCorrectionsPage: React.FC = () => {
       );
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert("Không thể đối soát yêu cầu.");
+        toast.error("Không thể đối soát yêu cầu.");
       }
     } finally {
       setIsProcessing(false);
@@ -205,13 +206,13 @@ export const PendingCorrectionsPage: React.FC = () => {
   // Action: Chốt ghi bút toán bù vào sổ cái
   const handleCommit = async () => {
     if (!selectedCorrection) return;
-    if (
-      !confirm(
-        `Bạn có chắc chắn muốn CHỐT GHI BÚT TOÁN BÙ cho yêu cầu ${selectedCorrection.id}?\n\nHệ thống sẽ phát hành bút toán đảo ngược (Reversal Entry) vào sổ cái và mở khóa các lô hàng liên quan.`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: `Chốt ghi bút toán bù (${selectedCorrection.id})`,
+      description: "Hệ thống sẽ phát hành bút toán đảo ngược (Reversal Entry) vào sổ cái và mở khóa các lô hàng liên quan.",
+      confirmLabel: "Chốt bút toán bù",
+      variant: "warning",
+    });
+    if (!confirmed) return;
 
     try {
       setIsProcessing(true);
@@ -236,9 +237,9 @@ export const PendingCorrectionsPage: React.FC = () => {
       );
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert("Không thể chốt bút toán bù.");
+        toast.error("Không thể chốt bút toán bù.");
       }
     } finally {
       setIsProcessing(false);
@@ -248,7 +249,13 @@ export const PendingCorrectionsPage: React.FC = () => {
   // Action: Hủy bỏ yêu cầu
   const handleCancel = async () => {
     if (!selectedCorrection) return;
-    if (!confirm(`Hủy bỏ yêu cầu sửa đổi ${selectedCorrection.id}?`)) return;
+    const confirmed = await confirmAction({
+      title: "Hủy bỏ yêu cầu sửa đổi",
+      description: `Hủy bỏ yêu cầu sửa đổi ${selectedCorrection.id}?`,
+      confirmLabel: "Hủy yêu cầu",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       setIsProcessing(true);
@@ -267,9 +274,9 @@ export const PendingCorrectionsPage: React.FC = () => {
       setSelectedCorrection(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert("Không thể hủy bỏ yêu cầu.");
+        toast.error("Không thể hủy bỏ yêu cầu.");
       }
     } finally {
       setIsProcessing(false);

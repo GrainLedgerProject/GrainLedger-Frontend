@@ -1,4 +1,8 @@
+import type * as ApiSchemas from './generated/schemas';
+export type { EvidenceRequest } from './generated/schemas';
 import { apiFetch } from './client';
+import { requestApi, type ApiRequest } from './openapi';
+import { parseLedgerHistoryResponse, type LedgerHistoryQuery } from './history';
 
 export interface RecordOperationRequest {
   facilityId?: string;
@@ -24,15 +28,6 @@ export interface CorrectionRequest {
   reconciliationNotes?: string;
 }
 
-export interface EvidenceRequest {
-  id: string;
-  ownerId: string;
-  facilityId: string;
-  fileName: string;
-  contentType: string;
-  contentBase64: string;
-}
-
 export const ledgerEndpoints = {
   getSetup: () => apiFetch<unknown>('/api/ledger/setup'),
   getLookups: () => apiFetch<unknown>('/api/ledger/lookups'),
@@ -44,156 +39,155 @@ export const ledgerEndpoints = {
     const qs = new URLSearchParams(filtered).toString();
     return apiFetch<unknown>(`/api/ledger/lots${qs ? '?' + qs : ''}`);
   },
-  getLot: (id: string) => apiFetch<unknown>(`/api/ledger/lots/${id}`),
+  getLot: (id: string) => apiFetch<unknown>(`/api/ledger/lots/${encodeURIComponent(id)}`),
 
   // Facilities, Locations, Equipment
-  getFacilities: () => apiFetch<unknown>('/api/ledger/facilities'),
-  createFacility: (req: unknown) =>
+  createFacility: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/facilities', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateFacility: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/facilities/${id}`, {
+  updateFacility: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/facilities/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteFacility: (id: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/facilities/${id}`, {
+  deleteFacility: (id: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/facilities/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),
 
-  createLocation: (req: unknown) =>
+  createLocation: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/locations', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateLocation: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/locations/${id}`, {
+  updateLocation: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/locations/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteLocation: (id: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/locations/${id}`, {
+  deleteLocation: (id: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/locations/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),
-  clearLocation: (id: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/locations/${id}/clearance`, {
+  clearLocation: (id: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/locations/${encodeURIComponent(id)}/clearance`, {
       method: 'POST',
       body: req ? JSON.stringify(req) : undefined,
     }),
 
-  createEquipment: (req: unknown) =>
+  createEquipment: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/equipment', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateEquipment: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/equipment/${id}`, {
+  updateEquipment: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/equipment/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteEquipment: (id: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/equipment/${id}`, {
+  deleteEquipment: (id: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/equipment/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),
-  retireEquipment: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/equipment/${id}/retire`, {
+  retireEquipment: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/equipment/${encodeURIComponent(id)}/retire`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // User Assignments to Facilities
-  createAssignment: (req: unknown) =>
+  createAssignment: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/assignments', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateAssignment: (userId: string, facilityId: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/assignments/${userId}/${facilityId}`, {
+  updateAssignment: (userId: string, facilityId: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/assignments/${encodeURIComponent(userId)}/${encodeURIComponent(facilityId)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteAssignment: (userId: string, facilityId: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/assignments/${userId}/${facilityId}`, {
+  deleteAssignment: (userId: string, facilityId: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/assignments/${encodeURIComponent(userId)}/${encodeURIComponent(facilityId)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),
 
   // Operations
   getOperations: () => apiFetch<unknown>('/api/ledger/operations'),
-  recordOperation: (req: RecordOperationRequest | unknown) =>
+  recordOperation: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/operations', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  getOperation: (id: string) => apiFetch<unknown>(`/api/ledger/operations/${id}`),
-  updateOperation: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/operations/${id}`, {
+  getOperation: (id: string) => apiFetch<unknown>(`/api/ledger/operations/${encodeURIComponent(id)}`),
+  updateOperation: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/operations/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteOperation: (id: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/operations/${id}`, {
+  deleteOperation: (id: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/operations/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),
-  confirmOperation: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/operations/${id}/confirm`, {
+  confirmOperation: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/operations/${encodeURIComponent(id)}/confirm`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  commitOperation: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/operations/${id}/commit`, {
+  commitOperation: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/operations/${encodeURIComponent(id)}/commit`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // Quarantine Holds
   getHolds: () => apiFetch<unknown>('/api/ledger/holds'),
-  issueHold: (req: HoldRequest | unknown) =>
+  issueHold: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/holds', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  createHold: (req: HoldRequest | unknown) =>
+  createHold: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/holds', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  respondHold: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/holds/${id}/respond`, {
+  respondHold: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/holds/${encodeURIComponent(id)}/respond`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  respondToHold: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/holds/${id}/respond`, {
+  respondToHold: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/holds/${encodeURIComponent(id)}/respond`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // Corrections & Reconciliations
   getCorrections: () => apiFetch<unknown>('/api/ledger/corrections'),
-  createCorrection: (req: unknown) =>
+  createCorrection: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/corrections', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  reconcileCorrection: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/corrections/${id}/reconcile`, {
+  reconcileCorrection: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/corrections/${encodeURIComponent(id)}/reconcile`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  commitCorrection: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/corrections/${id}/commit`, {
+  commitCorrection: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/corrections/${encodeURIComponent(id)}/commit`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  cancelCorrection: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/corrections/${id}/cancel`, {
+  cancelCorrection: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/corrections/${encodeURIComponent(id)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
@@ -201,108 +195,112 @@ export const ledgerEndpoints = {
   // Notifications
   getNotifications: () => apiFetch<unknown>('/api/ledger/notifications'),
   readNotification: (id: string) =>
-    apiFetch<unknown>(`/api/ledger/notifications/${id}/read`, {
+    apiFetch<unknown>(`/api/ledger/notifications/${encodeURIComponent(id)}/read`, {
       method: 'POST',
     }),
 
   // Immutable History
-  getHistory: () => apiFetch<unknown>('/api/ledger/history'),
+  getHistory: async (query: LedgerHistoryQuery = {}, options: { signal?: AbortSignal } = {}) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return parseLedgerHistoryResponse(await apiFetch<unknown>(`/api/ledger/history${params.size ? `?${params}` : ''}`, options));
+  },
 
   // Receiving tasks & reviews
   getReceivingTasks: () => apiFetch<unknown>('/api/ledger/receiving-tasks'),
-  getReceiving: (id: string) => apiFetch<unknown>(`/api/ledger/receiving/${id}`),
-  postReceivingMeasurements: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${id}/measurements`, {
+  getReceiving: (id: string) => apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
+  postReceivingMeasurements: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}/measurements`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  recordReceivingMeasurement: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${id}/measurements`, {
+  recordReceivingMeasurement: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}/measurements`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  postReceivingReviews: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${id}/reviews`, {
+  postReceivingReviews: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}/reviews`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  reviewReceiving: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${id}/reviews`, {
+  reviewReceiving: (id: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}/reviews`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // Policies & Compatibilities
-  getPolicies: () => apiFetch<unknown>('/api/ledger/policies'),
-  createPolicy: (req: unknown) =>
+  createPolicy: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/policies', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  getCompatibilities: () => apiFetch<unknown>('/api/ledger/compatibilities'),
-  createCompatibility: (req: unknown) =>
+  createCompatibility: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/compatibilities', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  createMixedBulkPolicy: (req: unknown) =>
+  createMixedBulkPolicy: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/mixed-bulk-policies', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // Unchanged lot transfer
-  postTransfer: (req: unknown) =>
+  postTransfer: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/transfers', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
   // Evidence
-  uploadEvidence: (req: EvidenceRequest) =>
+  uploadEvidence: (req: ApiSchemas.EvidenceRequest) =>
     apiFetch<unknown>('/api/ledger/evidence', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  getEvidence: (id: string) => apiFetch<unknown>(`/api/ledger/evidence/${id}`),
+  getEvidence: (id: string) => apiFetch<unknown>(`/api/ledger/evidence/${encodeURIComponent(id)}`),
 
   // Traceability and residue evaluation
-  traceLot: (req: { lotId: string; direction?: string; view?: string }) =>
+  traceLot: (req: ApiSchemas.LotTraceRequest) =>
     apiFetch<unknown>('/api/ledger/trace', { method: 'POST', body: JSON.stringify(req) }),
-  traceLotFromLab: (req: unknown) =>
+  traceLotFromLab: (req: ApiSchemas.LabTraceRequest) =>
     apiFetch<unknown>('/api/ledger/trace/from-lab', { method: 'POST', body: JSON.stringify(req) }),
-  getTraceStarts: () => apiFetch<unknown>('/api/ledger/trace/starts'),
+  getTraceStarts: (query?: ApiRequest<'GET /api/ledger/trace/starts'>['query']) => requestApi('GET /api/ledger/trace/starts', { query }),
   getResidueEvaluations: (lotId: string) =>
-    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations`),
-  createResidueEvaluation: (lotId: string, req: { id: string; substanceIds: string[] }) =>
-    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations`, { method: 'POST', body: JSON.stringify(req) }),
+    apiFetch<unknown>(`/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`),
+  createResidueEvaluation: (lotId: string, req: ApiSchemas.ResidueEvaluationRequest) =>
+    apiFetch<unknown>(`/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`, { method: 'POST', body: JSON.stringify(req) }),
   getResidueEvaluation: (lotId: string, evaluationId: string) =>
-    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-evaluations/${evaluationId}`),
-  getResiduePreview: (lotId: string) =>
-    apiFetch<unknown>(`/api/ledger/lots/${lotId}/residue-preview`),
+    apiFetch<unknown>(`/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations/${encodeURIComponent(evaluationId)}`),
+  getResiduePreview: (lotId: string, query?: ApiRequest<'GET /api/ledger/lots/{lotId}/residue-preview'>['query']) =>
+    requestApi('GET /api/ledger/lots/{lotId}/residue-preview', { path: { lotId }, query }),
 
   // Receiving Thresholds
   getReceivingThresholds: () => apiFetch<unknown>('/api/ledger/receiving-thresholds'),
   getReceivingThresholdCompanies: () => apiFetch<unknown>('/api/ledger/receiving-thresholds/companies'),
   getReceivingThresholdHistory: () => apiFetch<unknown>('/api/ledger/receiving-thresholds/history'),
   getOwnCompanyReceivingThreshold: () => apiFetch<unknown>('/api/ledger/receiving-thresholds/own-company'),
-  updateDefaultReceivingThreshold: (req: unknown) =>
+  updateDefaultReceivingThreshold: (req: ApiSchemas.JsonObject) =>
     apiFetch<unknown>('/api/ledger/receiving-thresholds/default', {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  createCompanyReceivingThreshold: (companyId: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${companyId}`, {
+  createCompanyReceivingThreshold: (companyId: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${encodeURIComponent(companyId)}`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateCompanyReceivingThreshold: (companyId: string, req: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${companyId}`, {
+  updateCompanyReceivingThreshold: (companyId: string, req: ApiSchemas.JsonObject) =>
+    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${encodeURIComponent(companyId)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteCompanyReceivingThreshold: (companyId: string, req?: unknown) =>
-    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${companyId}`, {
+  deleteCompanyReceivingThreshold: (companyId: string, req: ApiSchemas.JsonObject = {}) =>
+    apiFetch<unknown>(`/api/ledger/receiving-thresholds/companies/${encodeURIComponent(companyId)}`, {
       method: 'DELETE',
       body: req ? JSON.stringify(req) : undefined,
     }),

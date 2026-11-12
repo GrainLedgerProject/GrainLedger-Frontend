@@ -4,10 +4,12 @@
  */
 
 export * from './AppHeader/AppHeader';
+export * from './AppLayout/AppLayout';
 export * from './AppSidebar/AppSidebar';
 export * from './CompanyContextBar/CompanyContextBar';
 export * from './ConfirmPopover/ConfirmPopover';
 export * from './ErrorBoundary/ErrorBoundary';
+export * from './FeedbackHost/FeedbackHost';
 export * from './GlobalSearchModal/GlobalSearchModal';
 export * from './GrainLoader/GrainLoader';
 export * from './HoldBanner/HoldBanner';

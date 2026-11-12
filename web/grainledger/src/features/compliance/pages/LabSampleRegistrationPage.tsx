@@ -25,6 +25,7 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
+import { toast } from "@/app/store/feedbackStore";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -271,8 +272,10 @@ export const LabSampleRegistrationPage: React.FC<
   };
 
   const handlePrintHandover = (sample: LabSampleRecord) => {
-    alert(
-      `[${t("compliance.labSample.printHandoverTitle", "IN BIÊN BẢN BÀN GIAO MẪU NIÊM PHONG")}]\n${t("compliance.labSample.thCodeSeal", "Mã mẫu")}: ${sample.sampleCode}\n${t("compliance.labSample.leadSealLabel", "Mã niêm phong")}: ${sample.sealCode}\n${t("compliance.labSample.thLot", "Lô hàng")}: ${sample.lotId}\n${t("compliance.labSample.receivingLab", "Đơn vị tiếp nhận")}: ${sample.labName}\n${t("compliance.labSample.samplerNameLabel", "Người lấy mẫu")}: ${sample.samplerName}\n\n${t("compliance.labSample.printHandoverReady", "Đã sẵn sàng gửi kèm kiện mẫu gửi Lab.")}`,
+    toast.info(
+      `${sample.sampleCode} (${sample.sealCode}) · ${sample.lotId} → ${sample.labName} (${sample.samplerName})`,
+      t("compliance.labSample.printHandoverTitle", "Biên bản bàn giao mẫu đã sẵn sàng"),
+      6000,
     );
   };
 

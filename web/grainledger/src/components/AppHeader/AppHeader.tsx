@@ -8,6 +8,7 @@ import {
   BellIcon,
   CaretDownIcon,
   GlobeIcon,
+  ListIcon,
   LockSimpleIcon,
   MagnifyingGlassIcon,
   MoonIcon,
@@ -18,7 +19,7 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -41,12 +42,50 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     setSearchOpen,
     isNotificationsOpen,
     setNotificationsOpen,
+    setMobileSidebarOpen,
   } = useUiStore();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isNotificationsOpen && !isUserMenuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setNotificationsOpen(false);
+        setIsUserMenuOpen(false);
+      }
+    };
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (
+        isNotificationsOpen &&
+        notificationsRef.current &&
+        !notificationsRef.current.contains(target)
+      ) {
+        setNotificationsOpen(false);
+      }
+      if (
+        isUserMenuOpen &&
+        userMenuRef.current &&
+        !userMenuRef.current.contains(target)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [isNotificationsOpen, isUserMenuOpen, setNotificationsOpen]);
 
   // Determine Initials for Avatar
   const getInitials = (name?: string) => {
@@ -64,9 +103,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 backdrop-blur-xl bg-white/70 dark:bg-black/70 border-b border-ink-tertiary/20 dark:border-surface-overlay px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
-        {/* Left: Dynamic Title & Breadcrumbs */}
+      <header className="h-16 backdrop-blur-xl bg-white/70 dark:bg-surface-base/95 border-b border-ink-tertiary/20 dark:border-surface-overlay px-5 flex items-center justify-between sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+        {/* Left: Mobile Menu Toggle, Dynamic Title & Breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            className="lg:hidden w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
+            aria-label={t("header.openMenu", "Mở menu điều hướng")}
+          >
+            <ListIcon size={20} weight="bold" />
+          </button>
           <div className="flex flex-col justify-center">
             {breadcrumbs && breadcrumbs.length > 0 ? (
               <nav className="flex items-center gap-1.5 text-xs text-ink-tertiary">
@@ -142,10 +189,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </button>
 
           {/* Notification Bell with Badge */}
-          <div className="relative">
+          <div className="relative" ref={notificationsRef}>
             <button
               type="button"
-              onClick={() => setNotificationsOpen(!isNotificationsOpen)}
+              onClick={() => {
+                setIsUserMenuOpen(false);
+                setNotificationsOpen(!isNotificationsOpen);
+              }}
               className="w-10 h-10 rounded-full flex items-center justify-center relative text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
               aria-label="Thông báo và cảnh báo HOLD"
             >
@@ -158,11 +208,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <AnimatePresence>
               {isNotificationsOpen && (
                 <motion.div
+                  key="notifications-dropdown"
                   initial={{ opacity: 0, scale: 0.96, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96, y: 8 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  className="absolute right-0 mt-2 w-80 bg-surface-base/90 backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-2.5"
+                  className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-surface-base dark:bg-surface-raised backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-xl p-4 z-50 text-xs space-y-2.5"
                 >
                   <div className="flex items-center justify-between pb-2.5 border-b border-ink-tertiary/20 dark:border-surface-overlay font-bold text-ink-primary">
                     <span>
@@ -268,7 +319,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <div className="relative" ref={userMenuRef}>
             <button
               type="button"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              onClick={() => {
+                setNotificationsOpen(false);
+                setIsUserMenuOpen(!isUserMenuOpen);
+              }}
               className="flex items-center gap-2 p-1.5 pl-2 pr-3 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.08] border border-ink-tertiary/20 active:scale-95 transition-all"
               aria-label={t("header.userMenu", "Menu hồ sơ người dùng")}
             >
@@ -287,82 +341,77 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
             <AnimatePresence>
               {isUserMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 h-screen"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                    className="absolute right-0 mt-2 w-72 bg-surface-base backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-apple-card p-4 z-50 text-xs space-y-3"
-                  >
-                    {/* User Profile Header in Menu */}
-                    <div className="space-y-1.5 pb-3 border-b border-ink-tertiary/20 dark:border-surface-overlay">
-                      <p className="font-bold text-sm text-ink-primary truncate">
-                        {user?.displayName ||
-                          t("header.notLoggedIn", "Chưa đăng nhập")}
-                      </p>
-                      <p className="text-ink-tertiary truncate font-mono text-[11px]">
-                        {user?.email ||
-                          t("header.guestEmail", "guest@grainledger.local")}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        {user && <RoleChip role={user.role} size="sm" />}
-                        {user && isCustomerSide(user.role) && (
-                          <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
-                            {user.organizationName || "Rice"}
-                          </span>
-                        )}
-                      </div>
+                <motion.div
+                  key="user-menu-dropdown"
+                  initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                  className="absolute right-0 mt-2 w-[min(18rem,calc(100vw-1.5rem))] bg-surface-base dark:bg-surface-raised backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-xl p-4 z-50 text-xs space-y-3"
+                >
+                  {/* User Profile Header in Menu */}
+                  <div className="space-y-1.5 pb-3 border-b border-ink-tertiary/20 dark:border-surface-overlay">
+                    <p className="font-bold text-sm text-ink-primary truncate">
+                      {user?.displayName ||
+                        t("header.notLoggedIn", "Chưa đăng nhập")}
+                    </p>
+                    <p className="text-ink-tertiary truncate font-mono text-[11px]">
+                      {user?.email ||
+                        t("header.guestEmail", "guest@grainledger.local")}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      {user && <RoleChip role={user.role} size="sm" />}
+                      {user && isCustomerSide(user.role) && (
+                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
+                          {user.organizationName || "Rice"}
+                        </span>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Navigation Links */}
-                    <div className="space-y-1">
-                      <Link
-                        to="/settings/profile"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
-                      >
-                        <UserIcon
-                          size={16}
-                          weight="bold"
-                          className="text-ink-secondary"
-                        />
-                        <span>{t("nav.profile", "Thông tin cá nhân")}</span>
-                      </Link>
+                  {/* Navigation Links */}
+                  <div className="space-y-1">
+                    <Link
+                      to="/settings/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
+                    >
+                      <UserIcon
+                        size={16}
+                        weight="bold"
+                        className="text-ink-secondary"
+                      />
+                      <span>{t("nav.profile", "Thông tin cá nhân")}</span>
+                    </Link>
 
-                      <Link
-                        to="/settings/security"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
-                      >
-                        <LockSimpleIcon
-                          size={16}
-                          weight="bold"
-                          className="text-ink-secondary"
-                        />
-                        <span>{t("nav.security", "Bảo mật tài khoản")}</span>
-                      </Link>
-                    </div>
+                    <Link
+                      to="/settings/security"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-ink-primary font-medium transition-colors"
+                    >
+                      <LockSimpleIcon
+                        size={16}
+                        weight="bold"
+                        className="text-ink-secondary"
+                      />
+                      <span>{t("nav.security", "Bảo mật tài khoản")}</span>
+                    </Link>
+                  </div>
 
-                    <div className="border-t border-ink-tertiary/20 dark:border-surface-overlay pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          setIsLogoutModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
-                      >
-                        <SignOutIcon size={16} weight="bold" />
-                        <span>{t("nav.signOut", "Đăng xuất")}</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
+                  <div className="border-t border-ink-tertiary/20 dark:border-surface-overlay pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setIsLogoutModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-accent-danger hover:bg-accent-danger/10 font-semibold transition-colors"
+                    >
+                      <SignOutIcon size={16} weight="bold" />
+                      <span>{t("nav.signOut", "Đăng xuất")}</span>
+                    </button>
+                  </div>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

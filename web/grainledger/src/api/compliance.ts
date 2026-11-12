@@ -1,133 +1,26 @@
+import type * as ApiSchemas from './generated/schemas';
+export type { SampleInput, CaptureSampleRequest, SampleHandoverInput, RecordSampleHandoverRequest, LabResultInput, LabResultSetInput, LabReportInput, CaptureLabReportRequest, LabReportMatchInput, ConfirmLabReportInput, ConfirmLabReportRequest } from './generated/schemas';
 import { apiFetch } from './client';
-
-export interface SampleInput {
-  entityId: string;
-  sourceLotId: string;
-  code: string | null;
-  sealCode: string | null;
-  collectedAt: string;
-  materialDescription?: string | null;
-}
-
-export interface CaptureSampleRequest {
-  deviceId?: string | null;
-  clientOperationId: string;
-  capturedAt: string;
-  payloadSchemaVersion: number;
-  payload: SampleInput | null;
-}
-
-export interface SampleHandoverInput {
-  entityId: string;
-  fromParty: string | null;
-  toParty: string | null;
-  handedOverAt: string;
-  sealCondition: string | null;
-  evidenceRef: string | null;
-  handoverKind?: string | null;
-  laboratoryName?: string | null;
-  laboratoryReference?: string | null;
-  laboratorySampleReference?: string | null;
-}
-
-export interface RecordSampleHandoverRequest {
-  deviceId?: string | null;
-  clientOperationId: string;
-  capturedAt: string;
-  payloadSchemaVersion: number;
-  payload: SampleHandoverInput | null;
-}
-
-export interface LabResultInput {
-  testLabel: string | null;
-  substanceId: string | null;
-  originalResultText: string | null;
-  resultKind: string | null;
-  numericValue?: string | null;
-  unit?: string | null;
-  lod?: string | null;
-  loq?: string | null;
-  method?: string | null;
-  uncertainty?: string | null;
-  reference?: string | null;
-}
-
-export interface LabResultSetInput {
-  entityId: string;
-  sampleId: string | null;
-  laboratorySampleReference: string | null;
-  statedSampleCode: string | null;
-  statedSealCode: string | null;
-  sectionReference: string | null;
-  results: LabResultInput[] | null;
-}
-
-export interface LabReportInput {
-  entityId: string;
-  laboratoryName: string | null;
-  reportNumber: string | null;
-  issuedOn: string;
-  receivedAt: string;
-  reportKind: string | null;
-  relatedReportId?: string | null;
-  relationshipReason?: string | null;
-  fileName: string | null;
-  contentType: string | null;
-  contentBase64: string | null;
-  companyOnlyConfirmed: boolean;
-  laboratoryConclusion: string | null;
-  statedStandard: string | null;
-  resultSets: LabResultSetInput[] | null;
-}
-
-export interface CaptureLabReportRequest {
-  deviceId?: string | null;
-  clientOperationId: string;
-  capturedAt: string;
-  payloadSchemaVersion: number;
-  payload: LabReportInput | null;
-}
-
-export interface LabReportMatchInput {
-  resultSetId: string;
-  sampleId: string;
-  identityBasis: string | null;
-  evidenceRef?: string | null;
-}
-
-export interface ConfirmLabReportInput {
-  identityChecked: boolean;
-  transcriptionChecked: boolean;
-  matches: LabReportMatchInput[] | null;
-}
-
-export interface ConfirmLabReportRequest {
-  deviceId?: string | null;
-  clientOperationId: string;
-  capturedAt: string;
-  payloadSchemaVersion: number;
-  payload: ConfirmLabReportInput | null;
-}
 
 export const sampleEndpoints = {
   getSamples: (params?: Record<string, string | number>) => {
     const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
     return apiFetch<unknown>(`/api/samples${qs}`);
   },
-  getSample: (id: string) => apiFetch<unknown>(`/api/samples/${id}`),
-  createSample: (req: CaptureSampleRequest) =>
+  getSample: (id: string) => apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}`),
+  createSample: (req: ApiSchemas.CaptureSampleRequest) =>
     apiFetch<unknown>('/api/samples', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  captureSample: (req: CaptureSampleRequest) =>
+  captureSample: (req: ApiSchemas.CaptureSampleRequest) =>
     apiFetch<unknown>('/api/samples', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  getSampleHandovers: (id: string) => apiFetch<unknown>(`/api/samples/${id}/handovers`),
-  recordSampleHandover: (id: string, req: RecordSampleHandoverRequest) =>
-    apiFetch<unknown>(`/api/samples/${id}/handovers`, {
+  getSampleHandovers: (id: string) => apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}/handovers`),
+  recordSampleHandover: (id: string, req: ApiSchemas.RecordSampleHandoverRequest) =>
+    apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}/handovers`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),
@@ -138,30 +31,30 @@ export const labReportEndpoints = {
     const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
     return apiFetch<unknown>(`/api/lab-reports${qs}`);
   },
-  getLabReport: (id: string) => apiFetch<unknown>(`/api/lab-reports/${id}`),
-  createLabReport: (req: CaptureLabReportRequest) =>
+  getLabReport: (id: string) => apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}`),
+  createLabReport: (req: ApiSchemas.CaptureLabReportRequest) =>
     apiFetch<unknown>('/api/lab-reports', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  captureLabReport: (req: CaptureLabReportRequest) =>
+  captureLabReport: (req: ApiSchemas.CaptureLabReportRequest) =>
     apiFetch<unknown>('/api/lab-reports', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateLabReport: (id: string, req: CaptureLabReportRequest) =>
-    apiFetch<unknown>(`/api/lab-reports/${id}`, {
+  updateLabReport: (id: string, req: ApiSchemas.CaptureLabReportRequest) =>
+    apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
-  deleteLabReport: (id: string, req: Pick<CaptureLabReportRequest, 'deviceId' | 'clientOperationId' | 'capturedAt' | 'payloadSchemaVersion'>) =>
-    apiFetch<unknown>(`/api/lab-reports/${id}`, {
+  deleteLabReport: (id: string, req: ApiSchemas.DeleteLabReportRequest) =>
+    apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       body: JSON.stringify(req),
     }),
-  getLabReportFile: (id: string) => apiFetch<unknown>(`/api/lab-reports/${id}/file`),
-  confirmLabReport: (id: string, req: ConfirmLabReportRequest) =>
-    apiFetch<unknown>(`/api/lab-reports/${id}/confirm`, {
+  getLabReportFile: (id: string) => apiFetch<Blob>(`/api/lab-reports/${encodeURIComponent(id)}/file`, { responseType: 'blob', headers: { Accept: '*/*' } }),
+  confirmLabReport: (id: string, req: ApiSchemas.ConfirmLabReportRequest) =>
+    apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}/confirm`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),

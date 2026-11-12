@@ -13,6 +13,8 @@ import {
   X,
   XCircle,
 } from "@phosphor-icons/react";
+import { toast } from "@/app/store/feedbackStore";
+import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -124,7 +126,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
         },
       ]);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error(err);
       setError(
         (err as Error).message ||
           t(
@@ -140,7 +142,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
   const handleCreateSample = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sampleForm.sampleCode || !sampleForm.lotId) {
-      alert(
+      toast.warning(
         t(
           "compliance.mrlCheck.alertFillRequired",
           "Vui lòng nhập đầy đủ mã mẫu và mã lô.",
@@ -169,7 +171,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
       samplingDate: new Date().toISOString().split("T")[0],
       certificateRef: "",
     });
-    alert(
+    toast.success(
       t(
         "compliance.mrlCheck.alertCreateSuccess",
         "Đã gửi đăng ký mẫu xét nghiệm thành công.",

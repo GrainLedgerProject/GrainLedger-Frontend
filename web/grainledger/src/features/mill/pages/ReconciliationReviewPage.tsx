@@ -16,6 +16,7 @@ import {
   WarningCircle,
   XCircle,
 } from "@phosphor-icons/react";
+import { toast } from "@/app/store/feedbackStore";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -272,7 +273,7 @@ export const ReconciliationReviewPage: React.FC = () => {
   const handleApproveReconciliation = async () => {
     if (!selectedItem) return;
     if (!reviewNotes.trim()) {
-      alert("Vui lòng ghi rõ kết luận đối soát vào ô Biên bản đối soát.");
+      toast.warning("Vui lòng ghi rõ kết luận đối soát vào ô Biên bản đối soát.");
       return;
     }
 
@@ -337,7 +338,7 @@ export const ReconciliationReviewPage: React.FC = () => {
   const handleRejectReconciliation = async () => {
     if (!selectedItem) return;
     if (!reviewNotes.trim()) {
-      alert("Vui lòng nêu rõ lý do từ chối hoặc yêu cầu cân lại đối chứng.");
+      toast.warning("Vui lòng nêu rõ lý do từ chối hoặc yêu cầu cân lại đối chứng.");
       return;
     }
 

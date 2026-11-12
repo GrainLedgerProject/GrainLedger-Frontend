@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
@@ -230,18 +231,19 @@ export const FarmerRegistrationPage: React.FC = () => {
   };
 
   const handleDelete = async (farmer: FarmerRecord) => {
-    if (
-      !window.confirm(
-        t(
-          "field.farmer.confirmDelete",
-          'Bạn có chắc muốn xoá hồ sơ nông hộ "{{name}}"?',
-          {
-            name: farmer.name,
-          },
-        ),
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: t("field.farmer.confirmDeleteTitle", "Xác nhận xóa nông hộ"),
+      description: t(
+        "field.farmer.confirmDelete",
+        'Bạn có chắc muốn xoá hồ sơ nông hộ "{{name}}"?',
+        {
+          name: farmer.name,
+        },
+      ),
+      confirmLabel: t("common.delete", "Xóa"),
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await procurementEndpoints.deleteFarmer(farmer.id, {

@@ -31,8 +31,6 @@ import { formatMass } from "../../utils/decimalMass";
 type MillSubTab = "receiving" | "operations" | "silos";
 
 export default function MillScreen() {
-  const Colors = usePalette();
-  const styles = createStyles(Colors);
   const router = useRouter();
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);

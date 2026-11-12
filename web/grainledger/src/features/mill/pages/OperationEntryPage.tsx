@@ -23,6 +23,7 @@ import {
   Trash,
   Warning,
 } from "@phosphor-icons/react";
+import { logger } from "@/shared/utils/logger";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -371,7 +372,7 @@ export const OperationEntryPage: React.FC = () => {
         setLots(DEFAULT_FALLBACK_LOTS);
       }
     } catch (err) {
-      console.warn("Could not fetch lots from API, using fallback data:", err);
+      logger.warn("Could not fetch lots from API, using fallback data:", err);
       setFetchLotsError(
         "Không thể tải danh sách từ máy chủ, đang dùng danh sách dự phòng.",
       );
@@ -527,7 +528,7 @@ export const OperationEntryPage: React.FC = () => {
           }
         }
       } catch (err: unknown) {
-        console.warn(
+        logger.warn(
           "API recordOperation failed, proceeding with local ledger record:",
           err,
         );

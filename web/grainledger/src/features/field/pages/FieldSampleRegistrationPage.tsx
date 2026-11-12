@@ -162,6 +162,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
     try {
       const entityId = crypto.randomUUID();
       const payload: CaptureSampleRequest = {
+        deviceId: "grainledger-web",
         clientOperationId: crypto.randomUUID(),
         capturedAt: new Date().toISOString(),
         payloadSchemaVersion: 1,
@@ -230,6 +231,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
     setError(null);
     try {
       const payload: RecordSampleHandoverRequest = {
+        deviceId: "grainledger-web",
         clientOperationId: crypto.randomUUID(),
         capturedAt: new Date().toISOString(),
         payloadSchemaVersion: 1,

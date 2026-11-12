@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
@@ -138,12 +139,13 @@ export const ReceivingThresholdsPage: React.FC = () => {
   };
 
   const handleDelete = async (companyId: string) => {
-    if (
-      !window.confirm(
-        "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: "Xóa ngưỡng riêng",
+      description: "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
+      confirmLabel: "Xóa ngưỡng",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await ledgerEndpoints.deleteCompanyReceivingThreshold(companyId);
       setSuccessMsg(

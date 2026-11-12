@@ -11,6 +11,8 @@ import {
   X,
   XCircle,
 } from "@phosphor-icons/react";
+import { confirmAction, toast } from "@/app/store/feedbackStore";
+import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 
 interface CorrectionItem {
@@ -97,7 +99,7 @@ export const CorrectionManagementPage: React.FC = () => {
       }
       setCorrections(list);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error(err);
       setError(
         (err as Error).message || "Không thể tải danh sách yêu cầu sửa đổi.",
       );
@@ -109,7 +111,7 @@ export const CorrectionManagementPage: React.FC = () => {
   const handleCreateCorrection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.operationId.trim() || !createForm.reason.trim()) {
-      alert("Vui lòng nhập mã công đoạn (Operation ID) và lý do sửa đổi.");
+      toast.warning("Vui lòng nhập mã công đoạn (Operation ID) và lý do sửa đổi.");
       return;
     }
 
@@ -130,11 +132,11 @@ export const CorrectionManagementPage: React.FC = () => {
       setCorrections([newCorr, ...corrections]);
       setShowCreateModal(false);
       setCreateForm({ operationId: "", reason: "", reconciliationNotes: "" });
-      alert(
+      toast.success(
         "Đã gửi yêu cầu sửa bước chế biến thành công. Chờ Quản lý đối soát phê duyệt.",
       );
     } catch (err: unknown) {
-      console.error(err);
+      logger.error(err);
       setError((err as Error).message || "Lỗi khi gửi yêu cầu sửa đổi.");
     } finally {
       setSubmitting(false);
@@ -142,18 +144,18 @@ export const CorrectionManagementPage: React.FC = () => {
   };
 
   const handleCommitCorrection = async (id: string) => {
-    if (
-      !confirm(
-        "Bạn có chắc chắn muốn chốt bút toán bù đảo ngược? Lịch sử gốc sẽ được bảo tồn nguyên vẹn.",
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: "Chốt bút toán bù đảo ngược",
+      description: "Bạn có chắc chắn muốn chốt bút toán bù đảo ngược? Lịch sử gốc sẽ được bảo tồn nguyên vẹn.",
+      confirmLabel: "Chốt bút toán bù",
+      variant: "warning",
+    });
+    if (!confirmed) return;
 
     try {
       setLoading(true);
       await ledgerEndpoints.commitCorrection(id, { notes: actionNotes });
-      alert(
+      toast.success(
         `Đã ghi nhận bút toán bù và thay thế cho yêu cầu ${id} thành công.`,
       );
       fetchCorrections();
@@ -164,7 +166,7 @@ export const CorrectionManagementPage: React.FC = () => {
           c.id === id ? { ...c, status: "COMMITTED" as const } : c,
         ),
       );
-      alert(`Đã ghi nhận bút toán bù cho yêu cầu ${id}.`);
+      toast.success(`Đã ghi nhận bút toán bù cho yêu cầu ${id}.`);
     } finally {
       setLoading(false);
       setSelectedCorrection(null);
@@ -172,7 +174,13 @@ export const CorrectionManagementPage: React.FC = () => {
   };
 
   const handleCancelCorrection = async (id: string) => {
-    if (!confirm("Hủy bỏ yêu cầu sửa đổi này?")) return;
+    const confirmed = await confirmAction({
+      title: "Hủy yêu cầu sửa đổi",
+      description: "Hủy bỏ yêu cầu sửa đổi này?",
+      confirmLabel: "Hủy yêu cầu",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       setLoading(true);
       await ledgerEndpoints.cancelCorrection(id, {

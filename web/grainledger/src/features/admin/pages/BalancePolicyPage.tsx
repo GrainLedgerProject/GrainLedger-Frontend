@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
@@ -277,13 +278,14 @@ export const BalancePolicyPage: React.FC = () => {
     }
   };
 
-  const handleDeleteRule = (id: string) => {
-    if (
-      !window.confirm(
-        "Bạn có chắc chắn muốn xóa quy tắc phối trộn này khỏi danh sách?",
-      )
-    )
-      return;
+  const handleDeleteRule = async (id: string) => {
+    const confirmed = await confirmAction({
+      title: "Xóa quy tắc phối trộn",
+      description: "Bạn có chắc chắn muốn xóa quy tắc phối trộn này khỏi danh sách?",
+      confirmLabel: "Xóa quy tắc",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     setCompatibilities((prev) => prev.filter((r) => r.id !== id));
     setSuccessMsg("Đã xóa quy tắc phối trộn thành công.");
     setTimeout(() => setSuccessMsg(null), 4000);

@@ -32,10 +32,9 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
   );
 };
 
-const createStyles = (Colors: typeof BaseColors) =>
-  StyleSheet.create({
-    card: {
-      borderWidth: StyleSheet.hairlineWidth,
-      padding: spacing.lg,
-    },
-  });
+const styles = StyleSheet.create({
+  card: {
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.lg,
+  },
+});

@@ -1,3 +1,5 @@
+import type * as ApiSchemas from './generated/schemas';
+export type { ImportMrlLimitRequest, ImportMrlVersionRequest, CreateMrlVersionRequest, UpsertMrlLimitRequest } from './generated/schemas';
 import { apiFetch } from './client';
 
 type ListParams = Record<string, string | number | boolean | undefined>;
@@ -42,204 +44,167 @@ export interface MrlVersionDto {
   publishedAt?: string;
 }
 
-export interface ImportMrlLimitRequest {
-  substanceCode: string | null;
-  limitValue: string | null;
-  unit: string | null;
-}
-
-export interface ImportMrlVersionRequest {
-  marketId: string;
-  commodityId: string;
-  effectiveFrom: string | null;
-  effectiveTo: string | null;
-  sourceRef: string | null;
-  limits: ImportMrlLimitRequest[] | null;
-}
-
-export interface CreateMrlVersionRequest {
-  marketId: string;
-  commodityId: string;
-  effectiveFrom: string | null;
-  effectiveTo: string | null;
-  sourceRef: string | null;
-}
-
-export interface UpsertMrlLimitRequest {
-  limitValue: number | string | null;
-  unit: string | null;
-}
-
 export const catalogEndpoints = {
   // Active substances
   getActiveSubstances: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/active-substances', params)),
-  getActiveSubstance: (id: string) => apiFetch<unknown>(`/api/active-substances/${id}`),
-  createActiveSubstance: (req: { code: string; name: string }) =>
+  getActiveSubstance: (id: string) => apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`),
+  createActiveSubstance: (req: ApiSchemas.CreateActiveSubstanceRequest) =>
     apiFetch<unknown>('/api/active-substances', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateActiveSubstance: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/active-substances/${id}`, {
+  updateActiveSubstance: (id: string, req: ApiSchemas.UpdateActiveSubstanceRequest) =>
+    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchActiveSubstance: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/active-substances/${id}`, {
+  patchActiveSubstance: (id: string, req: ApiSchemas.UpdateActiveSubstanceRequest) =>
+    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
   deleteActiveSubstance: (id: string) =>
-    apiFetch<unknown>(`/api/active-substances/${id}`, {
+    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     }),
 
   // Markets
   getMarkets: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/markets', params)),
-  getMarket: (id: string) => apiFetch<unknown>(`/api/markets/${id}`),
-  createMarket: (req: { code: string; name: string }) =>
+  getMarket: (id: string) => apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`),
+  createMarket: (req: ApiSchemas.CreateMarketRequest) =>
     apiFetch<unknown>('/api/markets', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateMarket: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/markets/${id}`, {
+  updateMarket: (id: string, req: ApiSchemas.UpdateMarketRequest) =>
+    apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchMarket: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/markets/${id}`, {
+  patchMarket: (id: string, req: ApiSchemas.UpdateMarketRequest) =>
+    apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  deleteMarket: (id: string) =>
-    apiFetch<unknown>(`/api/markets/${id}`, {
-      method: 'DELETE',
-    }),
+
 
   // Commodities
   getCommodities: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/commodities', params)),
-  getCommodity: (id: string) => apiFetch<unknown>(`/api/commodities/${id}`),
-  createCommodity: (req: { code: string; name: string }) =>
+  getCommodity: (id: string) => apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`),
+  createCommodity: (req: ApiSchemas.CreateCommodityRequest) =>
     apiFetch<unknown>('/api/commodities', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateCommodity: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/commodities/${id}`, {
+  updateCommodity: (id: string, req: ApiSchemas.UpdateCommodityRequest) =>
+    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchCommodity: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/commodities/${id}`, {
+  patchCommodity: (id: string, req: ApiSchemas.UpdateCommodityRequest) =>
+    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
   deleteCommodity: (id: string) =>
-    apiFetch<unknown>(`/api/commodities/${id}`, {
+    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     }),
 
   // Quality attributes
   getQualityAttributes: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/quality-attributes', params)),
-  getQualityAttribute: (id: string) => apiFetch<unknown>(`/api/quality-attributes/${id}`),
-  createQualityAttribute: (req: { code: string; name: string; unit: string }) =>
+  getQualityAttribute: (id: string) => apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`),
+  createQualityAttribute: (req: ApiSchemas.CreateQualityAttributeRequest) =>
     apiFetch<unknown>('/api/quality-attributes', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateQualityAttribute: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/quality-attributes/${id}`, {
+  updateQualityAttribute: (id: string, req: ApiSchemas.UpdateQualityAttributeRequest) =>
+    apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchQualityAttribute: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/quality-attributes/${id}`, {
+  patchQualityAttribute: (id: string, req: ApiSchemas.UpdateQualityAttributeRequest) =>
+    apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  deleteQualityAttribute: (id: string) =>
-    apiFetch<unknown>(`/api/quality-attributes/${id}`, {
-      method: 'DELETE',
-    }),
+
 
   // Rice varieties
   getRiceVarieties: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/rice-varieties', params)),
-  getRiceVariety: (id: string) => apiFetch<unknown>(`/api/rice-varieties/${id}`),
-  createRiceVariety: (req: { code: string; name: string }) =>
+  getRiceVariety: (id: string) => apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`),
+  createRiceVariety: (req: ApiSchemas.CreateRiceVarietyRequest) =>
     apiFetch<unknown>('/api/rice-varieties', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateRiceVariety: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/rice-varieties/${id}`, {
+  updateRiceVariety: (id: string, req: ApiSchemas.UpdateRiceVarietyRequest) =>
+    apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchRiceVariety: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/rice-varieties/${id}`, {
+  patchRiceVariety: (id: string, req: ApiSchemas.UpdateRiceVarietyRequest) =>
+    apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  deleteRiceVariety: (id: string) =>
-    apiFetch<unknown>(`/api/rice-varieties/${id}`, {
-      method: 'DELETE',
-    }),
+
 
   // Measurement units
   getMeasurementUnits: (params?: ListParams) => apiFetch<unknown>(withQuery('/api/measurement-units', params)),
-  getMeasurementUnit: (id: string) => apiFetch<unknown>(`/api/measurement-units/${id}`),
-  createMeasurementUnit: (req: { code: string; name: string; quantityKind: string }) =>
+  getMeasurementUnit: (id: string) => apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`),
+  createMeasurementUnit: (req: ApiSchemas.CreateMeasurementUnitRequest) =>
     apiFetch<unknown>('/api/measurement-units', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateMeasurementUnit: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/measurement-units/${id}`, {
+  updateMeasurementUnit: (id: string, req: ApiSchemas.UpdateMeasurementUnitRequest) =>
+    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  patchMeasurementUnit: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/measurement-units/${id}`, {
+  patchMeasurementUnit: (id: string, req: ApiSchemas.UpdateMeasurementUnitRequest) =>
+    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
   deleteMeasurementUnit: (id: string) =>
-    apiFetch<unknown>(`/api/measurement-units/${id}`, {
+    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     }),
 
   // MRL table versions
   getMrlVersions: () => apiFetch<unknown>('/api/mrl-versions'),
-  getMrlVersion: (id: string) => apiFetch<unknown>(`/api/mrl-versions/${id}`),
-  createMrlVersion: (req: CreateMrlVersionRequest | unknown) =>
+  getMrlVersion: (id: string) => apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(id)}`),
+  createMrlVersion: (req: ApiSchemas.CreateMrlVersionRequest) =>
     apiFetch<unknown>('/api/mrl-versions', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
-  updateMrlVersion: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/mrl-versions/${id}`, {
+  updateMrlVersion: (id: string, req: ApiSchemas.JsonElement) =>
+    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
-  importMrlVersion: (req: ImportMrlVersionRequest | unknown) =>
+  importMrlVersion: (req: ApiSchemas.ImportMrlVersionRequest) =>
     apiFetch<unknown>('/api/mrl-versions/import', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
   getMrlLimits: (versionId: string) =>
-    apiFetch<unknown>(`/api/mrl-versions/${versionId}/limits`),
-  upsertMrlLimit: (versionId: string, substanceId: string, req: UpsertMrlLimitRequest | { limitValue: number; unit: string }) =>
-    apiFetch<unknown>(`/api/mrl-versions/${versionId}/limits/${substanceId}`, {
+    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(versionId)}/limits`),
+  upsertMrlLimit: (versionId: string, substanceId: string, req: ApiSchemas.UpsertMrlLimitRequest) =>
+    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(versionId)}/limits/${encodeURIComponent(substanceId)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
   deleteMrlLimit: (versionId: string, substanceId: string) =>
-    apiFetch<unknown>(`/api/mrl-versions/${versionId}/limits/${substanceId}`, {
+    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(versionId)}/limits/${encodeURIComponent(substanceId)}`, {
       method: 'DELETE',
     }),
   publishMrlVersion: (versionId: string) =>
-    apiFetch<unknown>(`/api/mrl-versions/${versionId}/publish`, {
+    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(versionId)}/publish`, {
       method: 'POST',
     }),
   resolveMrlVersion: () => apiFetch<unknown>('/api/mrl-versions/resolve'),

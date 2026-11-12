@@ -25,8 +25,6 @@ import { formatMass } from "../../utils/decimalMass";
 type SubTab = "receipts" | "farmers" | "plots" | "sprays";
 
 export default function FieldScreen() {
-  const Colors = usePalette();
-  const styles = createStyles(Colors);
   const router = useRouter();
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);

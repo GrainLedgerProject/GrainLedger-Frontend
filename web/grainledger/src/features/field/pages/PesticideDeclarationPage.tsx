@@ -26,10 +26,7 @@ interface SprayRecord {
   evidenceRef?: string;
   items?: Array<{
     productName: string;
-    substanceId: string;
-    rate: number;
-    rateUnit: string;
-  }>;
+    substanceId: string;  }>;
 }
 
 export const PesticideDeclarationPage: React.FC = () => {
@@ -47,10 +44,7 @@ export const PesticideDeclarationPage: React.FC = () => {
     plotSeasonId: "",
     appliedOn: new Date().toISOString().split("T")[0],
     productName: "Beam 75WP (Tricyclazole)",
-    substanceId: "",
-    rate: 0.25,
-    rateUnit: "kg/ha",
-    informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+    substanceId: "",    informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -100,10 +94,7 @@ export const PesticideDeclarationPage: React.FC = () => {
       plotSeasonId: crypto.randomUUID(),
       appliedOn: new Date().toISOString().split("T")[0],
       productName: "Beam 75WP (Tricyclazole)",
-      substanceId: substances[0]?.id || crypto.randomUUID(),
-      rate: 0.25,
-      rateUnit: "kg/ha",
-      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+      substanceId: substances[0]?.id || crypto.randomUUID(),      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
     });
     setIsModalOpen(true);
   };
@@ -132,10 +123,7 @@ export const PesticideDeclarationPage: React.FC = () => {
           items: [
             {
               productName: formData.productName,
-              substanceId: formData.substanceId || crypto.randomUUID(),
-              rate: Number(formData.rate),
-              rateUnit: formData.rateUnit,
-            },
+              substanceId: formData.substanceId || crypto.randomUUID(),            },
           ],
         },
       });
@@ -264,9 +252,6 @@ export const PesticideDeclarationPage: React.FC = () => {
                     {t("field.pesticide.productName", "Tên thương phẩm")}
                   </th>
                   <th className="py-3 px-4">
-                    {t("field.pesticide.dosage", "Liều lượng")}
-                  </th>
-                  <th className="py-3 px-4">
                     {t("field.pesticide.source", "Nguồn thông tin")}
                   </th>
                   <th className="py-3 px-4">
@@ -294,9 +279,6 @@ export const PesticideDeclarationPage: React.FC = () => {
                             "field.pesticide.defaultProduct",
                             "Thuốc bảo vệ thực vật",
                           )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-ink-secondary">
-                        {item ? `${item.rate} ${item.rateUnit}` : "0.25 kg/ha"}
                       </td>
                       <td className="py-3 px-4 text-ink-secondary text-[11px]">
                         {d.informationSource ||
@@ -404,44 +386,6 @@ export const PesticideDeclarationPage: React.FC = () => {
                     <option value="TCZ001">Tricyclazole (TCZ001)</option>
                   )}
                 </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    {t("field.pesticide.dosageLabel", "Liều lượng phun *")}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={formData.rate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        rate: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-ink-secondary mb-1">
-                    {t("field.pesticide.dosageUnitLabel", "Đơn vị liều")}
-                  </label>
-                  <select
-                    value={formData.rateUnit}
-                    onChange={(e) =>
-                      setFormData({ ...formData, rateUnit: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                  >
-                    <option value="kg/ha">kg / ha</option>
-                    <option value="l/ha">lít / ha</option>
-                    <option value="g/1000m2">g / 1.000m²</option>
-                  </select>
-                </div>
               </div>
 
               <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">

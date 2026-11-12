@@ -1,3 +1,4 @@
+import { logger } from "@/shared/utils/logger";
 import { ArrowClockwise, WarningOctagon } from "@phosphor-icons/react";
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 
@@ -22,8 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // eslint-disable-next-line no-console
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    logger.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   private handleReset = () => {

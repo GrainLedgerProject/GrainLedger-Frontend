@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
@@ -253,18 +254,19 @@ export const PlotRegistrationPage: React.FC = () => {
   };
 
   const handleDelete = async (plot: PlotRecord) => {
-    if (
-      !window.confirm(
-        t(
-          "field.plot.confirmDelete",
-          'Bạn có chắc muốn xoá thửa ruộng "{{code}}"?',
-          {
-            code: plot.code,
-          },
-        ),
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: t("field.plot.confirmDeleteTitle", "Xác nhận xóa thửa ruộng"),
+      description: t(
+        "field.plot.confirmDelete",
+        'Bạn có chắc muốn xoá thửa ruộng "{{code}}"?',
+        {
+          code: plot.code,
+        },
+      ),
+      confirmLabel: t("common.delete", "Xóa"),
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await procurementEndpoints.deletePlot(plot.id, {

@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -166,15 +167,16 @@ export const MrlVersionsPage: React.FC = () => {
   };
 
   const handlePublish = async (versionId: string) => {
-    if (
-      !window.confirm(
-        t(
-          "catalogs.mrl.confirmPublish",
-          "Bạn có chắc chắn muốn công bố (Publish) phiên bản MRL này để áp dụng kiểm định xuất khẩu?",
-        ),
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: t("catalogs.mrl.confirmPublishTitle", "Công bố phiên bản MRL"),
+      description: t(
+        "catalogs.mrl.confirmPublish",
+        "Bạn có chắc chắn muốn công bố (Publish) phiên bản MRL này để áp dụng kiểm định xuất khẩu?",
+      ),
+      confirmLabel: t("catalogs.mrl.publish", "Công bố"),
+      variant: "warning",
+    });
+    if (!confirmed) return;
 
     try {
       await catalogsEndpoints.publishMrlVersion(versionId);
@@ -268,7 +270,13 @@ export const MrlVersionsPage: React.FC = () => {
     substanceName: string,
   ) => {
     if (!selectedVersion) return;
-    if (!window.confirm(`Xóa giới hạn hoạt chất ${substanceName}?`)) return;
+    const confirmed = await confirmAction({
+      title: "Xóa giới hạn hoạt chất",
+      description: `Xóa giới hạn hoạt chất ${substanceName}?`,
+      confirmLabel: "Xóa",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await catalogsEndpoints.deleteMrlLimit(selectedVersion.id, substanceId);
       setSuccessMsg(`Đã xóa thành công ngưỡng hoạt chất ${substanceName}`);

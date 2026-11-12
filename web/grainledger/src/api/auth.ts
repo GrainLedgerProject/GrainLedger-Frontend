@@ -1,89 +1,34 @@
+import type * as ApiSchemas from './generated/schemas';
+import type { RegistrationPendingDto, IssuedTokens, SessionUserDto } from './generated/schemas';
+export type { RegisterRequest, RegistrationPendingDto, VerifyEmailRequest, ResendVerificationRequest, LoginRequest, IssuedTokens, SessionUserDto, ForgotPasswordRequest, ResetPasswordRequest } from './generated/schemas';
 import { apiFetch } from './client';
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  displayName: string;
-}
-
-export interface RegistrationPendingDto {
-  registrationId: string;
-  email: string;
-  expiresIn: number;
-}
-
-export interface VerifyEmailRequest {
-  email: string;
-  registrationId: string;
-  otp: string;
-}
-
-export interface ResendVerificationRequest {
-  email: string;
-  registrationId: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface IssuedTokens {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
-  user: SessionUserDto;
-}
-
-export interface SessionUserDto {
-  id: string;
-  email: string;
-  displayName: string;
-  phoneNumber?: string | null;
-  role?: string | null;
-  organizationId?: string | null;
-  organizationName?: string | null;
-  isActive: boolean;
-  permissions: string[];
-}
-
-export interface ForgotPasswordRequest {
-  email: string;
-}
-
-export interface ResetPasswordRequest {
-  email: string;
-  otp: string;
-  newPassword: string;
-}
-
 export const authEndpoints = {
-  register: (req: RegisterRequest) =>
+  register: (req: ApiSchemas.RegisterRequest) =>
     apiFetch<RegistrationPendingDto>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  verifyEmail: (req: VerifyEmailRequest) =>
+  verifyEmail: (req: ApiSchemas.VerifyEmailRequest) =>
     apiFetch<SessionUserDto>('/api/auth/verify-email', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  resendVerification: (req: ResendVerificationRequest) =>
+  resendVerification: (req: ApiSchemas.ResendVerificationRequest) =>
     apiFetch<RegistrationPendingDto>('/api/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  login: (req: LoginRequest) =>
+  login: (req: ApiSchemas.LoginRequest) =>
     apiFetch<IssuedTokens>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  webLogin: (req: LoginRequest) =>
+  webLogin: (req: ApiSchemas.LoginRequest) =>
     apiFetch<SessionUserDto>('/api/auth/web-login', {
       method: 'POST',
       body: JSON.stringify(req),
@@ -95,13 +40,13 @@ export const authEndpoints = {
       body: JSON.stringify({ refreshToken }),
     }),
 
-  forgotPassword: (req: ForgotPasswordRequest) =>
+  forgotPassword: (req: ApiSchemas.ForgotPasswordRequest) =>
     apiFetch<void>('/api/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  resetPassword: (req: ResetPasswordRequest) =>
+  resetPassword: (req: ApiSchemas.ResetPasswordRequest) =>
     apiFetch<void>('/api/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(req),
@@ -116,12 +61,12 @@ export const authEndpoints = {
 
   loginGoogle: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
-    return apiFetch<void>(`/api/auth/google${qs}`);
+    window.location.assign(`/api/auth/google${qs}`);
   },
 
   googleComplete: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
-    return apiFetch<void>(`/api/auth/google/complete${qs}`);
+    window.location.assign(`/api/auth/google/complete${qs}`);
   },
 
   getHealth: () => apiFetch<void>('/health'),

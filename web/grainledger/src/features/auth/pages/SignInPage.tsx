@@ -12,7 +12,7 @@ import {
   signInSchema,
   type SignInFormValues,
 } from "@/features/auth/model/authSchemas";
-import type { UserRole } from "@/shared/types/roles";
+import { ROLE_DEFINITIONS } from "@/shared/types/roles";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowRight,
@@ -83,25 +83,7 @@ export const SignInPage: React.FC = () => {
     );
   }
 
-  const getRedirectPathForRole = (role: UserRole): string => {
-    switch (role) {
-      case "MILL_ADMIN":
-        return "/admin/customers";
-      case "MILL_MANAGER":
-      case "MILL_OPERATOR":
-        return "/mill/operations/new";
-      case "CUSTOMER_PROCUREMENT_OFFICER":
-        return "/field/sync";
-      case "CUSTOMER_MANAGER":
-        return "/risk/traceback";
-      case "CUSTOMER_EXPORT_OFFICER":
-        return "/export/orders";
-      case "AUTHORIZED_STOCK_VIEWER":
-        return "/stock";
-      default:
-        return "/home";
-    }
-  };
+
 
   const onSubmit = async (values: SignInFormValues) => {
     setAuthError(null);
@@ -124,10 +106,13 @@ export const SignInPage: React.FC = () => {
             password: values.password,
           });
           await navigator.credentials.store(cred as Credential);
-        } catch {}
+        } catch {
+          // Browser PasswordCredential API not available or declined
+        }
       }
       // Determine redirect destination
-      const targetPath = returnUrl || getRedirectPathForRole(user.role);
+      const isSelfRedirect = !returnUrl || returnUrl.startsWith("/sign-in");
+      const targetPath = isSelfRedirect ? (ROLE_DEFINITIONS[user.role]?.defaultPath || "/home") : returnUrl;
       navigate(targetPath, { replace: true });
     } catch (err: unknown) {
       if (err instanceof Error) {

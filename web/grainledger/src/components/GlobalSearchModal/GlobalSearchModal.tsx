@@ -1,7 +1,6 @@
 import { useUiStore } from "@/app/store/uiStore";
 import {
   FileText,
-  MagnifyingGlass,
   MagnifyingGlassIcon,
   Package,
   Truck,
@@ -77,6 +76,7 @@ export const GlobalSearchModal: React.FC = () => {
   const { t } = useTranslation();
   const { isSearchOpen, setSearchOpen } = useUiStore();
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const navigate = useNavigate();
 
@@ -107,6 +107,8 @@ export const GlobalSearchModal: React.FC = () => {
 
   const handleSelect = (item: SearchResultItem) => {
     setSearchOpen(false);
+    setQuery("");
+    setActiveIndex(0);
     navigate(item.targetPath);
   };
 
@@ -151,6 +153,21 @@ export const GlobalSearchModal: React.FC = () => {
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
+                  setActiveIndex(0);
+                }}
+                onKeyDown={(e) => {
+                  if (!filteredResults.length) return;
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setActiveIndex((prev) => (prev + 1) % filteredResults.length);
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveIndex((prev) => (prev - 1 + filteredResults.length) % filteredResults.length);
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    const target = filteredResults[activeIndex] || filteredResults[0];
+                    if (target) handleSelect(target);
+                  }
                 }}
                 placeholder={t(
                   "common.searchPlaceholderFull",
@@ -182,7 +199,12 @@ export const GlobalSearchModal: React.FC = () => {
                   <div
                     key={item.id}
                     onClick={() => handleSelect(item)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors hover:bg-surface-raised dark:hover:bg-surface-overlay text-ink-primary hover:bg-accent-primary/10 hover:text-accent-primary hover:font-medium`}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                      idx === activeIndex
+                        ? "bg-accent-primary/10 text-accent-primary font-medium"
+                        : "text-ink-primary hover:bg-surface-raised dark:hover:bg-surface-overlay"
+                    }`}
                   >
                     <div className="p-2 rounded bg-surface-raised dark:bg-surface-overlay shrink-0">
                       {getIcon(item.type)}

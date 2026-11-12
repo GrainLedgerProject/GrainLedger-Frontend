@@ -1,3 +1,4 @@
+import { toast } from "@/app/store/feedbackStore";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -236,7 +237,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   // Handle GPS location via Geolocation API
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Trình duyệt không hỗ trợ Geolocation.");
+      toast.warning("Trình duyệt không hỗ trợ Geolocation.");
       return;
     }
 
@@ -248,7 +249,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       },
       (err) => {
         setIsLocating(false);
-        alert(`Không thể lấy toạ độ GPS: ${err.message}`);
+        toast.error(`Không thể lấy toạ độ GPS: ${err.message}`);
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );

@@ -81,14 +81,10 @@ export const authApi = {
    * Update Profile
    */
   updateProfile: async (payload: { displayName: string; phoneNumber?: string }): Promise<void> => {
-    try {
-      await profileEndpoints.updateProfile({
-        displayName: payload.displayName,
-        phoneNumber: payload.phoneNumber || null,
-      });
-    } catch {
-      // optimistic update succeeds
-    }
+    await profileEndpoints.updateProfile({
+      displayName: payload.displayName,
+      phoneNumber: payload.phoneNumber || null,
+    });
   },
 
   /**

@@ -1,3 +1,4 @@
+import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { catalogsEndpoints } from "@/api/catalogs";
@@ -240,18 +241,19 @@ export const MasterDataPage: React.FC = () => {
       setError(t("catalogs.master.deleteUnsupported", "Danh mục này chưa có API xoá; hãy chỉnh sửa để ngừng sử dụng thay vì xoá."));
       return;
     }
-    if (
-      !window.confirm(
-        t(
-          "catalogs.master.confirmDelete",
-          'Xoá mục "{{name}}" khỏi danh mục vận hành?',
-          {
-            name: item.name,
-          },
-        ),
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: t("catalogs.master.confirmDeleteTitle", "Xác nhận xóa danh mục"),
+      description: t(
+        "catalogs.master.confirmDelete",
+        'Xoá mục "{{name}}" khỏi danh mục vận hành?',
+        {
+          name: item.name,
+        },
+      ),
+      confirmLabel: t("common.delete", "Xóa"),
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       if (activeTab === "COMMODITIES")
