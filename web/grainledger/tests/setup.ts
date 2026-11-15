@@ -11,3 +11,7 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => false,
   }),
 });
+
+// jsdom has the element but does not implement its modal methods.
+HTMLDialogElement.prototype.showModal ??= function () { this.open = true; };
+HTMLDialogElement.prototype.close ??= function () { this.open = false; };

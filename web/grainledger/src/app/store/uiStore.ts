@@ -15,6 +15,7 @@ interface UiState {
   hasInitialChecked: boolean;
   pendingOfflineCount: number;
   procurementSyncMode: 'auto' | 'manual';
+  isMinimalMode: boolean;
 
   // Actions
   toggleTheme: () => void;
@@ -29,26 +30,31 @@ interface UiState {
   setBackendConnected: (connected: boolean) => void;
   setPendingOfflineCount: (count: number) => void;
   setProcurementSyncMode: (mode: 'auto' | 'manual') => void;
+  setMinimalMode: (enabled: boolean) => void;
   checkConnection: (isInitial?: boolean) => Promise<boolean>;
 }
 
 // Read initial stored values
-const storedTheme = (localStorage.getItem('grainledger_theme') as 'light' | 'dark') ||
-  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const savedTheme = localStorage.getItem('grainledger_theme');
+const storedTheme: 'light' | 'dark' = savedTheme === 'light' || savedTheme === 'dark'
+  ? savedTheme : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+function applyTheme(theme: 'light' | 'dark', override: boolean) {
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', override ? theme : 'light dark');
+}
 
 const storedCollapsed = localStorage.getItem('grainledger_sidebar_collapsed') === 'true';
 const storedLang = (localStorage.getItem('grainledger_lang') as 'vi' | 'en') || 'vi';
+const storedMinimalMode = localStorage.getItem('grainledger_minimal_mode') === 'true';
 
 if (typeof document !== 'undefined') {
   document.documentElement.lang = storedLang;
+  document.documentElement.dataset.minimalUi = String(storedMinimalMode);
 }
 
 // Apply initial theme class to HTML element
-if (storedTheme === 'dark') {
-  document.documentElement.classList.add('dark');
-} else {
-  document.documentElement.classList.remove('dark');
-}
+applyTheme(storedTheme, savedTheme === 'light' || savedTheme === 'dark');
 
 export const useUiStore = create<UiState>((set, get) => ({
   theme: storedTheme,
@@ -63,27 +69,29 @@ export const useUiStore = create<UiState>((set, get) => ({
   hasInitialChecked: false,
   pendingOfflineCount: 0,
   procurementSyncMode: localStorage.getItem('grainledger_procurement_sync_mode') === 'manual' ? 'manual' : 'auto',
+  isMinimalMode: storedMinimalMode,
+  setMinimalMode: (enabled) => {
+    localStorage.setItem('grainledger_minimal_mode', String(enabled));
+    document.documentElement.dataset.minimalUi = String(enabled);
+    set({ isMinimalMode: enabled });
+  },
 
   toggleTheme: () => {
     set((state) => {
       const next = state.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('grainledger_theme', next);
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (next === system) localStorage.removeItem('grainledger_theme');
+      else localStorage.setItem('grainledger_theme', next);
+      applyTheme(next, next !== system);
       return { theme: next };
     });
   },
 
   setTheme: (theme) => {
-    localStorage.setItem('grainledger_theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (theme === system) localStorage.removeItem('grainledger_theme');
+    else localStorage.setItem('grainledger_theme', theme);
+    applyTheme(theme, theme !== system);
     set({ theme });
   },
 
@@ -171,6 +179,19 @@ window.addEventListener('online', () => void useUiStore.getState().checkConnecti
 window.addEventListener('offline', () => {
   useUiStore.getState().setOnline(false);
   useUiStore.getState().setBackendConnected(false);
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+  if (localStorage.getItem('grainledger_theme')) return;
+  const theme = event.matches ? 'dark' : 'light';
+  applyTheme(theme, false);
+  useUiStore.setState({ theme });
+});
+window.addEventListener('storage', (event) => {
+  if (event.key !== 'grainledger_theme') return;
+  const theme = event.newValue === 'light' || event.newValue === 'dark'
+    ? event.newValue : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  applyTheme(theme, event.newValue === 'light' || event.newValue === 'dark');
+  useUiStore.setState({ theme });
 });
 
 // Initial startup backend connectivity check

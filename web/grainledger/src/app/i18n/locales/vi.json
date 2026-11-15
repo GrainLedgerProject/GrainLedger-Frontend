@@ -78,6 +78,9 @@
     }
   },
   "header": {
+    "minimalMode": "Chế độ tối giản",
+    "enableMinimalMode": "Bật chế độ tối giản",
+    "disableMinimalMode": "Tắt chế độ tối giản",
     "defaultTitle": "Bàn làm việc vận hành",
     "searchTitle": "Tìm kiếm trong hệ thống (Cmd/Ctrl+K)",
     "switchToLight": "Chuyển sang chế độ sáng",
@@ -740,7 +743,7 @@
   },
   "audit": {
     "events": {
-      "title": "Nhật ký Sự kiện Nghiệp vụ Bất biến (Immutable Audit Trail)",
+      "title": "Nhật ký Sự kiện Bất biến",
       "subtitle": "Mọi biến đổi khối lượng (kg), trạng thái niêm chì, kiểm nghiệm và lệnh phong tỏa được lưu trữ bất biến kèm chuỗi băm xác thực.",
       "badgeSha": "Chuỗi băm toàn vẹn SHA-256",
       "btnRefresh": "Làm mới",

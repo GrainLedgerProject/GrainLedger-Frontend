@@ -1,481 +1,1445 @@
 import { ledgerEndpoints } from "@/api/ledger";
+import { useAuthStore } from "@/app/store/authStore";
+import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal/Modal";
+import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
-  ArrowClockwise,
+  ArrowRight,
+  ArrowsClockwise,
+  Calculator,
+  CaretRight,
   CheckCircle,
   ClockCounterClockwise,
   FileText,
+  FolderOpen,
+  Info,
+  Lock,
   MagnifyingGlass,
+  PencilSimpleLine,
   Plus,
   Scales,
+  ShieldCheck,
   WarningCircle,
   X,
-  XCircle,
 } from "@phosphor-icons/react";
 import { confirmAction, toast } from "@/app/store/feedbackStore";
-import { logger } from "@/shared/utils/logger";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useLocation, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
-interface CorrectionItem {
+export interface CorrectionRecord {
   id: string;
   operationId: string;
   facilityId?: string;
+  category?: string;
   reason: string;
   reconciliationNotes?: string;
   status: "PENDING_REVIEW" | "RECONCILED" | "COMMITTED" | "CANCELLED";
   createdAt: string;
   createdBy?: string;
+  evidenceReference?: string;
+  evidenceFileName?: string;
   proposedReversals?: Array<{
     lotId: string;
+    lotName?: string;
     deltaMassKg: string;
   }>;
 }
 
+interface OperationOption {
+  id: string;
+  kind?: string;
+  status?: string;
+  occurredAt?: string;
+}
+
+const OPERATION_LABELS: Record<string, string> = {
+  DRYING: "Sấy lúa tươi (Drying)",
+  MILLING: "Xay xát gạo (Milling)",
+  BLENDING: "Phối trộn cơ học (Blending)",
+  BAGGING: "Đóng bao & Container (Bagging)",
+  TRANSFER: "Điều chuyển kho (Transfer)",
+};
+
+function parseCorrectionsResponse(res: unknown): CorrectionRecord[] {
+  let items: CorrectionRecord[];
+  if (Array.isArray(res)) {
+    items = res as CorrectionRecord[];
+  } else if (res && typeof res === "object") {
+    if (
+      "items" in res &&
+      Array.isArray((res as { items: CorrectionRecord[] }).items)
+    ) {
+      items = (res as { items: CorrectionRecord[] }).items;
+    } else if (
+      "corrections" in res &&
+      Array.isArray((res as { corrections: CorrectionRecord[] }).corrections)
+    ) {
+      items = (res as { corrections: CorrectionRecord[] }).corrections;
+    } else {
+      items = [];
+    }
+  } else {
+    items = [];
+  }
+  return items.map((item) => ({
+    ...item,
+    status:
+      (item.status as string) === "REQUESTED" ? "PENDING_REVIEW" : item.status,
+    createdAt:
+      item.createdAt ||
+      (item as CorrectionRecord & { requestedAt?: string }).requestedAt ||
+      "",
+  }));
+}
+
 export const CorrectionManagementPage: React.FC = () => {
-  const [corrections, setCorrections] = useState<CorrectionItem[]>([]);
+  const { t } = useTranslation();
+  const { id: routeCorrectionId } = useParams<{ id?: string }>();
+  const location = useLocation();
+  const isReconciliationRoute = location.pathname.includes("/reconciliations");
+  const { user } = useAuthStore();
+
+  const isManager =
+    user?.role === "MILL_MANAGER" || user?.role === "MILL_ADMIN";
+
+  const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal create
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    operationId: "",
-    reason: "",
-    reconciliationNotes: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | CorrectionRecord["status"]
+  >(isReconciliationRoute ? "PENDING_REVIEW" : "ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Selected item for action
+  // Selected item for Workbench view
   const [selectedCorrection, setSelectedCorrection] =
-    useState<CorrectionItem | null>(null);
-  const [actionNotes, setActionNotes] = useState("");
+    useState<CorrectionRecord | null>(null);
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    fetchCorrections();
+  // Create Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [operations, setOperations] = useState<OperationOption[]>([]);
+  const [loadingOps, setLoadingOps] = useState(false);
+  const [createOperationId, setCreateOperationId] = useState("");
+  const [createReason, setCreateReason] = useState("");
+  const [createManualMode, setCreateManualMode] = useState(false);
+  const [submittingCreate, setSubmittingCreate] = useState(false);
+  const [createModalError, setCreateModalError] = useState<string | null>(null);
+
+  const loadOperations = useCallback(async () => {
+    try {
+      setLoadingOps(true);
+      const res = (await ledgerEndpoints.getOperations()) as unknown;
+      const items = Array.isArray(res)
+        ? res
+        : res && typeof res === "object" && "items" in res
+          ? (res as { items: unknown }).items
+          : [];
+      const committedOps = Array.isArray(items)
+        ? items.filter((item): item is OperationOption =>
+            Boolean(
+              item &&
+              typeof item === "object" &&
+              typeof (item as OperationOption).id === "string" &&
+              (item as OperationOption).status === "COMMITTED",
+            ),
+          )
+        : [];
+      setOperations(committedOps);
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setLoadingOps(false);
+    }
   }, []);
 
-  const fetchCorrections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = (await ledgerEndpoints.getCorrections()) as unknown;
-
-      let list: CorrectionItem[] = [];
-      if (Array.isArray(res)) {
-        list = res;
-      } else if (res && typeof res === "object" && "items" in res) {
-        list = (res as { items: CorrectionItem[] }).items;
-      }
-
-      if (list.length === 0) {
-        list = [
-          {
-            id: "CORR-2026-001",
-            operationId: "OP-2026-DRY-01",
-            facilityId: "FAC-TIENGIANG-01",
-            reason:
-              "Nhầm lẫn phiếu cân độ ẩm đầu vào từ 14.8% thành 14.2%, dẫn đến sai lệch lượng hao hụt tính toán",
-            reconciliationNotes:
-              "Biên bản kiểm tra kỹ thuật số 04/BB-KCS ngày 15/10/2026",
-            status: "PENDING_REVIEW",
-            createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-            createdBy: "operator@grainledger.vn",
-            proposedReversals: [
-              { lotId: "LOT-TG-2026-001", deltaMassKg: "+120.000000" },
-              { lotId: "LOT-TG-2026-002", deltaMassKg: "-120.000000" },
-            ],
-          },
-          {
-            id: "CORR-2026-002",
-            operationId: "OP-2026-MILL-03",
-            facilityId: "FAC-TIENGIANG-01",
-            reason:
-              "Tỷ lệ thu hồi cám thực tế lệch 0.8% so với định mức do máy bóc vỏ gặp sự cố trục rulo",
-            reconciliationNotes: "Đã hiệu chuẩn lại cân băng tải silo cám",
-            status: "COMMITTED",
-            createdAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
-            createdBy: "operator@grainledger.vn",
-          },
-        ];
-      }
-      setCorrections(list);
-    } catch (err: unknown) {
-      logger.error(err);
-      setError(
-        (err as Error).message || "Không thể tải danh sách yêu cầu sửa đổi.",
-      );
-    } finally {
-      setLoading(false);
+  const handleOpenCreateModal = useCallback(() => {
+    setCreateOperationId("");
+    setCreateReason("");
+    setCreateModalError(null);
+    setCreateManualMode(false);
+    setShowCreateModal(true);
+    if (operations.length === 0) {
+      void loadOperations();
     }
-  };
+  }, [operations.length, loadOperations]);
 
   const handleCreateCorrection = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.operationId.trim() || !createForm.reason.trim()) {
-      toast.warning("Vui lòng nhập mã công đoạn (Operation ID) và lý do sửa đổi.");
+    const trimmedOpId = createOperationId.trim();
+    const trimmedReason = createReason.trim();
+
+    if (!trimmedOpId) {
+      setCreateModalError(
+        t(
+          "mill.corrections.errSelectOp",
+          "Vui lòng chọn hoặc nhập mã công đoạn cần sửa.",
+        ),
+      );
+      return;
+    }
+    if (!trimmedReason || trimmedReason.length < 5) {
+      setCreateModalError(
+        t(
+          "mill.corrections.errReasonLength",
+          "Vui lòng nhập lý do sửa đổi rõ ràng (tối thiểu 5 ký tự).",
+        ),
+      );
       return;
     }
 
     try {
-      setSubmitting(true);
-      setError(null);
-      // Call create endpoint or mock
-      const newCorr: CorrectionItem = {
-        id: `CORR-2026-00${corrections.length + 1}`,
-        operationId: createForm.operationId,
-        facilityId: "FAC-TIENGIANG-01",
-        reason: createForm.reason,
-        reconciliationNotes: createForm.reconciliationNotes,
-        status: "PENDING_REVIEW",
-        createdAt: new Date().toISOString(),
-        createdBy: "current_user",
-      };
-      setCorrections([newCorr, ...corrections]);
-      setShowCreateModal(false);
-      setCreateForm({ operationId: "", reason: "", reconciliationNotes: "" });
+      setSubmittingCreate(true);
+      setCreateModalError(null);
+      await ledgerEndpoints.createCorrection({
+        operationId: trimmedOpId,
+        reason: trimmedReason,
+      });
       toast.success(
-        "Đã gửi yêu cầu sửa bước chế biến thành công. Chờ Quản lý đối soát phê duyệt.",
+        t(
+          "mill.corrections.createSuccess",
+          "Đã gửi yêu cầu sửa công đoạn thành công. Chờ Quản lý đối soát phê duyệt.",
+        ),
       );
+      setShowCreateModal(false);
+      setCreateOperationId("");
+      setCreateReason("");
+      await fetchCorrections();
     } catch (err: unknown) {
-      logger.error(err);
-      setError((err as Error).message || "Lỗi khi gửi yêu cầu sửa đổi.");
+      setCreateModalError(
+        err instanceof Error ? err.message : "Lỗi khi gửi yêu cầu sửa đổi.",
+      );
     } finally {
-      setSubmitting(false);
+      setSubmittingCreate(false);
     }
   };
 
-  const handleCommitCorrection = async (id: string) => {
+  // Manual reload handler for button click
+  const fetchCorrections = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = (await ledgerEndpoints.getCorrections()) as unknown;
+      const list = parseCorrectionsResponse(res);
+      setCorrections(list);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải danh sách yêu cầu sửa đổi.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Synchronize effect with external system (network)
+  useEffect(() => {
+    let active = true;
+
+    async function initCorrections() {
+      try {
+        const res = (await ledgerEndpoints.getCorrections()) as unknown;
+        if (!active) return;
+        const list = parseCorrectionsResponse(res);
+        setCorrections(list);
+
+        // Handle route param if deep linked with /mill/reconciliations/:id
+        if (routeCorrectionId && list.length > 0) {
+          const found = list.find(
+            (c) =>
+              c.id.toLowerCase() === routeCorrectionId.toLowerCase() ||
+              c.operationId.toLowerCase() === routeCorrectionId.toLowerCase(),
+          );
+          if (found) {
+            setSelectedCorrection(found);
+            setReviewNotes(found.reconciliationNotes || "");
+          }
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Không thể tải danh sách yêu cầu sửa đổi.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initCorrections();
+
+    return () => {
+      active = false;
+    };
+  }, [routeCorrectionId]);
+
+  const handleOpenWorkbench = (record: CorrectionRecord) => {
+    setSelectedCorrection(record);
+    setReviewNotes(record.reconciliationNotes || "");
+    setActionSuccess(null);
+  };
+
+  // Action: Xác nhận đối soát (Reconcile - SC-17)
+  const handleReconcile = async () => {
+    if (!selectedCorrection) return;
+    if (!reviewNotes.trim()) {
+      toast.warning(
+        "Vui lòng nhập ghi chú kết quả đối soát kỹ thuật trước khi xác nhận.",
+      );
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      await ledgerEndpoints.reconcileCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim(),
+      });
+
+      setCorrections((prev) =>
+        prev.map((c) =>
+          c.id === selectedCorrection.id
+            ? {
+                ...c,
+                status: "RECONCILED" as const,
+                reconciliationNotes: reviewNotes.trim(),
+              }
+            : c,
+        ),
+      );
+
+      setSelectedCorrection((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "RECONCILED",
+              reconciliationNotes: reviewNotes.trim(),
+            }
+          : null,
+      );
+
+      setActionSuccess(
+        `Đã hoàn tất đối soát yêu cầu ${selectedCorrection.id}. Chờ bước chốt bút toán bù.`,
+      );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Không thể đối soát yêu cầu.");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Action: Chốt ghi bút toán bù vào sổ cái
+  const handleCommit = async () => {
+    if (!selectedCorrection) return;
     const confirmed = await confirmAction({
-      title: "Chốt bút toán bù đảo ngược",
-      description: "Bạn có chắc chắn muốn chốt bút toán bù đảo ngược? Lịch sử gốc sẽ được bảo tồn nguyên vẹn.",
+      title: `Chốt ghi bút toán bù (${selectedCorrection.id})`,
+      description:
+        "Hệ thống sẽ phát hành bút toán đảo ngược (Reversal Entry) vào sổ cái và mở khóa các lô hàng liên quan.",
       confirmLabel: "Chốt bút toán bù",
       variant: "warning",
     });
     if (!confirmed) return;
 
     try {
-      setLoading(true);
-      await ledgerEndpoints.commitCorrection(id, { notes: actionNotes });
-      toast.success(
-        `Đã ghi nhận bút toán bù và thay thế cho yêu cầu ${id} thành công.`,
-      );
-      fetchCorrections();
-    } catch (err: unknown) {
-      // Optimistic update for dev
+      setIsProcessing(true);
+      await ledgerEndpoints.commitCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim() || "Committed by Mill Manager",
+      });
+
       setCorrections((prev) =>
         prev.map((c) =>
-          c.id === id ? { ...c, status: "COMMITTED" as const } : c,
+          c.id === selectedCorrection.id
+            ? { ...c, status: "COMMITTED" as const }
+            : c,
         ),
       );
-      toast.success(`Đã ghi nhận bút toán bù cho yêu cầu ${id}.`);
+
+      setSelectedCorrection((prev) =>
+        prev ? { ...prev, status: "COMMITTED" } : null,
+      );
+
+      setActionSuccess(
+        `Đã chốt thành công Bút toán Bù đảo ngược cho yêu cầu ${selectedCorrection.id} vào Sổ Cái.`,
+      );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Không thể chốt bút toán bù.");
+      }
     } finally {
-      setLoading(false);
-      setSelectedCorrection(null);
+      setIsProcessing(false);
     }
   };
 
-  const handleCancelCorrection = async (id: string) => {
+  // Action: Hủy bỏ yêu cầu
+  const handleCancel = async () => {
+    if (!selectedCorrection) return;
     const confirmed = await confirmAction({
-      title: "Hủy yêu cầu sửa đổi",
-      description: "Hủy bỏ yêu cầu sửa đổi này?",
+      title: "Hủy bỏ yêu cầu sửa đổi",
+      description: `Hủy bỏ yêu cầu sửa đổi ${selectedCorrection.id}?`,
       confirmLabel: "Hủy yêu cầu",
       variant: "danger",
     });
     if (!confirmed) return;
+
     try {
-      setLoading(true);
-      await ledgerEndpoints.cancelCorrection(id, {
-        notes: "Cancelled by user",
+      setIsProcessing(true);
+      await ledgerEndpoints.cancelCorrection(selectedCorrection.id, {
+        notes: reviewNotes.trim() || "Cancelled",
       });
-      fetchCorrections();
-    } catch (err) {
+
       setCorrections((prev) =>
         prev.map((c) =>
-          c.id === id ? { ...c, status: "CANCELLED" as const } : c,
+          c.id === selectedCorrection.id
+            ? { ...c, status: "CANCELLED" as const }
+            : c,
         ),
       );
-    } finally {
-      setLoading(false);
+
       setSelectedCorrection(null);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Không thể hủy bỏ yêu cầu.");
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const getStatusBadge = (status: CorrectionItem["status"]) => {
+  // Filtered list
+  const filteredCorrections = useMemo(() => {
+    return corrections.filter((item) => {
+      const matchStatus =
+        statusFilter === "ALL" || item.status === statusFilter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchQuery =
+        !q ||
+        item.id.toLowerCase().includes(q) ||
+        item.operationId.toLowerCase().includes(q) ||
+        item.reason.toLowerCase().includes(q) ||
+        (item.createdBy && item.createdBy.toLowerCase().includes(q));
+
+      return matchStatus && matchQuery;
+    });
+  }, [corrections, statusFilter, searchQuery]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const pending = corrections.filter(
+      (c) => c.status === "PENDING_REVIEW",
+    ).length;
+    const reconciled = corrections.filter(
+      (c) => c.status === "RECONCILED",
+    ).length;
+    const committed = corrections.filter(
+      (c) => c.status === "COMMITTED",
+    ).length;
+    return { pending, reconciled, committed, total: corrections.length };
+  }, [corrections]);
+
+  const renderStatusBadge = (status: CorrectionRecord["status"]) => {
     switch (status) {
       case "PENDING_REVIEW":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
-            Chờ Quản lý duyệt
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-functional-stale-bg text-accent-warning border border-functional-stale-border/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
+            {t(
+              "mill.pendingCorrections.statusPendingReview",
+              "Chờ Quản lý đối soát",
+            )}
           </span>
         );
       case "RECONCILED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-accent-info/10 text-accent-info border border-accent-info/20">
-            Đã đối soát xong
-          </span>
+          <StatusBadge
+            status="BALANCED"
+            label={t(
+              "mill.pendingCorrections.statusReconciled",
+              "Đã đối soát xong",
+            )}
+          />
         );
       case "COMMITTED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-functional-balanced-bg text-accent-primary border border-functional-balanced-border/40">
-            Đã chốt bút toán bù
-          </span>
+          <StatusBadge
+            status="BALANCED"
+            label={t(
+              "mill.pendingCorrections.statusCommitted",
+              "Đã chốt bút toán bù",
+            )}
+          />
         );
       case "CANCELLED":
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised text-ink-secondary border border-surface-overlay">
-            Đã hủy
-          </span>
+          <StatusBadge
+            status="REJECTED"
+            label={t("mill.pendingCorrections.statusCancelled", "Đã hủy")}
+          />
         );
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-secondary">
-              Bất biến lịch sử chế biến
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold  text-ink-primary mt-1">
-            Quản lý Sửa đổi & Bút toán Bù (Corrections & Reconciliations)
-          </h1>
-          <p className="text-sm text-ink-secondary mt-0.5">
-            Khi phát hiện sai sót số liệu trong các mẻ sấy/xay/trộn đã chốt, hệ
-            thống tuyệt đối không sửa đè mà ghi nhận bút toán đảo ngược kèm bút
-            toán thay thế.
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
+            {t(
+              "mill.reconciliations.tag",
+              "ĐỐI SOÁT & XÁC MINH BẰNG CHỨNG (RECONCILIATION WORKFLOW)",
+            )}
+          </span>
+          <h2 className="text-2xl font-display font-bold text-ink-primary">
+            {t(
+              "mill.reconciliations.pageTitle",
+              "Đối Soát & Xác Nhận Bằng Chứng Điều Chỉnh",
+            )}
+          </h2>
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5 max-w-3xl"
+          >
+            {t(
+              "mill.reconciliations.pageSubtitle",
+              "Kiểm tra biên bản hiện trường, đối soát chênh lệch khối lượng và xác nhận căn cứ kỹ thuật (Reconcile) trước khi phát hành bút toán đảo ngược vào sổ cái.",
+            )}
           </p>
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 bg-accent-primary hover:bg-accent-primary-dim text-ink-inverse rounded-lg text-sm font-medium flex items-center gap-1.5 shadow-sm transition shrink-0"
-        >
-          <Plus size={16} weight="bold" />
-          Yêu cầu sửa bước chế biến
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={fetchCorrections}
+            disabled={loading}
+            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
+            title={t("common.reload", "Tải lại danh sách")}
+          >
+            <ArrowsClockwise
+              size={16}
+              className={loading ? "animate-spin" : ""}
+            />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs cursor-pointer"
+          >
+            <Plus size={16} weight="bold" />
+            <span>
+              {t(
+                "mill.pendingCorrections.createNewRequest",
+                "Tạo yêu cầu sửa mới",
+              )}
+            </span>
+          </button>
+        </div>
       </div>
 
+      {/* Alerts */}
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2">
-          <X className="shrink-0 mt-0.5" size={18} />
-          <div>
-            <strong>Lỗi hệ thống:</strong> {error}
+        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
+          <WarningCircle size={18} weight="fill" className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {actionSuccess && (
+        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2 font-medium">
+          <CheckCircle size={18} weight="fill" className="shrink-0" />
+          <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
+          <div className="text-xs font-semibold text-ink-tertiary uppercase tracking-wider">
+            <span>
+              {t("mill.pendingCorrections.kpiPending", "Chờ duyệt đối soát")}
+            </span>
+            <span className="w-2.5 h-2.5 rounded-full bg-functional-stale-bg0 animate-pulse" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-accent-warning">
+            {stats.pending}
+          </div>
+          <p className="text-xs text-ink-tertiary mt-1">
+            {t(
+              "mill.pendingCorrections.kpiPendingDesc",
+              "Cần Quản lý xác minh",
+            )}
+          </p>
+        </div>
+
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
+          <div className="text-xs font-semibold text-ink-tertiary uppercase tracking-wider">
+            <span>
+              {t("mill.pendingCorrections.kpiReconciled", "Đã đối soát xong")}
+            </span>
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-primary" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-accent-primary">
+            {stats.reconciled}
+          </div>
+          <p className="text-xs text-ink-tertiary mt-1">
+            {t(
+              "mill.pendingCorrections.kpiReconciledDesc",
+              "Sẵn sàng chốt bút toán bù",
+            )}
+          </p>
+        </div>
+
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex justify-between text-xs font-semibold text-ink-tertiary uppercase tracking-wider">
+            <span>
+              {t("mill.pendingCorrections.kpiCommitted", "Đã chốt sổ cái")}
+            </span>
+            <CheckCircle
+              size={16}
+              className="text-accent-primary"
+              weight="fill"
+            />
+          </div>
+          <div className="text-2xl font-bold font-mono text-accent-primary">
+            {stats.committed}
+          </div>
+          <p className="text-xs text-ink-tertiary mt-1">
+            {t(
+              "mill.pendingCorrections.kpiCommittedDesc",
+              "Bút toán bù đã phát hành",
+            )}
+          </p>
+        </div>
+
+        <div className="p-4 sm:p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex justify-between text-xs font-semibold text-ink-tertiary uppercase tracking-wider">
+            <span>
+              {t("mill.pendingCorrections.kpiTotal", "Tổng yêu cầu trong kỳ")}
+            </span>
+            <FolderOpen size={16} className="text-ink-tertiary" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-ink-primary">
+            {stats.total}
+          </div>
+          <p className="text-xs text-ink-tertiary mt-1">
+            {t(
+              "mill.pendingCorrections.kpiTotalDesc",
+              "Hồ sơ kiểm toán ISO 22095",
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search Card */}
+      <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 p-1 bg-surface-raised dark:bg-surface-overlay rounded-xl border border-ink-tertiary/15 text-xs overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("ALL")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "ALL"
+                ? "bg-surface-base dark:bg-surface-raised text-ink-primary font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
+          >
+            {t("common.all", "Tất cả")} ({corrections.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("PENDING_REVIEW")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "PENDING_REVIEW"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-warning font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
+          >
+            {t("mill.pendingCorrections.tabPending", "Chờ duyệt")} (
+            {stats.pending})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("RECONCILED")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "RECONCILED"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-primary font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
+          >
+            {t("mill.pendingCorrections.tabReconciled", "Đã đối soát")} (
+            {stats.reconciled})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("COMMITTED")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              statusFilter === "COMMITTED"
+                ? "bg-surface-base dark:bg-surface-raised text-accent-primary font-bold shadow-xs"
+                : "text-ink-secondary hover:text-ink-primary"
+            }`}
+          >
+            {t("mill.pendingCorrections.tabCommitted", "Đã chốt bù")} (
+            {stats.committed})
+          </button>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative w-full md:w-80">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t(
+              "mill.pendingCorrections.searchPlaceholder",
+              "Tìm theo mã CORR-, OP-, lý do...",
+            )}
+            className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none transition-colors"
+          />
+          <MagnifyingGlass
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink-primary"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Table */}
+      {loading ? (
+        <div className="py-16 flex justify-center">
+          <GrainLoader label="Đang tải danh sách bút toán bù..." />
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-surface-raised dark:bg-surface-overlay text-ink-secondary font-semibold border-b border-ink-tertiary/15 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colCorrId", "Mã yêu cầu")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colOpId", "Mã công đoạn")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t(
+                      "mill.pendingCorrections.colReason",
+                      "Phân loại & Lý do sai sót",
+                    )}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t(
+                      "mill.pendingCorrections.colProposedDelta",
+                      "Đề xuất bù khối lượng",
+                    )}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("mill.pendingCorrections.colAuthor", "Người lập")}
+                  </th>
+                  <th className="py-3.5 px-4">
+                    {t("common.status", "Trạng thái")}
+                  </th>
+                  <th className="py-3.5 px-4 text-right">
+                    {t("common.action", "Thao tác")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-tertiary/10 font-sans">
+                {filteredCorrections.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-ink-tertiary"
+                    >
+                      {t(
+                        "mill.pendingCorrections.noRecords",
+                        "Không tìm thấy yêu cầu sửa đổi nào phù hợp.",
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCorrections.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors cursor-pointer"
+                      onClick={() => handleOpenWorkbench(item)}
+                    >
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-xs font-bold text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-md inline-block">
+                          {item.id}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-semibold text-ink-primary">
+                        {item.operationId}
+                      </td>
+                      <td className="py-3.5 px-4 max-w-xs">
+                        {item.category && (
+                          <span className="block text-[10px] font-mono font-bold text-accent-primary uppercase tracking-wider mb-0.5">
+                            {item.category}
+                          </span>
+                        )}
+                        <span className="text-ink-primary text-xs line-clamp-1">
+                          {item.reason}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono">
+                        {item.proposedReversals &&
+                        item.proposedReversals.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {item.proposedReversals.map((r, idx) => (
+                              <div
+                                key={idx}
+                                className="text-xs text-ink-secondary"
+                              >
+                                <span className="text-ink-tertiary font-mono">
+                                  {r.lotId}:
+                                </span>{" "}
+                                <span
+                                  className={`font-bold ${
+                                    r.deltaMassKg.startsWith("+")
+                                      ? "text-accent-primary"
+                                      : r.deltaMassKg.startsWith("-")
+                                        ? "text-accent-danger"
+                                        : "text-ink-tertiary"
+                                  }`}
+                                >
+                                  {r.deltaMassKg} kg
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-ink-tertiary">—</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-ink-secondary whitespace-nowrap">
+                        <div className="text-xs text-ink-primary font-medium">
+                          {item.createdBy?.split("(")[0] || "Vận hành viên"}
+                        </div>
+                        <div className="text-[10px] text-ink-tertiary font-mono">
+                          {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {renderStatusBadge(item.status)}
+                      </td>
+                      <td
+                        className="py-3.5 px-4 text-right whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWorkbench(item)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-raised dark:bg-surface-overlay hover:bg-accent-primary/10 hover:text-accent-primary border border-ink-tertiary/20 text-ink-primary transition-colors shadow-xs"
+                        >
+                          <span>
+                            {t(
+                              "mill.pendingCorrections.actionReconcileAndCommit",
+                              "Đối soát & Ghi bù",
+                            )}
+                          </span>
+                          <CaretRight size={14} weight="bold" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Rules Notice */}
-      <div className="p-4 bg-functional-stale-bg border border-functional-stale-border/40 rounded-xl text-accent-warning text-xs space-y-1">
-        <div className="flex items-center gap-2 font-semibold">
-          <WarningCircle size={16} weight="fill" className="text-accent-warning" />
-          <span>Quy tắc hạch toán Mass Balance ISO 22095:</span>
-        </div>
-        <p className="text-accent-warning pl-6 leading-relaxed">
-          1. Bước chế biến đã COMMIT là bất biến. Yêu cầu sửa đổi sẽ khóa tạm
-          thời các lô đầu ra khỏi các kế hoạch đóng container tiếp theo cho đến
-          khi Quản lý duyệt.
-          <br />
-          2. Khi duyệt sửa đổi, hệ thống thực thi giao dịch ghi đồng thời bút
-          toán âm đảo ngược (Reversal Entry) và bút toán dương thay thế
-          (Replacement Entry).
-        </p>
-      </div>
-
-      {/* List Table */}
-      <div className="bg-surface-base rounded-xl border border-surface-overlay shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-surface-overlay flex items-center justify-between">
-          <h2 className="font-semibold text-ink-primary text-sm flex items-center gap-2">
-            <ClockCounterClockwise size={16} />
-            Danh sách Yêu cầu Sửa đổi & Đối soát ({corrections.length})
-          </h2>
-          <button
-            onClick={fetchCorrections}
-            className="text-xs text-ink-secondary hover:text-accent-primary flex items-center gap-1"
-          >
-            <ArrowClockwise size={14} />
-            Làm mới
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="p-12 text-center text-ink-secondary text-sm">
-            Đang tải danh sách...
-          </div>
-        ) : corrections.length === 0 ? (
-          <div className="p-12 text-center text-ink-secondary text-sm">
-            Chưa có yêu cầu sửa đổi nào.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-surface-raised border-b border-surface-overlay text-ink-secondary font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">Mã yêu cầu</th>
-                  <th className="py-3 px-4">Mã bước chế biến</th>
-                  <th className="py-3 px-4">Lý do sai lệch</th>
-                  <th className="py-3 px-4">Ghi chú đối soát</th>
-                  <th className="py-3 px-4">Trạng thái</th>
-                  <th className="py-3 px-4">Thời gian</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-overlay">
-                {corrections.map((item) => (
-                  <tr key={item.id} className="hover:bg-surface-raised/80 transition">
-                    <td className="py-3 px-4 font-mono font-medium text-ink-primary">
-                      {item.id}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-accent-primary font-semibold">
-                      {item.operationId}
-                    </td>
-                    <td className="py-3 px-4 text-ink-primary max-w-xs">
-                      {item.reason}
-                    </td>
-                    <td className="py-3 px-4 text-ink-secondary max-w-xs">
-                      {item.reconciliationNotes || "—"}
-                    </td>
-                    <td className="py-3 px-4">{getStatusBadge(item.status)}</td>
-                    <td className="py-3 px-4 text-ink-secondary whitespace-nowrap">
-                      {new Date(item.createdAt).toLocaleString("vi-VN")}
-                    </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      {item.status === "PENDING_REVIEW" && (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleCommitCorrection(item.id)}
-                            className="px-2 py-1 bg-functional-balanced-bg hover:bg-functional-balanced-bg text-accent-primary font-medium rounded text-xs transition inline-flex items-center gap-1"
-                            title="Chốt bút toán bù đảo ngược"
-                          >
-                            <CheckCircle size={14} weight="fill" />
-                            Chốt bù
-                          </button>
-                          <button
-                            onClick={() => handleCancelCorrection(item.id)}
-                            className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 font-medium rounded text-xs transition inline-flex items-center gap-1"
-                          >
-                            <XCircle size={14} />
-                            Hủy
-                          </button>
-                        </div>
-                      )}
-                      {item.status === "COMMITTED" && (
-                        <span className="text-ink-secondary text-[11px] font-mono">
-                          Đã ghi sổ bù
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Reconciliation Workbench Modal (SC-17 & SC-18) */}
+      <Modal
+        isOpen={Boolean(selectedCorrection)}
+        onClose={() => setSelectedCorrection(null)}
+        ariaLabel={t(
+          "mill.pendingCorrections.modalWorkbenchAria",
+          "Hồ sơ đối soát & ghi bút toán bù",
         )}
-      </div>
-
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-base rounded-xl shadow-xl border border-surface-overlay max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-4 border-b border-surface-overlay flex items-center justify-between bg-surface-raised">
-              <div className="flex items-center gap-2">
-                <Scales size={20} className="text-accent-primary" />
-                <h3 className="font-bold text-ink-primary">
-                  Yêu cầu Sửa bước chế biến
-                </h3>
+      >
+        {selectedCorrection && (
+          <div className="bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl max-w-4xl w-[calc(100vw-2rem)] max-h-[92vh] flex flex-col overflow-hidden animate-ledger-in">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+                  <Scales size={22} weight="bold" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-ink-primary">
+                      {selectedCorrection.id}
+                    </span>
+                    {renderStatusBadge(selectedCorrection.status)}
+                  </div>
+                  <p className="text-xs text-ink-secondary mt-0.5">
+                    {t(
+                      "mill.pendingCorrections.modalSubtitle",
+                      "Hồ sơ đối soát & ghi bút toán bù cho công đoạn: ",
+                    )}
+                    <span className="font-mono font-bold text-accent-primary">
+                      {selectedCorrection.operationId}
+                    </span>
+                  </p>
+                </div>
               </div>
+
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-ink-secondary hover:text-ink-secondary p-1 rounded-lg hover:bg-surface-overlay transition"
+                type="button"
+                onClick={() => setSelectedCorrection(null)}
+                className="p-1.5 rounded-lg text-ink-tertiary hover:text-ink-primary hover:bg-surface-raised transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form
-              onSubmit={handleCreateCorrection}
-              className="p-6 space-y-4 text-sm"
-            >
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
+              {actionSuccess && (
+                <div className="p-3.5 rounded-xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2.5 font-medium animate-ledger-in">
+                  <CheckCircle size={18} weight="fill" className="shrink-0" />
+                  <span>{actionSuccess}</span>
+                </div>
+              )}
+
+              {/* Side-by-side: Mẻ gốc vs Bút toán bù */}
               <div>
-                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
-                  Mã bước chế biến đã Commit (Operation ID) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: OP-2026-DRY-01"
-                  value={createForm.operationId}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      operationId: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm font-mono focus:border-accent-primary focus:outline-none"
-                />
+                <h3 className="font-bold font-display text-sm text-ink-primary mb-3 flex items-center gap-2">
+                  <Calculator size={18} className="text-accent-primary" />
+                  <span>
+                    {t(
+                      "mill.pendingCorrections.compareTitle",
+                      "Đối chiếu cân bằng khối lượng ISO 22095:",
+                    )}
+                  </span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Left Column: Mẻ gốc bất biến */}
+                  <div className="p-4 rounded-xl border border-ink-tertiary/15 bg-surface-raised dark:bg-surface-overlay space-y-3">
+                    <div className="flex items-center justify-between border-b border-ink-tertiary/15 pb-2">
+                      <span className="font-semibold text-xs text-ink-primary flex items-center gap-1.5">
+                        <Lock size={14} className="text-ink-tertiary" />
+                        {t(
+                          "mill.pendingCorrections.immutableOriginal",
+                          "Bản ghi gốc đã Commit (Bất biến)",
+                        )}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-base dark:bg-surface-raised border border-ink-tertiary/15 text-ink-secondary font-bold">
+                        IMMUTABLE
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-ink-tertiary">
+                          {t("mill.pendingCorrections.opBatchId", "Mã mẻ:")}
+                        </span>
+                        <span className="font-mono font-bold text-ink-primary">
+                          {selectedCorrection.operationId}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-ink-tertiary">
+                          {t("mill.pendingCorrections.facility", "Cơ sở:")}
+                        </span>
+                        <span className="text-ink-secondary">
+                          {t("brand.facility", "Dây chuyền A - Tiền Giang")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-ink-tertiary">
+                          {t(
+                            "mill.pendingCorrections.committedTime",
+                            "Thời gian chốt:",
+                          )}
+                        </span>
+                        <span className="text-ink-secondary font-mono text-xs">
+                          {new Date(
+                            selectedCorrection.createdAt,
+                          ).toLocaleString("vi-VN")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t border-ink-tertiary/10 pt-1.5">
+                        <span className="text-ink-tertiary">
+                          {t(
+                            "mill.pendingCorrections.outputStatus",
+                            "Trạng thái lô đầu ra:",
+                          )}
+                        </span>
+                        <span className="font-semibold text-accent-warning">
+                          {t(
+                            "mill.pendingCorrections.holdPendingRecon",
+                            "Tạm khóa chờ đối soát (HOLD)",
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Bút toán bù đề xuất */}
+                  <div className="p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5 dark:bg-accent-primary/10 space-y-3">
+                    <div className="flex items-center justify-between border-b border-accent-primary/20 pb-2">
+                      <span className="font-semibold text-xs text-accent-primary flex items-center gap-1.5">
+                        <Scales size={14} />
+                        {t(
+                          "mill.pendingCorrections.compensatingEntryTitle",
+                          "Bút toán bù điều chỉnh (Compensating Entry)",
+                        )}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent-primary text-white font-bold">
+                        REVERSAL
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      {selectedCorrection.proposedReversals?.map((rev, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-surface-base dark:bg-surface-raised p-2.5 rounded-lg border border-ink-tertiary/15 font-mono"
+                        >
+                          <div>
+                            <span className="font-semibold text-ink-primary block">
+                              {rev.lotId}
+                            </span>
+                            <span className="text-[10px] text-ink-tertiary font-sans">
+                              {rev.lotName ||
+                                t(
+                                  "mill.pendingCorrections.deltaLotDefault",
+                                  "Lô điều chỉnh",
+                                )}
+                            </span>
+                          </div>
+                          <span
+                            className={`font-bold text-xs ${
+                              rev.deltaMassKg.startsWith("+")
+                                ? "text-accent-primary"
+                                : rev.deltaMassKg.startsWith("-")
+                                  ? "text-accent-danger"
+                                  : "text-ink-primary"
+                            }`}
+                          >
+                            {rev.deltaMassKg} kg
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Nguyên nhân & Căn cứ kỹ thuật */}
+              <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-2">
+                <div className="font-semibold text-xs text-ink-primary flex items-center gap-1.5">
+                  <FileText size={16} className="text-accent-primary" />
+                  <span>
+                    {t(
+                      "mill.pendingCorrections.reasonSectionTitle",
+                      "Lý do sai sót & Căn cứ hồ sơ:",
+                    )}
+                  </span>
+                </div>
+                <p className="text-xs text-ink-secondary leading-relaxed bg-surface-base dark:bg-surface-raised p-3 rounded-lg border border-ink-tertiary/10">
+                  {selectedCorrection.reason}
+                </p>
+                {selectedCorrection.evidenceReference && (
+                  <div className="flex items-center gap-2 text-xs text-ink-tertiary pt-1">
+                    <span>
+                      {t(
+                        "mill.pendingCorrections.evidenceDocNumber",
+                        "Số hiệu văn bản minh chứng:",
+                      )}
+                    </span>
+                    <span className="font-mono font-bold text-accent-primary">
+                      {selectedCorrection.evidenceReference}
+                    </span>
+                    {selectedCorrection.evidenceFileName && (
+                      <span className="text-xs text-accent-primary underline font-mono">
+                        ({selectedCorrection.evidenceFileName})
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Manager Review Notes */}
               <div>
-                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
-                  Lý do sai sót & yêu cầu sửa đổi *
+                <label className="block text-xs font-semibold text-ink-primary mb-1">
+                  {t(
+                    "mill.pendingCorrections.managerNotesLabel",
+                    "Ý kiến & Biên bản đối soát của Quản lý nhà máy (Mill Manager Review Notes) *",
+                  )}
                 </label>
                 <textarea
-                  required
                   rows={3}
-                  placeholder="Mô tả nguyên nhân sai lệch: nhầm số liệu cân, độ ẩm đo sai, chọn nhầm silo xuất..."
-                  value={createForm.reason}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, reason: e.target.value })
+                  disabled={
+                    selectedCorrection.status === "COMMITTED" ||
+                    selectedCorrection.status === "CANCELLED" ||
+                    !isManager
                   }
-                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder={t(
+                    "mill.pendingCorrections.managerNotesPlaceholder",
+                    "Ghi rõ kết luận đối soát: Đã xác minh lại phiếu cân / mẫu KCS, chuẩn y số liệu bù đảo ngược...",
+                  )}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none disabled:bg-surface-raised disabled:text-ink-secondary transition-colors"
                 />
               </div>
+            </div>
 
+            {/* Modal Actions */}
+            {isManager &&
+              (selectedCorrection.status === "PENDING_REVIEW" ||
+                selectedCorrection.status === "RECONCILED") && (
+                <p
+                  role="status"
+                  className="px-5 pt-3 text-xs text-accent-warning"
+                >
+                  Đối soát, hủy và chốt bút toán cần chứng cứ cùng công đoạn
+                  thay thế theo yêu cầu máy chủ. Biểu mẫu này chưa thu thập đủ
+                  dữ liệu để thực hiện.
+                </p>
+              )}
+            <div className="p-4 border-t border-ink-tertiary/15 bg-surface-base dark:bg-surface-raised flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedCorrection(null)}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:bg-surface-raised text-xs font-semibold transition-colors"
+              >
+                {t("common.close", "Đóng")}
+              </button>
+
+              {isManager && (
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  {selectedCorrection.status === "PENDING_REVIEW" && (
+                    <>
+                      <button
+                        type="button"
+                        disabled
+                        onClick={handleCancel}
+                        className="px-3.5 py-2 rounded-lg border border-accent-danger/30 text-accent-danger hover:bg-functional-rejected-bg text-xs font-semibold transition-colors"
+                      >
+                        {t(
+                          "mill.pendingCorrections.btnRejectRequest",
+                          "Từ chối yêu cầu",
+                        )}
+                      </button>
+
+                      <span
+                        className="px-4 py-2 rounded-full bg-accent-warning/50 text-ink-inverse text-xs font-semibold flex items-center gap-1.5"
+                        aria-disabled="true"
+                      >
+                        <ShieldCheck size={15} weight="bold" />
+                        <span>
+                          {t(
+                            "mill.pendingCorrections.btnInspectEvidence",
+                            "Thẩm định đối soát bằng chứng",
+                          )}
+                        </span>
+                        <ArrowRight size={13} weight="bold" />
+                      </span>
+
+                      <button
+                        type="button"
+                        disabled
+                        onClick={handleReconcile}
+                        className="px-3.5 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
+                        title={t(
+                          "mill.pendingCorrections.btnQuickReconcileTitle",
+                          "Duyệt nhanh đối soát",
+                        )}
+                      >
+                        <CheckCircle size={15} weight="bold" />
+                        <span>
+                          {t(
+                            "mill.pendingCorrections.btnQuickReconcile",
+                            "Duyệt nhanh đối soát",
+                          )}
+                        </span>
+                      </button>
+                    </>
+                  )}
+
+                  {selectedCorrection.status === "RECONCILED" && (
+                    <button
+                      type="button"
+                      disabled
+                      onClick={handleCommit}
+                      className="px-4 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
+                    >
+                      <Scales size={15} weight="bold" />
+                      <span>
+                        {t(
+                          "mill.pendingCorrections.btnCommitToLedger",
+                          "Chốt Bút toán Bù vào Sổ cái",
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Create Correction Modal using @/components/Modal/Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => !submittingCreate && setShowCreateModal(false)}
+        ariaLabel={t("mill.corrections.modalTitle", "Yêu cầu sửa công đoạn")}
+      >
+        <div className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl flex-col overflow-hidden rounded-2xl border border-ink-tertiary/20 bg-surface-base shadow-2xl animate-ledger-in">
+          {/* Header */}
+          <header className="flex shrink-0 items-center justify-between border-b border-ink-tertiary/15 px-6 py-4 bg-surface-raised">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+                <PencilSimpleLine size={20} weight="bold" />
+              </div>
               <div>
-                <label className="block text-xs font-semibold text-ink-secondary uppercase mb-1">
-                  Biên bản đối soát hoặc phiếu cân thực tế
+                <h2 className="text-base font-display font-bold text-ink-primary">
+                  {t("mill.corrections.modalTitle", "Yêu cầu sửa công đoạn")}
+                </h2>
+                <p className="text-xs text-ink-secondary">
+                  {t(
+                    "mill.corrections.modalSubtitle",
+                    "Gửi đề xuất sửa đổi công đoạn đã chốt sổ cái để đối soát",
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              disabled={submittingCreate}
+              aria-label={t("common.close", "Đóng")}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors disabled:opacity-50"
+            >
+              <X size={18} />
+            </button>
+          </header>
+
+          <form
+            onSubmit={handleCreateCorrection}
+            className="p-6 space-y-4 overflow-y-auto text-xs"
+          >
+            {/* Note callout */}
+            <div className="rounded-xl border border-accent-primary/20 bg-accent-primary/5 p-3.5 flex items-start gap-2.5">
+              <Info
+                size={18}
+                weight="fill"
+                className="text-accent-primary shrink-0 mt-0.5"
+              />
+              <div className="text-xs leading-relaxed text-ink-secondary space-y-1">
+                <p className="font-semibold text-ink-primary">
+                  {t(
+                    "mill.corrections.immutabilityNoteTitle",
+                    "Quy tắc bất biến sổ cái ISO 22095",
+                  )}
+                </p>
+                <p>
+                  {t(
+                    "mill.corrections.immutabilityNoteDesc",
+                    "Các công đoạn đã chốt (COMMITTED) không thể xóa hoặc sửa đè. Yêu cầu này sẽ mở phiên đối soát và tạo bút toán điều chỉnh bù (Reconciliation) giữ nguyên tính toàn vẹn kiểm toán.",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Error alert */}
+            {createModalError && (
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger flex items-center gap-2 text-xs"
+              >
+                <WarningCircle size={16} weight="fill" className="shrink-0" />
+                <span>{createModalError}</span>
+              </div>
+            )}
+
+            {/* Operation selection field */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="correction-operation-select"
+                  className="font-semibold text-ink-primary"
+                >
+                  {t(
+                    "mill.corrections.opSelectLabel",
+                    "Công đoạn đã chốt (COMMITTED) *",
+                  )}
                 </label>
-                <input
-                  type="text"
-                  placeholder="Số biên bản KCS hoặc link bằng chứng..."
-                  value={createForm.reconciliationNotes}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      reconciliationNotes: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-ink-tertiary/30 rounded-lg text-sm focus:border-accent-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="p-3 bg-functional-stale-bg rounded-lg border border-functional-stale-border/40 text-xs text-accent-warning">
-                Ghi chú: Lô hàng đầu ra của bước chế biến này sẽ tạm thời bị
-                khóa cho đến khi Quản lý hoàn tất đối soát và phê duyệt bút toán
-                bù.
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-overlay">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-ink-tertiary/30 rounded-lg text-xs font-medium text-ink-secondary hover:bg-surface-raised transition"
+                  onClick={() => setCreateManualMode(!createManualMode)}
+                  className="text-xs font-medium text-accent-primary hover:underline"
                 >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-accent-primary hover:bg-accent-primary-dim disabled:opacity-50 text-white rounded-lg text-xs font-medium transition"
-                >
-                  {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
+                  {createManualMode
+                    ? t("mill.corrections.pickFromList", "Chọn từ danh sách")
+                    : t("mill.corrections.enterManually", "Nhập mã thủ công")}
                 </button>
               </div>
-            </form>
-          </div>
+
+              {loadingOps ? (
+                <div className="py-3 flex items-center justify-center gap-2 text-ink-tertiary">
+                  <GrainLoader
+                    label={t(
+                      "mill.corrections.loadingOps",
+                      "Đang tải công đoạn...",
+                    )}
+                  />
+                </div>
+              ) : createManualMode || operations.length === 0 ? (
+                <div>
+                  <input
+                    id="correction-operation-input"
+                    type="text"
+                    required
+                    value={createOperationId}
+                    onChange={(e) => setCreateOperationId(e.target.value)}
+                    placeholder="VD: 550e8400-e29b-41d4-a716-446655440000"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary font-mono text-xs focus:border-accent-primary focus:outline-none"
+                  />
+                  {operations.length === 0 && !loadingOps && (
+                    <p className="mt-1 text-xs text-ink-tertiary">
+                      {t(
+                        "mill.corrections.noCommittedOps",
+                        "Chưa tìm thấy công đoạn đã chốt trong danh sách tải gần nhất. Bạn có thể dán trực tiếp mã công đoạn.",
+                      )}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <select
+                    id="correction-operation-select"
+                    required
+                    value={createOperationId}
+                    onChange={(e) => setCreateOperationId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs focus:border-accent-primary focus:outline-none font-mono"
+                  >
+                    <option value="">
+                      {t(
+                        "mill.corrections.chooseOp",
+                        "-- Chọn công đoạn cần sửa --",
+                      )}
+                    </option>
+                    {operations.map((op) => {
+                      const label = op.kind
+                        ? OPERATION_LABELS[op.kind] || op.kind
+                        : "Công đoạn";
+                      const dateStr = op.occurredAt
+                        ? ` (${new Date(op.occurredAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })})`
+                        : "";
+                      return (
+                        <option key={op.id} value={op.id}>
+                          {label} · {op.id.slice(0, 8)}...{dateStr}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Reason textarea */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="correction-reason-input"
+                  className="font-semibold text-ink-primary"
+                >
+                  {t(
+                    "mill.corrections.reasonLabel",
+                    "Lý do sai sót & đề xuất điều chỉnh *",
+                  )}
+                </label>
+                <span className="text-xs text-ink-tertiary">
+                  {createReason.trim().length} {t("common.chars", "ký tự")}
+                </span>
+              </div>
+              <textarea
+                id="correction-reason-input"
+                required
+                rows={4}
+                value={createReason}
+                onChange={(e) => setCreateReason(e.target.value)}
+                placeholder={t(
+                  "mill.corrections.reasonPlaceholder",
+                  "Ví dụ: Cân đầu vào bị lệch 150kg do cảm biến loadcell chưa hiệu chuẩn; Đổi lô xuất trấu cám tương ứng; Cần ghi bù bút toán giảm hao hụt...",
+                )}
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs focus:border-accent-primary focus:outline-none resize-none"
+              />
+              <p className="text-xs text-ink-tertiary">
+                {t(
+                  "mill.corrections.reasonHint",
+                  "Nêu rõ các số liệu chênh lệch, bằng chứng cân đo hoặc biên bản kỹ thuật kèm theo.",
+                )}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                disabled={submittingCreate}
+                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:bg-surface-raised font-semibold transition-colors disabled:opacity-50"
+              >
+                {t("common.cancel", "Huỷ")}
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  submittingCreate ||
+                  !createOperationId.trim() ||
+                  createReason.trim().length < 5
+                }
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-50 shadow-xs"
+              >
+                {submittingCreate ? (
+                  <span>{t("common.submitting", "Đang gửi...")}</span>
+                ) : (
+                  <>
+                    <PencilSimpleLine size={15} weight="bold" />
+                    <span>
+                      {t("mill.corrections.submitRequest", "Gửi yêu cầu sửa")}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

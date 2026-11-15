@@ -78,6 +78,9 @@
     }
   },
   "header": {
+    "minimalMode": "Minimal mode",
+    "enableMinimalMode": "Enable minimal mode",
+    "disableMinimalMode": "Disable minimal mode",
     "defaultTitle": "Operational Workspace",
     "searchTitle": "Search system (Cmd/Ctrl+K)",
     "switchToLight": "Switch to light mode",

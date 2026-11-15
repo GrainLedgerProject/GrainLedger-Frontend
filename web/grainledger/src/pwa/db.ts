@@ -42,12 +42,30 @@ export async function withStore<T>(
 ): Promise<T> {
   const database = await openDatabase();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction(storeName, mode);
-    const request = action(transaction.objectStore(storeName));
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-    transaction.oncomplete = () => database.close();
-    transaction.onerror = () => reject(transaction.error);
+    let transaction: IDBTransaction;
+    let request: IDBRequest<T>;
+    try {
+      transaction = database.transaction(storeName, mode);
+      request = action(transaction.objectStore(storeName));
+    } catch (error) {
+      database.close();
+      reject(error);
+      return;
+    }
+    let result: T;
+    request.onsuccess = () => { result = request.result; };
+    transaction.oncomplete = () => {
+      database.close();
+      resolve(result);
+    };
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error ?? request.error);
+    };
+    transaction.onabort = () => {
+      database.close();
+      reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    };
   });
 }
 

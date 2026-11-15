@@ -9,13 +9,10 @@ import {
   Plant,
   Plus,
   ArrowsClockwise,
-  MagnifyingGlass,
   CheckCircle,
   WarningCircle,
   X,
   Calendar,
-  Flask,
-  ShieldWarning,
 } from "@phosphor-icons/react";
 
 interface SprayRecord {
@@ -35,7 +32,6 @@ export const PesticideDeclarationPage: React.FC = () => {
   const [declarations, setDeclarations] = useState<SprayRecord[]>([]);
   const [substances, setSubstances] = useState<ActiveSubstanceDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -44,7 +40,7 @@ export const PesticideDeclarationPage: React.FC = () => {
   const [formData, setFormData] = useState({
     plotSeasonId: "",
     appliedOn: new Date().toISOString().split("T")[0],
-    productName: "Beam 75WP (Tricyclazole)",
+    productName: "",
     substanceId: "",
     informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
   });
@@ -59,12 +55,22 @@ export const PesticideDeclarationPage: React.FC = () => {
         catalogsEndpoints.getActiveSubstances({ pageSize: 50 }).catch(() => []),
       ]);
 
-      const sprayItems = Array.isArray(sprayRes)
+      const sprayItems: SprayRecord[] = Array.isArray(sprayRes)
         ? sprayRes
-        : (sprayRes as any)?.items || [];
-      const subItems = Array.isArray(subRes)
+        : sprayRes &&
+            typeof sprayRes === "object" &&
+            "items" in sprayRes &&
+            Array.isArray(sprayRes.items)
+          ? (sprayRes.items as SprayRecord[])
+          : [];
+      const subItems: ActiveSubstanceDto[] = Array.isArray(subRes)
         ? subRes
-        : (subRes as any)?.items || [];
+        : subRes &&
+            typeof subRes === "object" &&
+            "items" in subRes &&
+            Array.isArray(subRes.items)
+          ? (subRes.items as ActiveSubstanceDto[])
+          : [];
 
       setDeclarations(sprayItems);
       setSubstances(subItems);
@@ -93,11 +99,11 @@ export const PesticideDeclarationPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setFormData({
-      plotSeasonId: crypto.randomUUID(),
+      plotSeasonId: "",
       appliedOn: new Date().toISOString().split("T")[0],
-      productName: "Beam 75WP (Tricyclazole)",
-      substanceId: substances[0]?.id || crypto.randomUUID(),
-      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+      productName: "",
+      substanceId: substances[0]?.id || "",
+      informationSource: "",
     });
     setIsModalOpen(true);
   };
@@ -164,7 +170,10 @@ export const PesticideDeclarationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.pesticide.tag", "KHAI BÁO PHUN THUỐC BVTV THEO THỬA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -173,7 +182,10 @@ export const PesticideDeclarationPage: React.FC = () => {
               "Nhật ký Phun thuốc & Cảnh báo Dư lượng MRL",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.pesticide.subtitle",
               "Thu thập thông tin hoạt chất, ngày phun và liều lượng từ nông dân làm cơ sở gán cận bảo thủ 95% MRL.",
@@ -250,7 +262,7 @@ export const PesticideDeclarationPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.pesticide.appliedOn", "Ngày áp dụng")}
@@ -287,7 +299,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                             "Thuốc bảo vệ thực vật",
                           )}
                       </td>
-                      <td className="py-3 px-4 text-ink-secondary text-[11px]">
+                      <td className="py-3 px-4 text-ink-secondary text-xs">
                         {d.informationSource ||
                           t(
                             "field.pesticide.defaultSource",
@@ -347,7 +359,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, appliedOn: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
               />
             </div>
 
@@ -369,7 +381,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                   "field.pesticide.productNamePlaceholder",
                   "VD: Beam 75WP, Anvil 5SC",
                 )}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -386,7 +398,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, substanceId: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               >
                 {substances.map((s) => (
                   <option key={s.id} value={s.id}>

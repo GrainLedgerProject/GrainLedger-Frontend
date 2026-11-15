@@ -5,7 +5,6 @@ import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
-  Buildings,
   Plus,
   ArrowsClockwise,
   CheckCircle,
@@ -28,32 +27,40 @@ export const CustomerOrganizationsPage: React.FC = () => {
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"Mill" | "Customer">("Customer");
   const [submitting, setSubmitting] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
 
-  const loadOrgs = async () => {
+  const loadOrgs = () => {
     setLoading(true);
-    setError(null);
-    try {
-      const res = await adminEndpoints.getOrganizations();
-      setOrganizations(Array.isArray(res) ? res : []);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "admin.orgs.errorLoad",
-            "Không thể tải danh sách tổ chức/doanh nghiệp.",
-          ),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    setReloadCount((c) => c + 1);
   };
 
   useEffect(() => {
-    void loadOrgs();
-  }, []);
+    let active = true;
+    void (async () => {
+      try {
+        const res = await adminEndpoints.getOrganizations();
+        if (!active) return;
+        setOrganizations(Array.isArray(res) ? res : []);
+      } catch (err: unknown) {
+        if (!active) return;
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(
+            t(
+              "admin.orgs.errorLoad",
+              "Không thể tải danh sách tổ chức/doanh nghiệp.",
+            ),
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [reloadCount, t]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +101,10 @@ export const CustomerOrganizationsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t(
               "admin.orgs.tag",
               "THIẾT LẬP RANH GIỚI KHÁCH HÀNG (TENANT ISOLATION)",
@@ -106,7 +116,10 @@ export const CustomerOrganizationsPage: React.FC = () => {
               "Quản trị Doanh nghiệp & Khách hàng Xuất khẩu",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "admin.orgs.subtitle",
               "Quản lý các công ty gửi lúa vào nhà máy sấy, lưu trữ silo và chế biến xuất khẩu. Dữ liệu lô hàng được cô lập 100% giữa các công ty.",
@@ -193,8 +206,8 @@ export const CustomerOrganizationsPage: React.FC = () => {
                 <h3 className="font-display font-bold text-base text-ink-primary">
                   {org.name}
                 </h3>
-                <span className="font-mono text-[11px] text-ink-tertiary block mt-0.5">
-                  ID: {org.id.slice(0, 13)}...
+                <span className="font-mono text-xs text-ink-tertiary block mt-0.5">
+                  ID: {org.id}
                 </span>
               </div>
 
@@ -219,21 +232,35 @@ export const CustomerOrganizationsPage: React.FC = () => {
         ariaLabel={t("admin.orgs.modalTitle", "Tạo doanh nghiệp")}
       >
         <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-            <h3 className="font-display font-bold text-base text-ink-primary">
-              {t(
-                "admin.orgs.modalTitle",
-                "Thiết lập Doanh nghiệp Khách hàng Mới",
-              )}
-            </h3>
+          <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+                <Briefcase size={18} weight="bold" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-base text-ink-primary">
+                  {t(
+                    "admin.orgs.modalTitle",
+                    "Thiết lập Doanh nghiệp Mới",
+                  )}
+                </h2>
+                <p className="text-[11px] text-ink-secondary">
+                  {t(
+                    "admin.orgs.modalSubtitle",
+                    "Thêm tổ chức đối tác hoặc doanh nghiệp khách hàng vào hệ thống",
+                  )}
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+              disabled={submitting}
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
             >
               <X size={18} />
             </button>
-          </div>
+          </header>
 
           <form onSubmit={handleCreate} className="p-5 space-y-4 text-xs">
             <div>
@@ -249,7 +276,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   "admin.orgs.namePlaceholder",
                   "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền",
                 )}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -260,7 +287,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as "Mill" | "Customer")}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               >
                 <option value="Customer">
                   {t(

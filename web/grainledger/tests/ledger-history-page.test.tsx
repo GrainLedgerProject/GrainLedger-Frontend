@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { EventHistoryPage } from '@/features/audit/pages/EventHistoryPage';
 import { ledgerEndpoints } from '@/api/ledger';
 import type { LedgerHistoryEntry } from '@/api/history';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@/api/ledger', () => ({ ledgerEndpoints: { getHistory: vi.fn() } }));
 vi.mock('@/components/GrainLoader/GrainLoader', () => ({ GrainLoader: () => null }));
@@ -26,7 +27,7 @@ describe('History page', () => {
     vi.mocked(ledgerEndpoints.getHistory)
       .mockResolvedValueOnce({ items: [entry, { ...entry, postingId: 'posting-2', quantityKg: '97.500' }], page: 1, pageSize: 25, totalCount: 26, hasMore: true })
       .mockResolvedValueOnce({ items: [{ ...entry, id: 'event-2' }], page: 2, pageSize: 25, totalCount: 26, hasMore: false });
-    const view = render(<EventHistoryPage />);
+    const view = render(<MemoryRouter><EventHistoryPage /></MemoryRouter>);
     await screen.findByText('-100.000');
     expect(screen.getByText('97.500')).toBeTruthy();
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(3);
@@ -48,7 +49,7 @@ describe('History page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
     await waitFor(() => expect(ledgerEndpoints.getHistory).toHaveBeenLastCalledWith(
-      { page: 2, pageSize: 25, sortBy: 'occurredAt', sortDirection: 'desc' },
+      { page: 2, pageSize: 25, search: undefined, sortBy: 'occurredAt', sortDirection: 'desc' },
       { signal: expect.any(AbortSignal) },
     ));
     await screen.findByText('event-2');

@@ -55,7 +55,7 @@ export const LandingCtaFooter: React.FC = () => {
                 Custody Ledger) phục vụ xuất khẩu lúa gạo sang các thị trường
                 cao cấp.
               </p>
-              <div className="text-[11px] font-mono text-ink-tertiary">
+              <div className="text-xs font-mono text-ink-tertiary">
                 Đề tài FA26SE272 · Nhóm GFA26SE137
               </div>
             </div>
@@ -142,7 +142,7 @@ export const LandingCtaFooter: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-ink-tertiary">
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-tertiary">
             <div>GrainLedger © 2026 GFA26SE137. Mọi quyền được bảo lưu.</div>
             <div>
               Tuân thủ nghiêm ngặt tiêu chuẩn bảo toàn khối lượng ISO

@@ -1,6 +1,7 @@
 import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { ledgerEndpoints } from "@/api/ledger";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
@@ -17,10 +18,12 @@ import {
   Scales,
   Truck,
   WarningCircle,
+  X,
   ArrowsClockwise,
 } from "@phosphor-icons/react";
 
 export const EventHistoryPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,9 +35,52 @@ export const EventHistoryPage: React.FC = () => {
   const [reload, setReload] = useState(0);
 
   // Filters apply to the displayed page.
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchTerm = searchParams.get("search") ?? "";
+  const [searchInput, setSearchInput] = useState(searchTerm);
+  const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
   const [entityFilter, setEntityFilter] = useState("ALL");
   const [eventTypeFilter, setEventTypeFilter] = useState("ALL");
+
+  // Synchronize searchInput during render when URL search param changes externally (e.g. Back/Forward)
+  if (searchTerm !== prevSearchTerm) {
+    setPrevSearchTerm(searchTerm);
+    setSearchInput(searchTerm);
+  }
+
+  // Debounce search input: wait 400ms after user stops typing before triggering search query and API call
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === searchTerm) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setPage(1);
+      setSearchParams(
+        trimmed ? { search: trimmed } : {},
+        { replace: true },
+      );
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm, setSearchParams]);
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setPage(1);
+    setSearchParams({}, { replace: true });
+  };
+
+  const handleKeyDownSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const trimmed = searchInput.trim();
+      const currentParam = searchParams.get("search") ?? "";
+      if (trimmed !== currentParam) {
+        setPage(1);
+        setSearchParams(trimmed ? { search: trimmed } : {}, { replace: true });
+      }
+    }
+  };
 
   // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
@@ -57,7 +103,7 @@ export const EventHistoryPage: React.FC = () => {
     async function loadEvents() {
       try {
         const result = await ledgerEndpoints.getHistory(
-          { page, pageSize: 25, sortBy: "occurredAt", sortDirection: "desc" },
+          { page, pageSize: 25, search: searchTerm || undefined, sortBy: "occurredAt", sortDirection: "desc" },
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
@@ -80,25 +126,15 @@ export const EventHistoryPage: React.FC = () => {
     }
     void loadEvents();
     return () => controller.abort();
-  }, [page, reload, t]);
+  }, [page, reload, searchTerm, t]);
 
   const filteredEvents = events.filter((evt) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      evt.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.entityId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.eventType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.actorId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (JSON.stringify(evt.payload) ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
     const matchesEntity =
       entityFilter === "ALL" || evt.entityType === entityFilter;
     const matchesEventType =
       eventTypeFilter === "ALL" || evt.eventType === eventTypeFilter;
 
-    return matchesSearch && matchesEntity && matchesEventType;
+    return matchesEntity && matchesEventType;
   });
 
   const getEntityIcon = (entityType: string) => {
@@ -134,16 +170,16 @@ export const EventHistoryPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
             {t(
               "audit.events.tag",
-              "NHẬT KÝ ĐỐI SOÁT & BẰNG CHỨNG BẤT BIẾN (AUDIT TRAIL)",
+              "NHẬT KÝ ĐỐI SOÁT & BẰNG CHỨNG BẤT BIẾN",
             )}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t("audit.events.title", "Nhật ký Sự kiện Nghiệp vụ Bất biến")}
+            {t("audit.events.title", "Nhật ký Sự kiện Bất biến")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
             {t(
               "audit.events.ledgerSubtitle",
               "Tra cứu bút toán, thời gian ghi nhận, tài khoản thực hiện và dữ liệu chi tiết trong sổ cái.",
@@ -189,10 +225,21 @@ export const EventHistoryPage: React.FC = () => {
                 "audit.events.searchCurrentPage",
                 "Tìm trong trang hiện tại: mã sự kiện, mã lô, người ghi...",
               )}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleKeyDownSearch}
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-2.5 top-2.5 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
+                title="Xóa tìm kiếm"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div>
@@ -264,7 +311,7 @@ export const EventHistoryPage: React.FC = () => {
               },
             )}
           </span>
-          <span className="font-mono text-[11px] text-accent-primary font-bold">
+          <span className="font-mono text-xs text-accent-primary font-bold">
             {t(
               "audit.events.accessScope",
               "Dữ liệu được giới hạn theo quyền truy cập",
@@ -304,7 +351,7 @@ export const EventHistoryPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+                <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                   <th className="py-3.5 px-4">
                     {t("audit.events.thTime", "Thời gian")}
                   </th>
@@ -335,7 +382,7 @@ export const EventHistoryPage: React.FC = () => {
                     className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
                   >
                     <td className="py-3.5 px-4 text-ink-secondary whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5 font-mono text-xs">
                         <Calendar size={13} className="text-ink-tertiary" />
                         <span>
                           {new Date(evt.timestamp).toLocaleString(
@@ -355,20 +402,20 @@ export const EventHistoryPage: React.FC = () => {
                         <span className="font-semibold text-ink-primary text-xs">
                           {evt.entityType}:
                         </span>
-                        <span className="font-mono text-[11px] text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-xs text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded-lg">
                           {evt.entityId}
                         </span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary">
                         {evt.eventType}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-ink-secondary truncate max-w-[150px] font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-ink-secondary truncate max-w-[150px] font-mono text-xs">
                       {evt.actorId}
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-ink-tertiary">
+                    <td className="py-3.5 px-4 font-mono text-xs text-ink-tertiary">
                       {evt.quantityKg ?? "—"}
                     </td>
                     <td className="py-3.5 px-4 text-right">

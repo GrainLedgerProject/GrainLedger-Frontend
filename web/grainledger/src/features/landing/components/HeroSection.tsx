@@ -126,7 +126,7 @@ export const HeroSection: React.FC = () => {
 
         {/* Regulatory & Standards Bar (Apple Glass Chips) */}
         <div className="mt-16 pt-10 border-t border-ink-tertiary/20 dark:border-surface-overlay text-center">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-ink-tertiary text-ink-tertiary block mb-6 font-semibold">
+          <span className="text-xs font-mono uppercase tracking-wider text-ink-tertiary text-ink-tertiary block mb-6 font-semibold">
             Tuân thủ các quy định & tiêu chuẩn kiểm định quốc tế hàng đầu
           </span>
 

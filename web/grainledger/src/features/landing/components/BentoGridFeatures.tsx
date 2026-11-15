@@ -102,7 +102,7 @@ export const BentoGridFeatures: React.FC = () => {
 
                 <div className="pt-6 mt-6 border-t border-black/[0.04] dark:border-white/[0.06] relative z-10">
                   <span
-                    className={`text-[11px] font-mono font-bold ${pillar.color}`}
+                    className={`text-xs font-mono font-bold ${pillar.color}`}
                   >
                     {pillar.tag}
                   </span>

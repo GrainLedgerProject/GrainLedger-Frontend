@@ -1,5 +1,5 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
@@ -14,7 +14,6 @@ import {
   CheckCircle,
   WarningCircle,
   X,
-  ShieldCheck,
   ArrowRight,
   Trash,
 } from "@phosphor-icons/react";
@@ -40,13 +39,92 @@ interface CompatibilityRule {
   ruleDescription: string;
 }
 
+const DEFAULT_POLICIES: OperationPolicy[] = [
+  {
+    id: "POL-DRYING",
+    operationType: "DRYING",
+    nameVi: "Sấy lúa tươi (Drying)",
+    maxLossPercent: 12.0,
+    maxGainPercent: 0.0,
+    defaultTolerancePercent: 1.5,
+    requiresSupervisorApprovalAbovePercent: 0.8,
+    isStrictHardLimit: true,
+    notes:
+      "Hao hụt do bốc hơi ẩm từ 18% xuống chuẩn 14%. Cho phép sai số kỹ thuật sấy tối đa 1.5%.",
+  },
+  {
+    id: "POL-MILLING",
+    operationType: "MILLING",
+    nameVi: "Xay xát bóc vỏ & Đánh bóng (Milling)",
+    maxLossPercent: 35.0,
+    maxGainPercent: 0.0,
+    defaultTolerancePercent: 2.0,
+    requiresSupervisorApprovalAbovePercent: 1.0,
+    isStrictHardLimit: true,
+    notes:
+      "Tách trấu 20%, cám 8-10%, tấm 5-10%. Tỷ lệ thu hồi gạo thành phẩm định mức 62-68%.",
+  },
+  {
+    id: "POL-BLENDING",
+    operationType: "BLENDING",
+    nameVi: "Phối trộn xuất khẩu (Blending)",
+    maxLossPercent: 0.5,
+    maxGainPercent: 0.2,
+    defaultTolerancePercent: 0.3,
+    requiresSupervisorApprovalAbovePercent: 0.2,
+    isStrictHardLimit: true,
+    notes:
+      "Quy trình cơ học kín. Chênh lệch khối lượng tổng vào và ra vượt 0.3% kích hoạt cảnh báo.",
+  },
+  {
+    id: "POL-BAGGING",
+    operationType: "BAGGING",
+    nameVi: "Đóng bao & Container (Bagging)",
+    maxLossPercent: 0.2,
+    maxGainPercent: 0.1,
+    defaultTolerancePercent: 0.1,
+    requiresSupervisorApprovalAbovePercent: 0.1,
+    isStrictHardLimit: true,
+    notes:
+      "Định lượng bao 25kg hoặc 50kg chính xác bằng cân loadcell công nghiệp.",
+  },
+];
+
+const DEFAULT_COMPATIBILITIES: CompatibilityRule[] = [
+  {
+    id: "COMP-01",
+    sourceVariety: "ST25",
+    targetVariety: "ST24",
+    allowed: true,
+    maxBlendRatioPercent: 15.0,
+    ruleDescription:
+      "Cho phép phối trộn tỷ lệ tối đa 15% cho đơn hàng tiêu chuẩn Premium Jasmine.",
+  },
+  {
+    id: "COMP-02",
+    sourceVariety: "ST25 (Lúa Tôm)",
+    targetVariety: "IR50404 (Lúa Thường)",
+    allowed: false,
+    ruleDescription:
+      "Nghiêm cấm pha lẫn gạo đặc sản hữu cơ Lúa Tôm với gạo IR thông thường.",
+  },
+  {
+    id: "COMP-03",
+    sourceVariety: "Jasmine 85",
+    targetVariety: "OM 5451",
+    allowed: true,
+    maxBlendRatioPercent: 30.0,
+    ruleDescription: "Áp dụng cho hợp đồng thị trường Philippines và Châu Phi.",
+  },
+];
+
 export const BalancePolicyPage: React.FC = () => {
   const { t } = useTranslation();
-  const [policies, setPolicies] = useState<OperationPolicy[]>([]);
+  const [policies, setPolicies] = useState<OperationPolicy[]>(DEFAULT_POLICIES);
   const [compatibilities, setCompatibilities] = useState<CompatibilityRule[]>(
-    [],
+    DEFAULT_COMPATIBILITIES,
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -63,134 +141,15 @@ export const BalancePolicyPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchPolicies = async () => {
+  const fetchPolicies = useCallback(() => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      // The current server contract only exposes POST endpoints for these rules.
-      // Do not issue unsupported GET requests; this screen falls back to its configured defaults
-      // until the backend publishes a read endpoint.
-      const [policiesRes, compatRes] = [null, null];
-
-      let polList: OperationPolicy[] = [];
-      if (Array.isArray(policiesRes)) {
-        polList = policiesRes as OperationPolicy[];
-      } else if (
-        policiesRes &&
-        typeof policiesRes === "object" &&
-        "items" in policiesRes
-      ) {
-        polList = (policiesRes as { items: OperationPolicy[] }).items;
-      }
-
-      if (polList.length === 0) {
-        polList = [
-          {
-            id: "POL-DRYING",
-            operationType: "DRYING",
-            nameVi: "Sấy lúa tươi (Drying)",
-            maxLossPercent: 12.0,
-            maxGainPercent: 0.0,
-            defaultTolerancePercent: 1.5,
-            requiresSupervisorApprovalAbovePercent: 0.8,
-            isStrictHardLimit: true,
-            notes:
-              "Hao hụt do bốc hơi ẩm từ 18% xuống chuẩn 14%. Cho phép sai số kỹ thuật sấy tối đa 1.5%.",
-          },
-          {
-            id: "POL-MILLING",
-            operationType: "MILLING",
-            nameVi: "Xay xát bóc vỏ & Đánh bóng (Milling)",
-            maxLossPercent: 35.0,
-            maxGainPercent: 0.0,
-            defaultTolerancePercent: 2.0,
-            requiresSupervisorApprovalAbovePercent: 1.0,
-            isStrictHardLimit: true,
-            notes:
-              "Tách trấu 20%, cám 8-10%, tấm 5-10%. Tỷ lệ thu hồi gạo thành phẩm định mức 62-68%.",
-          },
-          {
-            id: "POL-BLENDING",
-            operationType: "BLENDING",
-            nameVi: "Phối trộn xuất khẩu (Blending)",
-            maxLossPercent: 0.5,
-            maxGainPercent: 0.2,
-            defaultTolerancePercent: 0.3,
-            requiresSupervisorApprovalAbovePercent: 0.2,
-            isStrictHardLimit: true,
-            notes:
-              "Quy trình cơ học kín. Chênh lệch khối lượng tổng vào và ra vượt 0.3% kích hoạt cảnh báo.",
-          },
-          {
-            id: "POL-BAGGING",
-            operationType: "BAGGING",
-            nameVi: "Đóng bao & Container (Bagging)",
-            maxLossPercent: 0.2,
-            maxGainPercent: 0.1,
-            defaultTolerancePercent: 0.1,
-            requiresSupervisorApprovalAbovePercent: 0.1,
-            isStrictHardLimit: true,
-            notes:
-              "Định lượng bao 25kg hoặc 50kg chính xác bằng cân loadcell công nghiệp.",
-          },
-        ];
-      }
-
-      let compList: CompatibilityRule[] = [];
-      if (Array.isArray(compatRes)) {
-        compList = compatRes as CompatibilityRule[];
-      }
-      if (compList.length === 0) {
-        compList = [
-          {
-            id: "COMP-01",
-            sourceVariety: "ST25",
-            targetVariety: "ST24",
-            allowed: true,
-            maxBlendRatioPercent: 15.0,
-            ruleDescription:
-              "Cho phép phối trộn tỷ lệ tối đa 15% cho đơn hàng tiêu chuẩn Premium Jasmine.",
-          },
-          {
-            id: "COMP-02",
-            sourceVariety: "ST25 (Lúa Tôm)",
-            targetVariety: "IR50404 (Lúa Thường)",
-            allowed: false,
-            ruleDescription:
-              "Nghiêm cấm pha lẫn gạo đặc sản hữu cơ Lúa Tôm với gạo IR thông thường.",
-          },
-          {
-            id: "COMP-03",
-            sourceVariety: "Jasmine 85",
-            targetVariety: "OM 5451",
-            allowed: true,
-            maxBlendRatioPercent: 30.0,
-            ruleDescription:
-              "Áp dụng cho hợp đồng thị trường Philippines và Châu Phi.",
-          },
-        ];
-      }
-
-      setPolicies(polList);
-      setCompatibilities(compList);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "admin.balance.errorLoad",
-            "Không thể tải cấu hình chính sách cân bằng.",
-          ),
-        );
-      }
+      setPolicies(DEFAULT_POLICIES);
+      setCompatibilities(DEFAULT_COMPATIBILITIES);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void fetchPolicies();
   }, []);
 
   const handleUpdatePolicy = (
@@ -297,13 +256,19 @@ export const BalancePolicyPage: React.FC = () => {
       {/* Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("admin.balance.tag", "QUY TẮC CÂN BẰNG VẬT CHẤT ISO 22095")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("admin.balance.title", "Chính sách Dung sai Cân bằng")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "admin.balance.subtitle",
               "Cấu hình tỷ lệ hao hụt kỹ thuật, dung sai lệch cân tối đa cho từng công đoạn và bảng tương thích phối trộn lúa gạo.",
@@ -423,7 +388,7 @@ export const BalancePolicyPage: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+                      <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                         <th className="py-3.5 px-4">
                           {t("admin.balance.thOperation", "Công đoạn")}
                         </th>
@@ -466,7 +431,7 @@ export const BalancePolicyPage: React.FC = () => {
                             <div className="font-display font-bold text-ink-primary text-xs">
                               {p.nameVi}
                             </div>
-                            <span className="font-mono text-[11px] text-accent-primary font-semibold block mt-0.5">
+                            <span className="font-mono text-xs text-accent-primary font-semibold block mt-0.5">
                               {p.operationType}
                             </span>
                           </td>
@@ -563,7 +528,7 @@ export const BalancePolicyPage: React.FC = () => {
                               />
                             </button>
                           </td>
-                          <td className="py-3.5 px-4 text-ink-secondary max-w-sm leading-relaxed text-[11px]">
+                          <td className="py-3.5 px-4 text-ink-secondary max-w-sm leading-relaxed text-xs">
                             {p.notes}
                           </td>
                         </tr>
@@ -583,7 +548,7 @@ export const BalancePolicyPage: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+                      <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                         <th className="py-3.5 px-4">
                           {t("admin.balance.thRuleCode", "Mã quy tắc")}
                         </th>
@@ -657,7 +622,7 @@ export const BalancePolicyPage: React.FC = () => {
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-ink-secondary leading-relaxed text-[11px] max-w-sm">
+                          <td className="py-3.5 px-4 text-ink-secondary leading-relaxed text-xs max-w-sm">
                             {c.ruleDescription}
                           </td>
                           <td className="py-3.5 px-4 text-center">
@@ -688,18 +653,28 @@ export const BalancePolicyPage: React.FC = () => {
         ariaLabel="Thêm quy tắc phối trộn"
       >
         <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-            <h3 className="font-display font-bold text-base text-ink-primary">
-              Thiết lập Quy tắc Tương thích Phối trộn Mới
-            </h3>
+          <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+                <Scales size={18} weight="bold" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-base text-ink-primary">
+                  Thiết lập Quy tắc Phối trộn Mới
+                </h2>
+                <p className="text-[11px] text-ink-secondary">
+                  Quy định ma trận tương thích giữa các giống lúa và tỷ lệ phối trộn tối đa
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
             >
               <X size={18} />
             </button>
-          </div>
+          </header>
 
           <form onSubmit={handleAddRule} className="p-5 space-y-4 text-xs">
             <div>
@@ -712,7 +687,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={sourceVariety}
                 onChange={(e) => setSourceVariety(e.target.value)}
                 placeholder="VD: ST25, Jasmine 85, Nàng Hoa 9"
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -726,7 +701,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={targetVariety}
                 onChange={(e) => setTargetVariety(e.target.value)}
                 placeholder="VD: ST24, OM 5451, IR50404"
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -737,7 +712,7 @@ export const BalancePolicyPage: React.FC = () => {
               <select
                 value={allowed ? "ALLOWED" : "PROHIBITED"}
                 onChange={(e) => setAllowed(e.target.value === "ALLOWED")}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               >
                 <option value="ALLOWED">
                   Cho phép phối trộn (Allowed Blend)
@@ -760,7 +735,7 @@ export const BalancePolicyPage: React.FC = () => {
                   max="100"
                   value={maxRatio}
                   onChange={(e) => setMaxRatio(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
             )}
@@ -774,7 +749,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="VD: Áp dụng cho các đơn hàng xuất khẩu đi thị trường Đông Nam Á..."
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 

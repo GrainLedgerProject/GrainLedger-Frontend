@@ -31,10 +31,18 @@ type CatalogTab =
   | "VARIETIES"
   | "ATTRIBUTES";
 
+interface CatalogItem {
+  id: string;
+  code?: string;
+  name: string;
+  quantityKind?: string;
+  unit?: string;
+}
+
 export const MasterDataPage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<CatalogTab>("COMMODITIES");
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +50,7 @@ export const MasterDataPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -54,7 +62,7 @@ export const MasterDataPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      let res: any;
+      let res: unknown;
       switch (activeTab) {
         case "COMMODITIES":
           res = await catalogsEndpoints.getCommodities({
@@ -87,8 +95,15 @@ export const MasterDataPage: React.FC = () => {
           });
           break;
       }
-      const data = Array.isArray(res) ? res : res?.items || [];
-      setItems(data);
+      const data = Array.isArray(res)
+        ? res
+        : res &&
+            typeof res === "object" &&
+            "items" in res &&
+            Array.isArray(res.items)
+          ? res.items
+          : [];
+      setItems(data as CatalogItem[]);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -112,7 +127,7 @@ export const MasterDataPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (item: any) => {
+  const handleOpenEdit = (item: CatalogItem) => {
     setEditingItem(item);
     setFormData({
       code: item.code || "",
@@ -235,7 +250,7 @@ export const MasterDataPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (item: any) => {
+  const handleDelete = async (item: CatalogItem) => {
     const supportsDeletion = ["COMMODITIES", "UNITS", "SUBSTANCES"].includes(
       activeTab,
     );
@@ -289,13 +304,19 @@ export const MasterDataPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("catalogs.master.badge", "DANH MỤC MASTER DATA VẬN HÀNH")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("catalogs.master.title", "Danh mục Chuẩn Hóa Chuỗi Cung Ứng")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "catalogs.master.subtitle",
               "Duy trì các danh mục dùng chung: Hàng hoá lúa gạo, đơn vị đo lường, hoạt chất BVTV, thị trường xuất khẩu.",
@@ -400,7 +421,7 @@ export const MasterDataPage: React.FC = () => {
       </div>
 
       {/* Search Toolbar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -410,7 +431,7 @@ export const MasterDataPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           />
           <MagnifyingGlass
             size={16}
@@ -454,7 +475,7 @@ export const MasterDataPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("catalogs.master.thCode", "Mã Code")}
@@ -573,7 +594,7 @@ export const MasterDataPage: React.FC = () => {
                   "catalogs.master.placeholderCode",
                   "VD: PADDY_OM5451, KG, TCZ",
                 )}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono uppercase"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono uppercase"
               />
             </div>
 
@@ -592,7 +613,7 @@ export const MasterDataPage: React.FC = () => {
                   "catalogs.master.placeholderName",
                   "VD: Lúa tươi OM5451, Kilogram, Tricyclazole",
                 )}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -614,7 +635,7 @@ export const MasterDataPage: React.FC = () => {
                     "catalogs.master.placeholderExtra",
                     "VD: MASS, AREA, %",
                   )}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
             )}

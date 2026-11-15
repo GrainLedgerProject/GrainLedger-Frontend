@@ -1,5 +1,7 @@
 import { procurementEndpoints, type RegisterProcurementRequest } from "@/api/procurement";
+import { useAuthStore } from "@/app/store/authStore";
 import { STORES, withStore } from "./db";
+import { currentOfflineOwnerKey } from "./owner";
 
 const STORE_NAME = STORES.PROCUREMENT_QUEUE;
 const QUEUE_CHANGED = "grainledger:procurement-queue-changed";
@@ -16,6 +18,7 @@ export function onProcurementSyncStateChanged(listener: () => void) {
 
 export interface QueuedProcurement {
   id: string;
+  ownerKey: string;
   request: RegisterProcurementRequest;
   capturedAt: string;
   attempts: number;
@@ -36,25 +39,36 @@ export function onProcurementQueueChanged(listener: (reason: QueueChangeReason) 
 }
 
 export async function getQueuedProcurements(): Promise<QueuedProcurement[]> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey) return [];
   try {
     const records = await withStore<QueuedProcurement[]>(STORE_NAME, "readonly", (store) => store.getAll());
-    return (records || []).sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
+    return (records || []).filter((record) => record.ownerKey === ownerKey)
+      .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
   } catch {
     return [];
   }
 }
 
 export async function getQueuedProcurementCount(): Promise<number> {
+  return (await getQueuedProcurements()).length;
+}
+
+export async function getUnassignedProcurementCount(): Promise<number> {
   try {
-    return await withStore<number>(STORE_NAME, "readonly", (store) => store.count());
-  } catch {
-    return 0;
-  }
+    const records = await withStore<QueuedProcurement[]>(STORE_NAME, "readonly", (store) => store.getAll());
+    return (records || []).filter((record) => !record.ownerKey).length;
+  } catch { return 0; }
 }
 
 export async function queueProcurement(request: RegisterProcurementRequest): Promise<QueuedProcurement> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey || !useAuthStore.getState().isAuthenticated) {
+    throw new Error("Cần đăng nhập trước khi lưu phiếu ngoại tuyến.");
+  }
   const record: QueuedProcurement = {
-    id: request.clientOperationId,
+    id: `${ownerKey}:${request.clientOperationId}`,
+    ownerKey,
     request,
     capturedAt: request.capturedAt,
     attempts: 0,
@@ -78,6 +92,8 @@ export function syncQueuedProcurements(
 }
 
 async function runSync(shouldContinue: () => boolean): Promise<{ synced: number; failed: number }> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey || !useAuthStore.getState().isAuthenticated) return { synced: 0, failed: 0 };
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return { synced: 0, failed: 0 };
   }
@@ -87,7 +103,8 @@ async function runSync(shouldContinue: () => boolean): Promise<{ synced: number;
   let failed = 0;
 
   for (const record of records) {
-    if (!shouldContinue() || (typeof navigator !== "undefined" && !navigator.onLine)) break;
+    if (!shouldContinue() || currentOfflineOwnerKey() !== ownerKey || !useAuthStore.getState().isAuthenticated ||
+      (typeof navigator !== "undefined" && !navigator.onLine)) break;
     try {
       // clientOperationId is retained from capture to make retries idempotent server-side.
       await procurementEndpoints.registerProcurement(record.request);

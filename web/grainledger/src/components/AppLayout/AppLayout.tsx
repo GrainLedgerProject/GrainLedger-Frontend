@@ -21,25 +21,28 @@ export const AppLayout: React.FC = () => {
         <CompanyContextBar />
 
         {/* Content Outlet with Error Boundary */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full mx-auto">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
 
         {/* Minimal Operational Footer — Apple-style clean */}
-        <footer className="border-t border-ink-tertiary/10 py-4 px-6 text-xs text-ink-tertiary flex flex-col sm:flex-row items-center justify-between gap-2 bg-surface-base">
+        <footer
+          data-ui-detail="secondary"
+          className="border-t border-ink-tertiary/10 py-4 px-6 text-xs text-ink-tertiary flex flex-col sm:flex-row items-center justify-between gap-2 bg-surface-base"
+        >
           <div className="flex items-center gap-3">
             <img
               src="/favicon.svg"
               alt="GrainLedger"
               className="h-5 w-5 shrink-0 opacity-60"
             />
-            <span className="text-[11px]">
+            <span className="text-xs">
               GrainLedger © 2026 — Tiền Giang, Vietnam
             </span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-ink-tertiary/70">
+          <div className="flex items-center gap-4 text-xs text-ink-tertiary/70">
             <span>
               {t("common.isoComplianceFooter", "ISO 22095:2020 Mass Balance")}
             </span>

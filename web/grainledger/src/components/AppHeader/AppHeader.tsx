@@ -3,6 +3,7 @@ import { useUiStore } from "@/app/store/uiStore";
 import { ConfirmPopover } from "@/components/ConfirmPopover/ConfirmPopover";
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator/NetworkStatusIndicator";
 import { RoleChip } from "@/components/RoleChip/RoleChip";
+import { MinimalModeToggle } from "@/components/MinimalModeToggle/MinimalModeToggle";
 import { isCustomerSide } from "@/shared/types/roles";
 import {
   BellIcon,
@@ -29,7 +30,6 @@ export interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  pageTitle,
   breadcrumbs,
 }) => {
   const { t } = useTranslation();
@@ -239,7 +239,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                           )}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-secondary mt-0.5">
+                      <p className="text-xs text-ink-secondary mt-0.5">
                         {t(
                           "header.holdAlertDesc",
                           "Tricyclazole tiệm cận ngưỡng MRL EU (0.009 mg/kg / 0.010 mg/kg).",
@@ -261,7 +261,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                           )}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-secondary mt-0.5">
+                      <p className="text-xs text-ink-secondary mt-0.5">
                         {t(
                           "header.planAlertDesc",
                           "Container C-101 (24,000 kg Gạo trắng 5% tấm) — Khách hàng Exporter A.",
@@ -275,6 +275,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
 
           {/* Theme Toggle (Light / Dark) */}
+          <MinimalModeToggle compact />
           <button
             type="button"
             onClick={toggleTheme}
@@ -302,7 +303,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             aria-label="Toggle language"
           >
             <GlobeIcon size={16} weight="bold" />
-            <span className="uppercase font-mono text-[11px]">{language}</span>
+            <span className="uppercase font-mono text-xs">{language}</span>
           </button>
 
           {/* Help link */}
@@ -355,7 +356,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       {user?.displayName ||
                         t("header.notLoggedIn", "Chưa đăng nhập")}
                     </p>
-                    <p className="text-ink-tertiary truncate font-mono text-[11px]">
+                    <p className="text-ink-tertiary truncate font-mono text-xs">
                       {user?.email ||
                         t("header.guestEmail", "guest@grainledger.local")}
                     </p>
@@ -371,6 +372,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
                   {/* Navigation Links */}
                   <div className="space-y-1">
+                    <MinimalModeToggle />
                     <Link
                       to="/settings/profile"
                       onClick={() => setIsUserMenuOpen(false)}

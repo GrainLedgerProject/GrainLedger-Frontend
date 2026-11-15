@@ -202,7 +202,7 @@ export const FarmerRegistrationPage: React.FC = () => {
           deviceId: "grainledger-web",
           clientOperationId,
           capturedAt: new Date().toISOString(),
-          payloadSchemaVersion: 1,
+          payloadSchemaVersion: 2,
           payload: {
             entityId,
             code: formData.code.trim(),
@@ -273,13 +273,19 @@ export const FarmerRegistrationPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.farmer.badge", "QUẢN LÝ NGUỒN CUNG ỨNG NÔNG HỘ")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.farmer.pageTitle", "Đăng ký Nông hộ & Hồ sơ Canh tác")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.farmer.pageSubtitle",
               "Quản lý định danh các nông hộ nhỏ liên kết chuỗi cung ứng lúa gạo tại Đồng bằng sông Cửu Long.",
@@ -318,7 +324,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             <p className="font-bold text-ink-primary">
               {t("field.farmer.offlineTitle", "Chế độ hiện trường ngoại tuyến")}
             </p>
-            <p className="text-ink-secondary text-[11px] mt-0.5">
+            <p className="text-ink-secondary text-xs mt-0.5">
               {t(
                 "field.farmer.offlineDesc",
                 "Hiển thị danh sách nông hộ đã lưu trên thiết bị để hỗ trợ lập phiếu thu mua ngoại tuyến.",
@@ -343,7 +349,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       )}
 
       {/* Search & Statistics Filter Bar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -353,7 +359,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-body"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:rounded-full focus:border-accent-primary focus:outline-none font-body"
           />
           <MagnifyingGlass
             size={16}
@@ -405,7 +411,7 @@ export const FarmerRegistrationPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="dark:border-surface-overlay border bg-surface-raised dark:bg-surface-overlay border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px] shadow-xs">
+              <thead className="dark:border-surface-overlay border bg-surface-raised dark:bg-surface-overlay border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs shadow-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.farmer.thCode", "Mã số")}
@@ -538,7 +544,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                   setFormData({ ...formData, code: e.target.value })
                 }
                 placeholder="VD: FARMER-001"
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
               />
             </div>
 
@@ -554,7 +560,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="VD: Nguyễn Văn An"
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -572,7 +578,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                   setFormData({ ...formData, contact: e.target.value })
                 }
                 placeholder="VD: 0912 345 678 · Huyện Cái Bè, Tiền Giang"
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 

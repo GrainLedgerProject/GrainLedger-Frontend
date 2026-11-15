@@ -159,7 +159,7 @@ export const ProcurementReceiptPage: React.FC = () => {
         );
         return {
           id: q.id,
-          code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
+          code: `OFFLINE-${q.request.clientOperationId.slice(0, 8).toUpperCase()}`,
           farmerId: q.request.payload?.farmerId || "",
           farmerName:
             matchedFarmer?.name ||
@@ -504,6 +504,18 @@ export const ProcurementReceiptPage: React.FC = () => {
       );
       return;
     }
+    const selectedCommodityId = formData.commodityId || refData?.commodity?.id;
+    if (
+      !formData.collectionSiteId ||
+      !formData.receivingLocationId ||
+      !selectedCommodityId ||
+      !formData.plotSeasonId
+    ) {
+      setError(
+        "Cần chọn đủ điểm thu mua, vị trí tiếp nhận, mặt hàng và vụ mùa trước khi lưu phiếu.",
+      );
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -525,20 +537,16 @@ export const ProcurementReceiptPage: React.FC = () => {
       const lotId = crypto.randomUUID();
       const sourceLotId = crypto.randomUUID();
 
-      // Ensure valid UUID fallbacks for collectionSiteId, receivingLocationId, commodityId, plotSeasonId
-      const finalCollectionSiteId =
-        formData.collectionSiteId || crypto.randomUUID();
-      const finalReceivingLocationId =
-        formData.receivingLocationId || crypto.randomUUID();
-      const finalCommodityId =
-        formData.commodityId || refData?.commodity?.id || crypto.randomUUID();
-      const finalPlotSeasonId = formData.plotSeasonId || crypto.randomUUID();
+      const finalCollectionSiteId = formData.collectionSiteId;
+      const finalReceivingLocationId = formData.receivingLocationId;
+      const finalCommodityId = selectedCommodityId;
+      const finalPlotSeasonId = formData.plotSeasonId;
 
       request = {
         deviceId: "grainledger-web",
         clientOperationId,
         capturedAt: new Date().toISOString(),
-        payloadSchemaVersion: 1,
+        payloadSchemaVersion: 2,
         payload: {
           entityId,
           farmerId: formData.farmerId,
@@ -639,13 +647,19 @@ export const ProcurementReceiptPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.receipt.tag", "LẬP PHIẾU THU MUA & TẠO LÔ NGUỒN")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.receipt.title", "Phiếu Thu Mua Lúa Tươi Tại Bờ Ruộng")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.receipt.subtitle",
               "Ghi nhận khối lượng cân thực tế, tỷ lệ độ ẩm và sinh Lô Nguồn (Source Lot) bất biến trên sổ cái.",
@@ -688,7 +702,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                   "Chế độ hiện trường ngoại tuyến (Offline)",
                 )}
               </p>
-              <p className="text-ink-secondary text-[11px] mt-0.5">
+              <p className="text-ink-secondary text-xs mt-0.5">
                 {t(
                   procurementSyncMode === "auto"
                     ? "field.receipt.offlineDescAuto"
@@ -703,7 +717,7 @@ export const ProcurementReceiptPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate("/field/sync")}
-            className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 text-ink-primary font-semibold text-[11px] hover:bg-surface-raised transition-colors shrink-0"
+            className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 text-ink-primary font-semibold text-xs hover:bg-surface-raised transition-colors shrink-0"
           >
             {t("field.receipt.viewQueue", "Xem hàng đợi đồng bộ")}
           </button>
@@ -725,7 +739,7 @@ export const ProcurementReceiptPage: React.FC = () => {
       )}
 
       {/* Filter bar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -735,7 +749,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           />
           <MagnifyingGlass
             size={16}
@@ -789,7 +803,7 @@ export const ProcurementReceiptPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.receipt.receiptCode", "Mã phiếu")}
@@ -931,7 +945,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                 required
                 value={formData.farmerId}
                 onChange={(e) => handleFarmerChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               >
                 <option value="">
                   {t(
@@ -965,7 +979,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                       plotSeasonId: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   {currentPlotSeasons.map((ps) => (
                     <option key={ps.id} value={ps.id}>
@@ -997,7 +1011,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                       receivingLocationId: locId,
                     }));
                   }}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   {receivingOptions.map((opt) => (
                     <option
@@ -1013,7 +1027,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             )}
 
             {/* 4. Commodity Info */}
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-[11px]">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-xs">
               <span className="text-ink-secondary flex items-center gap-1.5 font-medium">
                 <Plant size={14} className="text-accent-primary" />
                 Danh mục hàng hóa:
@@ -1045,7 +1059,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                         measuredWeightKg: val,
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-bold"
+                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
                     KG
@@ -1075,7 +1089,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                         moisturePercent: val,
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
+                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono text-accent-info font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
                     %
@@ -1085,7 +1099,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             </div>
 
             {/* Policy notice */}
-            <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-[11px] text-ink-secondary">
+            <div className="p-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-1.5 text-xs text-ink-secondary">
               <div className="flex items-center gap-1.5 font-semibold text-accent-primary">
                 <Warehouse size={14} />
                 <span>

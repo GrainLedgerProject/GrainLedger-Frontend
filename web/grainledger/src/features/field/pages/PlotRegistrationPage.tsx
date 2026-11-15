@@ -27,7 +27,7 @@ interface PlotRecord {
   farmerId: string;
   farmerName?: string;
   areaHa: number;
-  geometry?: any;
+  geometry?: { coordinates?: unknown };
   version?: number;
   variety?: string;
 }
@@ -41,8 +41,8 @@ interface FarmerOption {
 /**
  * Format coordinates for user display (Latitude, Longitude)
  */
-function formatDisplayCoord(geometry: any): string {
-  if (!geometry?.coordinates) return "10.354100, 106.012500";
+function formatDisplayCoord(geometry?: { coordinates?: unknown }): string {
+  if (!geometry?.coordinates) return "";
   const coords = geometry.coordinates;
   if (Array.isArray(coords) && coords.length >= 2) {
     const p0 = Number(coords[0]);
@@ -53,7 +53,7 @@ function formatDisplayCoord(geometry: any): string {
     }
     return `${p0.toFixed(6)}, ${p1.toFixed(6)}`;
   }
-  return "10.354100, 106.012500";
+  return "";
 }
 
 /**
@@ -63,23 +63,21 @@ function parseToGeoJsonPoint(coordStr: string): {
   type: "Point";
   coordinates: [number, number];
 } {
-  const defaultLngLat: [number, number] = [106.0125, 10.3541]; // [lng, lat]
-  if (!coordStr) return { type: "Point", coordinates: defaultLngLat };
+  if (!coordStr.trim()) throw new Error("Cần chọn tọa độ thửa ruộng.");
 
   const parts = coordStr.split(",").map((p) => parseFloat(p.trim()));
   if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
     const [p0, p1] = parts;
     // If user input is "lat, lng" (e.g. 10.3541, 106.0125)
-    if (p0 < 30 && p1 > 50) {
+    if (p0 >= -90 && p0 <= 90 && p1 >= -180 && p1 <= 180) {
       return { type: "Point", coordinates: [p1, p0] }; // RFC 7946 requires [longitude, latitude]
     }
     // If user input was already [lng, lat]
-    if (p0 > 50 && p1 < 30) {
+    if (p0 >= -180 && p0 <= 180 && p1 >= -90 && p1 <= 90) {
       return { type: "Point", coordinates: [p0, p1] };
     }
-    return { type: "Point", coordinates: [p1, p0] };
   }
-  return { type: "Point", coordinates: defaultLngLat };
+  throw new Error("Tọa độ thửa ruộng không hợp lệ.");
 }
 
 export const PlotRegistrationPage: React.FC = () => {
@@ -99,7 +97,7 @@ export const PlotRegistrationPage: React.FC = () => {
     code: "",
     farmerId: "",
     areaHa: 1.5,
-    coordinates: "10.354100, 106.012500",
+    coordinates: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,10 +158,10 @@ export const PlotRegistrationPage: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingPlot(null);
     setFormData({
-      code: `PLOT-${Date.now().toString().slice(-4)}`,
+      code: "",
       farmerId: farmers[0]?.id || "",
-      areaHa: 1.5,
-      coordinates: "10.354100, 106.012500",
+      areaHa: 0,
+      coordinates: "",
     });
     setIsModalOpen(true);
   };
@@ -220,7 +218,7 @@ export const PlotRegistrationPage: React.FC = () => {
           deviceId: "grainledger-web",
           clientOperationId,
           capturedAt: new Date().toISOString(),
-          payloadSchemaVersion: 1,
+          payloadSchemaVersion: 2,
           payload: {
             entityId,
             farmerId: formData.farmerId,
@@ -297,13 +295,19 @@ export const PlotRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.plot.badge", "ĐĂNG KÝ THỬA RUỘNG & BẢN ĐỒ GIS")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.plot.pageTitle", "Quản lý Thửa đất & Vùng trồng Lúa")}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.plot.pageSubtitle",
               "Định vị toạ độ thửa đất nông hộ trên bản đồ tương tác phục vụ truy xuất nguồn gốc ISO 22095.",
@@ -349,7 +353,7 @@ export const PlotRegistrationPage: React.FC = () => {
       )}
 
       {/* Controls & Filter Bar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
           <div className="relative w-full sm:w-64">
             <input
@@ -427,7 +431,7 @@ export const PlotRegistrationPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.plot.thCode", "Mã thửa")}
@@ -467,7 +471,7 @@ export const PlotRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4 font-mono font-bold text-ink-primary">
                       {Number(plot.areaHa).toFixed(2)} ha
                     </td>
-                    <td className="py-3 px-4 font-mono text-[11px]">
+                    <td className="py-3 px-4 font-mono text-xs">
                       <button
                         type="button"
                         onClick={() => setViewingMapPlot(plot)}
@@ -482,7 +486,7 @@ export const PlotRegistrationPage: React.FC = () => {
                           className="text-accent-primary shrink-0 group-hover:scale-110 transition-transform"
                           weight="fill"
                         />
-                        <span className="font-mono text-[11px] truncate max-w-[150px]">
+                        <span className="font-mono text-xs truncate max-w-[150px]">
                           {formatDisplayCoord(plot.geometry)}
                         </span>
                         <Eye
@@ -582,7 +586,7 @@ export const PlotRegistrationPage: React.FC = () => {
                     setFormData({ ...formData, code: e.target.value })
                   }
                   placeholder="VD: PLOT-CAIBE-01"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
 
@@ -596,7 +600,7 @@ export const PlotRegistrationPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, farmerId: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   <option value="">
                     {t("field.plot.selectFarmerOption", "-- Chọn Nông hộ --")}
@@ -627,7 +631,7 @@ export const PlotRegistrationPage: React.FC = () => {
                       areaHa: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
                 <span className="absolute right-3 top-2 text-ink-tertiary">
                   ha

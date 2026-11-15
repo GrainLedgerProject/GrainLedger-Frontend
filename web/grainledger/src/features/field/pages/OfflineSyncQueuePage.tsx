@@ -2,6 +2,7 @@ import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import {
   getQueuedProcurements,
+  getUnassignedProcurementCount,
   isProcurementSyncing,
   onProcurementQueueChanged,
   onProcurementSyncStateChanged,
@@ -21,6 +22,7 @@ import React, { useCallback, useEffect, useState, useSyncExternalStore } from "r
 export const OfflineSyncQueuePage: React.FC = () => {
   const { isOnline, setPendingOfflineCount, procurementSyncMode, setProcurementSyncMode } = useUiStore();
   const [records, setRecords] = useState<QueuedProcurement[]>([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const isSyncing = useSyncExternalStore(onProcurementSyncStateChanged, isProcurementSyncing);
   const [summary, setSummary] = useState<string | null>(null);
@@ -28,8 +30,9 @@ export const OfflineSyncQueuePage: React.FC = () => {
   const [hasFailures, setHasFailures] = useState(false);
 
   const refresh = useCallback(async () => {
-    const queued = await getQueuedProcurements();
+    const [queued, unassigned] = await Promise.all([getQueuedProcurements(), getUnassignedProcurementCount()]);
     setRecords(queued);
+    setUnassignedCount(unassigned);
     setPendingOfflineCount(queued.length);
     setIsLoading(false);
     return queued.length;
@@ -37,9 +40,10 @@ export const OfflineSyncQueuePage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    void getQueuedProcurements().then((queued) => {
+    void Promise.all([getQueuedProcurements(), getUnassignedProcurementCount()]).then(([queued, unassigned]) => {
       if (!active) return;
       setRecords(queued);
+      setUnassignedCount(unassigned);
       setPendingOfflineCount(queued.length);
       setIsLoading(false);
     });
@@ -70,13 +74,13 @@ export const OfflineSyncQueuePage: React.FC = () => {
     <div className="mx-auto space-y-6 w-full max-w-7xl">
       <header className="border-b border-ink-tertiary/15 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider">
+          <p data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider">
             Hiện trường · Offline Capable
           </p>
           <h1 className="text-2xl font-display font-bold tracking-tight text-ink-primary">
             Hàng đợi thu mua
           </h1>
-          <p className="text-xs text-ink-secondary mt-1">
+          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-1">
             Mỗi phiếu giữ nguyên mã thao tác từ lúc cân đến khi ghi vào sổ cái,
             nên gửi lại không tạo bản ghi trùng.
           </p>
@@ -119,6 +123,11 @@ export const OfflineSyncQueuePage: React.FC = () => {
         </button>
       </section>
       {syncError && <p role="alert" className="p-3.5 rounded-xl bg-functional-rejected-bg text-accent-danger text-xs">{syncError}</p>}
+      {unassignedCount > 0 && (
+        <p role="status" className="p-3.5 rounded-xl bg-functional-stale-bg text-accent-warning text-xs">
+          Có {unassignedCount} phiếu được lưu bằng phiên bản cũ chưa xác định tài khoản. Các phiếu này được giữ trên thiết bị nhưng sẽ không tự gửi để tránh ghi sai tài khoản. Hãy liên hệ quản trị viên để đối chiếu trước khi nhập lại.
+        </p>
+      )}
       <section
         className={`p-4 rounded-2xl border flex items-center gap-3 ${isOnline ? "bg-functional-balanced-bg border-accent-primary/25" : "bg-functional-stale-bg border-functional-stale-border/40"}`}
         role="status"
@@ -192,15 +201,15 @@ export const OfflineSyncQueuePage: React.FC = () => {
                         CHỜ GỬI
                       </span>
                     </div>
-                    <p className="font-mono text-[11px] text-ink-secondary mt-1">
+                    <p className="font-mono text-xs text-ink-secondary mt-1">
                       {item?.measuredValue || "0"} kg · Độ ẩm {item?.moisturePercent || "0"}%
                     </p>
-                    <p className="text-[11px] text-ink-tertiary mt-1">
+                    <p className="text-xs text-ink-tertiary mt-1">
                       Ghi nhận{" "}
                       {new Date(record.capturedAt).toLocaleString("vi-VN")}
                     </p>
                     {record.lastError && (
-                      <p className="text-[11px] mt-2 text-accent-warning flex gap-1.5">
+                      <p className="text-xs mt-2 text-accent-warning flex gap-1.5">
                         <WarningCircle size={14} className="shrink-0" />
                         {record.lastError}
                       </p>

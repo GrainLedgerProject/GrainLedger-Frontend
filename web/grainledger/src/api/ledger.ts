@@ -22,11 +22,6 @@ export interface HoldRequest {
   evidenceReference?: string;
 }
 
-export interface CorrectionRequest {
-  operationId: string;
-  reason: string;
-  reconciliationNotes?: string;
-}
 
 export const ledgerEndpoints = {
   getSetup: () => apiFetch<unknown>('/api/ledger/setup'),

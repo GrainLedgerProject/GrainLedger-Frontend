@@ -2,7 +2,6 @@ import { authEndpoints } from '@/api/auth';
 import { profileEndpoints } from '@/api/profile';
 import type { UserProfile } from '@/app/store/authStore';
 import { normalizeUserRole } from '@/shared/types/roles';
-import { logger } from '@/shared/utils/logger';
 
 export const authApi = {
   /**
@@ -21,8 +20,8 @@ export const authApi = {
     const access = tokens.accessToken || (tokens as unknown as { AccessToken: string }).AccessToken;
     const refresh = tokens.refreshToken || (tokens as unknown as { RefreshToken: string }).RefreshToken;
 
-    if (!access) {
-      throw new Error('Máy chủ không trả về token xác thực hợp lệ.');
+    if (!access || !refresh) {
+      throw new Error('Máy chủ không trả về đầy đủ token xác thực và làm mới.');
     }
 
     return {
@@ -39,7 +38,7 @@ export const authApi = {
       },
       tokens: {
         access,
-        refresh: refresh || access,
+        refresh,
       },
     };
   },
@@ -59,22 +58,17 @@ export const authApi = {
    * Validate Invitation Token
    */
   validateInvitationToken: async (token: string): Promise<{ email: string; name: string }> => {
-    await new Promise((res) => setTimeout(res, 300));
-    if (token === 'expired') {
-      throw new Error('Lời mời này đã hết hạn hoặc không tồn tại.');
-    }
-    return {
-      email: 'nguyen.van.kiemtoan@mekongrice.vn',
-      name: 'Nguyễn Văn Kiểm Toán',
-    };
+    void token;
+    throw new Error('Máy chủ chưa hỗ trợ xác nhận lời mời trên web. Vui lòng liên hệ quản trị viên.');
   },
 
   /**
    * Accept Invitation and set password
    */
   acceptInvitation: async (token: string, password: string): Promise<void> => {
-    await new Promise((res) => setTimeout(res, 400));
-    logger.info('Invitation accepted with token:', token, 'length:', password.length);
+    void token;
+    void password;
+    throw new Error('Máy chủ chưa hỗ trợ chấp nhận lời mời trên web.');
   },
 
   /**
@@ -91,10 +85,8 @@ export const authApi = {
    * Change Password
    */
   changePassword: async (currentPass: string, newPass: string): Promise<void> => {
-    await new Promise((res) => setTimeout(res, 350));
-    if (currentPass === 'wrong') {
-      throw new Error('Mật khẩu hiện tại không đúng.');
-    }
-    logger.info('Password changed successfully');
+    void currentPass;
+    void newPass;
+    throw new Error('Máy chủ chưa hỗ trợ đổi mật khẩu khi đang đăng nhập. Hãy dùng chức năng quên mật khẩu.');
   },
 };

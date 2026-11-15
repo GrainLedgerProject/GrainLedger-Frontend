@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RegisterProcurementRequest } from "@/api/procurement";
 import { procurementEndpoints } from "@/api/procurement";
 import { STORES, withStore } from "@/pwa/db";
+import { useAuthStore, type UserProfile } from "@/app/store/authStore";
 import {
   getQueuedProcurementCount,
   getQueuedProcurements,
@@ -19,7 +20,7 @@ function request(id: string): RegisterProcurementRequest {
     deviceId: "web-test",
     clientOperationId: id,
     capturedAt: "2026-11-09T08:00:00.000Z",
-    payloadSchemaVersion: 1,
+    payloadSchemaVersion: 2,
     payload: {
       entityId: `entity-${id}`,
       farmerId: "farmer-1",
@@ -33,6 +34,10 @@ function request(id: string): RegisterProcurementRequest {
 }
 
 beforeEach(async () => {
+  useAuthStore.setState({
+    user: { id: "user-a", email: "a@example.com", displayName: "A", role: "CUSTOMER_PROCUREMENT_OFFICER", organizationId: "org-a", isActive: true, permissions: [] },
+    isAuthenticated: true,
+  });
   await withStore(STORES.PROCUREMENT_QUEUE, "readwrite", (store) => store.clear());
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
   vi.mocked(procurementEndpoints.registerProcurement).mockReset();
@@ -106,7 +111,7 @@ describe("Hàng đợi thu mua ngoại tuyến", () => {
     await queueProcurement(queued);
     vi.mocked(procurementEndpoints.registerProcurement).mockRejectedValueOnce(new Error("Mất kết nối"));
     expect(await syncQueuedProcurements()).toEqual({ synced: 0, failed: 1 });
-    expect((await getQueuedProcurements())[0]).toMatchObject({ id: "op-4", attempts: 1, lastError: "Mất kết nối" });
+    expect((await getQueuedProcurements())[0]).toMatchObject({ request: { clientOperationId: "op-4" }, attempts: 1, lastError: "Mất kết nối" });
     vi.mocked(procurementEndpoints.registerProcurement).mockResolvedValueOnce({} as never);
     expect(await syncQueuedProcurements()).toEqual({ synced: 1, failed: 0 });
     expect(procurementEndpoints.registerProcurement).toHaveBeenLastCalledWith(queued);
@@ -120,6 +125,17 @@ describe("Hàng đợi thu mua ngoại tuyến", () => {
       .mockRejectedValueOnce(new Error("API từ chối phiếu"))
       .mockResolvedValueOnce({} as never);
     expect(await syncQueuedProcurements()).toEqual({ synced: 1, failed: 1 });
-    expect((await getQueuedProcurements()).map((item) => item.id)).toEqual(["op-5"]);
+    expect((await getQueuedProcurements()).map((item) => item.request.clientOperationId)).toEqual(["op-5"]);
+  });
+
+  it("keeps receipts isolated when another account signs in on the same device", async () => {
+    await queueProcurement(request("shared-device"));
+    const otherUser: UserProfile = { id: "user-b", email: "b@example.com", displayName: "B", role: "CUSTOMER_PROCUREMENT_OFFICER", organizationId: "org-b", isActive: true, permissions: [] };
+    useAuthStore.setState({ user: otherUser, isAuthenticated: true });
+    expect(await getQueuedProcurements()).toEqual([]);
+    expect(await syncQueuedProcurements()).toEqual({ synced: 0, failed: 0 });
+    expect(procurementEndpoints.registerProcurement).not.toHaveBeenCalled();
+    await queueProcurement(request("shared-device"));
+    expect(await getQueuedProcurementCount()).toBe(1);
   });
 });

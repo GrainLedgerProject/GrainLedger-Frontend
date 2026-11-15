@@ -5,7 +5,7 @@ import { normalizeUserRole } from "@/shared/types/roles";
  * Safely decodes base64url-encoded payload of a standard JWT.
  * Returns null if token is null, malformed, or not a valid 3-part JWT.
  */
-export function decodeJwtPayload(token: string | null): Record<string, any> | null {
+export function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
   if (!token || typeof token !== "string") return null;
 
   try {
@@ -20,7 +20,9 @@ export function decodeJwtPayload(token: string | null): Record<string, any> | nu
         .join("")
     );
 
-    return JSON.parse(jsonPayload);
+    const payload: unknown = JSON.parse(jsonPayload);
+    return payload && typeof payload === "object" && !Array.isArray(payload)
+      ? payload as Record<string, unknown> : null;
   } catch {
     return null;
   }
@@ -43,7 +45,7 @@ export function isJwtExpired(token: string | null, bufferSeconds = 15): boolean 
   if (!token) return true;
 
   const payload = decodeJwtPayload(token);
-  if (!payload || typeof payload.exp !== "number") return false;
+  if (!payload || typeof payload.exp !== "number") return true;
 
   return Date.now() >= payload.exp * 1000 - bufferSeconds * 1000;
 }
@@ -58,51 +60,27 @@ export function extractUserProfileFromJwt(token: string | null): UserProfile | n
   const payload = decodeJwtPayload(token);
   if (!payload) return null;
 
-  const id =
-    payload.sub ||
-    payload.nameid ||
-    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
-    payload.id ||
-    `user-${Date.now()}`;
+  const claim = (...keys: string[]) => keys.map((key) => payload[key]).find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0,
+  );
+  const id = claim("sub", "nameid", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", "id");
+  const rawRole = claim("role", "Role", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
+  if (!id || !rawRole) return null;
 
-  const email =
-    payload.email ||
-    payload.upn ||
-    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
-    "user@grainledger.local";
+  const email = claim("email", "upn", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress") || "";
 
-  const displayName =
-    payload.name ||
-    payload.displayName ||
-    payload.unique_name ||
-    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
-    email.split("@")[0] ||
-    "Người dùng";
-
-  const rawRole =
-    payload.role ||
-    payload.Role ||
-    payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
-    "CUSTOMER_PROCUREMENT_OFFICER";
+  const displayName = claim("name", "displayName", "unique_name", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name") || email || id;
 
   const role = normalizeUserRole(rawRole);
 
-  const organizationId =
-    payload.organizationId ||
-    payload.OrganizationId ||
-    payload.orgId ||
-    undefined;
+  const organizationId = claim("organizationId", "OrganizationId", "orgId");
 
-  const organizationName =
-    payload.organizationName ||
-    payload.OrganizationName ||
-    payload.orgName ||
-    undefined;
+  const organizationName = claim("organizationName", "OrganizationName", "orgName");
 
   const permissions = Array.isArray(payload.permissions)
-    ? payload.permissions
+    ? payload.permissions.filter((item): item is string => typeof item === "string")
     : Array.isArray(payload.permission)
-      ? payload.permission
+      ? payload.permission.filter((item): item is string => typeof item === "string")
       : [];
 
   return {

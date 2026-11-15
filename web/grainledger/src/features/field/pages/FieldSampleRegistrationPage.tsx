@@ -40,7 +40,6 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
   // Create Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [code, setCode] = useState("");
   const [sealCode, setSealCode] = useState("");
   const [sourceLotId, setSourceLotId] = useState("");
   const [materialDescription, setMaterialDescription] = useState("");
@@ -49,42 +48,26 @@ export const FieldSampleRegistrationPage: React.FC = () => {
   // Handover Modal
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [selectedSample, setSelectedSample] = useState<SampleItem | null>(null);
-  const [fromParty, setFromParty] = useState("Cán bộ thu mua Mekong Rice");
-  const [toParty, setToParty] = useState("Đơn vị vận chuyển / Tài xế");
-  const [laboratoryName, setLaboratoryName] = useState("Viện Kiểm Nghiệm NIFC");
-  const [sealCondition, setSealCondition] = useState("NGUYÊN VẸN");
+  const [fromParty, setFromParty] = useState("");
+  const [toParty, setToParty] = useState("");
+  const [laboratoryName, setLaboratoryName] = useState("");
+  const [sealCondition, setSealCondition] = useState("");
 
   const loadSamples = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await sampleEndpoints.getSamples();
-      if (Array.isArray(res) && res.length > 0) {
-        setSamples(res as SampleItem[]);
-      } else {
-        // Mock fallback samples if backend returns empty
-        setSamples([
-          {
-            id: "smp-001",
-            code: "SMP-MK-2026-081",
-            sealCode: "SEAL-A8820",
-            sourceLotId: "LOT-TM-2026-001",
-            collectedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-            materialDescription: "Lúa tươi Jasmine 85 độ ẩm 22.4%",
-            handoverStatus: "SEALED",
-          },
-          {
-            id: "smp-002",
-            code: "SMP-MK-2026-082",
-            sealCode: "SEAL-B1194",
-            sourceLotId: "LOT-TM-2026-002",
-            collectedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-            materialDescription: "Lúa tươi ST25 vùng trồng Mỹ Tú",
-            handoverStatus: "DELIVERED_LAB",
-            laboratoryName: "Viện Kiểm Nghiệm NIFC",
-          },
-        ]);
-      }
+      setSamples(
+        Array.isArray(res)
+          ? (res as SampleItem[])
+          : res &&
+              typeof res === "object" &&
+              "items" in res &&
+              Array.isArray(res.items)
+            ? (res.items as SampleItem[])
+            : [],
+      );
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -105,31 +88,16 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       try {
         const res = await sampleEndpoints.getSamples();
         if (!active) return;
-        if (Array.isArray(res) && res.length > 0) {
-          setSamples(res as SampleItem[]);
-        } else {
-          setSamples([
-            {
-              id: "smp-001",
-              code: "SMP-MK-2026-081",
-              sealCode: "SEAL-A8820",
-              sourceLotId: "LOT-TM-2026-001",
-              collectedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-              materialDescription: "Lúa tươi Jasmine 85 độ ẩm 22.4%",
-              handoverStatus: "SEALED",
-            },
-            {
-              id: "smp-002",
-              code: "SMP-MK-2026-082",
-              sealCode: "SEAL-B1194",
-              sourceLotId: "LOT-TM-2026-002",
-              collectedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-              materialDescription: "Lúa tươi ST25 vùng trồng Mỹ Tú",
-              handoverStatus: "DELIVERED_LAB",
-              laboratoryName: "Viện Kiểm Nghiệm NIFC",
-            },
-          ]);
-        }
+        setSamples(
+          Array.isArray(res)
+            ? (res as SampleItem[])
+            : res &&
+                typeof res === "object" &&
+                "items" in res &&
+                Array.isArray(res.items)
+              ? (res.items as SampleItem[])
+              : [],
+        );
       } catch (err: unknown) {
         if (!active) return;
         if (err instanceof Error) {
@@ -158,35 +126,46 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
   const handleCreateSample = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim() || !sealCode.trim()) return;
+    if (
+      !sealCode.trim() ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        sourceLotId.trim(),
+      )
+    ) {
+      setError("Cần nhập mã niêm phong và ID lô nguồn dạng UUID hợp lệ.");
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
     try {
       const entityId = crypto.randomUUID();
+      const capturedAt = new Date().toISOString();
       const payload: CaptureSampleRequest = {
         deviceId: "grainledger-web",
         clientOperationId: crypto.randomUUID(),
-        capturedAt: new Date().toISOString(),
-        payloadSchemaVersion: 1,
+        capturedAt,
+        payloadSchemaVersion: 2,
         payload: {
           entityId,
-          code: code.trim(),
+          code: null,
           sealCode: sealCode.trim(),
-          sourceLotId: sourceLotId.trim() || crypto.randomUUID(),
-          collectedAt: new Date().toISOString(),
+          sourceLotId: sourceLotId.trim(),
+          collectedAt: capturedAt,
           materialDescription: materialDescription.trim() || null,
         },
       };
 
-      await sampleEndpoints.captureSample(payload);
+      const created = (await sampleEndpoints.captureSample(payload)) as {
+        code?: string;
+      } | null;
 
       setSuccessMsg(
         t(
           "field.samples.successCreate",
           'Đã tạo biên bản lấy mẫu "{{code}}" thành công!',
           {
-            code: code.trim(),
+            code: created?.code || entityId,
           },
         ),
       );
@@ -195,17 +174,16 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       setSamples((prev) => [
         {
           id: entityId,
-          code: code.trim(),
+          code: created?.code || null,
           sealCode: sealCode.trim(),
-          sourceLotId: sourceLotId.trim() || "LOT-TM-NEW",
-          collectedAt: new Date().toISOString(),
+          sourceLotId: sourceLotId.trim(),
+          collectedAt: capturedAt,
           materialDescription: materialDescription.trim() || null,
           handoverStatus: "SEALED",
         },
         ...prev,
       ]);
 
-      setCode("");
       setSealCode("");
       setSourceLotId("");
       setMaterialDescription("");
@@ -233,18 +211,20 @@ export const FieldSampleRegistrationPage: React.FC = () => {
     setSubmitting(true);
     setError(null);
     try {
+      const capturedAt = new Date().toISOString();
       const payload: RecordSampleHandoverRequest = {
         deviceId: "grainledger-web",
         clientOperationId: crypto.randomUUID(),
-        capturedAt: new Date().toISOString(),
+        capturedAt,
         payloadSchemaVersion: 1,
         payload: {
           entityId: crypto.randomUUID(),
           fromParty,
           toParty,
-          handedOverAt: new Date().toISOString(),
+          handedOverAt: capturedAt,
           sealCondition,
-          evidenceRef: `EVD-HANDOVER-${Date.now()}`,
+          evidenceRef: null,
+          handoverKind: "LAB_DISPATCH",
           laboratoryName,
         },
       };
@@ -290,7 +270,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -299,7 +282,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               "Lấy Mẫu Niêm Phong & Bàn Giao (Procurement Samples)",
             )}
           </h2>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.samples.subtitle",
               "Ghi nhận mã niêm chì và mã barcode của mẫu thóc đại diện được lấy tại điểm thu mua trước khi đưa về nhà máy sấy và lưu kho.",
@@ -422,12 +408,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                     </span>
                   </div>
                   {sample.materialDescription && (
-                    <div className="text-ink-tertiary text-[11px] truncate">
+                    <div className="text-ink-tertiary text-xs truncate">
                       {sample.materialDescription}
                     </div>
                   )}
                   {sample.laboratoryName && (
-                    <div className="flex items-center gap-1 text-accent-primary text-[11px] pt-1 border-t border-ink-tertiary/10">
+                    <div className="flex items-center gap-1 text-accent-primary text-xs pt-1 border-t border-ink-tertiary/10">
                       <Truck size={12} />
                       <span>{sample.laboratoryName}</span>
                     </div>
@@ -436,7 +422,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               </div>
 
               <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-between text-xs text-ink-secondary">
-                <span className="inline-flex items-center gap-1 text-[11px]">
+                <span className="inline-flex items-center gap-1 text-xs">
                   <Calendar size={13} className="text-ink-tertiary" />
                   <span>
                     {new Date(sample.collectedAt).toLocaleDateString("vi-VN")}
@@ -483,22 +469,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               onSubmit={handleCreateSample}
               className="p-5 space-y-4 text-xs"
             >
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.samples.codeLabel",
-                    "Mã Barcode Mẫu (Sample Code) *",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="VD: SMP-MK-2026-0092"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
-                />
-              </div>
+              <p className="text-ink-secondary">
+                Mã mẫu sẽ do máy chủ cấp khi lưu.
+              </p>
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
@@ -510,7 +483,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={sealCode}
                   onChange={(e) => setSealCode(e.target.value)}
                   placeholder="VD: SEAL-RED-9921"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -525,8 +498,8 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   type="text"
                   value={sourceLotId}
                   onChange={(e) => setSourceLotId(e.target.value)}
-                  placeholder="VD: LOT-TM-2026-001"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  placeholder="UUID của lô thu mua nguồn"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -542,7 +515,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={materialDescription}
                   onChange={(e) => setMaterialDescription(e.target.value)}
                   placeholder="VD: Mẫu thóc Jasmine 85 thu tại ruộng hộ Trần Văn Bảy..."
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -597,7 +570,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                 <div className="font-semibold text-accent-primary">
                   Mẫu: {selectedSample.code}
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-xs text-ink-secondary">
                   Niêm chì: {selectedSample.sealCode} | Lô:{" "}
                   {selectedSample.sourceLotId}
                 </div>
@@ -612,7 +585,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={fromParty}
                   onChange={(e) => setFromParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -625,7 +598,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={toParty}
                   onChange={(e) => setToParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -634,10 +607,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   Phòng kiểm định nhận mẫu (Laboratory) *
                 </label>
                 <select
+                  required
                   value={laboratoryName}
                   onChange={(e) => setLaboratoryName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
+                  <option value="">Chọn phòng kiểm định</option>
                   <option value="Viện Kiểm Nghiệm NIFC">
                     Viện Kiểm Nghiệm An Toàn Thực Phẩm Quốc Gia (NIFC)
                   </option>
@@ -658,10 +633,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   Tình trạng niêm chì khi giao nhận *
                 </label>
                 <select
+                  required
                   value={sealCondition}
                   onChange={(e) => setSealCondition(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
+                  <option value="">Chọn tình trạng niêm chì</option>
                   <option value="NGUYÊN VẸN">
                     NGUYÊN VẸN (Seal Intact - Pass)
                   </option>
