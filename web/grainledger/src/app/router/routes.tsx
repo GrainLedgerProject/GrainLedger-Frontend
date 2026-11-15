@@ -145,14 +145,9 @@ const OperationEntryPage = React.lazy(() =>
     default: m.OperationEntryPage,
   })),
 );
-const CorrectionRequestPage = React.lazy(() =>
-  import("@/features/mill/pages/CorrectionRequestPage").then((m) => ({
-    default: m.CorrectionRequestPage,
-  })),
-);
-const PendingCorrectionsPage = React.lazy(() =>
-  import("@/features/mill/pages/PendingCorrectionsPage").then((m) => ({
-    default: m.PendingCorrectionsPage,
+const CorrectionManagementPage = React.lazy(() =>
+  import("@/features/mill/pages/CorrectionManagementPage").then((m) => ({
+    default: m.CorrectionManagementPage,
   })),
 );
 const StockOverviewPage = React.lazy(() =>
@@ -175,6 +170,13 @@ const MrlComplianceCheckPage = React.lazy(() =>
 const SafetyMarginPolicyPage = React.lazy(() =>
   import("@/features/compliance/pages/SafetyMarginPolicyPage").then((m) => ({
     default: m.SafetyMarginPolicyPage,
+  })),
+);
+
+// Export
+const BlendPlansPendingPage = React.lazy(() =>
+  import("@/features/export/pages/BlendPlansPendingPage").then((m) => ({
+    default: m.BlendPlansPendingPage,
   })),
 );
 
@@ -333,7 +335,7 @@ export const router = createBrowserRouter(
         {
           path: "/admin/receiving-thresholds",
           element: (
-            <ProtectedRoute allowedRoles={["MILL_ADMIN", "MILL_MANAGER"]}>
+            <ProtectedRoute allowedRoles={["MILL_ADMIN"]}>
               <L>
                 <ReceivingThresholdsPage />
               </L>
@@ -467,33 +469,11 @@ export const router = createBrowserRouter(
           ),
         },
         {
-          path: "/mill/corrections/new",
-          element: (
-            <ProtectedRoute allowedRoles={["MILL_OPERATOR", "MILL_ADMIN"]}>
-              <L>
-                <CorrectionRequestPage />
-              </L>
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "/mill/corrections/pending",
-          element: (
-            <ProtectedRoute
-              allowedRoles={["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"]}
-            >
-              <L>
-                <PendingCorrectionsPage />
-              </L>
-            </ProtectedRoute>
-          ),
-        },
-        {
           path: "/mill/reconciliations",
           element: (
             <ProtectedRoute allowedRoles={["MILL_MANAGER", "MILL_ADMIN"]}>
               <L>
-                <PendingCorrectionsPage />
+                <CorrectionManagementPage />
               </L>
             </ProtectedRoute>
           ),
@@ -503,7 +483,7 @@ export const router = createBrowserRouter(
           element: (
             <ProtectedRoute allowedRoles={["MILL_MANAGER", "MILL_ADMIN"]}>
               <L>
-                <PendingCorrectionsPage />
+                <CorrectionManagementPage />
               </L>
             </ProtectedRoute>
           ),
@@ -644,12 +624,7 @@ export const router = createBrowserRouter(
               ]}
             >
               <L>
-                <PlaceholderPage
-                  titleVi="Duyệt hoặc Từ chối Phương án Phối trộn (Blend Plan Review)"
-                  titleEn="Blend Plan Review"
-                  roles={["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"]}
-                  descriptionVi="Customer Manager kiểm tra đánh giá tuân thủ (PASS) và phê duyệt kế hoạch rút gạo từ silo trước khi cho phép công nhân thực thi."
-                />
+                <BlendPlansPendingPage />
               </L>
             </ProtectedRoute>
           ),
@@ -665,12 +640,7 @@ export const router = createBrowserRouter(
               ]}
             >
               <L>
-                <PlaceholderPage
-                  titleVi="Chi tiết Thẩm định Phương án Phối trộn"
-                  titleEn="Blend Plan Review Detail"
-                  roles={["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"]}
-                  descriptionVi="Kiểm tra chi tiết tỷ lệ thành phần các lô, cận dư lượng 95%, và biên an toàn được áp dụng trước khi ký duyệt."
-                />
+                <BlendPlansPendingPage />
               </L>
             </ProtectedRoute>
           ),

@@ -274,7 +274,7 @@ export const AcceptInvitationPage: React.FC = () => {
               {/* Password Strength Meter */}
               {passwordValue && (
                 <div className="mt-2 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-ink-tertiary">
                       {t("settings.complexity", "Độ mạnh mật khẩu")}:
                     </span>
@@ -354,7 +354,7 @@ export const AcceptInvitationPage: React.FC = () => {
                   "Tiêu chuẩn mật khẩu an toàn",
                 )}
               </span>
-              <p className="text-[11px]">
+              <p className="text-xs">
                 {t(
                   "auth.invitation.passwordHint",
                   "Tối thiểu 12 ký tự, bao gồm ít nhất một chữ hoa, chữ thường, chữ số và ký tự đặc biệt.",

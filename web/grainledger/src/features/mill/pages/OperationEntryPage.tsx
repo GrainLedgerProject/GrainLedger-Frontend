@@ -715,7 +715,7 @@ export const OperationEntryPage: React.FC = () => {
                   )}
                 </span>
                 {loadingLots && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-sans font-normal text-ink-secondary">
+                  <span className="inline-flex items-center gap-1 text-xs font-sans font-normal text-ink-secondary">
                     <ArrowsClockwise
                       size={12}
                       className="animate-spin text-accent-primary"
@@ -724,7 +724,7 @@ export const OperationEntryPage: React.FC = () => {
                   </span>
                 )}
               </span>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary">
+              <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary">
                 {t("mill.operations.appliedTolerance", "Dung sai áp dụng:")}{" "}
                 {tolerancePercent}%
               </span>
@@ -1113,7 +1113,7 @@ export const OperationEntryPage: React.FC = () => {
             </div>
 
             <div className="text-right text-xs">
-              <span className="block text-ink-tertiary font-sans text-[11px]">
+              <span className="block text-ink-tertiary font-sans text-xs">
                 {t(
                   "mill.operations.allowedToleranceLabel",
                   "Dung sai cho phép:",

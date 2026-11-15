@@ -11,9 +11,11 @@ const shortcuts: Record<UserRole, Array<{ label: string; path: string }>> = {
     { label: "Ngưỡng tiếp nhận", path: "/admin/receiving-thresholds" },
   ],
   MILL_MANAGER: [
-    { label: "Tiếp nhận", path: "/mill/receiving" },
-    { label: "Yêu cầu sửa đổi", path: "/mill/reconciliations" },
-    { label: "Lệnh giữ hàng", path: "/risk/holds" },
+    { label: "Tiếp nhận & Đối soát", path: "/mill/receiving" },
+    { label: "Tồn kho định danh", path: "/stock" },
+    { label: "Đối soát & Bút toán bù", path: "/mill/reconciliations" },
+    { label: "Xử lý lệnh HOLD", path: "/risk/holds" },
+    { label: "Chính sách cân bằng", path: "/admin/balance-policy" },
   ],
   MILL_OPERATOR: [
     { label: "Ghi công đoạn", path: "/mill/operations/new" },

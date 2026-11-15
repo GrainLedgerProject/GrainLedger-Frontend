@@ -61,7 +61,14 @@ export const HoldManagementPage: React.FC = () => {
     }
   }, [t]);
 
-  // Synchronize effect with external system (network) using active cancellation flag
+  // Keyboard ESC listener
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isModalOpen) setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isModalOpen]);
   useEffect(() => {
     let active = true;
 
@@ -103,7 +110,10 @@ export const HoldManagementPage: React.FC = () => {
 
     try {
       await ledgerEndpoints.createHold({
+        operationId: crypto.randomUUID(),
         lotId: crypto.randomUUID(),
+        lotCode: targetLotCode,
+        reason: notes,
         reasonCode,
         notes,
         issuedAt: new Date().toISOString(),
@@ -134,6 +144,9 @@ export const HoldManagementPage: React.FC = () => {
   const handleRespondHold = async (hold: HoldOrder, responseKind: string) => {
     try {
       await ledgerEndpoints.respondToHold(hold.id, {
+        operationId: crypto.randomUUID(),
+        status: responseKind === "RELEASE" ? "RELEASE_REQUESTED" : "ACKNOWLEDGED",
+        response: `Xác nhận tiếp nhận xử lý và chuyển kho cách ly vật lý (${responseKind})`,
         responseKind,
         respondedAt: new Date().toISOString(),
         notes: `Ghi nhận chuyển kho cách ly vật lý theo quy định`,
@@ -265,7 +278,7 @@ export const HoldManagementPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("risk.hold.thLot", "Lô hàng bị phong toả")}
@@ -329,7 +342,7 @@ export const HoldManagementPage: React.FC = () => {
                         onClick={() =>
                           handleRespondHold(h, "TRANSFER_QUARANTINE")
                         }
-                        className="px-2.5 py-1 rounded bg-accent-warning text-ink-inverse font-semibold text-[11px] hover:opacity-90"
+                        className="px-2.5 py-1 rounded bg-accent-warning text-ink-inverse font-semibold text-xs hover:opacity-90"
                         title={t(
                           "risk.hold.btnTransferQuarantine",
                           "Xác nhận chuyển kho cách ly vật lý",
@@ -351,15 +364,23 @@ export const HoldManagementPage: React.FC = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hold-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+          className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+        >
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-accent-danger flex items-center gap-2">
+              <h2 id="hold-modal-title" className="font-display font-bold text-base text-accent-danger flex items-center gap-2">
                 <LockSimpleIcon size={18} weight="fill" />
                 <span>
                   {t("risk.hold.modalTitle", "Ban hành Lệnh HOLD Khẩn Cấp")}
                 </span>
-              </h3>
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}

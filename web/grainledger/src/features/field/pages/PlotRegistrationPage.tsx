@@ -295,13 +295,19 @@ export const PlotRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.plot.badge", "ĐĂNG KÝ THỬA RUỘNG & BẢN ĐỒ GIS")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("field.plot.pageTitle", "Quản lý Thửa đất & Vùng trồng Lúa")}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.plot.pageSubtitle",
               "Định vị toạ độ thửa đất nông hộ trên bản đồ tương tác phục vụ truy xuất nguồn gốc ISO 22095.",
@@ -347,7 +353,7 @@ export const PlotRegistrationPage: React.FC = () => {
       )}
 
       {/* Controls & Filter Bar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
           <div className="relative w-full sm:w-64">
             <input
@@ -425,7 +431,7 @@ export const PlotRegistrationPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("field.plot.thCode", "Mã thửa")}
@@ -465,7 +471,7 @@ export const PlotRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4 font-mono font-bold text-ink-primary">
                       {Number(plot.areaHa).toFixed(2)} ha
                     </td>
-                    <td className="py-3 px-4 font-mono text-[11px]">
+                    <td className="py-3 px-4 font-mono text-xs">
                       <button
                         type="button"
                         onClick={() => setViewingMapPlot(plot)}
@@ -480,7 +486,7 @@ export const PlotRegistrationPage: React.FC = () => {
                           className="text-accent-primary shrink-0 group-hover:scale-110 transition-transform"
                           weight="fill"
                         />
-                        <span className="font-mono text-[11px] truncate max-w-[150px]">
+                        <span className="font-mono text-xs truncate max-w-[150px]">
                           {formatDisplayCoord(plot.geometry)}
                         </span>
                         <Eye
@@ -580,7 +586,7 @@ export const PlotRegistrationPage: React.FC = () => {
                     setFormData({ ...formData, code: e.target.value })
                   }
                   placeholder="VD: PLOT-CAIBE-01"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
 
@@ -594,7 +600,7 @@ export const PlotRegistrationPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, farmerId: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   <option value="">
                     {t("field.plot.selectFarmerOption", "-- Chọn Nông hộ --")}
@@ -625,7 +631,7 @@ export const PlotRegistrationPage: React.FC = () => {
                       areaHa: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
                 <span className="absolute right-3 top-2 text-ink-tertiary">
                   ha

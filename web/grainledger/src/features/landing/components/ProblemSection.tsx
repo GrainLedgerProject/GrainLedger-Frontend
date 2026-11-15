@@ -81,7 +81,7 @@ export const ProblemSection: React.FC = () => {
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase font-semibold text-ink-tertiary">
+                  <span className="text-xs font-mono uppercase font-semibold text-ink-tertiary">
                     {card.badge}
                   </span>
                 </div>

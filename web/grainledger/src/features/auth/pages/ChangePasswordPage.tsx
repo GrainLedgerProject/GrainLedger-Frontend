@@ -213,7 +213,7 @@ export const ChangePasswordPage: React.FC = () => {
             {/* Strength meter bar */}
             {newPasswordValue && (
               <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-ink-tertiary">
                     {t("settings.complexity", "Độ phức tạp")}:
                   </span>
@@ -288,7 +288,7 @@ export const ChangePasswordPage: React.FC = () => {
               <ShieldCheck size={14} className="text-accent-primary" />
               {t("settings.secStandard", "Tiêu chuẩn bảo mật")}
             </span>
-            <p className="text-[11px]">
+            <p className="text-xs">
               {t(
                 "settings.secNotice",
                 "Đổi mật khẩu thành công sẽ tự động thu hồi các phiên làm việc đang hoạt động khác trên các thiết bị khác.",

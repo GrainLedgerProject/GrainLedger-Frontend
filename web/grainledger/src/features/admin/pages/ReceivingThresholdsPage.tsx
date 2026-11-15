@@ -3,7 +3,7 @@ import { ledgerEndpoints } from "@/api/ledger";
 import { confirmAction, toast } from "@/app/store/feedbackStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
-import { ArrowsClockwise, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { ArrowsClockwise, PencilSimple, Plus, Sliders, Trash, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 interface ThresholdValue { percentage: string; version: string }
@@ -36,20 +36,68 @@ export const ReceivingThresholdsPage = () => {
     setError(null);
     try {
       const [rawSettings, rawOrganizations] = await Promise.all([
-        ledgerEndpoints.getReceivingThresholds(), adminEndpoints.getOrganizations(),
+        ledgerEndpoints.getReceivingThresholds(),
+        adminEndpoints.getOrganizations(),
       ]);
       setSettings(parseSettings(rawSettings));
-      setOrganizations(Array.isArray(rawOrganizations)
-        ? (rawOrganizations as OrganizationDto[]).filter((org) => org.kind === "Customer") : []);
+      setOrganizations(
+        Array.isArray(rawOrganizations)
+          ? (rawOrganizations as OrganizationDto[]).filter(
+              (org) => org.kind === "Customer",
+            )
+          : [],
+      );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể tải ngưỡng tiếp nhận.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Không thể tải ngưỡng tiếp nhận.",
+      );
       setSettings(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    let active = true;
+
+    async function initData() {
+      try {
+        const [rawSettings, rawOrganizations] = await Promise.all([
+          ledgerEndpoints.getReceivingThresholds(),
+          adminEndpoints.getOrganizations(),
+        ]);
+        if (!active) return;
+        setSettings(parseSettings(rawSettings));
+        setOrganizations(
+          Array.isArray(rawOrganizations)
+            ? (rawOrganizations as OrganizationDto[]).filter(
+                (org) => org.kind === "Customer",
+              )
+            : [],
+        );
+      } catch (cause) {
+        if (!active) return;
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Không thể tải ngưỡng tiếp nhận.",
+        );
+        setSettings(null);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initData();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const availableOrganizations = organizations.filter((org) =>
     !settings?.companyOverrides.some((item) => item.companyId === org.id));
@@ -166,36 +214,65 @@ export const ReceivingThresholdsPage = () => {
       </section>
     </>}
     <Modal isOpen={editing !== null} onClose={() => setEditing(null)} ariaLabel="Cấu hình ngưỡng tiếp nhận">
-      <form onSubmit={(event) => void submit(event)}
-        className="w-full max-w-md space-y-4 rounded-2xl bg-surface-base p-6 shadow-xl">
-        <h2 className="text-lg font-display font-bold text-ink-primary">
-          {editing === "default" ? "Sửa ngưỡng mặc định" : editing === "new" ? "Thêm ngưỡng riêng" : "Sửa ngưỡng riêng"}
-        </h2>
-        {editing === "new" && <label className="block text-sm text-ink-primary">Doanh nghiệp
-          <select required value={companyId} onChange={(event) => setCompanyId(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2">
-            <option value="">Chọn doanh nghiệp</option>
-            {availableOrganizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
-          </select>
-        </label>}
-        <label className="block text-sm text-ink-primary">Tỷ lệ hao hụt (%)
-          <input required type="number" min="0" max="99.999999" step="0.000001" value={percentage}
-            onChange={(event) => setPercentage(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" />
-        </label>
-        <label className="block text-sm text-ink-primary">Lý do thay đổi
-          <textarea required maxLength={4000} value={reason} onChange={(event) => setReason(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" />
-        </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => setEditing(null)}
-            className="rounded-lg border border-ink-tertiary/20 px-4 py-2 text-sm text-ink-primary">Hủy</button>
-          <button type="submit" disabled={saving}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {saving ? "Đang lưu..." : "Lưu ngưỡng"}
+      <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+              <Sliders size={18} weight="bold" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-base text-ink-primary">
+                {editing === "default" ? "Sửa ngưỡng mặc định" : editing === "new" ? "Thêm ngưỡng riêng" : "Sửa ngưỡng riêng"}
+              </h2>
+              <p className="text-[11px] text-ink-secondary">
+                Cấu hình sai số hao hụt tiếp nhận nguyên liệu tại trạm
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditing(null)}
+            disabled={saving}
+            className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
+          >
+            <X size={18} />
           </button>
-        </div>
-      </form>
+        </header>
+
+        <form onSubmit={(event) => void submit(event)} className="p-5 space-y-4 text-xs">
+          {editing === "new" && (
+            <div>
+              <label className="block font-semibold text-ink-secondary mb-1">Doanh nghiệp *</label>
+              <select required value={companyId} onChange={(event) => setCompanyId(event.target.value)}
+                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full">
+                <option value="">Chọn doanh nghiệp</option>
+                {availableOrganizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block font-semibold text-ink-secondary mb-1">Tỷ lệ hao hụt (%) *</label>
+            <input required type="number" min="0" max="99.999999" step="0.000001" value={percentage}
+              onChange={(event) => setPercentage(event.target.value)}
+              className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full" />
+          </div>
+          <div>
+            <label className="block font-semibold text-ink-secondary mb-1">Lý do thay đổi *</label>
+            <textarea required maxLength={4000} rows={3} value={reason} onChange={(event) => setReason(event.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none" />
+          </div>
+          <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
+            <button type="button" onClick={() => setEditing(null)} disabled={saving}
+              className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary text-xs transition-colors">
+              Hủy
+            </button>
+            <button type="submit" disabled={saving}
+              className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60 text-xs shadow-xs">
+              {saving ? "Đang lưu..." : "Lưu ngưỡng"}
+            </button>
+          </div>
+        </form>
+      </div>
     </Modal>
   </div>;
 };

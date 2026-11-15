@@ -137,11 +137,6 @@ export const AppSidebar: React.FC = () => {
             icon: ClockCounterClockwise,
           },
           {
-            label: t("nav.mill.commitCorrection", "Ghi bút toán bù"),
-            path: "/mill/corrections/pending",
-            icon: CheckSquare,
-          },
-          {
             label: t("nav.events", "Tìm sự kiện"),
             path: "/events",
             icon: MagnifyingGlass,
@@ -161,17 +156,17 @@ export const AppSidebar: React.FC = () => {
             icon: Truck,
           },
           {
+            label: t("nav.stock.overview", "Tồn kho định danh"),
+            path: "/stock",
+            icon: Package,
+          },
+          {
             label: t("nav.mill.reconciliations", "Đối soát & Xác nhận"),
             path: "/mill/reconciliations",
             icon: CheckSquare,
           },
           {
-            label: t("nav.mill.commitCorrection", "Ghi bút toán bù"),
-            path: "/mill/corrections/pending",
-            icon: ClockCounterClockwise,
-          },
-          {
-            label: t("nav.risk.holdAlerts", "Cảnh báo HOLD"),
+            label: t("nav.risk.holdAlerts", "Cảnh báo & Xử lý HOLD"),
             path: "/risk/holds",
             icon: LockSimple,
           },
@@ -183,7 +178,7 @@ export const AppSidebar: React.FC = () => {
           {
             label: t("nav.mill.operations", "Ghi bước chế biến"),
             path: "/mill/operations/new",
-            icon: Scales,
+            icon: Factory,
           },
           {
             label: t("nav.events", "Tìm sự kiện"),
@@ -389,7 +384,7 @@ export const AppSidebar: React.FC = () => {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen shrink-0 overflow-hidden backdrop-blur-2xl bg-surface-base/95 lg:bg-surface-base/80 dark:bg-surface-base dark:shadow-lg border-r border-ink-tertiary/20 dark:border-surface-overlay flex flex-col justify-between transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] z-50 lg:z-40 shadow-[1px_0_3px_0_rgba(0,0,0,0.02)] ${
+        className={`fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen shrink-0 overflow-hidden backdrop-blur-2xl bg-surface-base/95 lg:bg-surface-base/80 dark:bg-surface-base dark:shadow-lg border-r border-ink-tertiary/20 dark:border-surface-overlay flex flex-col justify-between transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] z-50 lg:z-40 shadow-[1px_0_3px_0_rgba(0,0,0,0.02)] ${
           isMobileSidebarOpen
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0"
@@ -418,7 +413,10 @@ export const AppSidebar: React.FC = () => {
                 <span className="font-sans font-extrabold text-base text-ink-primary tracking-tight leading-tight">
                   GrainLedger
                 </span>
-                <span data-ui-detail="secondary" className="text-[10px] text-ink-tertiary uppercase tracking-wider truncate font-mono">
+                <span
+                  data-ui-detail="secondary"
+                  className="text-[10px] text-ink-tertiary uppercase tracking-wider truncate font-mono"
+                >
                   ISO 22095 Custody
                 </span>
               </div>
@@ -434,91 +432,94 @@ export const AppSidebar: React.FC = () => {
           </div>
 
           {/* Navigation Links */}
+
           <nav className="p-3 space-y-1.5 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-140px)]">
             {navItems.map((item) => {
               const Icon = item.icon;
+
               const isActive =
                 location.pathname === item.path ||
                 (item.path !== "/home" &&
-                  (location.pathname === item.path ||
-                    location.pathname.startsWith(item.path + "/")));
+                  location.pathname.startsWith(item.path + "/"));
+
               const showExpanded = !isSidebarCollapsed || isMobileSidebarOpen;
+
+              const badgeColor =
+                item.badgeTone === "danger"
+                  ? "bg-accent-danger text-white"
+                  : item.badgeTone === "warning"
+                    ? "bg-accent-warning text-ink-primary dark:text-ink-inverse"
+                    : "bg-accent-primary text-ink-inverse";
+
+              const dotColor =
+                item.badgeTone === "danger"
+                  ? "bg-accent-danger"
+                  : item.badgeTone === "warning"
+                    ? "bg-accent-warning"
+                    : "bg-accent-primary";
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileSidebarOpen(false)}
-                  className={`group relative flex h-10 items-center rounded-full border text-xs font-medium transition-colors duration-150 ${
-                    showExpanded ? "justify-start gap-3 px-3" : "justify-center"
-                  } ${
+                  className={`group relative flex h-10 w-full items-center overflow-hidden rounded-full border text-xs font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ${
                     isActive
                       ? "bg-accent-primary/10 text-accent-primary border-accent-primary/40 shadow-xs font-semibold dark:bg-accent-primary/15 dark:border-accent-primary/40 dark:shadow-sm"
                       : "border-transparent text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
-                  aria-label={showExpanded ? undefined : item.label}
+                  aria-label={!showExpanded ? item.label : undefined}
                   aria-current={isActive ? "page" : undefined}
+                  title={!showExpanded ? item.label : undefined}
                 >
-                  <Icon
-                    size={19}
-                    weight={isActive ? "fill" : "regular"}
-                    className={`shrink-0 transition-transform duration-150 group-hover:scale-105 ${
-                      isActive
-                        ? "text-accent-primary"
-                        : "text-ink-tertiary group-hover:text-ink-primary dark:group-hover:text-white"
-                    }`}
-                  />
-
-                  <span
-                    className={`truncate whitespace-nowrap overflow-hidden text-left transition-[opacity,max-width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      showExpanded
-                        ? "flex-1 min-w-0 opacity-100 max-w-[170px]"
-                        : "opacity-0 max-w-0 pointer-events-none"
-                    }`}
-                  >
-                    {
-                      <span
-                        className={
-                          showExpanded
-                            ? "min-w-0 max-w-[170px] flex-1 truncate text-left"
-                            : "hidden"
-                        }
-                      >
-                        {item.label}
-                      </span>
-                    }
-                  </span>
-
-                  {/* Badge indicator (expanded) */}
-                  {item.badge !== undefined && (
-                    <span
-                      className={`text-[10px] font-bold rounded-full font-mono shrink-0 shadow-2xs transition-[opacity,transform] duration-200 ${
-                        showExpanded
-                          ? "px-2 py-0.5 opacity-100 scale-100"
-                          : "w-0 px-0 py-0 opacity-0 scale-75 overflow-hidden"
-                      } ${
-                        item.badgeTone === "danger"
-                          ? "bg-accent-danger text-white"
-                          : item.badgeTone === "warning"
-                            ? "bg-accent-warning text-ink-primary dark:text-ink-inverse"
-                            : "bg-accent-primary text-ink-inverse"
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-
-                  {/* Dot badge on collapsed state */}
-                  {!showExpanded && item.badge !== undefined && (
-                    <span
-                      className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-surface-base ${
-                        item.badgeTone === "danger"
-                          ? "bg-accent-danger"
-                          : item.badgeTone === "warning"
-                            ? "bg-accent-warning"
-                            : "bg-accent-primary"
+                  {/* Icon - cố định vị trí tuyệt đối */}
+                  <span className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center shrink-0">
+                    <Icon
+                      size={19}
+                      weight={isActive ? "fill" : "regular"}
+                      className={`transition-[color,transform] duration-200 group-hover:scale-105 ${
+                        isActive
+                          ? "text-accent-primary"
+                          : "text-ink-tertiary group-hover:text-ink-primary dark:group-hover:text-white"
                       }`}
                     />
+                  </span>
+
+                  {/* Label - fade và trượt nhẹ */}
+                  <span
+                    className={`absolute left-11 ${
+                      item.badge !== undefined ? "right-[60px]" : "right-3"
+                    } truncate whitespace-nowrap text-left transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      showExpanded
+                        ? "translate-x-0 opacity-100"
+                        : "-translate-x-2 opacity-0 pointer-events-none"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+
+                  {/* Badge khi mở rộng */}
+                  {item.badge !== undefined && (
+                    <>
+                      <span
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-[10px] font-bold font-mono shadow-2xs transition-[opacity,scale] duration-300 ease-out ${badgeColor} ${
+                          showExpanded
+                            ? "opacity-100 scale-100"
+                            : "opacity-0 scale-75 pointer-events-none"
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+
+                      {/* Dot badge khi thu gọn */}
+                      <span
+                        className={`absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-surface-base transition-[opacity,scale] duration-300 ease-out ${dotColor} ${
+                          showExpanded
+                            ? "opacity-0 scale-50"
+                            : "opacity-100 scale-100"
+                        }`}
+                      />
+                    </>
                   )}
                 </Link>
               );

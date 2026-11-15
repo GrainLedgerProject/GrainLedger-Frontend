@@ -201,15 +201,15 @@ export const OfflineSyncQueuePage: React.FC = () => {
                         CHỜ GỬI
                       </span>
                     </div>
-                    <p className="font-mono text-[11px] text-ink-secondary mt-1">
+                    <p className="font-mono text-xs text-ink-secondary mt-1">
                       {item?.measuredValue || "0"} kg · Độ ẩm {item?.moisturePercent || "0"}%
                     </p>
-                    <p className="text-[11px] text-ink-tertiary mt-1">
+                    <p className="text-xs text-ink-tertiary mt-1">
                       Ghi nhận{" "}
                       {new Date(record.capturedAt).toLocaleString("vi-VN")}
                     </p>
                     {record.lastError && (
-                      <p className="text-[11px] mt-2 text-accent-warning flex gap-1.5">
+                      <p className="text-xs mt-2 text-accent-warning flex gap-1.5">
                         <WarningCircle size={14} className="shrink-0" />
                         {record.lastError}
                       </p>

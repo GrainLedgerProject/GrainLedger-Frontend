@@ -84,7 +84,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 <ShieldCheck size={14} />
                 {t("auth.securityRuleTitle", "Chính sách bảo vệ tài khoản")}
               </span>
-              <p className="text-[11px]">
+              <p className="text-xs">
                 {t(
                   "auth.forgotPasswordPrivacy",
                   "Để bảo vệ quyền riêng tư của khách hàng và nhà máy, hệ thống không tiết lộ email có tồn tại hay không.",

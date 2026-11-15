@@ -1,23 +1,25 @@
 import {
-adminEndpoints,
-type AdminUserDto,
-type OrganizationDto,
+  adminEndpoints,
+  type AdminUserDto,
+  type OrganizationDto,
 } from "@/api/admin";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal/Modal";
 import { RoleChip } from "@/components/RoleChip/RoleChip";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { ROLE_DEFINITIONS,type UserRole } from "@/shared/types/roles";
+import { ROLE_DEFINITIONS, type UserRole } from "@/shared/types/roles";
 import {
-ArrowsClockwise,
-Buildings,
-CheckCircle,
-MagnifyingGlass,
-PencilSimple,
-Users,
-WarningCircle,
-X
+  ArrowsClockwise,
+  Buildings,
+  CheckCircle,
+  MagnifyingGlass,
+  PencilSimple,
+  Users,
+  UsersIcon,
+  WarningCircle,
+  X,
 } from "@phosphor-icons/react";
-import React,{ useEffect,useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 export const UserAccessManagementPage: React.FC = () => {
@@ -36,35 +38,45 @@ export const UserAccessManagementPage: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const loadData = async () => {
+  const [reloadCount, setReloadCount] = useState(0);
+
+  const loadData = useCallback(() => {
     setLoading(true);
     setError(null);
-    try {
-      const [usersRes, orgsRes] = await Promise.all([
-        adminEndpoints.getUsers(),
-        adminEndpoints.getOrganizations(),
-      ]);
-      setUsers(Array.isArray(usersRes) ? usersRes : []);
-      setOrganizations(Array.isArray(orgsRes) ? orgsRes : []);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "admin.users.errorLoad",
-            "Không thể tải danh sách tài khoản người dùng.",
-          ),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    setReloadCount((c) => c + 1);
+  }, []);
 
   useEffect(() => {
-    void loadData();
-  }, []);
+    let active = true;
+    Promise.all([
+      adminEndpoints.getUsers(),
+      adminEndpoints.getOrganizations(),
+    ])
+      .then(([usersRes, orgsRes]) => {
+        if (!active) return;
+        setUsers(Array.isArray(usersRes) ? usersRes : []);
+        setOrganizations(Array.isArray(orgsRes) ? orgsRes : []);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : t(
+                "admin.users.errorLoad",
+                "Không thể tải danh sách tài khoản người dùng.",
+              ),
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [reloadCount, t]);
 
   const handleOpenEdit = (user: AdminUserDto) => {
     setSelectedUser(user);
@@ -81,7 +93,10 @@ export const UserAccessManagementPage: React.FC = () => {
     setError(null);
     try {
       const etag = selectedUser.etag;
-      if (!etag) throw new Error("Thiếu phiên bản quyền truy cập. Hãy tải lại danh sách người dùng.");
+      if (!etag)
+        throw new Error(
+          "Thiếu phiên bản quyền truy cập. Hãy tải lại danh sách người dùng.",
+        );
       await adminEndpoints.updateUserAccess(selectedUser.id, etag, {
         role,
         organizationId: organizationId || null,
@@ -127,13 +142,19 @@ export const UserAccessManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("admin.users.tag", "PHÂN QUYỀN VAI TRÒ & TỔ CHỨC (RBAC)")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("admin.users.title", "Phân quyền Tài khoản & Ranh giới Tổ chức")}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "admin.users.subtitle",
               "Gán 6 vai trò nghiệp vụ nội bộ hoặc người xem kho, liên kết tài khoản với tổ chức và kiểm soát trạng thái hoạt động.",
@@ -169,7 +190,7 @@ export const UserAccessManagementPage: React.FC = () => {
       )}
 
       {/* Filter Toolbar */}
-      <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -179,7 +200,7 @@ export const UserAccessManagementPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           />
           <MagnifyingGlass
             size={16}
@@ -216,7 +237,7 @@ export const UserAccessManagementPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("admin.users.user", "Người dùng")}
@@ -245,7 +266,7 @@ export const UserAccessManagementPage: React.FC = () => {
                       <span className="font-semibold text-ink-primary block">
                         {u.displayName}
                       </span>
-                      <span className="font-mono text-[11px] text-ink-tertiary">
+                      <span className="font-mono text-xs text-ink-tertiary">
                         {u.email}
                       </span>
                     </td>
@@ -298,26 +319,39 @@ export const UserAccessManagementPage: React.FC = () => {
       </div>
 
       {/* Edit Access Modal */}
-      {selectedUser && (
-        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+      <Modal
+        isOpen={Boolean(selectedUser)}
+        onClose={() => setSelectedUser(null)}
+        ariaLabel={t("admin.ueditPermission", "Cập nhật quyền truy cập")}
+      >
+        {selectedUser && (
           <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold text-accent-primary uppercase tracking-wider">
-                  {t("admin.users.modalTag", "CẬP NHẬT TRUY CẬP HỆ THỐNG")}
-                </span>
-                <h3 className="font-display font-bold text-base text-ink-primary">
-                  {selectedUser.displayName}
-                </h3>
+            <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+                  <UsersIcon weight="bold" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-base text-ink-primary">
+                    {t("admin.ueditPermission", "Cập nhật quyền truy cập")}
+                  </h2>
+                  <p className="text-[11px] text-ink-secondary">
+                    {t(
+                      "admin.users.updatePermissionDescription",
+                      "Cập nhật quyền truy cập hệ thống",
+                    )}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+                disabled={submitting}
+                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
               >
                 <X size={18} />
               </button>
-            </div>
+            </header>
 
             <form onSubmit={handleSaveAccess} className="p-5 space-y-4 text-xs">
               <div>
@@ -327,7 +361,7 @@ export const UserAccessManagementPage: React.FC = () => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   {(Object.keys(ROLE_DEFINITIONS) as UserRole[]).map((rKey) => (
                     <option key={rKey} value={rKey}>
@@ -347,7 +381,7 @@ export const UserAccessManagementPage: React.FC = () => {
                 <select
                   value={organizationId}
                   onChange={(e) => setOrganizationId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   <option value="">
                     {t("admin.users.noOrgSelect", "-- Chưa gán tổ chức --")}
@@ -403,8 +437,8 @@ export const UserAccessManagementPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

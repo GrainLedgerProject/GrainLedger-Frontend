@@ -58,9 +58,16 @@ export const FieldSampleRegistrationPage: React.FC = () => {
     setError(null);
     try {
       const res = await sampleEndpoints.getSamples();
-      setSamples(Array.isArray(res) ? (res as SampleItem[]) :
-        res && typeof res === "object" && "items" in res && Array.isArray(res.items)
-          ? (res.items as SampleItem[]) : []);
+      setSamples(
+        Array.isArray(res)
+          ? (res as SampleItem[])
+          : res &&
+              typeof res === "object" &&
+              "items" in res &&
+              Array.isArray(res.items)
+            ? (res.items as SampleItem[])
+            : [],
+      );
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -81,9 +88,16 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       try {
         const res = await sampleEndpoints.getSamples();
         if (!active) return;
-        setSamples(Array.isArray(res) ? (res as SampleItem[]) :
-          res && typeof res === "object" && "items" in res && Array.isArray(res.items)
-            ? (res.items as SampleItem[]) : []);
+        setSamples(
+          Array.isArray(res)
+            ? (res as SampleItem[])
+            : res &&
+                typeof res === "object" &&
+                "items" in res &&
+                Array.isArray(res.items)
+              ? (res.items as SampleItem[])
+              : [],
+        );
       } catch (err: unknown) {
         if (!active) return;
         if (err instanceof Error) {
@@ -112,7 +126,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
 
   const handleCreateSample = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sealCode.trim() || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sourceLotId.trim())) {
+    if (
+      !sealCode.trim() ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        sourceLotId.trim(),
+      )
+    ) {
       setError("Cần nhập mã niêm phong và ID lô nguồn dạng UUID hợp lệ.");
       return;
     }
@@ -137,7 +156,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
         },
       };
 
-      const created = await sampleEndpoints.captureSample(payload) as { code?: string } | null;
+      const created = (await sampleEndpoints.captureSample(payload)) as {
+        code?: string;
+      } | null;
 
       setSuccessMsg(
         t(
@@ -249,7 +270,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -258,7 +282,10 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               "Lấy Mẫu Niêm Phong & Bàn Giao (Procurement Samples)",
             )}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "field.samples.subtitle",
               "Ghi nhận mã niêm chì và mã barcode của mẫu thóc đại diện được lấy tại điểm thu mua trước khi đưa về nhà máy sấy và lưu kho.",
@@ -381,12 +408,12 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                     </span>
                   </div>
                   {sample.materialDescription && (
-                    <div className="text-ink-tertiary text-[11px] truncate">
+                    <div className="text-ink-tertiary text-xs truncate">
                       {sample.materialDescription}
                     </div>
                   )}
                   {sample.laboratoryName && (
-                    <div className="flex items-center gap-1 text-accent-primary text-[11px] pt-1 border-t border-ink-tertiary/10">
+                    <div className="flex items-center gap-1 text-accent-primary text-xs pt-1 border-t border-ink-tertiary/10">
                       <Truck size={12} />
                       <span>{sample.laboratoryName}</span>
                     </div>
@@ -395,7 +422,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               </div>
 
               <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-between text-xs text-ink-secondary">
-                <span className="inline-flex items-center gap-1 text-[11px]">
+                <span className="inline-flex items-center gap-1 text-xs">
                   <Calendar size={13} className="text-ink-tertiary" />
                   <span>
                     {new Date(sample.collectedAt).toLocaleDateString("vi-VN")}
@@ -442,7 +469,9 @@ export const FieldSampleRegistrationPage: React.FC = () => {
               onSubmit={handleCreateSample}
               className="p-5 space-y-4 text-xs"
             >
-              <p className="text-ink-secondary">Mã mẫu sẽ do máy chủ cấp khi lưu.</p>
+              <p className="text-ink-secondary">
+                Mã mẫu sẽ do máy chủ cấp khi lưu.
+              </p>
 
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
@@ -454,7 +483,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={sealCode}
                   onChange={(e) => setSealCode(e.target.value)}
                   placeholder="VD: SEAL-RED-9921"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -470,7 +499,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={sourceLotId}
                   onChange={(e) => setSourceLotId(e.target.value)}
                   placeholder="UUID của lô thu mua nguồn"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -486,7 +515,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={materialDescription}
                   onChange={(e) => setMaterialDescription(e.target.value)}
                   placeholder="VD: Mẫu thóc Jasmine 85 thu tại ruộng hộ Trần Văn Bảy..."
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -541,7 +570,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                 <div className="font-semibold text-accent-primary">
                   Mẫu: {selectedSample.code}
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-xs text-ink-secondary">
                   Niêm chì: {selectedSample.sealCode} | Lô:{" "}
                   {selectedSample.sourceLotId}
                 </div>
@@ -556,7 +585,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={fromParty}
                   onChange={(e) => setFromParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -569,7 +598,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={toParty}
                   onChange={(e) => setToParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 />
               </div>
 
@@ -581,7 +610,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={laboratoryName}
                   onChange={(e) => setLaboratoryName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   <option value="">Chọn phòng kiểm định</option>
                   <option value="Viện Kiểm Nghiệm NIFC">
@@ -607,7 +636,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={sealCondition}
                   onChange={(e) => setSealCondition(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   <option value="">Chọn tình trạng niêm chì</option>
                   <option value="NGUYÊN VẸN">

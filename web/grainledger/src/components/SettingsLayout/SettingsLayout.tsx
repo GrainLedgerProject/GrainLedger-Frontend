@@ -69,7 +69,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
                   <div className="font-medium text-sm leading-tight text-ink-primary">
                     {item.label}
                   </div>
-                  <div data-ui-detail="secondary" className="text-[11px] text-ink-tertiary mt-0.5">
+                  <div data-ui-detail="secondary" className="text-xs text-ink-tertiary mt-0.5">
                     {item.description}
                   </div>
                 </div>
@@ -77,7 +77,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
             );
           })}
 
-          <div data-ui-detail="secondary" className="pt-4 px-3 text-[11px] text-ink-tertiary space-y-1 border-t border-ink-tertiary/10 mt-4">
+          <div data-ui-detail="secondary" className="pt-4 px-3 text-xs text-ink-tertiary space-y-1 border-t border-ink-tertiary/10 mt-4">
             <div className="flex items-center gap-1.5 text-accent-primary font-semibold">
               <ShieldCheck size={14} />
               <span>

@@ -239,7 +239,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                           )}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-secondary mt-0.5">
+                      <p className="text-xs text-ink-secondary mt-0.5">
                         {t(
                           "header.holdAlertDesc",
                           "Tricyclazole tiệm cận ngưỡng MRL EU (0.009 mg/kg / 0.010 mg/kg).",
@@ -261,7 +261,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                           )}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-secondary mt-0.5">
+                      <p className="text-xs text-ink-secondary mt-0.5">
                         {t(
                           "header.planAlertDesc",
                           "Container C-101 (24,000 kg Gạo trắng 5% tấm) — Khách hàng Exporter A.",
@@ -303,7 +303,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             aria-label="Toggle language"
           >
             <GlobeIcon size={16} weight="bold" />
-            <span className="uppercase font-mono text-[11px]">{language}</span>
+            <span className="uppercase font-mono text-xs">{language}</span>
           </button>
 
           {/* Help link */}
@@ -356,7 +356,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       {user?.displayName ||
                         t("header.notLoggedIn", "Chưa đăng nhập")}
                     </p>
-                    <p className="text-ink-tertiary truncate font-mono text-[11px]">
+                    <p className="text-ink-tertiary truncate font-mono text-xs">
                       {user?.email ||
                         t("header.guestEmail", "guest@grainledger.local")}
                     </p>

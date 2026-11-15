@@ -72,7 +72,7 @@ export const ComparisonBento: React.FC = () => {
               className="p-6 sm:p-7 rounded-3xl bg-surface-base border border-ink-tertiary/20 shadow-apple-card grid grid-cols-1 md:grid-cols-12 gap-5 items-center"
             >
               <div className="md:col-span-3">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-ink-tertiary block mb-1">
+                <span className="text-xs font-mono uppercase tracking-wider text-ink-tertiary block mb-1">
                   Tiêu chí
                 </span>
                 <h4 className="font-sans font-bold text-base text-ink-primary">

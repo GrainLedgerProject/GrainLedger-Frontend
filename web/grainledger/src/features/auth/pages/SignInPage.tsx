@@ -187,7 +187,7 @@ export const SignInPage: React.FC = () => {
                   {t("auth.securityRuleTitle", "Quy tắc bảo mật hệ thống")}
                 </span>
               </div>
-              <p className="text-[11px] text-ink-secondary">
+              <p className="text-xs text-ink-secondary">
                 {t(
                   "auth.securityRuleDesc",
                   "Tài khoản được cấp phát theo thư mời từ Quản trị nhà máy. Hệ thống không mở đăng ký tự do để bảo đảm toàn vẹn chuỗi lưu giữ.",
@@ -206,7 +206,7 @@ export const SignInPage: React.FC = () => {
                 <span className="font-semibold text-ink-primary block">
                   {t("auth.chainCustodyTitle", "Bảo toàn chuỗi lưu giữ")}
                 </span>
-                <span className="text-[11px] leading-snug">
+                <span className="text-xs leading-snug">
                   {t(
                     "auth.chainCustodyDesc",
                     "Hạch toán bảo toàn khối lượng chính xác đến từng kg, bất biến và có thể kiểm toán.",
@@ -227,7 +227,7 @@ export const SignInPage: React.FC = () => {
                     "Cô lập đa khách hàng (Multi-Tenant)",
                   )}
                 </span>
-                <span className="text-[11px] leading-snug">
+                <span className="text-xs leading-snug">
                   {t(
                     "auth.multiTenantDesc",
                     "Mỗi doanh nghiệp sở hữu và quản lý độc lập toàn bộ dữ liệu lô hàng và tồn kho.",
@@ -237,7 +237,7 @@ export const SignInPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="text-[11px] text-ink-tertiary pt-4 border-t border-ink-tertiary/15 font-mono">
+          <div className="text-xs text-ink-tertiary pt-4 border-t border-ink-tertiary/15 font-mono">
             {t("auth.isoVersionTag", "Phiên bản 2026 • ISO 22095:2020")}
           </div>
         </div>

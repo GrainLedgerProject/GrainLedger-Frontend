@@ -1,10 +1,7 @@
 import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  catalogsEndpoints,
-  type ActiveSubstanceDto,
-} from "@/api/catalogs";
+import { catalogsEndpoints, type ActiveSubstanceDto } from "@/api/catalogs";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
@@ -39,11 +36,20 @@ interface MrlTableItem {
   }>;
 }
 
-interface LookupItem { id: string; name: string; code?: string }
+interface LookupItem {
+  id: string;
+  name: string;
+  code?: string;
+}
 
 function pageItems<T>(response: unknown): T[] {
   if (Array.isArray(response)) return response as T[];
-  if (response && typeof response === "object" && "items" in response && Array.isArray(response.items))
+  if (
+    response &&
+    typeof response === "object" &&
+    "items" in response &&
+    Array.isArray(response.items)
+  )
     return response.items as T[];
   return [];
 }
@@ -258,7 +264,10 @@ export const MrlVersionsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+          >
             {t("catalogs.mrl.tag", "QUẢN LÝ BẢNG GIỚI HẠN DƯ LƯỢNG MRL")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -267,7 +276,10 @@ export const MrlVersionsPage: React.FC = () => {
               "Ngưỡng Dư lượng MRL theo Thị trường Đích",
             )}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "catalogs.mrl.subtitle",
               "Quản lý bảng ngưỡng MRL có phiên bản hiệu lực cho 6 thị trường: EU, Mỹ, Nhật Bản, Hàn Quốc, Codex, Việt Nam.",
@@ -350,7 +362,7 @@ export const MrlVersionsPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
                 <tr>
                   <th className="py-3 px-4">
                     {t("catalogs.mrl.thMarket", "Thị trường xuất khẩu")}
@@ -413,23 +425,26 @@ export const MrlVersionsPage: React.FC = () => {
                         }
                       />
                     </td>
-                    <td className="py-3 px-4 text-right space-x-1">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenLimits(v)}
-                        className="px-2.5 py-1 rounded bg-surface-raised hover:bg-surface-overlay border border-ink-tertiary/20 font-semibold text-accent-primary text-[11px]"
-                      >
-                        {t("catalogs.mrl.limitsBtn", "Bảng ngưỡng hoạt chất")}
-                      </button>
-                      {!v.isPublished && (
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
-                          onClick={() => handlePublish(v.id)}
-                          className="px-2.5 py-1 rounded bg-accent-primary text-ink-inverse font-semibold text-[11px] hover:bg-accent-primary-dim"
+                          onClick={() => handleOpenLimits(v)}
+                          className="px-2.5 py-1 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-ink-tertiary/20 font-semibold text-accent-primary text-xs"
                         >
-                          {t("catalogs.mrl.publishBtn", "Công bố")}
+                          {t("catalogs.mrl.limitsBtn", "Chi tiết")}
                         </button>
-                      )}
+
+                        {!v.isPublished && (
+                          <button
+                            type="button"
+                            onClick={() => handlePublish(v.id)}
+                            className="px-2.5 py-1 rounded-lg bg-accent-primary text-ink-inverse font-semibold text-xs hover:bg-accent-primary-dim"
+                          >
+                            {t("catalogs.mrl.publishBtn", "Công bố")}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -473,14 +488,16 @@ export const MrlVersionsPage: React.FC = () => {
                   onChange={(e) =>
                     setCreateForm({ ...createForm, marketId: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   {markets.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} ({m.code})
                     </option>
                   ))}
-                  {markets.length === 0 && <option value="">Chưa có thị trường</option>}
+                  {markets.length === 0 && (
+                    <option value="">Chưa có thị trường</option>
+                  )}
                 </select>
               </div>
 
@@ -500,14 +517,16 @@ export const MrlVersionsPage: React.FC = () => {
                       commodityId: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
                 >
                   {commodities.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.code})
                     </option>
                   ))}
-                  {commodities.length === 0 && <option value="">Chưa có mặt hàng</option>}
+                  {commodities.length === 0 && (
+                    <option value="">Chưa có mặt hàng</option>
+                  )}
                 </select>
               </div>
 
@@ -528,7 +547,7 @@ export const MrlVersionsPage: React.FC = () => {
                       effectiveFrom: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
 
@@ -544,7 +563,7 @@ export const MrlVersionsPage: React.FC = () => {
                     setCreateForm({ ...createForm, sourceRef: e.target.value })
                   }
                   placeholder="VD: Regulation (EC) No 396/2005"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
                 />
               </div>
 
@@ -800,9 +819,9 @@ export const MrlVersionsPage: React.FC = () => {
                   required
                   value={importRawJson}
                   onChange={(e) => setImportRawJson(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-[11px]"
+                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono text-xs"
                 />
-                <span className="text-[11px] text-ink-tertiary mt-1 block">
+                <span className="text-xs text-ink-tertiary mt-1 block">
                   Định dạng JSON chuẩn theo schema OpenAPI: marketId,
                   commodityId, effectiveFrom, sourceRef, limits[].
                 </span>
