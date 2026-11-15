@@ -202,7 +202,7 @@ export const FarmerRegistrationPage: React.FC = () => {
           deviceId: "grainledger-web",
           clientOperationId,
           capturedAt: new Date().toISOString(),
-          payloadSchemaVersion: 1,
+          payloadSchemaVersion: 2,
           payload: {
             entityId,
             code: formData.code.trim(),
@@ -353,7 +353,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-body"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:rounded-full focus:border-accent-primary focus:outline-none font-body"
           />
           <MagnifyingGlass
             size={16}

@@ -2,6 +2,7 @@ import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import {
   getQueuedProcurements,
+  getUnassignedProcurementCount,
   isProcurementSyncing,
   onProcurementQueueChanged,
   onProcurementSyncStateChanged,
@@ -21,6 +22,7 @@ import React, { useCallback, useEffect, useState, useSyncExternalStore } from "r
 export const OfflineSyncQueuePage: React.FC = () => {
   const { isOnline, setPendingOfflineCount, procurementSyncMode, setProcurementSyncMode } = useUiStore();
   const [records, setRecords] = useState<QueuedProcurement[]>([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const isSyncing = useSyncExternalStore(onProcurementSyncStateChanged, isProcurementSyncing);
   const [summary, setSummary] = useState<string | null>(null);
@@ -28,8 +30,9 @@ export const OfflineSyncQueuePage: React.FC = () => {
   const [hasFailures, setHasFailures] = useState(false);
 
   const refresh = useCallback(async () => {
-    const queued = await getQueuedProcurements();
+    const [queued, unassigned] = await Promise.all([getQueuedProcurements(), getUnassignedProcurementCount()]);
     setRecords(queued);
+    setUnassignedCount(unassigned);
     setPendingOfflineCount(queued.length);
     setIsLoading(false);
     return queued.length;
@@ -37,9 +40,10 @@ export const OfflineSyncQueuePage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    void getQueuedProcurements().then((queued) => {
+    void Promise.all([getQueuedProcurements(), getUnassignedProcurementCount()]).then(([queued, unassigned]) => {
       if (!active) return;
       setRecords(queued);
+      setUnassignedCount(unassigned);
       setPendingOfflineCount(queued.length);
       setIsLoading(false);
     });
@@ -119,6 +123,11 @@ export const OfflineSyncQueuePage: React.FC = () => {
         </button>
       </section>
       {syncError && <p role="alert" className="p-3.5 rounded-xl bg-functional-rejected-bg text-accent-danger text-xs">{syncError}</p>}
+      {unassignedCount > 0 && (
+        <p role="status" className="p-3.5 rounded-xl bg-functional-stale-bg text-accent-warning text-xs">
+          Có {unassignedCount} phiếu được lưu bằng phiên bản cũ chưa xác định tài khoản. Các phiếu này được giữ trên thiết bị nhưng sẽ không tự gửi để tránh ghi sai tài khoản. Hãy liên hệ quản trị viên để đối chiếu trước khi nhập lại.
+        </p>
+      )}
       <section
         className={`p-4 rounded-2xl border flex items-center gap-3 ${isOnline ? "bg-functional-balanced-bg border-accent-primary/25" : "bg-functional-stale-bg border-functional-stale-border/40"}`}
         role="status"

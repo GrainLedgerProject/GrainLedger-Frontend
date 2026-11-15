@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CheckCircle,
   EnvelopeSimple,
-  LockSimple,
   ShieldCheck,
 } from "@phosphor-icons/react";
 import React, { useState } from "react";

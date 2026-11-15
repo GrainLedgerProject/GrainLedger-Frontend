@@ -83,7 +83,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleMeta> = {
 
 /** Normalize backend role strings to frontend UserRole */
 export function normalizeUserRole(rawRole?: string | null): UserRole {
-  if (!rawRole) return 'MILL_OPERATOR';
+  if (!rawRole) return 'AUTHORIZED_STOCK_VIEWER';
   const upper = rawRole.toUpperCase();
   if (upper === 'ADMINISTRATOR' || upper === 'MILL_ADMIN') return 'MILL_ADMIN';
   if (upper === 'MILLMANAGER' || upper === 'MILL_MANAGER') return 'MILL_MANAGER';
@@ -92,7 +92,7 @@ export function normalizeUserRole(rawRole?: string | null): UserRole {
   if (upper === 'CUSTOMERMANAGER' || upper === 'CUSTOMER_MANAGER') return 'CUSTOMER_MANAGER';
   if (upper === 'EXPORTSTAFF' || upper === 'CUSTOMER_EXPORT_OFFICER' || upper === 'EXPORT') return 'CUSTOMER_EXPORT_OFFICER';
   if (upper === 'STOCKVIEWER' || upper === 'AUTHORIZED_STOCK_VIEWER') return 'AUTHORIZED_STOCK_VIEWER';
-  return 'MILL_OPERATOR';
+  return 'AUTHORIZED_STOCK_VIEWER';
 }
 
 export function isMillSide(role: UserRole): boolean {

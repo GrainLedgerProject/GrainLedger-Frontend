@@ -21,6 +21,10 @@ function request(id: string): RegisterProcurementRequest {
 }
 
 beforeEach(async () => {
+  useAuthStore.setState({
+    user: { id: "auto-user", email: "auto@example.com", displayName: "Auto", role: "CUSTOMER_PROCUREMENT_OFFICER", organizationId: "org-a", isActive: true, permissions: [] },
+    isAuthenticated: true,
+  });
   await useUiStore.getState().checkConnection();
   await withStore(STORES.PROCUREMENT_QUEUE, "readwrite", (store) => store.clear());
   vi.mocked(procurementEndpoints.registerProcurement).mockReset().mockResolvedValue({} as never);

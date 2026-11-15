@@ -104,47 +104,6 @@ interface DraftData {
   lossReason: string;
 }
 
-const DEFAULT_FALLBACK_LOTS: LotOption[] = [
-  {
-    id: "LOT-2026-S1",
-    code: "LOT-2026-S1",
-    stage: "RAW_PADDY",
-    commodityName: "Lúa Jasmine 85",
-    locationId: "loc-silo-1",
-    locationName: "Silo 1 (Tháp sấy đứng)",
-    quantityKg: "88000",
-    availableKg: "88000",
-    isHold: false,
-    restrictions: [],
-  },
-  {
-    id: "LOT-2026-S2",
-    code: "LOT-2026-S2",
-    stage: "DRIED_PADDY",
-    commodityName: "Lúa ST25 sấy khô",
-    locationId: "loc-silo-2",
-    locationName: "Silo 2 (Bồn trữ hạt sấy)",
-    quantityKg: "120000",
-    availableKg: "120000",
-    isHold: false,
-    restrictions: [],
-  },
-  {
-    id: "LOT-2026-HOLD-TEST",
-    code: "LOT-2026-HOLD-TEST",
-    stage: "RAW_PADDY",
-    commodityName: "Lúa Đài Thơm 8 (Nghi ngờ dư lượng)",
-    locationId: "loc-quarantine",
-    locationName: "Khu cách ly kiểm dịch Q-01",
-    quantityKg: "45000",
-    availableKg: "0",
-    isHold: true,
-    holdReason:
-      "Lô đang bị giữ theo lệnh phong toả kiểm dịch. Nghi ngờ nhiễm Tricyclazole vượt ngưỡng MRL EU.",
-    restrictions: ["HOLD: Quarantine Tricyclazole"],
-  },
-];
-
 const DRAFT_KEY = "SC15_OPERATION_ENTRY";
 
 export const OperationEntryPage: React.FC = () => {
@@ -157,7 +116,7 @@ export const OperationEntryPage: React.FC = () => {
   }, [getDraft]);
 
   // API Lots state
-  const [lots, setLots] = useState<LotOption[]>(DEFAULT_FALLBACK_LOTS);
+  const [lots, setLots] = useState<LotOption[]>([]);
   const [loadingLots, setLoadingLots] = useState<boolean>(true);
   const [fetchLotsError, setFetchLotsError] = useState<string | null>(null);
 
@@ -166,32 +125,31 @@ export const OperationEntryPage: React.FC = () => {
     "DRYING" | "MILLING" | "BLENDING" | "BAGGING"
   >(() => initialDraft?.processType || "MILLING");
   const [selectedInputLot, setSelectedInputLot] = useState<string>(
-    () => initialDraft?.selectedInputLot || "LOT-2026-S1",
+    () => initialDraft?.selectedInputLot || "",
   );
   const [inputMassKg, setInputMassKg] = useState<string>(
-    () => initialDraft?.inputMassKg || "88000",
+    () => initialDraft?.inputMassKg || "",
   );
 
   // Outputs (for milling: head rice, broken, bran, husk, and declared loss)
   const [headRiceKg, setHeadRiceKg] = useState<string>(
-    () => initialDraft?.headRiceKg || "58000",
+    () => initialDraft?.headRiceKg || "",
   );
   const [brokenRiceKg, setBrokenRiceKg] = useState<string>(
-    () => initialDraft?.brokenRiceKg || "8000",
+    () => initialDraft?.brokenRiceKg || "",
   );
   const [branKg, setBranKg] = useState<string>(
-    () => initialDraft?.branKg || "6000",
+    () => initialDraft?.branKg || "",
   );
   const [huskKg, setHuskKg] = useState<string>(
-    () => initialDraft?.huskKg || "15700",
+    () => initialDraft?.huskKg || "",
   );
   const [declaredLossKg, setDeclaredLossKg] = useState<string>(
-    () => initialDraft?.declaredLossKg || "300",
+    () => initialDraft?.declaredLossKg || "",
   );
   const [lossReason, setLossReason] = useState<string>(
     () =>
-      initialDraft?.lossReason ||
-      "Hao hụt ẩm và bụi phát tán tự nhiên qua hệ thống quạt hút",
+      initialDraft?.lossReason || "",
   );
 
   // Dynamic tolerance based on process type
@@ -213,7 +171,7 @@ export const OperationEntryPage: React.FC = () => {
   >("IDLE");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [committedTransactionCode, setCommittedTransactionCode] =
-    useState<string>("EVT-CONV-2026-00492");
+    useState<string>("");
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
 
   // Active chosen lot from fetched lots
@@ -249,7 +207,7 @@ export const OperationEntryPage: React.FC = () => {
     }
     try {
       const [lotsRes, lookupsRes] = await Promise.all([
-        ledgerEndpoints.getLots({ pageSize: 100 }).catch(() => null),
+        ledgerEndpoints.getLots({ pageSize: 100 }),
         ledgerEndpoints.getLookups().catch(() => null),
       ]);
 
@@ -362,21 +320,17 @@ export const OperationEntryPage: React.FC = () => {
 
         // Keep selection valid if existing is found, otherwise default to first lot
         setSelectedInputLot((prev) => {
-          if (mappedLots.some((l) => l.id === prev || l.code === prev)) {
-            return prev;
-          }
-          return mappedLots[0].id;
+          return mappedLots.find((l) => l.id === prev || l.code === prev)?.id || mappedLots[0]?.id || "";
         });
       } else {
-        // Fallback demo data if database is unseeded in local dev
-        setLots(DEFAULT_FALLBACK_LOTS);
+        setLots([]);
+        setSelectedInputLot("");
       }
     } catch (err) {
-      logger.warn("Could not fetch lots from API, using fallback data:", err);
-      setFetchLotsError(
-        "Không thể tải danh sách từ máy chủ, đang dùng danh sách dự phòng.",
-      );
-      setLots(DEFAULT_FALLBACK_LOTS);
+      logger.warn("Could not fetch lots from API:", err);
+      setFetchLotsError("Không thể tải danh sách lô từ máy chủ.");
+      setLots([]);
+      setSelectedInputLot("");
     } finally {
       setLoadingLots(false);
     }
@@ -405,18 +359,30 @@ export const OperationEntryPage: React.FC = () => {
   const handleClearDraft = () => {
     clearDraft(DRAFT_KEY);
     setHasUnsavedDrafts(false);
-    setInputMassKg("88000");
-    setHeadRiceKg("58000");
-    setBrokenRiceKg("8000");
-    setBranKg("6000");
-    setHuskKg("15700");
-    setDeclaredLossKg("300");
+    setInputMassKg("");
+    setHeadRiceKg("");
+    setBrokenRiceKg("");
+    setBranKg("");
+    setHuskKg("");
+    setDeclaredLossKg("");
+    setLossReason("");
     setSubmissionStatus("IDLE");
     setApiErrorMessage(null);
   };
 
   const handleCommitOperation = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!activeLot?.id || activeLot.id !== selectedInputLot || !activeLot.locationId || !activeLot.facilityId) {
+      setApiErrorMessage("Cần chọn lô và vị trí hợp lệ từ máy chủ trước khi ghi sổ.");
+      return;
+    }
+    if (toDecimal(inputMassKg).lessThanOrEqualTo(0) ||
+      toDecimal(inputMassKg).greaterThan(toDecimal(activeLot.availableKg)) ||
+      totalOut.lessThanOrEqualTo(0)) {
+      setApiErrorMessage("Khối lượng đầu vào phải lớn hơn 0, không vượt tồn khả dụng và cần có đầu ra.");
+      return;
+    }
 
     if (isInputLotOnHold) {
       setSubmissionStatus("REJECTED");
@@ -505,34 +471,16 @@ export const OperationEntryPage: React.FC = () => {
         declaredLossReason: lossReason,
       };
 
-      let committedCode = `EVT-CONV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-
-      try {
-        const createRes = (await ledgerEndpoints.recordOperation(
-          opPayload,
-        )) as CreateOperationResponse | null;
-        const opId = createRes?.id || createRes?.operationId || operationId;
-
-        if (createRes && opId) {
-          try {
-            const commitRes = (await ledgerEndpoints.commitOperation(
-              opId,
-              {},
-            )) as CommitOperationResponse | null;
-            committedCode =
-              commitRes?.code ||
-              commitRes?.id ||
-              `EVT-CONV-${opId.slice(0, 8).toUpperCase()}`;
-          } catch {
-            committedCode = `DRAFT-${opId.slice(0, 8).toUpperCase()}`;
-          }
-        }
-      } catch (err: unknown) {
-        logger.warn(
-          "API recordOperation failed, proceeding with local ledger record:",
-          err,
-        );
-      }
+      const createRes = (await ledgerEndpoints.recordOperation(
+        opPayload,
+      )) as CreateOperationResponse | null;
+      const opId = createRes?.id || createRes?.operationId;
+      if (!opId) throw new Error("Máy chủ không trả về ID bút toán vừa tạo.");
+      const commitRes = (await ledgerEndpoints.commitOperation(
+        opId,
+        {},
+      )) as CommitOperationResponse | null;
+      const committedCode = commitRes?.code || commitRes?.id || opId;
 
       setCommittedTransactionCode(committedCode);
       setSubmissionStatus("BALANCED_COMMITTED");
@@ -796,7 +744,7 @@ export const OperationEntryPage: React.FC = () => {
                       className="text-[10px] text-accent-warning font-sans"
                       title={fetchLotsError}
                     >
-                      (Dữ liệu dự phòng)
+                      (Không tải được lô)
                     </span>
                   )}
                 </div>
@@ -822,6 +770,7 @@ export const OperationEntryPage: React.FC = () => {
                   }}
                   className="w-full px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-ink-primary transition-colors disabled:opacity-60"
                 >
+                  {lots.length === 0 && <option value="">Không có lô khả dụng</option>}
                   {lots.map((lot) => (
                     <option key={lot.id} value={lot.id}>
                       {lot.code} — {lot.locationName || "Silo"} —{" "}
@@ -1190,7 +1139,7 @@ export const OperationEntryPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingLots || lots.length === 0}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

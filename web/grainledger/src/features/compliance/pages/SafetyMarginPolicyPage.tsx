@@ -2,16 +2,9 @@ import {
   ArrowRight,
   BookOpen,
   Calculator,
-  CheckCircle,
-  ClockCounterClockwise,
-  Flask,
-  Info,
-  Scales,
   ShieldCheck,
-  ShieldWarning,
   Sliders,
   TestTube,
-  WarningOctagon,
 } from "@phosphor-icons/react";
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";

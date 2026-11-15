@@ -1,6 +1,7 @@
 import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { ledgerEndpoints } from "@/api/ledger";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
@@ -21,6 +22,7 @@ import {
 } from "@phosphor-icons/react";
 
 export const EventHistoryPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export const EventHistoryPage: React.FC = () => {
   const [reload, setReload] = useState(0);
 
   // Filters apply to the displayed page.
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchTerm = searchParams.get("search") ?? "";
   const [entityFilter, setEntityFilter] = useState("ALL");
   const [eventTypeFilter, setEventTypeFilter] = useState("ALL");
 
@@ -57,7 +59,7 @@ export const EventHistoryPage: React.FC = () => {
     async function loadEvents() {
       try {
         const result = await ledgerEndpoints.getHistory(
-          { page, pageSize: 25, sortBy: "occurredAt", sortDirection: "desc" },
+          { page, pageSize: 25, search: searchTerm || undefined, sortBy: "occurredAt", sortDirection: "desc" },
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
@@ -80,25 +82,15 @@ export const EventHistoryPage: React.FC = () => {
     }
     void loadEvents();
     return () => controller.abort();
-  }, [page, reload, t]);
+  }, [page, reload, searchTerm, t]);
 
   const filteredEvents = events.filter((evt) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      evt.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.entityId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.eventType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.actorId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (JSON.stringify(evt.payload) ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
     const matchesEntity =
       entityFilter === "ALL" || evt.entityType === entityFilter;
     const matchesEventType =
       eventTypeFilter === "ALL" || evt.eventType === eventTypeFilter;
 
-    return matchesSearch && matchesEntity && matchesEventType;
+    return matchesEntity && matchesEventType;
   });
 
   const getEntityIcon = (entityType: string) => {
@@ -190,7 +182,7 @@ export const EventHistoryPage: React.FC = () => {
                 "Tìm trong trang hiện tại: mã sự kiện, mã lô, người ghi...",
               )}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setPage(1); setSearchParams(e.target.value ? { search: e.target.value } : {}, { replace: true }); }}
               className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             />
           </div>

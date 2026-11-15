@@ -43,24 +43,31 @@ export interface CorrectionRecord {
 }
 
 function parseCorrectionsResponse(res: unknown): CorrectionRecord[] {
+  let items: CorrectionRecord[];
   if (Array.isArray(res)) {
-    return res as CorrectionRecord[];
-  }
-  if (res && typeof res === "object") {
+    items = res as CorrectionRecord[];
+  } else if (res && typeof res === "object") {
     if (
       "items" in res &&
       Array.isArray((res as { items: CorrectionRecord[] }).items)
     ) {
-      return (res as { items: CorrectionRecord[] }).items;
-    }
-    if (
+      items = (res as { items: CorrectionRecord[] }).items;
+    } else if (
       "corrections" in res &&
       Array.isArray((res as { corrections: CorrectionRecord[] }).corrections)
     ) {
-      return (res as { corrections: CorrectionRecord[] }).corrections;
+      items = (res as { corrections: CorrectionRecord[] }).corrections;
+    } else {
+      items = [];
     }
+  } else {
+    items = [];
   }
-  return [];
+  return items.map((item) => ({
+    ...item,
+    status: (item.status as string) === "REQUESTED" ? "PENDING_REVIEW" : item.status,
+    createdAt: item.createdAt || (item as CorrectionRecord & { requestedAt?: string }).requestedAt || "",
+  }));
 }
 
 export const PendingCorrectionsPage: React.FC = () => {
@@ -86,7 +93,7 @@ export const PendingCorrectionsPage: React.FC = () => {
     useState<CorrectionRecord | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [, setIsProcessing] = useState(false);
 
   // Manual reload handler for button click
   const fetchCorrections = useCallback(async () => {
@@ -987,6 +994,11 @@ export const PendingCorrectionsPage: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
+            {isManager && (selectedCorrection.status === "PENDING_REVIEW" || selectedCorrection.status === "RECONCILED") && (
+              <p role="status" className="px-5 pt-3 text-xs text-accent-warning">
+                Đối soát, hủy và chốt bút toán cần chứng cứ cùng công đoạn thay thế theo yêu cầu máy chủ. Biểu mẫu này chưa thu thập đủ dữ liệu để thực hiện.
+              </p>
+            )}
             <div className="p-4 border-t border-ink-tertiary/15 bg-surface-base dark:bg-surface-raised flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 type="button"
@@ -1002,7 +1014,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                     <>
                       <button
                         type="button"
-                        disabled={isProcessing}
+                        disabled
                         onClick={handleCancel}
                         className="px-3.5 py-2 rounded-lg border border-accent-danger/30 text-accent-danger hover:bg-functional-rejected-bg text-xs font-semibold transition-colors"
                       >
@@ -1012,10 +1024,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                         )}
                       </button>
 
-                      <Link
-                        to={`/mill/reconciliations/${selectedCorrection.id}`}
-                        className="px-4 py-2 rounded-lg bg-accent-warning hover:opacity-90 text-ink-inverse text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
-                      >
+                      <span className="px-4 py-2 rounded-full bg-accent-warning/50 text-ink-inverse text-xs font-semibold flex items-center gap-1.5" aria-disabled="true">
                         <ShieldCheck size={15} weight="bold" />
                         <span>
                           {t(
@@ -1024,11 +1033,11 @@ export const PendingCorrectionsPage: React.FC = () => {
                           )}
                         </span>
                         <ArrowRight size={13} weight="bold" />
-                      </Link>
+                      </span>
 
                       <button
                         type="button"
-                        disabled={isProcessing}
+                        disabled
                         onClick={handleReconcile}
                         className="px-3.5 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
                         title={t(
@@ -1050,7 +1059,7 @@ export const PendingCorrectionsPage: React.FC = () => {
                   {selectedCorrection.status === "RECONCILED" && (
                     <button
                       type="button"
-                      disabled={isProcessing}
+                      disabled
                       onClick={handleCommit}
                       className="px-4 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-dim text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
                     >

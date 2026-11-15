@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   catalogsEndpoints,
-  type MrlVersionDto,
   type ActiveSubstanceDto,
 } from "@/api/catalogs";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
@@ -19,8 +18,6 @@ import {
   CheckCircle,
   WarningCircle,
   X,
-  PencilSimple,
-  Trash,
   FileArrowUp,
 } from "@phosphor-icons/react";
 
@@ -42,11 +39,20 @@ interface MrlTableItem {
   }>;
 }
 
+interface LookupItem { id: string; name: string; code?: string }
+
+function pageItems<T>(response: unknown): T[] {
+  if (Array.isArray(response)) return response as T[];
+  if (response && typeof response === "object" && "items" in response && Array.isArray(response.items))
+    return response.items as T[];
+  return [];
+}
+
 export const MrlVersionsPage: React.FC = () => {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<MrlTableItem[]>([]);
-  const [markets, setMarkets] = useState<any[]>([]);
-  const [commodities, setCommodities] = useState<any[]>([]);
+  const [markets, setMarkets] = useState<LookupItem[]>([]);
+  const [commodities, setCommodities] = useState<LookupItem[]>([]);
   const [substances, setSubstances] = useState<ActiveSubstanceDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,17 +70,7 @@ export const MrlVersionsPage: React.FC = () => {
   // Create Version Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importRawJson, setImportRawJson] = useState(`{
-  "marketId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "commodityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "effectiveFrom": "2026-01-01",
-  "effectiveTo": "2026-12-31",
-  "sourceRef": "Regulation (EC) No 396/2005 Standard",
-  "limits": [
-    { "substanceCode": "TCZ001", "limitValue": "0.010", "unit": "mg/kg" },
-    { "substanceCode": "HEX002", "limitValue": "0.020", "unit": "mg/kg" }
-  ]
-}`);
+  const [importRawJson, setImportRawJson] = useState("");
   const [createForm, setCreateForm] = useState({
     marketId: "",
     commodityId: "",
@@ -94,18 +90,10 @@ export const MrlVersionsPage: React.FC = () => {
         catalogsEndpoints.getActiveSubstances().catch(() => []),
       ]);
 
-      const vItems = Array.isArray(versionsRes)
-        ? versionsRes
-        : (versionsRes as any)?.items || [];
-      const mItems = Array.isArray(marketsRes)
-        ? marketsRes
-        : (marketsRes as any)?.items || [];
-      const cItems = Array.isArray(commRes)
-        ? commRes
-        : (commRes as any)?.items || [];
-      const sItems = Array.isArray(subRes)
-        ? subRes
-        : (subRes as any)?.items || [];
+      const vItems = pageItems<MrlTableItem>(versionsRes);
+      const mItems = pageItems<LookupItem>(marketsRes);
+      const cItems = pageItems<LookupItem>(commRes);
+      const sItems = pageItems<ActiveSubstanceDto>(subRes);
 
       setVersions(vItems);
       setMarkets(mItems);
@@ -262,35 +250,6 @@ export const MrlVersionsPage: React.FC = () => {
       }
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDeleteLimit = async (
-    substanceId: string,
-    substanceName: string,
-  ) => {
-    if (!selectedVersion) return;
-    const confirmed = await confirmAction({
-      title: "Xóa giới hạn hoạt chất",
-      description: `Xóa giới hạn hoạt chất ${substanceName}?`,
-      confirmLabel: "Xóa",
-      variant: "danger",
-    });
-    if (!confirmed) return;
-    try {
-      await catalogsEndpoints.deleteMrlLimit(selectedVersion.id, substanceId);
-      setSuccessMsg(`Đã xóa thành công ngưỡng hoạt chất ${substanceName}`);
-      const limits = await catalogsEndpoints.getMrlLimits(selectedVersion.id);
-      setSelectedVersion({
-        ...selectedVersion,
-        limits: Array.isArray(limits)
-          ? limits
-          : selectedVersion.limits?.filter(
-              (l) => l.substanceId !== substanceId,
-            ),
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
     }
   };
 
@@ -521,9 +480,7 @@ export const MrlVersionsPage: React.FC = () => {
                       {m.name} ({m.code})
                     </option>
                   ))}
-                  {markets.length === 0 && (
-                    <option value="EU">Châu Âu (EU)</option>
-                  )}
+                  {markets.length === 0 && <option value="">Chưa có thị trường</option>}
                 </select>
               </div>
 
@@ -550,9 +507,7 @@ export const MrlVersionsPage: React.FC = () => {
                       {c.name} ({c.code})
                     </option>
                   ))}
-                  {commodities.length === 0 && (
-                    <option value="RICE">Gạo trắng xuất khẩu</option>
-                  )}
+                  {commodities.length === 0 && <option value="">Chưa có mặt hàng</option>}
                 </select>
               </div>
 

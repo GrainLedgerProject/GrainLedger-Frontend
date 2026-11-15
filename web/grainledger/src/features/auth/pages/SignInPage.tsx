@@ -9,28 +9,27 @@ import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { authApi } from "@/features/auth/api/authApi";
 import {
-  signInSchema,
-  type SignInFormValues,
+signInSchema,
+type SignInFormValues,
 } from "@/features/auth/model/authSchemas";
 import { ROLE_DEFINITIONS } from "@/shared/types/roles";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ArrowRight,
-  Eye,
-  EyeSlash,
-  Globe,
-  Info,
-  LockSimple,
-  Moon,
-  ShieldCheck,
-  Sun,
-  User,
-  WarningCircle,
+ArrowRight,
+Eye,
+EyeSlash,
+Globe,
+LockSimple,
+Moon,
+ShieldCheck,
+Sun,
+User,
+WarningCircle
 } from "@phosphor-icons/react";
-import React, { useEffect, useState } from "react";
+import React,{ useEffect,useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link,useLocation,useNavigate } from "react-router-dom";
 
 export const SignInPage: React.FC = () => {
   const { t } = useTranslation();
@@ -49,7 +48,6 @@ export const SignInPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),

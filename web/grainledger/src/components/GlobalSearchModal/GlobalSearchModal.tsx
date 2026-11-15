@@ -1,248 +1,90 @@
 import { useUiStore } from "@/app/store/uiStore";
-import {
-  FileText,
-  MagnifyingGlassIcon,
-  Package,
-  Truck,
-  User,
-  X,
-} from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useState } from "react";
+import { Modal } from "@/components/Modal";
+import { MagnifyingGlass, Package, Scroll, X } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-interface SearchResultItem {
-  id: string;
-  type: "LOT" | "CONTAINER" | "FARMER" | "EVENT";
-  title: string;
-  subtitle: string;
-  targetPath: string;
-}
-
-const SEARCH_DATABASE: SearchResultItem[] = [
-  {
-    id: "LOT-2026-S1",
-    type: "LOT",
-    title: "Lô Thóc Khô S1 (88.000,000 kg)",
-    subtitle: "Kho Silo Cụm 1 · Nguồn: L1 (50%), L2 (30%), L3 (20%)",
-    targetPath: "/stock/lots/LOT-2026-S1",
-  },
-  {
-    id: "LOT-2026-B1",
-    type: "LOT",
-    title: "Lô Gạo Trộn B1 (70.000,000 kg)",
-    subtitle: "Gạo nguyên 5% tấm · Đạt chuẩn MRL EU",
-    targetPath: "/stock/lots/LOT-2026-B1",
-  },
-  {
-    id: "LOT-2026-P01",
-    type: "LOT",
-    title: "Lô Thóc Tươi L1 (50.000,000 kg)",
-    subtitle: "Nông hộ: Nguyễn Văn An · Thửa L1 - Cái Bè, Tiền Giang",
-    targetPath: "/stock/lots/LOT-2026-P01",
-  },
-  {
-    id: "CONT-TG-2026-01",
-    type: "CONTAINER",
-    title: "Container C1 (25.000,000 kg)",
-    subtitle: "Mã số: TGHU-202609-01 · Niêm chì: GL-SEAL-8891 · Thị trường: EU",
-    targetPath: "/export/containers/CONT-TG-2026-01/dossier",
-  },
-  {
-    id: "FARMER-01",
-    type: "FARMER",
-    title: "Nông hộ Nguyễn Văn An",
-    subtitle: "Thửa L1 (1.8 ha) · Giống lúa OM5451 · Vụ Thu Đông 2026",
-    targetPath: "/field/farmers/new",
-  },
-  {
-    id: "FARMER-02",
-    type: "FARMER",
-    title: "Nông hộ Trần Thị Bích",
-    subtitle: "Thửa L2 (2.2 ha) · Giống lúa Đài Thơm 8 · Vụ Thu Đông 2026",
-    targetPath: "/field/farmers/new",
-  },
-  {
-    id: "EVT-E00008-01",
-    type: "EVENT",
-    title: "Sự kiện Xay xát MillingConversion",
-    subtitle: "Mã sự kiện: E_00008 · Phân tách gạo nguyên, tấm, cám, trấu",
-    targetPath: "/events/conversion/E_00008",
-  },
-];
-
-export const GlobalSearchModal: React.FC = () => {
-  const { t } = useTranslation();
-  const { isSearchOpen, setSearchOpen } = useUiStore();
+/** Opens the real, server-backed search views instead of displaying sample records. */
+export const GlobalSearchModal = () => {
+  const { i18n } = useTranslation();
+  const en = i18n.language.startsWith("en");
+  const isSearchOpen = useUiStore((state) => state.isSearchOpen);
+  const setSearchOpen = useUiStore((state) => state.setSearchOpen);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-
   const navigate = useNavigate();
 
-  // Listen to Cmd+K / Ctrl+K keyboard shortcut
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen(!isSearchOpen);
-      } else if (e.key === "Escape" && isSearchOpen) {
-        setSearchOpen(false);
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(!useUiStore.getState().isSearchOpen);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSearchOpen, setSearchOpen]);
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [setSearchOpen]);
 
-  const filteredResults = useMemo(() => {
-    if (!query.trim()) return SEARCH_DATABASE.slice(0, 5);
-    const q = query.toLowerCase();
-    return SEARCH_DATABASE.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.subtitle.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q),
-    );
-  }, [query]);
+  const destinations = [
+    { label: en ? "Search stock lots" : "Tìm trong kho lô", icon: Package, path: "/stock" },
+    { label: en ? "Search event history" : "Tìm trong lịch sử sự kiện", icon: Scroll, path: "/events" },
+  ];
 
-  const handleSelect = (item: SearchResultItem) => {
-    setSearchOpen(false);
+  const select = (path: string) => {
+    const search = query.trim();
+    navigate(search ? `${path}?search=${encodeURIComponent(search)}` : path);
     setQuery("");
     setActiveIndex(0);
-    navigate(item.targetPath);
-  };
-
-  const getIcon = (type: SearchResultItem["type"]) => {
-    switch (type) {
-      case "LOT":
-        return <Package size={18} className="text-accent-primary" />;
-      case "CONTAINER":
-        return <Truck size={18} className="text-accent-info" />;
-      case "FARMER":
-        return <User size={18} className="text-accent-warning" />;
-      case "EVENT":
-        return <FileText size={18} className="text-ink-secondary" />;
-    }
+    setSearchOpen(false);
   };
 
   return (
-    <AnimatePresence>
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-ink-primary/50 backdrop-blur-xs"
-            onClick={() => setSearchOpen(false)}
+    <Modal isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} ariaLabel={en ? "Search GrainLedger" : "Tìm kiếm GrainLedger"}>
+      <div className="w-[min(42rem,calc(100vw-2rem))] rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-ink-tertiary/20 pb-3">
+          <MagnifyingGlass size={22} aria-hidden="true" className="text-ink-tertiary" />
+          <label htmlFor="global-search-input" className="sr-only">{en ? "Search term" : "Từ khóa tìm kiếm"}</label>
+          <input
+            id="global-search-input"
+            type="search"
+            autoFocus
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => (index + 1) % destinations.length); }
+              if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => (index - 1 + destinations.length) % destinations.length); }
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+                select(destinations[activeIndex].path);
+              }
+            }}
+            placeholder={en ? "Enter lot code or event ID…" : "Nhập mã lô hoặc mã sự kiện…"}
+            className="min-w-0 flex-1 bg-transparent py-2 text-sm text-ink-primary outline-none placeholder:text-ink-tertiary focus-visible:ring-2 focus-visible:ring-accent-primary"
           />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -10 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 w-full max-w-2xl bg-surface-base dark:bg-surface-raised rounded-lg border border-ink-tertiary/20 shadow-2xl overflow-hidden"
-          >
-            {/* Search Input Bar */}
-            <div className="flex items-center px-7 py-3 border-b border-ink-tertiary/20 gap-3">
-              <MagnifyingGlassIcon size={22} className="text-ink-tertiary" />
-              <input
-                type="text"
-                autoFocus
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setActiveIndex(0);
-                }}
-                onKeyDown={(e) => {
-                  if (!filteredResults.length) return;
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => (prev + 1) % filteredResults.length);
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => (prev - 1 + filteredResults.length) % filteredResults.length);
-                  } else if (e.key === "Enter") {
-                    e.preventDefault();
-                    const target = filteredResults[activeIndex] || filteredResults[0];
-                    if (target) handleSelect(target);
-                  }
-                }}
-                placeholder={t(
-                  "common.searchPlaceholderFull",
-                  "Tìm kiếm mã lô, container, tên nông hộ, sự kiện (Cmd+K)...",
-                )}
-                className="w-full h-full px-2 py-2.5 bg-transparent text-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="text-ink-tertiary hover:text-ink-primary p-1 rounded-sm"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Results List */}
-            <div className="max-h-80 overflow-y-auto p-2 divide-y divide-ink-tertiary/10">
-              {filteredResults.length === 0 ? (
-                <div className="p-8 text-center text-xs text-ink-tertiary">
-                  {t(
-                    "common.noSearchResults",
-                    "Không tìm thấy kết quả phù hợp với từ khóa",
-                  )}{" "}
-                  &ldquo;{query}&rdquo;
-                </div>
-              ) : (
-                filteredResults.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    onClick={() => handleSelect(item)}
-                    onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                      idx === activeIndex
-                        ? "bg-accent-primary/10 text-accent-primary font-medium"
-                        : "text-ink-primary hover:bg-surface-raised dark:hover:bg-surface-overlay"
-                    }`}
-                  >
-                    <div className="p-2 rounded bg-surface-raised dark:bg-surface-overlay shrink-0">
-                      {getIcon(item.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm truncate">
-                          {item.title}
-                        </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-overlay text-ink-tertiary">
-                          {item.id}
-                        </span>
-                      </div>
-                      <p className="text-xs text-ink-secondary truncate">
-                        {item.subtitle}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Footer with key hints */}
-            <div className="px-4 py-2 bg-surface-raised dark:bg-surface-overlay border-t border-ink-tertiary/10 text-[11px] text-ink-tertiary flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span>{t("common.escToClose", "Nhấn ESC để đóng")}</span>
-                <span>
-                  {t(
-                    "common.scopePermission",
-                    "Phạm vi: Trong công ty và cơ sở được cấp quyền",
-                  )}
-                </span>
-              </div>
-              <span className="font-mono">GrainLedger Global Search</span>
-            </div>
-          </motion.div>
+          <button type="button" onClick={() => setSearchOpen(false)} aria-label={en ? "Close search" : "Đóng tìm kiếm"} className="rounded-lg p-2 text-ink-secondary hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-accent-primary">
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
-      )}
-    </AnimatePresence>
+        <p className="px-2 pt-4 text-xs text-ink-secondary">
+          {en ? "Choose where to search live data" : "Chọn nơi tìm trong dữ liệu thực"}
+        </p>
+        <div className="mt-2 space-y-1">
+          {destinations.map(({ label, icon: Icon, path }, index) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => select(path)}
+              onMouseEnter={() => setActiveIndex(index)}
+              className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent-primary ${index === activeIndex ? "bg-accent-primary/10 text-accent-primary" : "text-ink-primary hover:bg-surface-raised"}`}
+            >
+              <Icon size={19} aria-hidden="true" />
+              <span>{query.trim() ? `${label}: “${query.trim()}”` : label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Modal>
   );
 };

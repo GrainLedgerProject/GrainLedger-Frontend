@@ -27,7 +27,7 @@ interface PlotRecord {
   farmerId: string;
   farmerName?: string;
   areaHa: number;
-  geometry?: any;
+  geometry?: { coordinates?: unknown };
   version?: number;
   variety?: string;
 }
@@ -41,8 +41,8 @@ interface FarmerOption {
 /**
  * Format coordinates for user display (Latitude, Longitude)
  */
-function formatDisplayCoord(geometry: any): string {
-  if (!geometry?.coordinates) return "10.354100, 106.012500";
+function formatDisplayCoord(geometry?: { coordinates?: unknown }): string {
+  if (!geometry?.coordinates) return "";
   const coords = geometry.coordinates;
   if (Array.isArray(coords) && coords.length >= 2) {
     const p0 = Number(coords[0]);
@@ -53,7 +53,7 @@ function formatDisplayCoord(geometry: any): string {
     }
     return `${p0.toFixed(6)}, ${p1.toFixed(6)}`;
   }
-  return "10.354100, 106.012500";
+  return "";
 }
 
 /**
@@ -63,23 +63,21 @@ function parseToGeoJsonPoint(coordStr: string): {
   type: "Point";
   coordinates: [number, number];
 } {
-  const defaultLngLat: [number, number] = [106.0125, 10.3541]; // [lng, lat]
-  if (!coordStr) return { type: "Point", coordinates: defaultLngLat };
+  if (!coordStr.trim()) throw new Error("Cần chọn tọa độ thửa ruộng.");
 
   const parts = coordStr.split(",").map((p) => parseFloat(p.trim()));
   if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
     const [p0, p1] = parts;
     // If user input is "lat, lng" (e.g. 10.3541, 106.0125)
-    if (p0 < 30 && p1 > 50) {
+    if (p0 >= -90 && p0 <= 90 && p1 >= -180 && p1 <= 180) {
       return { type: "Point", coordinates: [p1, p0] }; // RFC 7946 requires [longitude, latitude]
     }
     // If user input was already [lng, lat]
-    if (p0 > 50 && p1 < 30) {
+    if (p0 >= -180 && p0 <= 180 && p1 >= -90 && p1 <= 90) {
       return { type: "Point", coordinates: [p0, p1] };
     }
-    return { type: "Point", coordinates: [p1, p0] };
   }
-  return { type: "Point", coordinates: defaultLngLat };
+  throw new Error("Tọa độ thửa ruộng không hợp lệ.");
 }
 
 export const PlotRegistrationPage: React.FC = () => {
@@ -99,7 +97,7 @@ export const PlotRegistrationPage: React.FC = () => {
     code: "",
     farmerId: "",
     areaHa: 1.5,
-    coordinates: "10.354100, 106.012500",
+    coordinates: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,10 +158,10 @@ export const PlotRegistrationPage: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingPlot(null);
     setFormData({
-      code: `PLOT-${Date.now().toString().slice(-4)}`,
+      code: "",
       farmerId: farmers[0]?.id || "",
-      areaHa: 1.5,
-      coordinates: "10.354100, 106.012500",
+      areaHa: 0,
+      coordinates: "",
     });
     setIsModalOpen(true);
   };
@@ -220,7 +218,7 @@ export const PlotRegistrationPage: React.FC = () => {
           deviceId: "grainledger-web",
           clientOperationId,
           capturedAt: new Date().toISOString(),
-          payloadSchemaVersion: 1,
+          payloadSchemaVersion: 2,
           payload: {
             entityId,
             farmerId: formData.farmerId,

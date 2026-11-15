@@ -77,7 +77,7 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
           <div className="p-4 rounded-md bg-surface-base border border-ink-tertiary/20">
             <h3 className="font-semibold text-xs uppercase tracking-wider text-ink-tertiary mb-2 flex items-center gap-1.5">
               <BookOpen size={16} className="text-accent-primary" />
-              {t("placeholder.techSpec", "Mô tả nghiệp vụ kỹ thuật")}
+              {isEn ? "Planned workflow" : "Quy trình dự kiến"}
             </h3>
             <p>{description}</p>
           </div>
@@ -108,17 +108,14 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
                 {t("placeholder.devStatus", "Trạng thái phát triển")}
               </h4>
               <p className="text-xs text-ink-secondary">
-                {t(
-                  "placeholder.devStatusDesc",
-                  "Màn hình đã được khai báo đầy đủ trong cây định tuyến React Router v6 với route guard kiểm tra quyền hạn và phạm vi cơ sở.",
-                )}
+                {isEn ? "This screen is not implemented yet. No business data can be viewed or changed here." : "Màn hình này chưa được triển khai. Bạn chưa thể xem hoặc thay đổi dữ liệu nghiệp vụ tại đây."}
               </p>
               <div className="flex items-center gap-1.5 text-xs text-accent-warning font-medium pt-1">
                 <Clock size={14} />
                 <span>
                   {t(
                     "placeholder.readyNextSprint",
-                    "Sẵn sàng kết nối giao diện chi tiết trong Sprint kế tiếp",
+                    "Chưa sẵn sàng sử dụng",
                   )}
                 </span>
               </div>

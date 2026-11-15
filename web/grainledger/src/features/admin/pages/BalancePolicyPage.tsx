@@ -14,7 +14,6 @@ import {
   CheckCircle,
   WarningCircle,
   X,
-  ShieldCheck,
   ArrowRight,
   Trash,
 } from "@phosphor-icons/react";

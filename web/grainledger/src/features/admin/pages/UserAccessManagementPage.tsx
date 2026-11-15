@@ -1,26 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
-  adminEndpoints,
-  type AdminUserDto,
-  type OrganizationDto,
+adminEndpoints,
+type AdminUserDto,
+type OrganizationDto,
 } from "@/api/admin";
+import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { RoleChip } from "@/components/RoleChip/RoleChip";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { ROLE_DEFINITIONS, type UserRole } from "@/shared/types/roles";
+import { ROLE_DEFINITIONS,type UserRole } from "@/shared/types/roles";
 import {
-  Users,
-  ShieldCheck,
-  ArrowsClockwise,
-  MagnifyingGlass,
-  CheckCircle,
-  WarningCircle,
-  X,
-  PencilSimple,
-  Buildings,
-  LockKey,
+ArrowsClockwise,
+Buildings,
+CheckCircle,
+MagnifyingGlass,
+PencilSimple,
+Users,
+WarningCircle,
+X
 } from "@phosphor-icons/react";
+import React,{ useEffect,useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export const UserAccessManagementPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -82,7 +80,8 @@ export const UserAccessManagementPage: React.FC = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const etag = (selectedUser as any).etag || `"version-1"`;
+      const etag = selectedUser.etag;
+      if (!etag) throw new Error("Thiếu phiên bản quyền truy cập. Hãy tải lại danh sách người dùng.");
       await adminEndpoints.updateUserAccess(selectedUser.id, etag, {
         role,
         organizationId: organizationId || null,

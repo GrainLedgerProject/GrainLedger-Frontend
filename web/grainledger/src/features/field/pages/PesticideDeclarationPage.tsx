@@ -9,13 +9,10 @@ import {
   Plant,
   Plus,
   ArrowsClockwise,
-  MagnifyingGlass,
   CheckCircle,
   WarningCircle,
   X,
   Calendar,
-  Flask,
-  ShieldWarning,
 } from "@phosphor-icons/react";
 
 interface SprayRecord {
@@ -35,7 +32,6 @@ export const PesticideDeclarationPage: React.FC = () => {
   const [declarations, setDeclarations] = useState<SprayRecord[]>([]);
   const [substances, setSubstances] = useState<ActiveSubstanceDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -44,7 +40,7 @@ export const PesticideDeclarationPage: React.FC = () => {
   const [formData, setFormData] = useState({
     plotSeasonId: "",
     appliedOn: new Date().toISOString().split("T")[0],
-    productName: "Beam 75WP (Tricyclazole)",
+    productName: "",
     substanceId: "",
     informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
   });
@@ -59,12 +55,14 @@ export const PesticideDeclarationPage: React.FC = () => {
         catalogsEndpoints.getActiveSubstances({ pageSize: 50 }).catch(() => []),
       ]);
 
-      const sprayItems = Array.isArray(sprayRes)
+      const sprayItems: SprayRecord[] = Array.isArray(sprayRes)
         ? sprayRes
-        : (sprayRes as any)?.items || [];
-      const subItems = Array.isArray(subRes)
+        : sprayRes && typeof sprayRes === "object" && "items" in sprayRes && Array.isArray(sprayRes.items)
+          ? sprayRes.items as SprayRecord[] : [];
+      const subItems: ActiveSubstanceDto[] = Array.isArray(subRes)
         ? subRes
-        : (subRes as any)?.items || [];
+        : subRes && typeof subRes === "object" && "items" in subRes && Array.isArray(subRes.items)
+          ? subRes.items as ActiveSubstanceDto[] : [];
 
       setDeclarations(sprayItems);
       setSubstances(subItems);
@@ -93,11 +91,11 @@ export const PesticideDeclarationPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setFormData({
-      plotSeasonId: crypto.randomUUID(),
+      plotSeasonId: "",
       appliedOn: new Date().toISOString().split("T")[0],
-      productName: "Beam 75WP (Tricyclazole)",
-      substanceId: substances[0]?.id || crypto.randomUUID(),
-      informationSource: "Khai báo nhật ký đồng ruộng của nông dân",
+      productName: "",
+      substanceId: substances[0]?.id || "",
+      informationSource: "",
     });
     setIsModalOpen(true);
   };

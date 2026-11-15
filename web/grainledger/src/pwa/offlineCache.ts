@@ -13,6 +13,7 @@ import {
 } from "@/api/procurement";
 import { logger } from "@/shared/utils/logger";
 import { STORES, withStore } from "./db";
+import { currentOfflineOwnerKey } from "./owner";
 
 export interface CachedFarmer {
   id: string;
@@ -71,11 +72,13 @@ export function onOfflineCacheUpdated(listener: () => void) {
  * Reads cached farmers: first from IndexedDB, then fallback to LocalStorage.
  */
 export async function getCachedFarmers(): Promise<CachedFarmer[]> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey) return [];
   try {
     const record = await withStore<{ key: string; value: CachedFarmer[] }>(
       STORES.OFFLINE_CACHE,
       "readonly",
-      (store) => store.get("farmers")
+      (store) => store.get(`farmers:${ownerKey}`)
     );
     if (record?.value && Array.isArray(record.value) && record.value.length > 0) {
       return record.value;
@@ -86,7 +89,7 @@ export async function getCachedFarmers(): Promise<CachedFarmer[]> {
 
   if (typeof localStorage !== "undefined") {
     try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_FARMERS_KEY);
+      const stored = localStorage.getItem(`${LOCAL_STORAGE_FARMERS_KEY}:${ownerKey}`);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -105,12 +108,12 @@ export async function getCachedFarmers(): Promise<CachedFarmer[]> {
  * Saves farmer list to IndexedDB and LocalStorage for offline use.
  * @param notify Whether to broadcast cache update event (default: true).
  */
-export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true): Promise<void> {
-  if (!farmers || farmers.length === 0) return;
+export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true, ownerKey = currentOfflineOwnerKey()): Promise<void> {
+  if (!ownerKey || !farmers || farmers.length === 0) return;
 
   if (typeof localStorage !== "undefined") {
     try {
-      localStorage.setItem(LOCAL_STORAGE_FARMERS_KEY, JSON.stringify(farmers));
+      localStorage.setItem(`${LOCAL_STORAGE_FARMERS_KEY}:${ownerKey}`, JSON.stringify(farmers));
     } catch {
       // ignore
     }
@@ -118,7 +121,7 @@ export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true):
 
   try {
     await withStore(STORES.OFFLINE_CACHE, "readwrite", (store) =>
-      store.put({ key: "farmers", value: farmers, updatedAt: new Date().toISOString() })
+      store.put({ key: `farmers:${ownerKey}`, value: farmers, updatedAt: new Date().toISOString() })
     );
     if (notify) {
       notifyCacheUpdated();
@@ -132,11 +135,13 @@ export async function saveCachedFarmers(farmers: CachedFarmer[], notify = true):
  * Reads cached reference data: IndexedDB -> LocalStorage
  */
 export async function getCachedRefData(): Promise<CachedReferenceData | null> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey) return null;
   try {
     const record = await withStore<{ key: string; value: CachedReferenceData }>(
       STORES.OFFLINE_CACHE,
       "readonly",
-      (store) => store.get("reference_data")
+      (store) => store.get(`reference_data:${ownerKey}`)
     );
     if (record?.value) {
       return record.value;
@@ -147,7 +152,7 @@ export async function getCachedRefData(): Promise<CachedReferenceData | null> {
 
   if (typeof localStorage !== "undefined") {
     try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_REF_KEY);
+      const stored = localStorage.getItem(`${LOCAL_STORAGE_REF_KEY}:${ownerKey}`);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -162,12 +167,12 @@ export async function getCachedRefData(): Promise<CachedReferenceData | null> {
 /**
  * Saves reference data to IndexedDB and LocalStorage
  */
-export async function saveCachedRefData(data: CachedReferenceData, notify = true): Promise<void> {
-  if (!data) return;
+export async function saveCachedRefData(data: CachedReferenceData, notify = true, ownerKey = currentOfflineOwnerKey()): Promise<void> {
+  if (!ownerKey || !data) return;
 
   if (typeof localStorage !== "undefined") {
     try {
-      localStorage.setItem(LOCAL_STORAGE_REF_KEY, JSON.stringify(data));
+      localStorage.setItem(`${LOCAL_STORAGE_REF_KEY}:${ownerKey}`, JSON.stringify(data));
     } catch {
       // ignore
     }
@@ -175,7 +180,7 @@ export async function saveCachedRefData(data: CachedReferenceData, notify = true
 
   try {
     await withStore(STORES.OFFLINE_CACHE, "readwrite", (store) =>
-      store.put({ key: "reference_data", value: data, updatedAt: new Date().toISOString() })
+      store.put({ key: `reference_data:${ownerKey}`, value: data, updatedAt: new Date().toISOString() })
     );
     if (notify) {
       notifyCacheUpdated();
@@ -190,6 +195,8 @@ export async function saveCachedRefData(data: CachedReferenceData, notify = true
  * Fetches fresh farmer list, reference options, plot seasons, and plots, storing them locally.
  */
 export async function syncOfflineCache(): Promise<{ farmersCount: number; success: boolean }> {
+  const ownerKey = currentOfflineOwnerKey();
+  if (!ownerKey) return { farmersCount: 0, success: false };
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     const current = await getCachedFarmers();
     return { farmersCount: current.length, success: false };
@@ -203,6 +210,7 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
       procurementEndpoints.getPlotSeasons({ pageSize: 100 }).catch(() => null),
       procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
     ]);
+    if (currentOfflineOwnerKey() !== ownerKey) return { farmersCount: 0, success: false };
 
     let farmersCount = 0;
 
@@ -212,7 +220,7 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
         : (farmersRes as { items?: CachedFarmer[] })?.items || [];
 
       if (items.length > 0) {
-        await saveCachedFarmers(items, false);
+        await saveCachedFarmers(items, false, ownerKey);
         farmersCount = items.length;
       }
     }
@@ -231,7 +239,7 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
         plots: plotItems,
       };
 
-      await saveCachedRefData(compositeRefData, false);
+      await saveCachedRefData(compositeRefData, false, ownerKey);
     }
 
     notifyCacheUpdated();

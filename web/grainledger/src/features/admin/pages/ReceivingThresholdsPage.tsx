@@ -1,540 +1,201 @@
-import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ledgerEndpoints } from "@/api/ledger";
 import { adminEndpoints, type OrganizationDto } from "@/api/admin";
+import { ledgerEndpoints } from "@/api/ledger";
+import { confirmAction, toast } from "@/app/store/feedbackStore";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import {
-  Scales,
-  Plus,
-  ArrowsClockwise,
-  CheckCircle,
-  WarningCircle,
-  X,
-  Buildings,
-  PencilSimple,
-  Trash,
-  ClockCounterClockwise,
-  ShieldCheck,
-  Percent,
-} from "@phosphor-icons/react";
+import { ArrowsClockwise, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
-interface CompanyThreshold {
-  companyId: string;
-  companyName?: string;
-  weightVarianceTolerancePercent: number;
-  moistureDiscountFactor: number;
-  maxMoistureAllowedPercent: number;
-  impurityTolerancePercent: number;
-  effectiveFrom?: string;
+interface ThresholdValue { percentage: string; version: string }
+interface CompanyThreshold extends ThresholdValue { companyId: string; companyName: string }
+interface ThresholdSettings { systemDefault: ThresholdValue; companyOverrides: CompanyThreshold[] }
+
+function parseSettings(value: unknown): ThresholdSettings {
+  if (!value || typeof value !== "object") throw new Error("Dữ liệu ngưỡng tiếp nhận không hợp lệ.");
+  const data = value as Partial<ThresholdSettings>;
+  if (!data.systemDefault || typeof data.systemDefault.percentage !== "string" ||
+    typeof data.systemDefault.version !== "string" || !Array.isArray(data.companyOverrides)) {
+    throw new Error("Dữ liệu ngưỡng tiếp nhận không hợp lệ.");
+  }
+  return data as ThresholdSettings;
 }
 
-export const ReceivingThresholdsPage: React.FC = () => {
-  const { t } = useTranslation();
-  const [thresholds, setThresholds] = useState<CompanyThreshold[]>([]);
+export const ReceivingThresholdsPage = () => {
+  const [settings, setSettings] = useState<ThresholdSettings | null>(null);
   const [organizations, setOrganizations] = useState<OrganizationDto[]>([]);
-  const [defaultThreshold, setDefaultThreshold] = useState<{
-    weightVarianceTolerancePercent: number;
-    maxMoistureAllowedPercent: number;
-    impurityTolerancePercent: number;
-  }>({
-    weightVarianceTolerancePercent: 1.0,
-    maxMoistureAllowedPercent: 26.0,
-    impurityTolerancePercent: 2.0,
-  });
-
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState<"default" | "new" | CompanyThreshold | null>(null);
+  const [companyId, setCompanyId] = useState("");
+  const [percentage, setPercentage] = useState("");
+  const [reason, setReason] = useState("");
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
-  const [weightVariance, setWeightVariance] = useState(1.0);
-  const [maxMoisture, setMaxMoisture] = useState(26.0);
-  const [impurity, setImpurity] = useState(2.0);
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [threshRes, orgsRes] = await Promise.all([
-        ledgerEndpoints.getReceivingThresholdCompanies().catch(() => null),
-        adminEndpoints.getOrganizations().catch(() => []),
+      const [rawSettings, rawOrganizations] = await Promise.all([
+        ledgerEndpoints.getReceivingThresholds(), adminEndpoints.getOrganizations(),
       ]);
-
-      if (Array.isArray(orgsRes)) {
-        setOrganizations(orgsRes as OrganizationDto[]);
-      }
-
-      if (Array.isArray(threshRes) && threshRes.length > 0) {
-        setThresholds(threshRes as CompanyThreshold[]);
-      } else {
-        // Mock fallback initial thresholds for known organizations
-        const orgList = Array.isArray(orgsRes)
-          ? (orgsRes as OrganizationDto[])
-          : [];
-        setThresholds([
-          {
-            companyId: orgList[0]?.id || "org-001",
-            companyName: orgList[0]?.name || "Công ty CP Gạo Sông Tiền",
-            weightVarianceTolerancePercent: 1.2,
-            moistureDiscountFactor: 1.0,
-            maxMoistureAllowedPercent: 25.0,
-            impurityTolerancePercent: 1.8,
-            effectiveFrom: "2026-01-01",
-          },
-          {
-            companyId: orgList[1]?.id || "org-002",
-            companyName:
-              orgList[1]?.name || "Tập đoàn Xuất khẩu Lương thực Đồng Tháp",
-            weightVarianceTolerancePercent: 1.5,
-            moistureDiscountFactor: 1.05,
-            maxMoistureAllowedPercent: 27.0,
-            impurityTolerancePercent: 2.2,
-            effectiveFrom: "2026-02-15",
-          },
-        ]);
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "admin.thresholds.errorLoad",
-            "Không thể tải cấu hình ngưỡng tiếp nhận.",
-          ),
-        );
-      }
+      setSettings(parseSettings(rawSettings));
+      setOrganizations(Array.isArray(rawOrganizations)
+        ? (rawOrganizations as OrganizationDto[]).filter((org) => org.kind === "Customer") : []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Không thể tải ngưỡng tiếp nhận.");
+      setSettings(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void loadData();
   }, []);
 
-  const handleOpenAdd = () => {
-    setIsEdit(false);
-    setSelectedCompanyId(organizations[0]?.id || "");
-    setWeightVariance(1.0);
-    setMaxMoisture(26.0);
-    setImpurity(2.0);
-    setIsModalOpen(true);
+  useEffect(() => { void loadData(); }, [loadData]);
+
+  const availableOrganizations = organizations.filter((org) =>
+    !settings?.companyOverrides.some((item) => item.companyId === org.id));
+
+  const openEditor = (target: "default" | "new" | CompanyThreshold) => {
+    setEditing(target);
+    setCompanyId(target === "new" ? availableOrganizations[0]?.id || "" :
+      target === "default" ? "" : target.companyId);
+    setPercentage(target === "new" || target === "default" ?
+      settings?.systemDefault.percentage || "" : target.percentage);
+    setReason("");
+    setError(null);
   };
 
-  const handleOpenEdit = (item: CompanyThreshold) => {
-    setIsEdit(true);
-    setSelectedCompanyId(item.companyId);
-    setWeightVariance(item.weightVarianceTolerancePercent);
-    setMaxMoisture(item.maxMoistureAllowedPercent);
-    setImpurity(item.impurityTolerancePercent);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (companyId: string) => {
-    const confirmed = await confirmAction({
-      title: "Xóa ngưỡng riêng",
-      description:
-        "Bạn có chắc chắn muốn xóa ngưỡng riêng và hoàn về mặc định?",
-      confirmLabel: "Xóa ngưỡng",
-      variant: "danger",
-    });
-    if (!confirmed) return;
-    try {
-      await ledgerEndpoints.deleteCompanyReceivingThreshold(companyId);
-      setSuccessMsg(
-        "Đã xóa ngưỡng riêng của doanh nghiệp, tự động áp dụng ngưỡng mặc định hệ thống.",
-      );
-      setThresholds((prev) => prev.filter((t) => t.companyId !== companyId));
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings || !editing) return;
+    if (!/^\d+(\.\d{1,6})?$/.test(percentage) || Number(percentage) >= 100 || !reason.trim()) {
+      setError("Nhập tỷ lệ từ 0 đến dưới 100% (tối đa 6 chữ số thập phân) và lý do.");
+      return;
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCompanyId) return;
-
-    setSubmitting(true);
+    setSaving(true);
     setError(null);
     try {
-      const payload = {
-        weightVarianceTolerancePercent: Number(weightVariance),
-        maxMoistureAllowedPercent: Number(maxMoisture),
-        impurityTolerancePercent: Number(impurity),
-        moistureDiscountFactor: 1.0,
-      };
-
-      if (isEdit) {
-        await ledgerEndpoints.updateCompanyReceivingThreshold(
-          selectedCompanyId,
-          payload,
-        );
+      const payload = { percentage, reason: reason.trim() };
+      if (editing === "default") {
+        await ledgerEndpoints.updateDefaultReceivingThreshold({ ...payload, version: settings.systemDefault.version });
+      } else if (editing === "new") {
+        if (!companyId) throw new Error("Cần chọn doanh nghiệp.");
+        await ledgerEndpoints.createCompanyReceivingThreshold(companyId, payload);
       } else {
-        await ledgerEndpoints.createCompanyReceivingThreshold(
-          selectedCompanyId,
-          payload,
-        );
+        await ledgerEndpoints.updateCompanyReceivingThreshold(editing.companyId,
+          { ...payload, version: editing.version });
       }
-
-      const targetOrg = organizations.find((o) => o.id === selectedCompanyId);
-      const companyName = targetOrg?.name || "Doanh nghiệp";
-
-      setSuccessMsg(
-        isEdit
-          ? `Đã cập nhật thành công ngưỡng tiếp nhận cho "${companyName}"`
-          : `Đã thiết lập thành công ngưỡng riêng cho "${companyName}"`,
-      );
-
-      setIsModalOpen(false);
+      setEditing(null);
+      toast.success("Đã lưu ngưỡng tiếp nhận.");
       await loadData();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Không thể lưu cấu hình ngưỡng dung sai tiếp nhận.");
-      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Không thể lưu ngưỡng tiếp nhận.");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
-        <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t("admin.thresholds.tag", "QUY TẮC NGHIỆP VỤ TIẾP NHẬN")}
-          </span>
-          <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t(
-              "admin.thresholds.title",
-              "Cấu hình Ngưỡng Tiếp nhận & Dung sai theo Doanh nghiệp",
-            )}
-          </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
-            {t(
-              "admin.thresholds.subtitle",
-              "Thiết lập biên độ sai số khối lượng cân xe, giới hạn độ ẩm và tạp chất chấp nhận khi tiếp nhận thóc vào nhà máy cho từng khách hàng.",
-            )}
-          </p>
-        </div>
+  const removeCompany = async (item: CompanyThreshold) => {
+    if (!await confirmAction({ title: "Xóa ngưỡng riêng",
+      description: `Áp dụng ngưỡng mặc định cho ${item.companyName}?`,
+      confirmLabel: "Xóa ngưỡng", variant: "danger" })) return;
+    setError(null);
+    try {
+      await ledgerEndpoints.deleteCompanyReceivingThreshold(item.companyId, {
+        version: item.version, reason: "Xóa ngưỡng riêng theo yêu cầu quản trị viên",
+      });
+      toast.success("Đã xóa ngưỡng riêng.");
+      await loadData();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Không thể xóa ngưỡng riêng.");
+    }
+  };
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={loadData}
-            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
-            title={t("common.reload", "Tải lại danh sách")}
-          >
-            <ArrowsClockwise
-              size={16}
-              className={loading ? "motion-safe:animate-spin" : undefined}
-            />
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <Plus size={16} weight="bold" />
-            <span>
-              {t("admin.thresholds.createBtn", "Thiết lập Ngưỡng Riêng")}
-            </span>
+  return <div className="space-y-6">
+    <header className="flex flex-wrap items-start justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
+      <div>
+        <h1 className="text-2xl font-display font-bold text-ink-primary">Ngưỡng hao hụt khi tiếp nhận</h1>
+        <p className="mt-1 text-sm text-ink-secondary">Tỷ lệ hao hụt vận chuyển mặc định và ngưỡng riêng theo doanh nghiệp.</p>
+      </div>
+      <button type="button" onClick={() => void loadData()} disabled={loading}
+        className="inline-flex items-center gap-2 rounded-xl border border-ink-tertiary/20 px-3 py-2 text-sm text-ink-primary disabled:opacity-50">
+        <ArrowsClockwise size={16} /> Tải lại
+      </button>
+    </header>
+    {error && <p role="alert" className="rounded-xl border border-accent-danger/30 bg-functional-rejected-bg p-3 text-sm text-accent-danger">{error}</p>}
+    {loading && <GrainLoader label="Đang tải ngưỡng tiếp nhận" />}
+    {settings && !loading && <>
+      <section className="rounded-2xl border border-accent-primary/25 bg-surface-base p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display font-bold text-ink-primary">Ngưỡng mặc định toàn hệ thống</h2>
+            <p className="mt-2 text-2xl font-mono font-bold text-accent-primary">{settings.systemDefault.percentage}%</p>
+          </div>
+          <button type="button" onClick={() => openEditor("default")}
+            className="inline-flex items-center gap-2 rounded-xl border border-ink-tertiary/20 px-3 py-2 text-sm text-ink-primary">
+            <PencilSimple size={16} /> Chỉnh sửa
           </button>
         </div>
-      </div>
-
-      {/* Alerts */}
-      {error && (
-        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
-          <WarningCircle size={18} weight="fill" className="shrink-0" />
-          <span>{error}</span>
+      </section>
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-display font-bold text-ink-primary">Ngưỡng riêng theo doanh nghiệp</h2>
+          <button type="button" onClick={() => openEditor("new")} disabled={availableOrganizations.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            <Plus size={16} /> Thêm ngưỡng riêng
+          </button>
         </div>
-      )}
-      {successMsg && (
-        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
-          <CheckCircle size={18} weight="fill" className="shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      {/* Global Default Banner */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-accent-primary/10 via-surface-base to-surface-base dark:from-accent-primary/20 dark:via-surface-raised dark:to-surface-raised border border-accent-primary/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-accent-primary font-display font-bold text-sm">
-            <ShieldCheck size={20} weight="bold" />
-            <span>Ngưỡng Mặc Định Toàn Hệ Thống (System-Wide Default)</span>
-          </div>
-          <p className="text-xs text-ink-secondary">
-            Tất cả doanh nghiệp chưa thiết lập ngưỡng riêng sẽ tự động áp dụng
-            bộ tiêu chí mặc định này.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-6 text-xs font-mono">
-          <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
-              Sai số cân max
-            </span>
-            <span className="text-ink-primary font-bold text-sm text-accent-primary">
-              ±{defaultThreshold.weightVarianceTolerancePercent}%
-            </span>
-          </div>
-          <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
-              Độ ẩm tối đa
-            </span>
-            <span className="text-ink-primary font-bold text-sm text-accent-warning">
-              {defaultThreshold.maxMoistureAllowedPercent}%
-            </span>
-          </div>
-          <div className="text-center p-2.5 rounded-xl bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/15">
-            <span className="block text-ink-secondary text-[10px] uppercase font-sans">
-              Tạp chất tối đa
-            </span>
-            <span className="text-ink-primary font-bold text-sm text-ink-primary">
-              {defaultThreshold.impurityTolerancePercent}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid of Company Overrides */}
-      {loading ? (
-        <div className="py-16 flex justify-center">
-          <GrainLoader
-            label={t(
-              "admin.thresholds.loading",
-              "Đang tải danh sách ngưỡng dung sai...",
-            )}
-          />
-        </div>
-      ) : thresholds.length === 0 ? (
-        <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
-          <Scales
-            size={40}
-            className="mx-auto text-ink-tertiary mb-3 opacity-60"
-          />
-          <p className="text-sm font-semibold text-ink-primary">
-            Chưa có doanh nghiệp nào cài đặt ngưỡng tiếp nhận riêng
-          </p>
-          <p className="text-xs text-ink-secondary mt-1 max-w-sm mx-auto">
-            Hệ thống đang áp dụng ngưỡng mặc định cho toàn bộ các lô lúa nhập
-            kho.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {thresholds.map((item) => (
-            <div
-              key={item.companyId}
-              className="p-5 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs hover:shadow-md transition-shadow space-y-4 flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
-                    <Buildings size={22} weight="bold" />
-                  </div>
-                  <StatusBadge status="BALANCED" label="Ngưỡng Riêng" />
-                </div>
-
-                <div>
-                  <h3 className="font-display font-bold text-base text-ink-primary">
-                    {item.companyName || "Doanh nghiệp đối tác"}
-                  </h3>
-                  <span className="font-mono text-[11px] text-ink-tertiary block mt-0.5">
-                    ID: {item.companyId.slice(0, 13)}...
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/10 text-center font-mono text-xs">
-                  <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">
-                      Sai số cân
-                    </span>
-                    <strong className="text-accent-primary">
-                      ±{item.weightVarianceTolerancePercent}%
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">
-                      Độ ẩm max
-                    </span>
-                    <strong className="text-accent-warning">
-                      {item.maxMoistureAllowedPercent}%
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-ink-secondary font-sans">
-                      Tạp chất
-                    </span>
-                    <strong className="text-ink-primary">
-                      {item.impurityTolerancePercent}%
-                    </strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-between text-xs text-ink-secondary">
-                <span className="text-[11px] text-ink-tertiary">
-                  ISO 22095 Custody
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(item)}
-                    className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-primary transition-colors"
-                    title="Chỉnh sửa ngưỡng"
-                  >
-                    <PencilSimple size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.companyId)}
-                    className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-danger transition-colors"
-                    title="Xóa về mặc định"
-                  >
-                    <Trash size={15} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        ariaLabel={
-          isEdit ? "Cập nhật ngưỡng tiếp nhận" : "Thiết lập ngưỡng tiếp nhận"
-        }
-      >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-            <h3 className="font-display font-bold text-base text-ink-primary">
-              {isEdit
-                ? "Chỉnh sửa Ngưỡng Doanh nghiệp"
-                : "Thiết lập Ngưỡng Riêng Mới"}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                Doanh nghiệp Áp dụng *
-              </label>
-              <select
-                disabled={isEdit}
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none disabled:opacity-70"
-              >
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name} ({org.kind})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                Biên độ sai số khối lượng cân chấp nhận (±%) *
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                required
-                value={weightVariance}
-                onChange={(e) =>
-                  setWeightVariance(parseFloat(e.target.value) || 0)
-                }
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-              />
-              <span className="text-[10px] text-ink-tertiary block mt-1">
-                Vượt quá biên độ này sẽ yêu cầu duyệt đối soát tại bước cân xe
-                đến.
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Độ ẩm tối đa (%) *
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="10"
-                  max="35"
-                  required
-                  value={maxMoisture}
-                  onChange={(e) =>
-                    setMaxMoisture(parseFloat(e.target.value) || 0)
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  Tạp chất tối đa (%) *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="10"
-                  required
-                  value={impurity}
-                  onChange={(e) => setImpurity(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-              >
-                Huỷ
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-              >
-                {submitting
-                  ? "Đang lưu..."
-                  : isEdit
-                    ? "Lưu thay đổi"
-                    : "Áp dụng ngưỡng"}
+        {settings.companyOverrides.length === 0 &&
+          <p className="rounded-2xl border border-ink-tertiary/15 bg-surface-base p-6 text-sm text-ink-secondary">
+            Chưa có ngưỡng riêng. Mọi doanh nghiệp dùng ngưỡng mặc định.
+          </p>}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {settings.companyOverrides.map((item) => <article key={item.companyId}
+            className="rounded-2xl border border-ink-tertiary/20 bg-surface-base p-5">
+            <h3 className="font-semibold text-ink-primary">{item.companyName}</h3>
+            <p className="mt-2 text-xl font-mono font-bold text-accent-primary">{item.percentage}%</p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => openEditor(item)}
+                className="rounded-lg border border-ink-tertiary/20 px-3 py-1.5 text-sm text-ink-primary">Chỉnh sửa</button>
+              <button type="button" onClick={() => void removeCompany(item)}
+                className="inline-flex items-center gap-1 rounded-lg border border-accent-danger/30 px-3 py-1.5 text-sm text-accent-danger">
+                <Trash size={14} /> Xóa
               </button>
             </div>
-          </form>
+          </article>)}
         </div>
-      </Modal>
-    </div>
-  );
+      </section>
+    </>}
+    <Modal isOpen={editing !== null} onClose={() => setEditing(null)} ariaLabel="Cấu hình ngưỡng tiếp nhận">
+      <form onSubmit={(event) => void submit(event)}
+        className="w-full max-w-md space-y-4 rounded-2xl bg-surface-base p-6 shadow-xl">
+        <h2 className="text-lg font-display font-bold text-ink-primary">
+          {editing === "default" ? "Sửa ngưỡng mặc định" : editing === "new" ? "Thêm ngưỡng riêng" : "Sửa ngưỡng riêng"}
+        </h2>
+        {editing === "new" && <label className="block text-sm text-ink-primary">Doanh nghiệp
+          <select required value={companyId} onChange={(event) => setCompanyId(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2">
+            <option value="">Chọn doanh nghiệp</option>
+            {availableOrganizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+          </select>
+        </label>}
+        <label className="block text-sm text-ink-primary">Tỷ lệ hao hụt (%)
+          <input required type="number" min="0" max="99.999999" step="0.000001" value={percentage}
+            onChange={(event) => setPercentage(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" />
+        </label>
+        <label className="block text-sm text-ink-primary">Lý do thay đổi
+          <textarea required maxLength={4000} value={reason} onChange={(event) => setReason(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => setEditing(null)}
+            className="rounded-lg border border-ink-tertiary/20 px-4 py-2 text-sm text-ink-primary">Hủy</button>
+          <button type="submit" disabled={saving}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            {saving ? "Đang lưu..." : "Lưu ngưỡng"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  </div>;
 };

@@ -323,7 +323,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             setSearchError("Không tìm thấy địa chỉ phù hợp");
           }
         }
-      } catch (err: unknown) {
+      } catch {
         setSearchResults([]);
         setSearchError("Không thể tìm kiếm địa chỉ lúc này");
       } finally {
@@ -434,10 +434,12 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
+                if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
                 void handleSearch();
               }
             }}
             placeholder="Tìm địa chỉ (VD: Cái Bè, Cai Lậy, Sa Đéc, Tiền Giang, Cần Thơ...)"
+            aria-label="Tìm địa chỉ trên bản đồ"
             disabled={disabled}
             className="w-full pl-8 pr-16 py-1.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none text-xs text-ink-primary placeholder:text-ink-tertiary shadow-2xs transition-colors"
           />
@@ -464,7 +466,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
               type="button"
               disabled={disabled || isSearching || !searchQuery.trim()}
               onClick={() => void handleSearch()}
-              className="px-2.5 py-1 rounded bg-accent-primary text-white text-[11px] font-semibold hover:bg-accent-primary-dim disabled:opacity-50 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-accent-primary text-white text-[11px] font-semibold hover:bg-accent-primary-dim disabled:opacity-50 transition-colors flex items-center gap-1 cursor-pointer"
             >
               {isSearching ? (
                 <CircleNotch size={12} className="animate-spin" />

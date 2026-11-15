@@ -159,7 +159,7 @@ export const ProcurementReceiptPage: React.FC = () => {
         );
         return {
           id: q.id,
-          code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
+          code: `OFFLINE-${q.request.clientOperationId.slice(0, 8).toUpperCase()}`,
           farmerId: q.request.payload?.farmerId || "",
           farmerName:
             matchedFarmer?.name ||
@@ -504,6 +504,12 @@ export const ProcurementReceiptPage: React.FC = () => {
       );
       return;
     }
+    const selectedCommodityId = formData.commodityId || refData?.commodity?.id;
+    if (!formData.collectionSiteId || !formData.receivingLocationId ||
+      !selectedCommodityId || !formData.plotSeasonId) {
+      setError("Cần chọn đủ điểm thu mua, vị trí tiếp nhận, mặt hàng và vụ mùa trước khi lưu phiếu.");
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -525,20 +531,16 @@ export const ProcurementReceiptPage: React.FC = () => {
       const lotId = crypto.randomUUID();
       const sourceLotId = crypto.randomUUID();
 
-      // Ensure valid UUID fallbacks for collectionSiteId, receivingLocationId, commodityId, plotSeasonId
-      const finalCollectionSiteId =
-        formData.collectionSiteId || crypto.randomUUID();
-      const finalReceivingLocationId =
-        formData.receivingLocationId || crypto.randomUUID();
-      const finalCommodityId =
-        formData.commodityId || refData?.commodity?.id || crypto.randomUUID();
-      const finalPlotSeasonId = formData.plotSeasonId || crypto.randomUUID();
+      const finalCollectionSiteId = formData.collectionSiteId;
+      const finalReceivingLocationId = formData.receivingLocationId;
+      const finalCommodityId = selectedCommodityId;
+      const finalPlotSeasonId = formData.plotSeasonId;
 
       request = {
         deviceId: "grainledger-web",
         clientOperationId,
         capturedAt: new Date().toISOString(),
-        payloadSchemaVersion: 1,
+        payloadSchemaVersion: 2,
         payload: {
           entityId,
           farmerId: formData.farmerId,

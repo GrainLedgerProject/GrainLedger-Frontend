@@ -25,7 +25,6 @@ import {
   Package,
   Scales,
   ShieldCheck,
-  Tag,
   TestTube,
   Truck,
   Users,
@@ -141,15 +140,6 @@ export const AppSidebar: React.FC = () => {
             label: t("nav.mill.commitCorrection", "Ghi bút toán bù"),
             path: "/mill/corrections/pending",
             icon: CheckSquare,
-            badge: 2,
-            badgeTone: "warning",
-          },
-          {
-            label: t("nav.mill.planExecutions", "Thực thi plan"),
-            path: "/mill/plan-executions/PLAN-001",
-            icon: ArrowsClockwise,
-            badge: 1,
-            badgeTone: "primary",
           },
           {
             label: t("nav.events", "Tìm sự kiện"),
@@ -174,8 +164,6 @@ export const AppSidebar: React.FC = () => {
             label: t("nav.mill.reconciliations", "Đối soát & Xác nhận"),
             path: "/mill/reconciliations",
             icon: CheckSquare,
-            badge: 1,
-            badgeTone: "warning",
           },
           {
             label: t("nav.mill.commitCorrection", "Ghi bút toán bù"),
@@ -186,8 +174,6 @@ export const AppSidebar: React.FC = () => {
             label: t("nav.risk.holdAlerts", "Cảnh báo HOLD"),
             path: "/risk/holds",
             icon: LockSimple,
-            badge: 1,
-            badgeTone: "danger",
           },
           {
             label: t("nav.admin.balancePolicy", "Chính sách cân bằng"),
@@ -272,8 +258,6 @@ export const AppSidebar: React.FC = () => {
             label: t("nav.risk.holds", "Lệnh giữ HOLD"),
             path: "/risk/holds",
             icon: LockSimple,
-            badge: 1,
-            badgeTone: "danger",
           },
           {
             label: t("nav.compliance.labSamples", "Mẫu xét nghiệm"),
@@ -294,8 +278,6 @@ export const AppSidebar: React.FC = () => {
             label: t("nav.export.plansPending", "Duyệt phương án"),
             path: "/export/plans/pending",
             icon: CheckSquare,
-            badge: 1,
-            badgeTone: "warning",
           },
           {
             label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
@@ -369,11 +351,6 @@ export const AppSidebar: React.FC = () => {
             path: "/stock",
             icon: Package,
             isPrimary: true,
-          },
-          {
-            label: t("nav.stock.lots", "Chi tiết lô lúa/gạo"),
-            path: "/stock/lots/LOT-2026-S1",
-            icon: Tag,
           },
         ];
 

@@ -9,11 +9,7 @@ import {
   ArrowsClockwise,
   CheckCircle,
   WarningCircle,
-  Scales,
-  Drop,
   X,
-  MapPin,
-  Calendar,
 } from "@phosphor-icons/react";
 
 interface ReceivingTaskItem {
@@ -50,57 +46,18 @@ export const ReceivingTasksPage: React.FC = () => {
   );
   const [isMeasureModalOpen, setIsMeasureModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [measuredWeight, setMeasuredWeight] = useState("4980.000");
-  const [measuredMoisture, setMeasuredMoisture] = useState("24.2");
+  const [measuredWeight, setMeasuredWeight] = useState("");
+  const [measuredMoisture, setMeasuredMoisture] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const loadTasks = async () => {
     setLoading(true);
     setError(null);
     try {
-      let items: ReceivingTaskItem[] = [];
-      try {
-        const res = await ledgerEndpoints.getReceivingTasks();
-        items = Array.isArray(res) ? res : (res as any)?.items || [];
-      } catch {
-        // Fall back gracefully to sample queue if backend returns 401 or network error
-      }
-
-      if (items.length === 0) {
-        items = [
-          {
-            id: "RCV-2026-001",
-            sourceLotCode: "SL-2026-TG-001",
-            farmerName: "Nguyễn Văn An (Cái Bè)",
-            originQuantityKg: "5000.000",
-            originMoisturePercent: "24.5",
-            status: "PENDING_ARRIVAL",
-            receivedAt: new Date().toISOString(),
-          },
-          {
-            id: "RCV-2026-002",
-            sourceLotCode: "SL-2026-TG-002",
-            farmerName: "Trần Thị Bình (Cai Lậy)",
-            originQuantityKg: "6200.000",
-            originMoisturePercent: "23.8",
-            arrivalMeasuredKg: "6185.000",
-            arrivalMoisturePercent: "23.6",
-            status: "AWAITING_MANAGER_REVIEW",
-            receivedAt: new Date(Date.now() - 3600000).toISOString(),
-          },
-          {
-            id: "RCV-2026-003",
-            sourceLotCode: "SL-2026-TG-003",
-            farmerName: "Lê Hoàng Nam (Tân Phước)",
-            originQuantityKg: "7500.000",
-            originMoisturePercent: "24.0",
-            arrivalMeasuredKg: "7498.000",
-            arrivalMoisturePercent: "23.9",
-            status: "RECEIVED_MATCHED",
-            receivedAt: new Date(Date.now() - 7200000).toISOString(),
-          },
-        ];
-      }
+      const res = await ledgerEndpoints.getReceivingTasks();
+      const items: ReceivingTaskItem[] = Array.isArray(res) ? res :
+        res && typeof res === "object" && "items" in res && Array.isArray(res.items)
+          ? res.items as ReceivingTaskItem[] : [];
       setTasks(items);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -124,8 +81,8 @@ export const ReceivingTasksPage: React.FC = () => {
 
   const handleOpenMeasure = (task: ReceivingTaskItem) => {
     setSelectedTask(task);
-    setMeasuredWeight(task.originQuantityKg || "5000.000");
-    setMeasuredMoisture(task.originMoisturePercent || "24.5");
+    setMeasuredWeight("");
+    setMeasuredMoisture("");
     setIsMeasureModalOpen(true);
   };
 

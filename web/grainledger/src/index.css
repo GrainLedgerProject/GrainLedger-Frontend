@@ -13,55 +13,66 @@ html {
 
 :root {
   color-scheme: light;
-  --color-surface-canvas:     #EEF2F6;
+  --color-surface-canvas: #eef2f6;
   /* ── Canvas Surfaces ── */
-  --color-surface-base:       #FFFFFF;
-  --color-surface-raised:     #F3F6F9;
-  --color-surface-overlay:    #E2E8F0;
-  --color-ink-primary:        #1E293B;
-  --color-ink-secondary:      #475569;
-  --color-ink-tertiary:       #5F6F82;
-  --color-ink-inverse:        #FFFFFF;
-  --color-canvas-dark:        #000000;
+  --color-surface-base: #ffffff;
+  --color-surface-raised: #f3f6f9;
+  --color-surface-overlay: #e2e8f0;
+  --color-ink-primary: #1e293b;
+  --color-ink-secondary: #475569;
+  --color-ink-tertiary: #5f6f82;
+  --color-ink-inverse: #ffffff;
+  --color-canvas-dark: #000000;
 
   /* ── Semantic Accents ── */
-  --color-accent-primary:     #2F6B3A;
+  --color-accent-primary: #2f6b3a;
   --color-accent-primary-dim: #245430;
-  --color-accent-warning:     #946200;
-  --color-accent-danger:      #B5412B;
-  --color-accent-info:        #2C4A6B;
-  --color-accent-success:     #3A7D44;
+  --color-accent-warning: #946200;
+  --color-accent-danger: #b5412b;
+  --color-accent-info: #2c4a6b;
+  --color-accent-success: #3a7d44;
 
-  --color-border-subtle:      #D5DEE8;
-  --color-border-control:     #8190A2;
+  --color-border-subtle: #d5dee8;
+  --color-border-control: #8190a2;
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='none' stroke='%23475569' stroke-width='24' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m208 96-80 80-80-80'/%3E%3C/svg%3E");
 
   /* ── Company Context Colors ── */
-  --color-company-a:          #2563EB;
-  --color-company-b:          #7C3AED;
-  --color-company-c:          #0891B2;
-  --color-company-d:          #D97706;
+  --color-company-a: #2563eb;
+  --color-company-b: #7c3aed;
+  --color-company-c: #0891b2;
+  --color-company-d: #d97706;
 
   /* ── Functional Surfaces ── */
-  --color-hold-bg:            #FEF2EE;
-  --color-hold-border:        #B5412B;
-  --color-stale-bg:           #FEFCE8;
-  --color-stale-border:       #D9A441;
-  --color-balanced-bg:        #F0FDF4;
-  --color-balanced-border:    #2F6B3A;
-  --color-rejected-bg:        #FEF2EE;
-  --color-rejected-border:    #B5412B;
+  --color-hold-bg: #fef2ee;
+  --color-hold-border: #b5412b;
+  --color-stale-bg: #fefce8;
+  --color-stale-border: #d9a441;
+  --color-balanced-bg: #f0fdf4;
+  --color-balanced-border: #2f6b3a;
+  --color-rejected-bg: #fef2ee;
+  --color-rejected-border: #b5412b;
 
   /* ── Typography (Apple System Stack) ── */
-  --font-display:             -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-body:                -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-serif:               'Georgia', 'Times New Roman', serif;
-  --font-mono:                'SF Mono', 'JetBrains Mono', 'Fira Mono', ui-monospace, monospace;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI",
+    system-ui, sans-serif;
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI",
+    system-ui, sans-serif;
+  --font-serif: "Georgia", "Times New Roman", serif;
+  --font-mono:
+    "SF Mono", "JetBrains Mono", "Fira Mono", ui-monospace, monospace;
 
   /* ── Spacing Scale (Apple 8pt grid) ── */
-  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-  --space-4: 1rem;    --space-6: 1.5rem; --space-8: 2rem;
-  --space-12: 3rem;   --space-16: 4rem;  --space-24: 6rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
 
   /* ── Border Radius (Apple Continuous Curvature) ── */
   --radius-sm: 8px;
@@ -72,73 +83,78 @@ html {
   --radius-full: 9999px;
 
   /* ── Liquid Glass Material ── */
-  --glass-bg-light:    rgba(255, 255, 255, 0.94);
-  --glass-bg-dark:     rgba(18, 18, 20, 0.75);
-  --glass-backdrop:    blur(20px) saturate(180%);
-  --glass-border:      1px solid var(--color-border-subtle);
+  --glass-bg-light: rgba(255, 255, 255, 0.94);
+  --glass-bg-dark: rgba(18, 18, 20, 0.75);
+  --glass-backdrop: blur(20px) saturate(180%);
+  --glass-border: 1px solid var(--color-border-subtle);
   --glass-border-dark: 1px solid rgba(255, 255, 255, 0.08);
 
   /* ── Apple Shadows ── */
-  --shadow-xs:    0 1px 3px rgba(30, 41, 59, 0.07), 0 3px 8px rgba(30, 41, 59, 0.03);
-  --shadow-sm:    0 2px 4px rgba(30, 41, 59, 0.05), 0 6px 18px rgba(30, 41, 59, 0.07);
-  --shadow-md:    0 4px 8px rgba(30, 41, 59, 0.06), 0 12px 28px rgba(30, 41, 59, 0.10);
-  --shadow-lg:    0 12px 40px rgba(0, 0, 0, 0.12);
-  --shadow-xl:    0 24px 64px rgba(0, 0, 0, 0.16);
-  --shadow-glow:  0 0 40px rgba(47, 107, 58, 0.15);
+  --shadow-xs:
+    0 1px 3px rgba(30, 41, 59, 0.07), 0 3px 8px rgba(30, 41, 59, 0.03);
+  --shadow-sm:
+    0 2px 4px rgba(30, 41, 59, 0.05), 0 6px 18px rgba(30, 41, 59, 0.07);
+  --shadow-md:
+    0 4px 8px rgba(30, 41, 59, 0.06), 0 12px 28px rgba(30, 41, 59, 0.1);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.16);
+  --shadow-glow: 0 0 40px rgba(47, 107, 58, 0.15);
 
   /* ── Motion (Spring Physics Tokens) ── */
-  --duration-instant:  80ms;
-  --duration-fast:     150ms;
-  --duration-normal:   250ms;
-  --duration-slow:     400ms;
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
   --duration-dramatic: 600ms;
 
-  --ease-spring:   cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1);
-  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-apple:    cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* ── Dark Mode ── */
 .dark {
   color-scheme: dark;
-  --color-surface-canvas:     #10161D;
-  --color-surface-base:       #1A242E;
-  --color-surface-raised:     #24323F;
-  --color-surface-overlay:    #344656;
-  --color-ink-primary:        #EDF3F8;
-  --color-ink-secondary:      #C2CDDA;
-  --color-ink-tertiary:       #A4B3C3;
-  --color-ink-inverse:        #101A23;
-  --color-border-subtle:      #344656;
-  --color-border-control:     #A4B3C3;
+  --color-surface-canvas: #10161d;
+  --color-surface-base: #1a242e;
+  --color-surface-raised: #24323f;
+  --color-surface-overlay: #344656;
+  --color-ink-primary: #edf3f8;
+  --color-ink-secondary: #c2cdda;
+  --color-ink-tertiary: #a4b3c3;
+  --color-ink-inverse: #101a23;
+  --color-border-subtle: #344656;
+  --color-border-control: #a4b3c3;
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='none' stroke='%23C2CDDA' stroke-width='24' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m208 96-80 80-80-80'/%3E%3C/svg%3E");
 
-  --color-accent-primary:     #78D6A0;
-  --color-accent-primary-dim: #9AE5B9;
-  --color-accent-warning:     #F1C574;
-  --color-accent-danger:      #FF9C8E;
-  --color-accent-info:        #91BEF5;
-  --color-accent-success:     #78D6A0;
+  --color-accent-primary: #78d6a0;
+  --color-accent-primary-dim: #9ae5b9;
+  --color-accent-warning: #f1c574;
+  --color-accent-danger: #ff9c8e;
+  --color-accent-info: #91bef5;
+  --color-accent-success: #78d6a0;
 
-  --color-hold-bg:            #35262B;
-  --color-hold-border:        #FF9C8E;
-  --color-stale-bg:           #342F24;
-  --color-stale-border:       #F1C574;
-  --color-balanced-bg:        #1C352D;
-  --color-balanced-border:    #78D6A0;
-  --color-rejected-bg:        #35262B;
-  --color-rejected-border:    #FF9C8E;
+  --color-hold-bg: #35262b;
+  --color-hold-border: #ff9c8e;
+  --color-stale-bg: #342f24;
+  --color-stale-border: #f1c574;
+  --color-balanced-bg: #1c352d;
+  --color-balanced-border: #78d6a0;
+  --color-rejected-bg: #35262b;
+  --color-rejected-border: #ff9c8e;
 
-  --glass-bg-dark:            rgba(26, 36, 46, 0.94);
-  --glass-border-dark:        1px solid rgba(164, 179, 195, 0.24);
-  --shadow-xs:                0 1px 3px rgba(0, 0, 0, 0.18);
-  --shadow-sm:                0 4px 12px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --shadow-md:                0 8px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-lg:                0 16px 40px rgba(0, 0, 0, 0.34);
-  --shadow-xl:                0 24px 64px rgba(0, 0, 0, 0.42);
-  --shadow-glow:              0 0 32px rgba(120, 214, 160, 0.12);
+  --glass-bg-dark: rgba(26, 36, 46, 0.94);
+  --glass-border-dark: 1px solid rgba(164, 179, 195, 0.24);
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.18);
+  --shadow-sm:
+    0 4px 12px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-md:
+    0 8px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.34);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.42);
+  --shadow-glow: 0 0 32px rgba(120, 214, 160, 0.12);
 }
 
 body {
@@ -176,17 +192,40 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
 /* Light workspace: white panels sit above a cool, quiet canvas. Keep these
    defaults in the component layer so explicit utility states still take priority. */
 @layer components {
-  :root:not(.dark) .app-workspace :where(div, section, article, form).bg-surface-base.border:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  :root:not(.dark)
+    .app-workspace
+    :where(div, section, article, form).bg-surface-base.border:is(
+      .rounded-full,
+      .rounded-xl,
+      .rounded-2xl,
+      .rounded-3xl
+    ) {
     box-shadow: var(--shadow-sm);
   }
 }
 
 @layer utilities {
-  :where(:root:not(.dark) .app-workspace) :is(.border-ink-tertiary\/10, .border-ink-tertiary\/15, .border-ink-tertiary\/20, .border-ink-tertiary\/30) {
+  :where(:root:not(.dark) .app-workspace)
+    :is(
+      .border-ink-tertiary\/10,
+      .border-ink-tertiary\/15,
+      .border-ink-tertiary\/20,
+      .border-ink-tertiary\/30
+    ) {
     border-color: var(--color-border-subtle);
   }
 
-  :where(:root:not(.dark) .app-workspace) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):not(:focus):not([aria-invalid="true"]):is(.border-ink-tertiary\/15, .border-ink-tertiary\/20, .border-ink-tertiary\/30, .border-surface-overlay) {
+  :where(:root:not(.dark) .app-workspace)
+    :where(
+      input:not([type="checkbox"]):not([type="radio"]),
+      select,
+      textarea
+    ):not(:focus):not([aria-invalid="true"]):is(
+      .border-ink-tertiary\/15,
+      .border-ink-tertiary\/20,
+      .border-ink-tertiary\/30,
+      .border-surface-overlay
+    ) {
     border-color: var(--color-border-control);
   }
 
@@ -203,9 +242,17 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
 
 /* Solid status/action fills use dark ink against the brighter night palette. */
 @layer utilities {
-  .dark :is(.bg-accent-primary, .bg-accent-primary-dim, .bg-accent-warning,
-            .bg-accent-danger, .bg-accent-info, .bg-accent-success,
-            .hover\:bg-accent-primary:hover, .hover\:bg-accent-primary-dim:hover) {
+  .dark
+    :is(
+      .bg-accent-primary,
+      .bg-accent-primary-dim,
+      .bg-accent-warning,
+      .bg-accent-danger,
+      .bg-accent-info,
+      .bg-accent-success,
+      .hover\:bg-accent-primary:hover,
+      .hover\:bg-accent-primary-dim:hover
+    ) {
     color: var(--color-ink-inverse);
   }
 }
@@ -251,9 +298,18 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
 
 /* Ledger rejection shake */
 @keyframes ledgerShake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
 }
 
 .animate-ledger-shake {
@@ -262,44 +318,83 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
 
 /* Apple shimmer skeleton (for Suspense loading) */
 @keyframes apple-shimmer {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes apple-shimmer-slide {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Subtle pulse for status indicators */
 @keyframes apple-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.7; transform: scale(0.97); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.97);
+  }
 }
 
 /* Floating glow ambient animation */
 @keyframes apple-glow-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  33%      { transform: translate(20px, -15px) scale(1.05); opacity: 0.6; }
-  66%      { transform: translate(-15px, 10px) scale(0.95); opacity: 0.5; }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translate(20px, -15px) scale(1.05);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translate(-15px, 10px) scale(0.95);
+    opacity: 0.5;
+  }
 }
 
 /* ==========================================================================
    CUSTOM SCROLLBARS (Thin, Apple-style)
    ========================================================================== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+:root {
+  --scrollbar-thumb: var(--color-ink-tertiary);
+  --scrollbar-track: var(--color-surface-base);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
-::-webkit-scrollbar-track {
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-full); }
+}
+
+.grain-modal {
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 0;
   background: transparent;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--color-ink-tertiary);
-  border-radius: var(--radius-full);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink-secondary);
+.grain-modal::backdrop {
+  background: rgb(0 0 0 / 40%);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* ==========================================================================
@@ -320,8 +415,9 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
    APPLE PRESS INTERACTION (Scale-down on active)
    ========================================================================== */
 .apple-press {
-  transition: transform var(--duration-fast) var(--ease-spring),
-              opacity var(--duration-fast) var(--ease-out);
+  transition:
+    transform var(--duration-fast) var(--ease-spring),
+    opacity var(--duration-fast) var(--ease-out);
 }
 .apple-press:active {
   transform: scale(0.975);
@@ -330,8 +426,9 @@ select:not([multiple]):is(:not([size]), [size="1"]) {
 
 /* Apple card hover glow */
 .apple-card-hover {
-  transition: transform var(--duration-normal) var(--ease-spring),
-              box-shadow var(--duration-normal) var(--ease-out);
+  transition:
+    transform var(--duration-normal) var(--ease-spring),
+    box-shadow var(--duration-normal) var(--ease-out);
 }
 .apple-card-hover:hover {
   transform: translateY(-2px);
@@ -368,9 +465,9 @@ textarea:focus {
   }
 }
 
-
 @keyframes grain-breathe {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.94);
     filter: drop-shadow(0 0 0 rgba(213, 173, 67, 0));
   }

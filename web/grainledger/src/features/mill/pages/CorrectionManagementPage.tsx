@@ -1,19 +1,17 @@
 import { ledgerEndpoints } from "@/api/ledger";
-import {
-  ArrowClockwise,
-  CheckCircle,
-  ClockCounterClockwise,
-  FileText,
-  MagnifyingGlass,
-  Plus,
-  Scales,
-  WarningCircle,
-  X,
-  XCircle,
-} from "@phosphor-icons/react";
-import { confirmAction, toast } from "@/app/store/feedbackStore";
+import { confirmAction,toast } from "@/app/store/feedbackStore";
 import { logger } from "@/shared/utils/logger";
-import React, { useEffect, useState } from "react";
+import {
+ArrowClockwise,
+CheckCircle,
+ClockCounterClockwise,
+Plus,
+Scales,
+WarningCircle,
+X,
+XCircle
+} from "@phosphor-icons/react";
+import React,{ useEffect,useState } from "react";
 
 interface CorrectionItem {
   id: string;
@@ -44,15 +42,6 @@ export const CorrectionManagementPage: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // Selected item for action
-  const [selectedCorrection, setSelectedCorrection] =
-    useState<CorrectionItem | null>(null);
-  const [actionNotes, setActionNotes] = useState("");
-
-  useEffect(() => {
-    fetchCorrections();
-  }, []);
-
   const fetchCorrections = async () => {
     try {
       setLoading(true);
@@ -66,38 +55,11 @@ export const CorrectionManagementPage: React.FC = () => {
         list = (res as { items: CorrectionItem[] }).items;
       }
 
-      if (list.length === 0) {
-        list = [
-          {
-            id: "CORR-2026-001",
-            operationId: "OP-2026-DRY-01",
-            facilityId: "FAC-TIENGIANG-01",
-            reason:
-              "Nhầm lẫn phiếu cân độ ẩm đầu vào từ 14.8% thành 14.2%, dẫn đến sai lệch lượng hao hụt tính toán",
-            reconciliationNotes:
-              "Biên bản kiểm tra kỹ thuật số 04/BB-KCS ngày 15/10/2026",
-            status: "PENDING_REVIEW",
-            createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-            createdBy: "operator@grainledger.vn",
-            proposedReversals: [
-              { lotId: "LOT-TG-2026-001", deltaMassKg: "+120.000000" },
-              { lotId: "LOT-TG-2026-002", deltaMassKg: "-120.000000" },
-            ],
-          },
-          {
-            id: "CORR-2026-002",
-            operationId: "OP-2026-MILL-03",
-            facilityId: "FAC-TIENGIANG-01",
-            reason:
-              "Tỷ lệ thu hồi cám thực tế lệch 0.8% so với định mức do máy bóc vỏ gặp sự cố trục rulo",
-            reconciliationNotes: "Đã hiệu chuẩn lại cân băng tải silo cám",
-            status: "COMMITTED",
-            createdAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
-            createdBy: "operator@grainledger.vn",
-          },
-        ];
-      }
-      setCorrections(list);
+      setCorrections(list.map((item) => ({
+        ...item,
+        status: (item.status as string) === "REQUESTED" ? "PENDING_REVIEW" : item.status,
+        createdAt: item.createdAt || (item as CorrectionItem & { requestedAt?: string }).requestedAt || "",
+      })));
     } catch (err: unknown) {
       logger.error(err);
       setError(
@@ -107,6 +69,10 @@ export const CorrectionManagementPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void fetchCorrections();
+  }, []);
 
   const handleCreateCorrection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,18 +84,12 @@ export const CorrectionManagementPage: React.FC = () => {
     try {
       setSubmitting(true);
       setError(null);
-      // Call create endpoint or mock
-      const newCorr: CorrectionItem = {
-        id: `CORR-2026-00${corrections.length + 1}`,
-        operationId: createForm.operationId,
-        facilityId: "FAC-TIENGIANG-01",
-        reason: createForm.reason,
-        reconciliationNotes: createForm.reconciliationNotes,
-        status: "PENDING_REVIEW",
-        createdAt: new Date().toISOString(),
-        createdBy: "current_user",
-      };
-      setCorrections([newCorr, ...corrections]);
+      await ledgerEndpoints.createCorrection({
+        operationId: createForm.operationId.trim(),
+        reason: createForm.reason.trim(),
+        reconciliationNotes: createForm.reconciliationNotes.trim(),
+      });
+      await fetchCorrections();
       setShowCreateModal(false);
       setCreateForm({ operationId: "", reason: "", reconciliationNotes: "" });
       toast.success(
@@ -154,22 +114,15 @@ export const CorrectionManagementPage: React.FC = () => {
 
     try {
       setLoading(true);
-      await ledgerEndpoints.commitCorrection(id, { notes: actionNotes });
+      await ledgerEndpoints.commitCorrection(id, { notes: "" });
       toast.success(
         `Đã ghi nhận bút toán bù và thay thế cho yêu cầu ${id} thành công.`,
       );
       fetchCorrections();
     } catch (err: unknown) {
-      // Optimistic update for dev
-      setCorrections((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, status: "COMMITTED" as const } : c,
-        ),
-      );
-      toast.success(`Đã ghi nhận bút toán bù cho yêu cầu ${id}.`);
+      setError(err instanceof Error ? err.message : "Không thể chốt bút toán bù.");
     } finally {
       setLoading(false);
-      setSelectedCorrection(null);
     }
   };
 
@@ -188,14 +141,9 @@ export const CorrectionManagementPage: React.FC = () => {
       });
       fetchCorrections();
     } catch (err) {
-      setCorrections((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, status: "CANCELLED" as const } : c,
-        ),
-      );
+      setError(err instanceof Error ? err.message : "Không thể hủy yêu cầu sửa đổi.");
     } finally {
       setLoading(false);
-      setSelectedCorrection(null);
     }
   };
 
@@ -344,15 +292,18 @@ export const CorrectionManagementPage: React.FC = () => {
                       {item.status === "PENDING_REVIEW" && (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            disabled
                             onClick={() => handleCommitCorrection(item.id)}
                             className="px-2 py-1 bg-functional-balanced-bg hover:bg-functional-balanced-bg text-accent-primary font-medium rounded text-xs transition inline-flex items-center gap-1"
-                            title="Chốt bút toán bù đảo ngược"
+                            title="Cần chứng cứ và công đoạn thay thế; biểu mẫu hiện chưa hỗ trợ"
                           >
                             <CheckCircle size={14} weight="fill" />
                             Chốt bù
                           </button>
                           <button
+                            disabled
                             onClick={() => handleCancelCorrection(item.id)}
+                            title="Cần chứng cứ xác minh; biểu mẫu hiện chưa hỗ trợ"
                             className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 font-medium rounded text-xs transition inline-flex items-center gap-1"
                           >
                             <XCircle size={14} />

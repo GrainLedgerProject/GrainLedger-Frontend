@@ -155,11 +155,6 @@ const PendingCorrectionsPage = React.lazy(() =>
     default: m.PendingCorrectionsPage,
   })),
 );
-const ReconciliationReviewPage = React.lazy(() =>
-  import("@/features/mill/pages/ReconciliationReviewPage").then((m) => ({
-    default: m.ReconciliationReviewPage,
-  })),
-);
 const StockOverviewPage = React.lazy(() =>
   import("@/features/mill/pages/StockOverviewPage").then((m) => ({
     default: m.StockOverviewPage,
@@ -498,7 +493,7 @@ export const router = createBrowserRouter(
           element: (
             <ProtectedRoute allowedRoles={["MILL_MANAGER", "MILL_ADMIN"]}>
               <L>
-                <ReconciliationReviewPage />
+                <PendingCorrectionsPage />
               </L>
             </ProtectedRoute>
           ),
@@ -508,7 +503,7 @@ export const router = createBrowserRouter(
           element: (
             <ProtectedRoute allowedRoles={["MILL_MANAGER", "MILL_ADMIN"]}>
               <L>
-                <ReconciliationReviewPage />
+                <PendingCorrectionsPage />
               </L>
             </ProtectedRoute>
           ),
@@ -547,11 +542,11 @@ export const router = createBrowserRouter(
           ),
         },
 
-        // --- Compliance & Lab Evidences (Customer Manager & Mill Admin) ---
+        // --- Customer company sample and lab evidence ---
         {
           path: "/compliance/lab-samples",
           element: (
-            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER", "MILL_ADMIN"]}>
+            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER"]}>
               <L>
                 <LabSampleRegistrationPage defaultTab="LIST" />
               </L>
@@ -561,7 +556,7 @@ export const router = createBrowserRouter(
         {
           path: "/compliance/lab-samples/new",
           element: (
-            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER", "MILL_ADMIN"]}>
+            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER"]}>
               <L>
                 <LabSampleRegistrationPage defaultTab="CREATE" />
               </L>
@@ -571,7 +566,7 @@ export const router = createBrowserRouter(
         {
           path: "/compliance/lab-results",
           element: (
-            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER", "MILL_ADMIN"]}>
+            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER"]}>
               <L>
                 <MrlComplianceCheckPage />
               </L>
@@ -581,7 +576,7 @@ export const router = createBrowserRouter(
         {
           path: "/compliance/lab-results/:id",
           element: (
-            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER", "MILL_ADMIN"]}>
+            <ProtectedRoute allowedRoles={["CUSTOMER_MANAGER"]}>
               <L>
                 <MrlComplianceCheckPage />
               </L>

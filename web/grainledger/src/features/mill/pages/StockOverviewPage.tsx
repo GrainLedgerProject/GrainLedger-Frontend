@@ -1,23 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
-import { useAuthStore } from "@/app/store/authStore";
+import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { MassValue } from "@/components/MassValue/MassValue";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import {
-  Archive,
-  MagnifyingGlass,
-  ArrowsClockwise,
-  MapPin,
-  Buildings,
-  LockSimple,
-  ShieldCheck,
-  Scales,
-  X,
-  FileText,
-  User,
+Archive,
+ArrowsClockwise,
+MagnifyingGlass,
+MapPin,
+Scales,
+ShieldCheck,
+X
 } from "@phosphor-icons/react";
+import React,{ useEffect,useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 interface LotItem {
   id: string;
@@ -42,39 +38,33 @@ interface LotItem {
 }
 
 export const StockOverviewPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const [lots, setLots] = useState<LotItem[]>([]);
-  const [lookups, setLookups] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filters
   const [stageFilter, setStageFilter] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchQuery = searchParams.get("search") ?? "";
   const [selectedLot, setSelectedLot] = useState<LotItem | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadStock = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const [lotsRes, lookupsRes] = await Promise.all([
-        ledgerEndpoints
-          .getLots({
-            stage: stageFilter || undefined,
-            search: searchQuery || undefined,
-            pageSize: 50,
-          })
-          .catch(() => []),
-        ledgerEndpoints.getLookups().catch(() => null),
-      ]);
+      const lotsRes = await ledgerEndpoints.getLots({
+        stage: stageFilter || undefined,
+        search: searchQuery || undefined,
+        pageSize: 50,
+      });
 
       const items = Array.isArray(lotsRes)
         ? lotsRes
-        : (lotsRes as any)?.items || [];
+        : (lotsRes as { items?: LotItem[] })?.items || [];
       setLots(items);
-      setLookups(lookupsRes);
-    } catch {
-      // Offline fallback
+    } catch (cause) {
+      setLoadError(cause instanceof Error ? cause.message : "Không thể tải danh sách tồn kho.");
       setLots([]);
     } finally {
       setLoading(false);
@@ -87,16 +77,13 @@ export const StockOverviewPage: React.FC = () => {
 
   const handleSelectLot = async (lot: LotItem) => {
     setSelectedLot(lot);
-    setLoadingDetail(true);
     try {
       const detail = await ledgerEndpoints.getLot(lot.id);
       if (detail) {
         setSelectedLot({ ...lot, ...detail });
       }
     } catch {
-      // Keep selected lot as is
-    } finally {
-      setLoadingDetail(false);
+      // Keep the selected summary visible if detail loading fails.
     }
   };
 
@@ -104,6 +91,9 @@ export const StockOverviewPage: React.FC = () => {
     (acc, l) => acc + (parseFloat(l.quantityKg) || 0),
     0,
   );
+  const availableQuantity = lots.reduce((sum, lot) => sum + (parseFloat(lot.availableKg || "0") || 0), 0);
+  const reservedQuantity = lots.reduce((sum, lot) => sum + (parseFloat(lot.reservedKg || "0") || 0), 0);
+  const holdQuantity = lots.reduce((sum, lot) => sum + (parseFloat(lot.quarantinedKg || "0") || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -140,6 +130,7 @@ export const StockOverviewPage: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards */}
+      {loadError && <p role="alert" className="rounded-xl border border-accent-danger/30 bg-functional-rejected-bg p-3 text-sm text-accent-danger">{loadError}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 space-y-1">
           <span className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider">
@@ -150,7 +141,7 @@ export const StockOverviewPage: React.FC = () => {
             <span className="text-sm font-normal">kg</span>
           </div>
           <span className="text-[10px] text-ink-secondary">
-            {t("mill.stock.kpiTotalDesc", "Toàn bộ 5 phân đoạn chế biến")}
+            Tổng khối lượng của {lots.length} lô trên trang hiện tại
           </span>
         </div>
 
@@ -159,7 +150,7 @@ export const StockOverviewPage: React.FC = () => {
             {t("mill.stock.kpiAvailableTitle", "Khả dụng xuất bán / Phối trộn")}
           </span>
           <div className="text-2xl font-mono font-bold text-accent-primary">
-            {(totalQuantity * 0.85).toLocaleString("vi-VN", {
+            {availableQuantity.toLocaleString("vi-VN", {
               maximumFractionDigits: 0,
             })}{" "}
             <span className="text-sm font-normal">kg</span>
@@ -174,7 +165,7 @@ export const StockOverviewPage: React.FC = () => {
             {t("mill.stock.kpiReservedTitle", "Đang bảo lưu (Reserved)")}
           </span>
           <div className="text-2xl font-mono font-bold text-accent-warning">
-            {(totalQuantity * 0.12).toLocaleString("vi-VN", {
+            {reservedQuantity.toLocaleString("vi-VN", {
               maximumFractionDigits: 0,
             })}{" "}
             <span className="text-sm font-normal">kg</span>
@@ -192,7 +183,7 @@ export const StockOverviewPage: React.FC = () => {
             {t("mill.stock.kpiHoldTitle", "Phong toả cách ly (HOLD)")}
           </span>
           <div className="text-2xl font-mono font-bold text-accent-danger">
-            {(totalQuantity * 0.03).toLocaleString("vi-VN", {
+            {holdQuantity.toLocaleString("vi-VN", {
               maximumFractionDigits: 0,
             })}{" "}
             <span className="text-sm font-normal">kg</span>
@@ -214,7 +205,7 @@ export const StockOverviewPage: React.FC = () => {
                 "Tìm theo mã lô...",
               )}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchParams(e.target.value ? { search: e.target.value } : {}, { replace: true })}
               className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
             />
             <MagnifyingGlass

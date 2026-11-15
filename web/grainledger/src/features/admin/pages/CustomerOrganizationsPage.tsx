@@ -5,7 +5,6 @@ import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
-  Buildings,
   Plus,
   ArrowsClockwise,
   CheckCircle,

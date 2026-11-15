@@ -31,10 +31,18 @@ type CatalogTab =
   | "VARIETIES"
   | "ATTRIBUTES";
 
+interface CatalogItem {
+  id: string;
+  code?: string;
+  name: string;
+  quantityKind?: string;
+  unit?: string;
+}
+
 export const MasterDataPage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<CatalogTab>("COMMODITIES");
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +50,7 @@ export const MasterDataPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -54,7 +62,7 @@ export const MasterDataPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      let res: any;
+      let res: unknown;
       switch (activeTab) {
         case "COMMODITIES":
           res = await catalogsEndpoints.getCommodities({
@@ -87,8 +95,10 @@ export const MasterDataPage: React.FC = () => {
           });
           break;
       }
-      const data = Array.isArray(res) ? res : res?.items || [];
-      setItems(data);
+      const data = Array.isArray(res) ? res :
+        res && typeof res === "object" && "items" in res && Array.isArray(res.items)
+          ? res.items : [];
+      setItems(data as CatalogItem[]);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -112,7 +122,7 @@ export const MasterDataPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (item: any) => {
+  const handleOpenEdit = (item: CatalogItem) => {
     setEditingItem(item);
     setFormData({
       code: item.code || "",
@@ -235,7 +245,7 @@ export const MasterDataPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (item: any) => {
+  const handleDelete = async (item: CatalogItem) => {
     const supportsDeletion = ["COMMODITIES", "UNITS", "SUBSTANCES"].includes(
       activeTab,
     );
