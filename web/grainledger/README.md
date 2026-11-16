@@ -20,6 +20,12 @@ Khi triển khai với backend riêng, đặt `VITE_API_BASE_URL=https://api.exa
 
 Khởi động lại dev server sau khi sửa `.env`. Các biến `VITE_*` được đưa vào mã trình duyệt khi build, vì vậy không đặt thông tin bí mật trong các biến này. `.env` và các file môi trường riêng được Git bỏ qua; `.env.example` được lưu trong repository.
 
+## Đồng bộ API
+
+Đặc tả được lưu tại `openapi/v1.json`. Sau khi cập nhật đặc tả, chạy `npm run api:generate` để sinh schema, operation và manifest. Chạy `npm run api:check` để kiểm tra mã sinh, `npm run api:audit` để kiểm tra wrapper theo method/path.
+
+Xem [kết quả đối soát API và giao diện](docs/api-reconciliation.md) để biết endpoint mới, interface bổ sung và giới hạn của đặc tả.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

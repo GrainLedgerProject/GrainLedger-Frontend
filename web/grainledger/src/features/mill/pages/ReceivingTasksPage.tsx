@@ -329,7 +329,7 @@ export const ReceivingTasksPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span className="text-xs font-semibold uppercase tracking-wider text-accent-primary">
             {t(
               "mill.receiving.tag",
               "TIẾP NHẬN LÚA VỀ NHÀ MÁY (RECEIVING & ARRIVAL WORKFLOW)",
@@ -664,7 +664,7 @@ export const ReceivingTasksPage: React.FC = () => {
           }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Scales size={20} className="text-accent-primary" />
@@ -796,7 +796,7 @@ export const ReceivingTasksPage: React.FC = () => {
           }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck

@@ -1,6 +1,8 @@
 import type * as ApiSchemas from './generated/schemas';
 export type { SampleInput, CaptureSampleRequest, SampleHandoverInput, RecordSampleHandoverRequest, LabResultInput, LabResultSetInput, LabReportInput, CaptureLabReportRequest, LabReportMatchInput, ConfirmLabReportInput, ConfirmLabReportRequest } from './generated/schemas';
 import { apiFetch } from './client';
+import type { LabReportListResponse, LabReportResponse } from './lab-contracts';
+export type * from './lab-contracts';
 
 export const sampleEndpoints = {
   getSamples: (params?: Record<string, string | number>) => {
@@ -29,21 +31,21 @@ export const sampleEndpoints = {
 export const labReportEndpoints = {
   getLabReports: (params?: Record<string, string | number>) => {
     const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
-    return apiFetch<unknown>(`/api/lab-reports${qs}`);
+    return apiFetch<LabReportListResponse>(`/api/lab-reports${qs}`);
   },
-  getLabReport: (id: string) => apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}`),
+  getLabReport: (id: string) => apiFetch<LabReportResponse>(`/api/lab-reports/${encodeURIComponent(id)}`),
   createLabReport: (req: ApiSchemas.CaptureLabReportRequest) =>
-    apiFetch<unknown>('/api/lab-reports', {
+    apiFetch<LabReportResponse>('/api/lab-reports', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
   captureLabReport: (req: ApiSchemas.CaptureLabReportRequest) =>
-    apiFetch<unknown>('/api/lab-reports', {
+    apiFetch<LabReportResponse>('/api/lab-reports', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
   updateLabReport: (id: string, req: ApiSchemas.CaptureLabReportRequest) =>
-    apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}`, {
+    apiFetch<LabReportResponse>(`/api/lab-reports/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(req),
     }),
@@ -54,7 +56,7 @@ export const labReportEndpoints = {
     }),
   getLabReportFile: (id: string) => apiFetch<Blob>(`/api/lab-reports/${encodeURIComponent(id)}/file`, { responseType: 'blob', headers: { Accept: '*/*' } }),
   confirmLabReport: (id: string, req: ApiSchemas.ConfirmLabReportRequest) =>
-    apiFetch<unknown>(`/api/lab-reports/${encodeURIComponent(id)}/confirm`, {
+    apiFetch<LabReportResponse>(`/api/lab-reports/${encodeURIComponent(id)}/confirm`, {
       method: 'POST',
       body: JSON.stringify(req),
     }),

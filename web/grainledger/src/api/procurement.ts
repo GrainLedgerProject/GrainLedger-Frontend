@@ -29,6 +29,8 @@ export interface ProcurementLineResponse {
   lotCode: string;
   stage: string;
   initialStock?: ProcurementInitialStock;
+  plotCode?: string | null;
+  seasonName?: string | null;
 }
 
 /**
@@ -50,6 +52,8 @@ export interface ProcurementResponse {
   totalNetMassKg: string;
   items: ProcurementLineResponse[];
   receivingVersion?: number;
+  farmerName?: string | null;
+  farmerCode?: string | null;
 }
 
 /**
@@ -64,6 +68,8 @@ export interface ProcurementSummary {
   status: string;
   itemCount: number;
   totalNetMassKg: string;
+  remainingStockKg: string;
+  availableStockKg: string;
 }
 
 export interface ProcurementListResponse {

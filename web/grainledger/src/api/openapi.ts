@@ -1,10 +1,12 @@
 import { apiFetch } from './client';
 import { apiManifest } from './generated/manifest';
 import type { ApiOperation, ApiOperations } from './generated/operations';
+import type { ApiResponseOverrides } from './contracts';
 
 export type { ApiOperation, ApiOperations } from './generated/operations';
 export type ApiRequest<K extends ApiOperation> = ApiOperations[K]['request'];
-export type ApiResponse<K extends ApiOperation> = ApiOperations[K]['response'];
+export type ApiResponse<K extends ApiOperation> = K extends keyof ApiResponseOverrides
+  ? ApiResponseOverrides[K] : ApiOperations[K]['response'];
 export type ApiErrors<K extends ApiOperation> = ApiOperations[K]['errors'];
 
 type RequestOptions<K extends ApiOperation> = ApiRequest<K> & {

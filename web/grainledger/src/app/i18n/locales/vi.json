@@ -701,7 +701,7 @@
       "saveSuccess": "Đã lưu phiên bản MRL thành công"
     },
     "master": {
-      "badge": "DANH MỤC MASTER DATA VẬN HÀNH",
+      "badge": "DANH MỤC DỮ LIỆU VẬN HÀNH",
       "title": "Danh mục Chuẩn Hóa Chuỗi Cung Ứng",
       "subtitle": "Duy trì các danh mục dùng chung: Hàng hoá lúa gạo, đơn vị đo lường, hoạt chất BVTV, thị trường xuất khẩu.",
       "reload": "Tải lại danh mục",

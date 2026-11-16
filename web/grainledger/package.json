@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "api:generate": "node scripts/generate-api.mjs",
+    "api:check": "node scripts/generate-api.mjs --check",
+    "api:audit": "node scripts/audit-api.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",

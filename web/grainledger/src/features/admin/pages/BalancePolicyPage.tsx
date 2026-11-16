@@ -258,7 +258,7 @@ export const BalancePolicyPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("admin.balance.tag", "QUY TẮC CÂN BẰNG VẬT CHẤT ISO 22095")}
           </span>
@@ -652,7 +652,7 @@ export const BalancePolicyPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         ariaLabel="Thêm quy tắc phối trộn"
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
@@ -663,7 +663,8 @@ export const BalancePolicyPage: React.FC = () => {
                   Thiết lập Quy tắc Phối trộn Mới
                 </h2>
                 <p className="text-[11px] text-ink-secondary">
-                  Quy định ma trận tương thích giữa các giống lúa và tỷ lệ phối trộn tối đa
+                  Quy định ma trận tương thích giữa các giống lúa và tỷ lệ phối
+                  trộn tối đa
                 </p>
               </div>
             </div>

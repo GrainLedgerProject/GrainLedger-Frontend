@@ -285,8 +285,9 @@ export const SafetyMarginPolicyPage: React.FC = () => {
 
   const activeLimit = useMemo(() => {
     return (
-      activeSubstance.marketLimits.find((m) => m.marketCode === selectedMarket) ||
-      activeSubstance.marketLimits[0]
+      activeSubstance.marketLimits.find(
+        (m) => m.marketCode === selectedMarket,
+      ) || activeSubstance.marketLimits[0]
     );
   }, [activeSubstance, selectedMarket]);
 
@@ -304,7 +305,8 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         ),
         description: `Nồng độ đo thực tế (${testMeasuredValue.toFixed(4)} mg/kg) nằm trong biên an toàn -${safetyBufferPercent}% (ngưỡng tối đa cho phép là ${safeThreshold.toFixed(4)} mg/kg). Đủ điều kiện phê duyệt phương án phối trộn xuất khẩu.`,
         icon: CheckCircle,
-        badgeBg: "bg-functional-balanced-bg border-functional-balanced-border/40 text-accent-primary",
+        badgeBg:
+          "bg-functional-balanced-bg border-functional-balanced-border/40 text-accent-primary",
       };
     } else if (testMeasuredValue <= activeLimit.mrlMgKg) {
       return {
@@ -315,7 +317,8 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         ),
         description: `Nồng độ đo (${testMeasuredValue.toFixed(4)} mg/kg) đã tiệm cận hoặc vượt qua biên an toàn -${safetyBufferPercent}% (dù chưa vượt MRL chính thức ${activeLimit.mrlMgKg.toFixed(4)} mg/kg). Có nguy cơ bị từ chối nếu phát sinh sai số đo kiểm tại cảng đích.`,
         icon: WarningCircle,
-        badgeBg: "bg-functional-hold-bg border-accent-warning/30 text-accent-warning",
+        badgeBg:
+          "bg-functional-hold-bg border-accent-warning/30 text-accent-warning",
       };
     } else {
       return {
@@ -326,7 +329,8 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         ),
         description: `Vượt quá giới hạn dư lượng tối đa chính thức (${activeLimit.mrlMgKg.toFixed(4)} mg/kg) của thị trường ${activeLimit.marketName}! Hệ thống tự động kích hoạt Lệnh HOLD phong tỏa khẩn cấp, từ chối xuất kho.`,
         icon: XCircle,
-        badgeBg: "bg-functional-rejected-bg border-accent-danger/30 text-accent-danger",
+        badgeBg:
+          "bg-functional-rejected-bg border-accent-danger/30 text-accent-danger",
       };
     }
   }, [testMeasuredValue, safeThreshold, activeLimit, safetyBufferPercent, t]);
@@ -345,7 +349,7 @@ export const SafetyMarginPolicyPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             QUẢN TRỊ RỦI RO & CHÍNH SÁCH BẢO THỦ ISO 22095
           </span>
@@ -356,7 +360,9 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             data-ui-detail="secondary"
             className="text-xs text-ink-secondary mt-0.5"
           >
-            Hệ số đệm an toàn -20% và cận bảo thủ thống kê 95% áp dụng tự động cho mọi kế hoạch phối trộn rút gạo xuất khẩu nhằm triệt tiêu sai số sắc ký và biến thiên chất lượng trên hành trình vận tải biển.
+            Hệ số đệm an toàn -20% và cận bảo thủ thống kê 95% áp dụng tự động
+            cho mọi kế hoạch phối trộn rút gạo xuất khẩu nhằm triệt tiêu sai số
+            sắc ký và biến thiên chất lượng trên hành trình vận tải biển.
           </p>
         </div>
 
@@ -510,12 +516,16 @@ export const SafetyMarginPolicyPage: React.FC = () => {
               max="30"
               step="5"
               value={safetyBufferPercent}
-              onChange={(e) => setSafetyBufferPercent(parseInt(e.target.value) || 20)}
+              onChange={(e) =>
+                setSafetyBufferPercent(parseInt(e.target.value) || 20)
+              }
               className="w-full accent-accent-primary cursor-pointer"
             />
             <div className="flex justify-between text-[11px] text-ink-tertiary font-mono">
               <span>10% (Cơ bản)</span>
-              <span className="font-bold text-accent-primary">20% (Chuẩn ISO GrainLedger)</span>
+              <span className="font-bold text-accent-primary">
+                20% (Chuẩn ISO GrainLedger)
+              </span>
               <span>30% (Thắt chặt tối đa)</span>
             </div>
           </div>
@@ -536,7 +546,9 @@ export const SafetyMarginPolicyPage: React.FC = () => {
               min="0"
               max={activeLimit.mrlMgKg * 1.8}
               value={testMeasuredValue}
-              onChange={(e) => setTestMeasuredValue(parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                setTestMeasuredValue(parseFloat(e.target.value) || 0)
+              }
               className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none transition-colors"
             />
           </div>
@@ -567,22 +579,30 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 className="h-full bg-functional-hold-border"
                 title="Vùng cảnh báo đệm an toàn"
               />
-              <div className="h-full flex-1 bg-functional-rejected-border" title="Vùng vi phạm MRL" />
+              <div
+                className="h-full flex-1 bg-functional-rejected-border"
+                title="Vùng vi phạm MRL"
+              />
             </div>
           </div>
 
           {/* Simulation Output Card */}
-          <div className={`p-4 rounded-xl border ${simulationVerdict.badgeBg} space-y-2`}>
+          <div
+            className={`p-4 rounded-xl border ${simulationVerdict.badgeBg} space-y-2`}
+          >
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <simulationVerdict.icon size={16} weight="bold" />
                 <span>{simulationVerdict.label}</span>
               </span>
               <span className="font-mono text-xs font-semibold">
-                Thực đo: {testMeasuredValue.toFixed(4)} / An toàn: {safeThreshold.toFixed(4)}
+                Thực đo: {testMeasuredValue.toFixed(4)} / An toàn:{" "}
+                {safeThreshold.toFixed(4)}
               </span>
             </div>
-            <p className="text-xs leading-relaxed">{simulationVerdict.description}</p>
+            <p className="text-xs leading-relaxed">
+              {simulationVerdict.description}
+            </p>
           </div>
 
           <div className="pt-2 flex justify-end">
@@ -610,9 +630,11 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <div className="space-y-3">
               {SUBSTANCE_RULES.map((substance) => {
                 const limit =
-                  substance.marketLimits.find((m) => m.marketCode === selectedMarket) ||
-                  substance.marketLimits[0];
-                const calculatedSafe = limit.mrlMgKg * (1 - safetyBufferPercent / 100);
+                  substance.marketLimits.find(
+                    (m) => m.marketCode === selectedMarket,
+                  ) || substance.marketLimits[0];
+                const calculatedSafe =
+                  limit.mrlMgKg * (1 - safetyBufferPercent / 100);
 
                 return (
                   <div
@@ -628,8 +650,12 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-ink-tertiary">
-                      <span>MRL chính thức: {limit.mrlMgKg.toFixed(4)} mg/kg</span>
-                      <span>Cận 95%: {limit.upperBound95.toFixed(4)} mg/kg</span>
+                      <span>
+                        MRL chính thức: {limit.mrlMgKg.toFixed(4)} mg/kg
+                      </span>
+                      <span>
+                        Cận 95%: {limit.upperBound95.toFixed(4)} mg/kg
+                      </span>
                     </div>
                   </div>
                 );
@@ -694,7 +720,9 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 <span>1. Trừ đệm an toàn -20% (Safety Margin Buffer)</span>
               </h4>
               <p>
-                Để chống lại biến thiên đo lường sắc ký lỏng khối phổ (LC-MS/MS) và biến động độ ẩm trong container vận tải biển kéo dài 20–30 ngày, hệ thống GrainLedger tự động áp dụng công thức:
+                Để chống lại biến thiên đo lường sắc ký lỏng khối phổ (LC-MS/MS)
+                và biến động độ ẩm trong container vận tải biển kéo dài 20–30
+                ngày, hệ thống GrainLedger tự động áp dụng công thức:
               </p>
               <p className="font-mono text-accent-primary font-bold bg-surface-base p-2 rounded-lg border border-ink-tertiary/15">
                 MRL_Effective = MRL_Official × (1 - 0.20)
@@ -707,7 +735,10 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 <span>2. Ước lượng cận trên bảo thủ 95% (Upper Bound 95%)</span>
               </h4>
               <p>
-                Đối với các lô nguyên liệu thành phần chưa có kết quả xét nghiệm phòng lab độc lập, hệ thống không bao giờ giả định bằng 0. Thay vào đó, thuật toán tự động gán giá trị cận trên phân phối chuẩn 95% bảo thủ dựa trên lịch sử nhật ký phun xịt tại cánh đồng.
+                Đối với các lô nguyên liệu thành phần chưa có kết quả xét nghiệm
+                phòng lab độc lập, hệ thống không bao giờ giả định bằng 0. Thay
+                vào đó, thuật toán tự động gán giá trị cận trên phân phối chuẩn
+                95% bảo thủ dựa trên lịch sử nhật ký phun xịt tại cánh đồng.
               </p>
             </div>
 
@@ -717,7 +748,9 @@ export const SafetyMarginPolicyPage: React.FC = () => {
                 <span>3. Bảo toàn khối lượng Mass Balance</span>
               </h4>
               <p>
-                Theo ISO 22095:2020, nồng độ hoạt chất dự báo trong mẻ gạo xuất khẩu là bình quân gia quyền theo khối lượng thực tế của từng lô thành phần được rút từ các silo công nghiệp.
+                Theo ISO 22095:2020, nồng độ hoạt chất dự báo trong mẻ gạo xuất
+                khẩu là bình quân gia quyền theo khối lượng thực tế của từng lô
+                thành phần được rút từ các silo công nghiệp.
               </p>
             </div>
 

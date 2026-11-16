@@ -55,10 +55,7 @@ export const EventHistoryPage: React.FC = () => {
     }
     const timer = setTimeout(() => {
       setPage(1);
-      setSearchParams(
-        trimmed ? { search: trimmed } : {},
-        { replace: true },
-      );
+      setSearchParams(trimmed ? { search: trimmed } : {}, { replace: true });
     }, 400);
 
     return () => clearTimeout(timer);
@@ -103,7 +100,13 @@ export const EventHistoryPage: React.FC = () => {
     async function loadEvents() {
       try {
         const result = await ledgerEndpoints.getHistory(
-          { page, pageSize: 25, search: searchTerm || undefined, sortBy: "occurredAt", sortDirection: "desc" },
+          {
+            page,
+            pageSize: 25,
+            search: searchTerm || undefined,
+            sortBy: "occurredAt",
+            sortDirection: "desc",
+          },
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
@@ -170,16 +173,19 @@ export const EventHistoryPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
-            {t(
-              "audit.events.tag",
-              "NHẬT KÝ ĐỐI SOÁT & BẰNG CHỨNG BẤT BIẾN",
-            )}
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
+          >
+            {t("audit.events.tag", "NHẬT KÝ ĐỐI SOÁT & BẰNG CHỨNG BẤT BIẾN")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("audit.events.title", "Nhật ký Sự kiện Bất biến")}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "audit.events.ledgerSubtitle",
               "Tra cứu bút toán, thời gian ghi nhận, tài khoản thực hiện và dữ liệu chi tiết trong sổ cái.",

@@ -23,25 +23,38 @@ export interface ActiveSubstanceDto {
 }
 
 export interface MrlLimitDto {
+  id: string;
+  mrlVersionId: string;
   substanceId: string;
-  substanceName?: string;
-  substanceCode?: string;
   limitValue: number;
   unit: string;
-  effectiveThreshold: number;
 }
 
 export interface MrlVersionDto {
   id: string;
   marketId: string;
-  marketName?: string;
   commodityId: string;
-  commodityName?: string;
-  versionNumber: number;
+  versionNo: number;
   effectiveFrom: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  limits?: MrlLimitDto[];
-  publishedAt?: string;
+  effectiveTo: string | null;
+  status: string;
+  publishedBy: string | null;
+  publishedAt: string | null;
+  sourceRef: string;
+}
+
+export interface MrlVersionListResponse {
+  items: MrlVersionDto[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface MrlLimitListResponse {
+  items: MrlLimitDto[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 }
 
 export const catalogEndpoints = {
@@ -175,8 +188,8 @@ export const catalogEndpoints = {
     }),
 
   // MRL table versions
-  getMrlVersions: () => apiFetch<unknown>('/api/mrl-versions'),
-  getMrlVersion: (id: string) => apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(id)}`),
+  getMrlVersions: () => apiFetch<MrlVersionListResponse>('/api/mrl-versions'),
+  getMrlVersion: (id: string) => apiFetch<MrlVersionDto>(`/api/mrl-versions/${encodeURIComponent(id)}`),
   createMrlVersion: (req: ApiSchemas.CreateMrlVersionRequest) =>
     apiFetch<unknown>('/api/mrl-versions', {
       method: 'POST',

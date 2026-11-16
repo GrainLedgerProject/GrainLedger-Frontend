@@ -275,7 +275,7 @@ export const FarmerRegistrationPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("field.farmer.badge", "QUẢN LÝ NGUỒN CUNG ỨNG NÔNG HỘ")}
           </span>
@@ -512,7 +512,7 @@ export const FarmerRegistrationPage: React.FC = () => {
             : t("field.farmer.modalNew", "Đăng ký nông hộ")
         }
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-ink-primary">
               {editingFarmer

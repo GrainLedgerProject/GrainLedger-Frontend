@@ -148,8 +148,7 @@ export const OperationEntryPage: React.FC = () => {
     () => initialDraft?.declaredLossKg || "",
   );
   const [lossReason, setLossReason] = useState<string>(
-    () =>
-      initialDraft?.lossReason || "",
+    () => initialDraft?.lossReason || "",
   );
 
   // Dynamic tolerance based on process type
@@ -320,7 +319,11 @@ export const OperationEntryPage: React.FC = () => {
 
         // Keep selection valid if existing is found, otherwise default to first lot
         setSelectedInputLot((prev) => {
-          return mappedLots.find((l) => l.id === prev || l.code === prev)?.id || mappedLots[0]?.id || "";
+          return (
+            mappedLots.find((l) => l.id === prev || l.code === prev)?.id ||
+            mappedLots[0]?.id ||
+            ""
+          );
         });
       } else {
         setLots([]);
@@ -373,14 +376,25 @@ export const OperationEntryPage: React.FC = () => {
   const handleCommitOperation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!activeLot?.id || activeLot.id !== selectedInputLot || !activeLot.locationId || !activeLot.facilityId) {
-      setApiErrorMessage("Cần chọn lô và vị trí hợp lệ từ máy chủ trước khi ghi sổ.");
+    if (
+      !activeLot?.id ||
+      activeLot.id !== selectedInputLot ||
+      !activeLot.locationId ||
+      !activeLot.facilityId
+    ) {
+      setApiErrorMessage(
+        "Cần chọn lô và vị trí hợp lệ từ máy chủ trước khi ghi sổ.",
+      );
       return;
     }
-    if (toDecimal(inputMassKg).lessThanOrEqualTo(0) ||
+    if (
+      toDecimal(inputMassKg).lessThanOrEqualTo(0) ||
       toDecimal(inputMassKg).greaterThan(toDecimal(activeLot.availableKg)) ||
-      totalOut.lessThanOrEqualTo(0)) {
-      setApiErrorMessage("Khối lượng đầu vào phải lớn hơn 0, không vượt tồn khả dụng và cần có đầu ra.");
+      totalOut.lessThanOrEqualTo(0)
+    ) {
+      setApiErrorMessage(
+        "Khối lượng đầu vào phải lớn hơn 0, không vượt tồn khả dụng và cần có đầu ra.",
+      );
       return;
     }
 
@@ -506,13 +520,19 @@ export const OperationEntryPage: React.FC = () => {
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
+          >
             {t("mill.operations.tag", "HẠCH TOÁN SỔ CÁI BẢO TOÀN KHỐI LƯỢNG")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("mill.operations.pageTitle", "Ghi nhận bước chế biến vật lý")}
           </h2>
-          <p data-ui-detail="secondary" className="text-xs text-ink-secondary mt-0.5">
+          <p
+            data-ui-detail="secondary"
+            className="text-xs text-ink-secondary mt-0.5"
+          >
             {t(
               "mill.operations.pageSubtitle",
               "Mọi mẻ chế biến được đối chiếu bảo toàn khối lượng và ghi nhận vào sổ cái chỉ-ghi-thêm.",
@@ -770,7 +790,9 @@ export const OperationEntryPage: React.FC = () => {
                   }}
                   className="w-full px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-ink-primary transition-colors disabled:opacity-60"
                 >
-                  {lots.length === 0 && <option value="">Không có lô khả dụng</option>}
+                  {lots.length === 0 && (
+                    <option value="">Không có lô khả dụng</option>
+                  )}
                   {lots.map((lot) => (
                     <option key={lot.id} value={lot.id}>
                       {lot.code} — {lot.locationName || "Silo"} —{" "}

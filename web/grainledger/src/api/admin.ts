@@ -6,32 +6,31 @@ export interface OrganizationDto {
   id: string;
   name: string;
   kind: 'Mill' | 'Customer';
-  createdAt?: string;
 }
 
 export interface AdminUserDto {
   id: string;
   email: string;
-  displayName?: string;
-  role?: string | null;
-  organizationId?: string | null;
-  organizationName?: string | null;
+  displayName: string;
+  phoneNumber: string | null;
+  role: string | null;
+  organizationId: string | null;
+  organizationName: string | null;
   isActive: boolean;
-  etag?: string;
-  updatedAt?: string;
+  etag: string;
 }
 
 export const adminEndpoints = {
   getRoles: () => apiFetch<unknown>('/api/admin/roles'),
 
-  getOrganizations: () => apiFetch<unknown>('/api/admin/organizations'),
+  getOrganizations: () => apiFetch<OrganizationDto[]>('/api/admin/organizations'),
   createOrganization: (req: ApiSchemas.CreateOrganizationRequest) =>
-    apiFetch<unknown>('/api/admin/organizations', {
+    apiFetch<OrganizationDto>('/api/admin/organizations', {
       method: 'POST',
       body: JSON.stringify(req),
     }),
 
-  getUsers: () => apiFetch<unknown>('/api/admin/users'),
+  getUsers: () => apiFetch<AdminUserDto[]>('/api/admin/users'),
   updateUserAccess: (id: string, ifMatchEtag: string, req: ApiSchemas.UpdateAccessRequest) =>
     apiFetch<unknown>(`/api/admin/users/${encodeURIComponent(id)}/access`, {
       method: 'PUT',

@@ -306,9 +306,9 @@ export const MasterDataPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
-            {t("catalogs.master.badge", "DANH MỤC MASTER DATA VẬN HÀNH")}
+            {t("catalogs.master.badge", "DANH MỤC DỮ LIỆU VẬN HÀNH")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("catalogs.master.title", "Danh mục Chuẩn Hóa Chuỗi Cung Ứng")}
@@ -558,7 +558,7 @@ export const MasterDataPage: React.FC = () => {
             : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")
         }
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-ink-primary">
               {editingItem

@@ -272,7 +272,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("field.samples.tag", "THU THẬP MẪU TẠI ĐIỂM THU MUA")}
           </span>
@@ -451,7 +451,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Modal: Lấy Mẫu Niêm Phong Mới */}
       {isCreateOpen && (
         <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {t("field.samples.modalCreateTitle", "Lấy Mẫu Niêm Chì Mới")}
@@ -545,7 +545,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
       {/* Modal: Bàn Giao Mẫu Đến Lab */}
       {isHandoverOpen && selectedSample && (
         <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {t(

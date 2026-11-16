@@ -14,3 +14,4 @@ export type * from './generated/schemas';
 export * from './exports';
 export * from './planning';
 export * from './history';
+export type * from './contracts';
