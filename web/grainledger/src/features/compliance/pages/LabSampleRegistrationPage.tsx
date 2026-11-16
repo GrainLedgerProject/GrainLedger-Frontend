@@ -364,7 +364,7 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t(
               "compliance.lab.badge",
@@ -757,7 +757,8 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                     Mã mẫu: {selectedSample.code || selectedSample.id}
                   </h2>
                   <p className="text-[11px] text-ink-secondary">
-                    Chi tiết mẫu niêm phong & chuỗi hành trình bàn giao (Chain of Custody)
+                    Chi tiết mẫu niêm phong & chuỗi hành trình bàn giao (Chain
+                    of Custody)
                   </p>
                 </div>
               </div>
@@ -794,7 +795,9 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                     Thời gian lấy mẫu:
                   </span>
                   <span className="text-ink-primary">
-                    {new Date(selectedSample.collectedAt).toLocaleString("vi-VN")}
+                    {new Date(selectedSample.collectedAt).toLocaleString(
+                      "vi-VN",
+                    )}
                   </span>
                 </div>
                 <div className="col-span-2 sm:col-span-3">
@@ -836,8 +839,8 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                   </div>
                 ) : handovers.length === 0 ? (
                   <div className="p-4 rounded-xl border border-dashed border-ink-tertiary/20 text-center text-xs text-ink-secondary">
-                    Chưa có lượt bàn giao nào được ghi nhận cho mẫu này. Mẫu hiện
-                    đang được lưu trữ tại kho trạm.
+                    Chưa có lượt bàn giao nào được ghi nhận cho mẫu này. Mẫu
+                    hiện đang được lưu trữ tại kho trạm.
                   </div>
                 ) : (
                   <div className="space-y-2.5">
@@ -860,13 +863,17 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-[11px] text-ink-secondary pt-1 border-t border-ink-tertiary/10">
                           <div>
-                            <span className="text-ink-tertiary">Bên giao: </span>
+                            <span className="text-ink-tertiary">
+                              Bên giao:{" "}
+                            </span>
                             <span className="font-medium text-ink-primary">
                               {h.fromParty || "—"}
                             </span>
                           </div>
                           <div>
-                            <span className="text-ink-tertiary">Bên nhận: </span>
+                            <span className="text-ink-tertiary">
+                              Bên nhận:{" "}
+                            </span>
                             <span className="font-medium text-ink-primary">
                               {h.toParty || "—"}
                             </span>
@@ -973,8 +980,8 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                   className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none transition-colors"
                 />
                 <p className="text-[11px] text-ink-tertiary mt-1">
-                  Số seri trên seal kim loại hoặc nhựa dùng để niêm phong túi mẫu
-                  đối chứng.
+                  Số seri trên seal kim loại hoặc nhựa dùng để niêm phong túi
+                  mẫu đối chứng.
                 </p>
               </div>
 
@@ -1014,7 +1021,9 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                 ) : (
                   <Check size={15} weight="bold" />
                 )}
-                <span>{t("compliance.lab.saveSample", "Xác nhận tạo mẫu")}</span>
+                <span>
+                  {t("compliance.lab.saveSample", "Xác nhận tạo mẫu")}
+                </span>
               </button>
             </div>
           </form>
@@ -1035,7 +1044,10 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
               </div>
               <div>
                 <h2 className="font-display font-bold text-base text-ink-primary">
-                  {t("compliance.lab.handoverTitle", "Ghi Nhận Bàn Giao Phòng Lab")}
+                  {t(
+                    "compliance.lab.handoverTitle",
+                    "Ghi Nhận Bàn Giao Phòng Lab",
+                  )}
                 </h2>
                 <p className="text-[11px] text-ink-secondary">
                   {t(
@@ -1055,7 +1067,10 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
             </button>
           </header>
 
-          <form onSubmit={handleRecordHandover} className="p-5 space-y-4 text-xs">
+          <form
+            onSubmit={handleRecordHandover}
+            className="p-5 space-y-4 text-xs"
+          >
             {handoverTargetSample && (
               <div className="p-3 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-xs flex justify-between items-center">
                 <div>

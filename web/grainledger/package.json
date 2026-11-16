@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "api:generate": "node scripts/generate-api.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",

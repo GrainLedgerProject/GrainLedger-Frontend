@@ -7,6 +7,7 @@ import {
   type ConfirmLabReportRequest,
   type LabResultInput,
   type LabResultSetInput,
+  type LabReportResponse,
 } from "@/api/compliance";
 import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
 import { Modal } from "@/components/Modal/Modal";
@@ -32,21 +33,10 @@ import {
   FileText,
 } from "@phosphor-icons/react";
 
-export interface LabReportItem {
-  id: string;
-  laboratoryName: string;
-  reportNumber: string;
-  issuedOn: string;
-  receivedAt?: string;
-  status: string;
-  assessmentStatus: string;
-  assessmentReasons: string[];
-  reportKind?: string | null;
-  fileName?: string | null;
-  statedStandard?: string | null;
-  laboratoryConclusion?: string | null;
-  companyOnlyConfirmed?: boolean;
-  resultSets?: LabResultSetInput[] | null;
+export type LabReportItem = LabReportResponse;
+
+function isConfirmed(report: LabReportItem): boolean {
+  return report.confirmedAt != null || report.status === "CONFIRMED";
 }
 
 function parseReports(value: unknown): {
@@ -73,7 +63,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
   const { t } = useTranslation();
 
   const [reports, setReports] = useState<LabReportItem[]>([]);
-  const [selectedReport, setSelectedReport] = useState<LabReportItem | null>(null);
+  const [selectedReport, setSelectedReport] = useState<LabReportItem | null>(
+    null,
+  );
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -98,7 +90,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
   // Create Lab Report Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createLabName, setCreateLabName] = useState("Eurofins Sắc Ký Hải Đăng");
+  const [createLabName, setCreateLabName] = useState(
+    "Eurofins Sắc Ký Hải Đăng",
+  );
   const [createReportNumber, setCreateReportNumber] = useState("");
   const [createIssuedOn, setCreateIssuedOn] = useState(
     new Date().toISOString().split("T")[0],
@@ -116,6 +110,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
   // Confirm Report State inside Detail Modal
   const [identityChecked, setIdentityChecked] = useState(true);
   const [transcriptionChecked, setTranscriptionChecked] = useState(true);
+  const [asReceivedReportId, setAsReceivedReportId] = useState<string | null>(
+    null,
+  );
   const [confirmingReport, setConfirmingReport] = useState(false);
 
   // Fetch reports
@@ -145,7 +142,10 @@ export const MrlComplianceCheckPage: React.FC = () => {
         setError(
           cause instanceof Error
             ? cause.message
-            : t("compliance.mrl.errorLoad", "Không thể tải báo cáo kiểm nghiệm."),
+            : t(
+                "compliance.mrl.errorLoad",
+                "Không thể tải báo cáo kiểm nghiệm.",
+              ),
         );
       })
       .finally(() => {
@@ -177,7 +177,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
   ).length;
   const kpiPending = reports.filter(
     (r) =>
-      !r.companyOnlyConfirmed &&
+      !isConfirmed(r) &&
       !["COMPLIANT", "PASS"].includes(r.assessmentStatus?.toUpperCase()),
   ).length;
 
@@ -201,20 +201,26 @@ export const MrlComplianceCheckPage: React.FC = () => {
         (assessmentFilter === "NON_COMPLIANT" &&
           ["NON_COMPLIANT", "FAIL", "REJECTED"].includes(statusUpper)) ||
         (assessmentFilter === "PENDING" &&
-          !["COMPLIANT", "PASS", "NON_COMPLIANT", "FAIL"].includes(statusUpper));
+          !["COMPLIANT", "PASS", "NON_COMPLIANT", "FAIL"].includes(
+            statusUpper,
+          ));
 
       return matchSearch && matchAssessment;
     });
   }, [reports, debouncedSearch, assessmentFilter]);
 
   // Download Report Attachment File
-  const handleDownloadFile = async (reportId: string, fileName?: string | null) => {
+  const handleDownloadFile = async (
+    reportId: string,
+    fileName?: string | null,
+  ) => {
     try {
       const blob = await labReportEndpoints.getLabReportFile(reportId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName || `Chung-thu-kiem-nghiem-${reportId.slice(0, 8)}.pdf`;
+      a.download =
+        fileName || `Chung-thu-kiem-nghiem-${reportId.slice(0, 8)}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -325,14 +331,18 @@ export const MrlComplianceCheckPage: React.FC = () => {
           identityChecked: true,
           transcriptionChecked: true,
           matches: [],
+          asReceivedConfirmed: asReceivedReportId === report.id,
         },
       };
 
-      await labReportEndpoints.confirmLabReport(report.id, payload);
-      setSuccessMsg(`Đã xác nhận tính hợp lệ của báo cáo "${report.reportNumber}"!`);
-      setSelectedReport((prev) =>
-        prev ? { ...prev, companyOnlyConfirmed: true, status: "CONFIRMED" } : null,
+      const confirmed = await labReportEndpoints.confirmLabReport(
+        report.id,
+        payload,
       );
+      setSuccessMsg(
+        `Đã xác nhận tính hợp lệ của báo cáo "${report.reportNumber}"!`,
+      );
+      setSelectedReport(confirmed);
       handleRefresh();
     } catch (err: unknown) {
       setError(
@@ -378,7 +388,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t(
               "compliance.mrl.badge",
@@ -530,7 +540,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
             >
               <option value="ALL">Tất cả kết quả đánh giá</option>
               <option value="COMPLIANT">Đạt chuẩn MRL ({kpiCompliant})</option>
-              <option value="NON_COMPLIANT">Vượt ngưỡng MRL ({kpiNonCompliant})</option>
+              <option value="NON_COMPLIANT">
+                Vượt ngưỡng MRL ({kpiNonCompliant})
+              </option>
               <option value="PENDING">Chờ đối soát ({kpiPending})</option>
             </select>
           </div>
@@ -567,7 +579,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
         <div className="flex items-center justify-between text-xs text-ink-secondary pt-1 border-t border-ink-tertiary/10">
           <span>
             {t("compliance.mrl.showing", "Hiển thị")}{" "}
-            <strong className="text-ink-primary">{filteredReports.length}</strong>{" "}
+            <strong className="text-ink-primary">
+              {filteredReports.length}
+            </strong>{" "}
             {t("compliance.mrl.ofTotal", "trên tổng số")}{" "}
             <strong className="text-ink-primary">{reports.length}</strong>{" "}
             {t("compliance.mrl.reportsCount", "báo cáo kiểm nghiệm")}
@@ -585,12 +599,16 @@ export const MrlComplianceCheckPage: React.FC = () => {
         </div>
       ) : filteredReports.length === 0 ? (
         <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised space-y-2">
-          <TestTube size={40} className="mx-auto text-ink-tertiary opacity-60" />
+          <TestTube
+            size={40}
+            className="mx-auto text-ink-tertiary opacity-60"
+          />
           <p className="text-sm font-semibold text-ink-primary">
             Chưa có báo cáo kiểm nghiệm nào phù hợp
           </p>
           <p className="text-xs text-ink-secondary max-w-sm mx-auto">
-            Bấm &ldquo;Nhập Báo Cáo Mới&rdquo; để ghi nhận chứng thư kiểm định từ các phòng thí nghiệm quốc tế.
+            Bấm &ldquo;Nhập Báo Cáo Mới&rdquo; để ghi nhận chứng thư kiểm định
+            từ các phòng thí nghiệm quốc tế.
           </p>
         </div>
       ) : viewMode === "CARDS" ? (
@@ -606,7 +624,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     <span className="font-mono font-bold text-ink-primary text-base">
                       {report.reportNumber}
                     </span>
-                    {report.companyOnlyConfirmed && (
+                    {isConfirmed(report) && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-primary bg-functional-balanced-bg px-2 py-0.5 rounded-full">
                         <Check size={12} weight="bold" />
                         <span>Đã xác nhận</span>
@@ -623,39 +641,51 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2 text-xs py-2 border-y border-ink-tertiary/10">
                 <div>
-                  <span className="text-ink-tertiary block text-[11px]">Ngày phát hành:</span>
+                  <span className="text-ink-tertiary block text-[11px]">
+                    Ngày phát hành:
+                  </span>
                   <div className="flex items-center gap-1 text-ink-primary font-medium mt-0.5">
                     <Calendar size={13} className="text-ink-tertiary" />
                     <span>{report.issuedOn}</span>
                   </div>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block text-[11px]">Tiêu chuẩn áp dụng:</span>
+                  <span className="text-ink-tertiary block text-[11px]">
+                    Tiêu chuẩn áp dụng:
+                  </span>
                   <div className="flex items-center gap-1 text-ink-primary font-medium mt-0.5 truncate">
                     <Tag size={13} className="text-ink-tertiary shrink-0" />
-                    <span className="truncate">{report.statedStandard || "EC 396/2005"}</span>
+                    <span className="truncate">
+                      {report.statedStandard || "EC 396/2005"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {report.laboratoryConclusion && (
                 <div className="p-2.5 rounded-xl bg-surface-raised dark:bg-surface-overlay text-xs text-ink-secondary flex items-start gap-2">
-                  <FileText size={15} className="text-accent-primary shrink-0 mt-0.5" />
+                  <FileText
+                    size={15}
+                    className="text-accent-primary shrink-0 mt-0.5"
+                  />
                   <span className="line-clamp-2">
-                    <strong>Kết luận phòng Lab:</strong> {report.laboratoryConclusion}
+                    <strong>Kết luận phòng Lab:</strong>{" "}
+                    {report.laboratoryConclusion}
                   </span>
                 </div>
               )}
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-xs text-ink-tertiary">
-                  Số bộ kết quả: <strong>{report.resultSets?.length || 1}</strong>
+                  Số bộ kết quả: <strong>{report.resultSets.length}</strong>
                 </span>
                 <div className="flex items-center gap-2">
                   {report.fileName && (
                     <button
                       type="button"
-                      onClick={() => handleDownloadFile(report.id, report.fileName)}
+                      onClick={() =>
+                        handleDownloadFile(report.id, report.fileName)
+                      }
                       className="p-2 rounded-lg border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:bg-surface-raised transition-colors"
                       title="Tải chứng thư gốc"
                     >
@@ -717,13 +747,15 @@ export const MrlComplianceCheckPage: React.FC = () => {
                       {getStatusBadge(report.assessmentStatus)}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      {report.companyOnlyConfirmed ? (
+                      {isConfirmed(report) ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-2 py-0.5 rounded-full">
                           <Check size={12} weight="bold" />
                           <span>Đã đối chiếu</span>
                         </span>
                       ) : (
-                        <span className="text-xs text-ink-tertiary">Chưa xác nhận</span>
+                        <span className="text-xs text-ink-tertiary">
+                          Chưa xác nhận
+                        </span>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
@@ -731,7 +763,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
                         {report.fileName && (
                           <button
                             type="button"
-                            onClick={() => handleDownloadFile(report.id, report.fileName)}
+                            onClick={() =>
+                              handleDownloadFile(report.id, report.fileName)
+                            }
                             className="p-1.5 rounded-lg border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary hover:bg-surface-raised transition-colors"
                             title="Tải chứng thư PDF"
                           >
@@ -760,7 +794,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
       {!id && (
         <div className="p-4 border-t border-ink-tertiary/15 flex items-center justify-between text-xs bg-surface-raised/40 rounded-2xl border border-ink-tertiary/20">
           <span className="text-ink-secondary">
-            {t("common.page", "Trang")} <strong className="text-ink-primary">{page}</strong>
+            {t("common.page", "Trang")}{" "}
+            <strong className="text-ink-primary">{page}</strong>
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -801,7 +836,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     Báo cáo: {selectedReport.reportNumber}
                   </h2>
                   <p className="text-[11px] text-ink-secondary">
-                    Kết quả phân tích sắc ký & đối soát dư lượng MRL thị trường đích
+                    Kết quả phân tích sắc ký & đối soát dư lượng MRL thị trường
+                    đích
                   </p>
                 </div>
               </div>
@@ -818,13 +854,17 @@ export const MrlComplianceCheckPage: React.FC = () => {
               {/* General Report Information */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-xs">
                 <div>
-                  <span className="text-ink-tertiary block">Đơn vị thử nghiệm:</span>
+                  <span className="text-ink-tertiary block">
+                    Đơn vị thử nghiệm:
+                  </span>
                   <span className="font-semibold text-ink-primary">
                     {selectedReport.laboratoryName}
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block">Ngày phát hành:</span>
+                  <span className="text-ink-tertiary block">
+                    Ngày phát hành:
+                  </span>
                   <span className="font-medium text-ink-primary">
                     {selectedReport.issuedOn}
                   </span>
@@ -836,7 +876,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block">Quy chuẩn đối chiếu:</span>
+                  <span className="text-ink-tertiary block">
+                    Quy chuẩn đối chiếu:
+                  </span>
                   <span className="font-medium text-ink-primary">
                     {selectedReport.statedStandard || "EC No 396/2005"}
                   </span>
@@ -866,13 +908,18 @@ export const MrlComplianceCheckPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-ink-primary uppercase tracking-wider flex items-center gap-1.5">
                     <TestTube size={16} className="text-accent-primary" />
-                    <span>Chỉ tiêu phân tích dư lượng hoạt chất (Test Results)</span>
+                    <span>
+                      Chỉ tiêu phân tích dư lượng hoạt chất (Test Results)
+                    </span>
                   </h4>
                   {selectedReport.fileName && (
                     <button
                       type="button"
                       onClick={() =>
-                        handleDownloadFile(selectedReport.id, selectedReport.fileName)
+                        handleDownloadFile(
+                          selectedReport.id,
+                          selectedReport.fileName,
+                        )
                       }
                       className="inline-flex items-center gap-1 text-xs text-accent-primary hover:underline font-semibold"
                     >
@@ -893,7 +940,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ink-tertiary/10">
-                      {selectedReport.resultSets && selectedReport.resultSets.length > 0 ? (
+                      {selectedReport.resultSets &&
+                      selectedReport.resultSets.length > 0 ? (
                         selectedReport.resultSets.flatMap((rs, rsIdx) =>
                           (rs.results || []).map((res, resIdx) => (
                             <tr
@@ -901,35 +949,29 @@ export const MrlComplianceCheckPage: React.FC = () => {
                               className="hover:bg-surface-raised/40 transition-colors"
                             >
                               <td className="py-2.5 px-3 font-semibold text-ink-primary">
-                                {res.testLabel || "Tricyclazole (Trừ đạo ôn)"}
+                                {res.testLabel || "Chưa có tên chỉ tiêu"}
                               </td>
                               <td className="py-2.5 px-3 font-mono font-bold text-accent-primary">
                                 {res.numericValue
-                                  ? `${res.numericValue} ${res.unit || "mg/kg"}`
-                                  : res.originalResultText || "< 0.01 mg/kg"}
+                                  ? `${res.numericValue} ${res.unit ?? ""}`
+                                  : res.originalResultText || "Chưa có kết quả"}
                               </td>
                               <td className="py-2.5 px-3 font-mono text-ink-secondary">
-                                {res.loq || "0.010 mg/kg"}
+                                {res.loq ?? "Chưa có dữ liệu"}
                               </td>
                               <td className="py-2.5 px-3 text-ink-tertiary">
-                                {res.method || "LC-MS/MS"}
+                                {res.method || "Chưa có dữ liệu"}
                               </td>
                             </tr>
                           )),
                         )
                       ) : (
                         <tr>
-                          <td className="py-2.5 px-3 font-semibold text-ink-primary">
-                            Tricyclazole (Đạo ôn)
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-accent-primary">
-                            0.008 mg/kg
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-ink-secondary">
-                            0.010 mg/kg
-                          </td>
-                          <td className="py-2.5 px-3 text-ink-tertiary">
-                            LC-MS/MS (ISO 17025)
+                          <td
+                            colSpan={4}
+                            className="py-4 px-3 text-ink-secondary"
+                          >
+                            Báo cáo chưa có bộ kết quả xét nghiệm.
                           </td>
                         </tr>
                       )}
@@ -939,7 +981,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
               </div>
 
               {/* Confirmation Section if not confirmed yet */}
-              {!selectedReport.companyOnlyConfirmed && (
+              {!isConfirmed(selectedReport) && (
                 <div className="p-4 rounded-xl border border-accent-warning/30 bg-functional-hold-bg text-xs space-y-3">
                   <div className="flex items-center gap-2 text-ink-primary font-bold">
                     <Clock size={16} className="text-accent-warning" />
@@ -954,29 +996,56 @@ export const MrlComplianceCheckPage: React.FC = () => {
                         className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
                       />
                       <span>
-                        Đã xác minh tính đồng nhất của mã niêm chì và mã barcode mẫu đối chứng.
+                        Đã xác minh tính đồng nhất của mã niêm chì và mã barcode
+                        mẫu đối chứng.
                       </span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer text-ink-secondary">
                       <input
                         type="checkbox"
                         checked={transcriptionChecked}
-                        onChange={(e) => setTranscriptionChecked(e.target.checked)}
+                        onChange={(e) =>
+                          setTranscriptionChecked(e.target.checked)
+                        }
                         className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
                       />
                       <span>
-                        Đã đối chiếu chính xác số liệu dư lượng giữa chứng thư gốc và dữ liệu ghi nhận.
+                        Đã đối chiếu chính xác số liệu dư lượng giữa chứng thư
+                        gốc và dữ liệu ghi nhận.
+                      </span>
+                    </label>
+                    <label className="flex min-h-11 items-center gap-2 cursor-pointer text-ink-secondary">
+                      <input
+                        type="checkbox"
+                        checked={asReceivedReportId === selectedReport.id}
+                        onChange={(event) =>
+                          setAsReceivedReportId(
+                            event.target.checked ? selectedReport.id : null,
+                          )
+                        }
+                        className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
+                      />
+                      <span>
+                        Đã xác nhận kết quả xét nghiệm dựa trên mẫu nguyên trạng
+                        (as received).
                       </span>
                     </label>
                   </div>
                   <button
                     type="button"
-                    disabled={confirmingReport || !identityChecked || !transcriptionChecked}
+                    disabled={
+                      confirmingReport ||
+                      !identityChecked ||
+                      !transcriptionChecked
+                    }
                     onClick={() => void handleConfirmReport(selectedReport)}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim disabled:opacity-40 transition-colors shadow-xs"
                   >
                     {confirmingReport ? (
-                      <ArrowsClockwise size={14} className="motion-safe:animate-spin" />
+                      <ArrowsClockwise
+                        size={14}
+                        className="motion-safe:animate-spin"
+                      />
                     ) : (
                       <Check size={14} weight="bold" />
                     )}
@@ -1016,7 +1085,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   Nhập Báo Cáo Kiểm Nghiệm Mới
                 </h2>
                 <p className="text-[11px] text-ink-secondary">
-                  Tiếp nhận chứng thư phân tích dư lượng từ phòng lab độc lập (ISO 17025)
+                  Tiếp nhận chứng thư phân tích dư lượng từ phòng lab độc lập
+                  (ISO 17025)
                 </p>
               </div>
             </div>
@@ -1042,11 +1112,21 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     onChange={(e) => setCreateLabName(e.target.value)}
                     className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
                   >
-                    <option value="Eurofins Sắc Ký Hải Đăng">Eurofins Sắc Ký Hải Đăng</option>
-                    <option value="SGS Vietnam - Cần Thơ Lab">SGS Vietnam (ISO 17025)</option>
-                    <option value="Viện Kiểm Nghiệm NIFC">Viện Kiểm Nghiệm ATTP Quốc Gia</option>
-                    <option value="Quatest 3 - TP. Hồ Chí Minh">Trung tâm Kỹ thuật Quatest 3</option>
-                    <option value="Vinacontrol TP. Cần Thơ">Vinacontrol TP. Cần Thơ</option>
+                    <option value="Eurofins Sắc Ký Hải Đăng">
+                      Eurofins Sắc Ký Hải Đăng
+                    </option>
+                    <option value="SGS Vietnam - Cần Thơ Lab">
+                      SGS Vietnam (ISO 17025)
+                    </option>
+                    <option value="Viện Kiểm Nghiệm NIFC">
+                      Viện Kiểm Nghiệm ATTP Quốc Gia
+                    </option>
+                    <option value="Quatest 3 - TP. Hồ Chí Minh">
+                      Trung tâm Kỹ thuật Quatest 3
+                    </option>
+                    <option value="Vinacontrol TP. Cần Thơ">
+                      Vinacontrol TP. Cần Thơ
+                    </option>
                   </select>
                 </div>
 
@@ -1088,9 +1168,15 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     onChange={(e) => setCreateReportKind(e.target.value)}
                     className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
                   >
-                    <option value="MRL_SCREENING">Sàng lọc dư lượng thuốc BVTV (MRL)</option>
-                    <option value="HEAVY_METALS">Kim loại nặng (Cadimi, Chì, Asen)</option>
-                    <option value="FULL_PANEL">Kiểm nghiệm toàn diện xuất khẩu</option>
+                    <option value="MRL_SCREENING">
+                      Sàng lọc dư lượng thuốc BVTV (MRL)
+                    </option>
+                    <option value="HEAVY_METALS">
+                      Kim loại nặng (Cadimi, Chì, Asen)
+                    </option>
+                    <option value="FULL_PANEL">
+                      Kiểm nghiệm toàn diện xuất khẩu
+                    </option>
                   </select>
                 </div>
               </div>
@@ -1115,7 +1201,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">Tên hoạt chất</label>
+                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
+                      Tên hoạt chất
+                    </label>
                     <input
                       type="text"
                       value={testSubstanceName}
@@ -1124,7 +1212,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">Nồng độ (mg/kg)</label>
+                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
+                      Nồng độ (mg/kg)
+                    </label>
                     <input
                       type="text"
                       value={testSubstanceValue}
@@ -1133,7 +1223,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">LOQ (mg/kg)</label>
+                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
+                      LOQ (mg/kg)
+                    </label>
                     <input
                       type="text"
                       value={testSubstanceLoq}
@@ -1153,8 +1245,12 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   onChange={(e) => setCreateConclusion(e.target.value)}
                   className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
                 >
-                  <option value="COMPLIANT">Đạt chuẩn (Dưới ngưỡng MRL cho phép)</option>
-                  <option value="NON_COMPLIANT">Vượt ngưỡng (Cảnh báo vi phạm MRL)</option>
+                  <option value="COMPLIANT">
+                    Đạt chuẩn (Dưới ngưỡng MRL cho phép)
+                  </option>
+                  <option value="NON_COMPLIANT">
+                    Vượt ngưỡng (Cảnh báo vi phạm MRL)
+                  </option>
                   <option value="PENDING">Cần rà soát đối chiếu thêm</option>
                 </select>
               </div>
@@ -1175,7 +1271,10 @@ export const MrlComplianceCheckPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60 shadow-xs"
               >
                 {submittingCreate ? (
-                  <ArrowsClockwise size={15} className="motion-safe:animate-spin" />
+                  <ArrowsClockwise
+                    size={15}
+                    className="motion-safe:animate-spin"
+                  />
                 ) : (
                   <Check size={15} weight="bold" />
                 )}

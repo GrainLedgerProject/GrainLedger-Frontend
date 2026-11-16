@@ -145,7 +145,8 @@ export const HoldManagementPage: React.FC = () => {
     try {
       await ledgerEndpoints.respondToHold(hold.id, {
         operationId: crypto.randomUUID(),
-        status: responseKind === "RELEASE" ? "RELEASE_REQUESTED" : "ACKNOWLEDGED",
+        status:
+          responseKind === "RELEASE" ? "RELEASE_REQUESTED" : "ACKNOWLEDGED",
         response: `Xác nhận tiếp nhận xử lý và chuyển kho cách ly vật lý (${responseKind})`,
         responseKind,
         respondedAt: new Date().toISOString(),
@@ -177,7 +178,10 @@ export const HoldManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span data-ui-detail="secondary" className="text-xs font-mono font-bold text-accent-danger uppercase tracking-wider block">
+          <span
+            data-ui-detail="secondary"
+            className="text-xs font-mono font-bold text-accent-danger uppercase tracking-wider block"
+          >
             {t("risk.hold.badge", "QUẢN LÝ PHONG TỎA & CẢNH BÁO RỦI RO")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
@@ -373,9 +377,12 @@ export const HoldManagementPage: React.FC = () => {
           }}
           className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h2 id="hold-modal-title" className="font-display font-bold text-base text-accent-danger flex items-center gap-2">
+              <h2
+                id="hold-modal-title"
+                className="font-display font-bold text-base text-accent-danger flex items-center gap-2"
+              >
                 <LockSimpleIcon size={18} weight="fill" />
                 <span>
                   {t("risk.hold.modalTitle", "Ban hành Lệnh HOLD Khẩn Cấp")}

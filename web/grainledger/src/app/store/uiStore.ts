@@ -1,5 +1,5 @@
 import { checkBackendHealth } from '@/api/health';
-import i18n from '@/app/i18n';
+import i18n, { normalizeLanguage } from '@/app/i18n';
 import { create } from 'zustand';
 
 interface UiState {
@@ -45,7 +45,7 @@ function applyTheme(theme: 'light' | 'dark', override: boolean) {
 }
 
 const storedCollapsed = localStorage.getItem('grainledger_sidebar_collapsed') === 'true';
-const storedLang = (localStorage.getItem('grainledger_lang') as 'vi' | 'en') || 'vi';
+const storedLang = normalizeLanguage(localStorage.getItem('grainledger_lang'));
 const storedMinimalMode = localStorage.getItem('grainledger_minimal_mode') === 'true';
 
 if (typeof document !== 'undefined') {
@@ -187,7 +187,15 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev
   useUiStore.setState({ theme });
 });
 window.addEventListener('storage', (event) => {
-  if (event.key !== 'grainledger_theme') return;
+  if (event.key === 'grainledger_lang' || event.key === null) {
+    void i18n.changeLanguage(normalizeLanguage(localStorage.getItem('grainledger_lang')));
+  }
+  if (event.key === 'grainledger_minimal_mode' || event.key === null) {
+    const enabled = localStorage.getItem('grainledger_minimal_mode') === 'true';
+    document.documentElement.dataset.minimalUi = String(enabled);
+    useUiStore.setState({ isMinimalMode: enabled });
+  }
+  if (event.key !== 'grainledger_theme' && event.key !== null) return;
   const theme = event.newValue === 'light' || event.newValue === 'dark'
     ? event.newValue : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   applyTheme(theme, event.newValue === 'light' || event.newValue === 'dark');
@@ -201,7 +209,10 @@ if (typeof window !== 'undefined') {
 
 // Bidirectional synchronization when i18n changes language externally
 i18n.on('languageChanged', (lng) => {
-  const normalized = lng?.startsWith('en') ? 'en' : 'vi';
+  const normalized = normalizeLanguage(lng);
+  if (localStorage.getItem('grainledger_lang') !== normalized) {
+    localStorage.setItem('grainledger_lang', normalized);
+  }
   if (useUiStore.getState().language !== normalized) {
     useUiStore.setState({ language: normalized });
   }

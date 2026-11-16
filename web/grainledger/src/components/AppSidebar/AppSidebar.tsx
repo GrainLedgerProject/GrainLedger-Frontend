@@ -371,6 +371,12 @@ export const AppSidebar: React.FC = () => {
   }, [isMobileSidebarOpen, setMobileSidebarOpen]);
 
   const navItems = getNavItems();
+  if (user?.permissions.includes('export-orders.read') && !navItems.some(item => item.path === '/export/plans/pending')) {
+    navItems.push({ label: t('nav.export.plansPending', 'Duyệt phương án'), path: '/export/plans/pending', icon: CheckSquare });
+  }
+  if (user?.permissions.some(permission => ['residue.policy.manage', 'residue.company-policy.manage', 'residue.evaluate', 'residue.evidence.manage'].includes(permission))) {
+    navItems.push({ label: t('nav.compliance.residueProfiles', 'Hồ sơ dư lượng'), path: '/compliance/residue-profiles', icon: Flask });
+  }
 
   return (
     <>

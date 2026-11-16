@@ -48,10 +48,7 @@ export const UserAccessManagementPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      adminEndpoints.getUsers(),
-      adminEndpoints.getOrganizations(),
-    ])
+    Promise.all([adminEndpoints.getUsers(), adminEndpoints.getOrganizations()])
       .then(([usersRes, orgsRes]) => {
         if (!active) return;
         setUsers(Array.isArray(usersRes) ? usersRes : []);
@@ -144,7 +141,7 @@ export const UserAccessManagementPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("admin.users.tag", "PHÂN QUYỀN VAI TRÒ & TỔ CHỨC (RBAC)")}
           </span>
@@ -325,7 +322,7 @@ export const UserAccessManagementPage: React.FC = () => {
         ariaLabel={t("admin.ueditPermission", "Cập nhật quyền truy cập")}
       >
         {selectedUser && (
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
             <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">

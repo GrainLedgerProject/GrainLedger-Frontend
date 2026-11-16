@@ -535,7 +535,7 @@ export const FacilityConfigPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block">
+          <span className="text-xs font-semibold uppercase tracking-wider text-accent-primary">
             {t(
               "admin.facility.tag",
               "CẤU HÌNH NHÀ MÁY, SILO & THIẾT BỊ VẬN HÀNH",
