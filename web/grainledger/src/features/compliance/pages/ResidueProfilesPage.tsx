@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { residueEndpoints } from '@/api/residue';
-import type { ResidueProfileVersion } from '@/api/generated/schemas';
+import type { ResidueProfileVersion } from '@/api/residue';
 import { useAuthStore } from '@/app/store/authStore';
 import { Modal } from '@/components/Modal/Modal';
 import { StatusBadge } from '@/components/StatusBadge/StatusBadge';

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BlendPlanDecisionsPage } from '@/features/export/pages/BlendPlanDecisionsPage';
 import { planningEndpoints } from '@/api/planning';
 import { ApiError } from '@/api/client';
-import type { BlendPlanDecision, BlendPlanDraftDto, BlendPlanProposal } from '@/api/contracts';
+import type { BlendPlanDecision, BlendPlanDraftDto, BlendPlanProposal } from '@/api/planning';
 
 const auth = vi.hoisted(() => ({ user: { permissions: ['blend.approve'] } }));
 vi.mock('@/app/store/authStore', () => ({ useAuthStore: (selector: (state: typeof auth) => unknown) => selector(auth) }));

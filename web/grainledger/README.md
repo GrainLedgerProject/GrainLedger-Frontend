@@ -22,7 +22,7 @@ Khởi động lại dev server sau khi sửa `.env`. Các biến `VITE_*` đư�
 
 ## Đồng bộ API
 
-Đặc tả được lưu tại `openapi/v1.json`. Sau khi cập nhật đặc tả, chạy `npm run api:generate` để sinh schema, operation và manifest. Chạy `npm run api:check` để kiểm tra mã sinh, `npm run api:audit` để kiểm tra wrapper theo method/path.
+Các API được khai báo trực tiếp trong `src/api/` theo nhóm chức năng (`auth.ts`, `ledger.ts`, `planning.ts`, ...), dùng chung `apiFetch` từ `client.ts`. Interface request/response nằm ngay trong file API tương ứng. Khi cập nhật endpoint, sửa trực tiếp file API rồi chạy `npm test` và `npm run build`.
 
 Xem [kết quả đối soát API và giao diện](docs/api-reconciliation.md) để biết endpoint mới, interface bổ sung và giới hạn của đặc tả.
 

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { exportEndpoints } from '@/api/exports';
 import { planningEndpoints } from '@/api/planning';
 import { ApiError } from '@/api/client';
-import type { BlendPlanDecision } from '@/api/contracts';
+import type { BlendPlanDecision } from '@/api/planning';
 import { useAuthStore } from '@/app/store/authStore';
 import { Modal } from '@/components/Modal/Modal';
 import { StatusBadge, type StatusType } from '@/components/StatusBadge/StatusBadge';

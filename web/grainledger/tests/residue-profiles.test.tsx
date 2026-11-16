@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ResidueProfilesPage } from '@/features/compliance/pages/ResidueProfilesPage';
 import { residueEndpoints } from '@/api/residue';
-import type { ResidueProfileVersion } from '@/api/generated/schemas';
+import type { ResidueProfileVersion } from '@/api/residue';
 
 const auth = vi.hoisted(() => ({ user: { organizationId: 'company', permissions: ['residue.policy.manage', 'residue.company-policy.manage'] } }));
 vi.mock('@/app/store/authStore', () => ({ useAuthStore: (selector: (state: typeof auth) => unknown) => selector(auth) }));
