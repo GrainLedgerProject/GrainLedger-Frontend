@@ -20,7 +20,7 @@ import {
   User,
   WarningCircle,
 } from "@phosphor-icons/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -36,6 +36,7 @@ export const EditProfilePage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<EditProfileFormValues>({
     resolver: zodResolver(editProfileSchema),
@@ -45,6 +46,10 @@ export const EditProfilePage: React.FC = () => {
       phoneNumber: user?.phoneNumber || "",
     },
   });
+
+  useEffect(() => {
+    setValue('language', language);
+  }, [language, setValue]);
 
   const getInitials = (name?: string) => {
     if (!name) return "GL";

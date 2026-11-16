@@ -1,7 +1,24 @@
-import { withApiQuery } from "./query";
+import { withApiQuery, type ApiPage, type PageQuery } from "./query";
 import { apiFetch } from "./client";
 
 import { parseLedgerHistoryResponse, type LedgerHistoryQuery } from "./history";
+
+export interface LedgerNotification {
+  id: string;
+  holdId: string | null;
+  lotId: string;
+  ownerId: string;
+  ownerName: string;
+  message: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface NotificationQuery extends PageQuery {
+  status?: "READ" | "UNREAD";
+  sortBy?: "createdAt" | "readAt";
+  sortDirection?: "asc" | "desc";
+}
 
 export interface RecordOperationRequest {
   facilityId?: string;
@@ -215,12 +232,20 @@ export const ledgerEndpoints = {
     ),
 
   // Notifications
-  getNotifications: () => apiFetch<unknown>("/api/ledger/notifications"),
+  getNotifications: (
+    query: NotificationQuery = {},
+    options: { signal?: AbortSignal } = {},
+  ) =>
+    apiFetch<ApiPage<LedgerNotification>>(
+      withApiQuery("/api/ledger/notifications", query),
+      options,
+    ),
   readNotification: (id: string) =>
-    apiFetch<unknown>(
+    apiFetch<{ id: string }>(
       `/api/ledger/notifications/${encodeURIComponent(id)}/read`,
       {
         method: "POST",
+        body: JSON.stringify({}),
       },
     ),
 

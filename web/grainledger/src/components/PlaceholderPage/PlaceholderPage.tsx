@@ -28,7 +28,7 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
 }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const isEn = i18n.language === "en";
+  const isEn = i18n.language.toLowerCase().startsWith("en");
 
   const primaryTitle = isEn ? titleEn : titleVi;
   const secondaryTitle = isEn ? titleVi : titleEn;

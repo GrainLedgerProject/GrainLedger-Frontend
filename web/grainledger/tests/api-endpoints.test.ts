@@ -106,3 +106,12 @@ describe("Direct API endpoints", () => {
     ).rejects.toBe(error);
   });
 });
+import { ledgerEndpoints } from '@/api/ledger';
+
+it('loads paginated notifications and sends the required JSON object when marking read', async () => {
+  const signal = new AbortController().signal;
+  await ledgerEndpoints.getNotifications({ page: 2, pageSize: 20, status: 'UNREAD', sortBy: 'createdAt', sortDirection: 'desc' }, { signal });
+  expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/notifications?page=2&pageSize=20&status=UNREAD&sortBy=createdAt&sortDirection=desc', { signal });
+  await ledgerEndpoints.readNotification('notice/1');
+  expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/notifications/notice%2F1/read', { method: 'POST', body: '{}' });
+});

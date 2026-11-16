@@ -3,7 +3,9 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import vi from './locales/vi.json';
 
-const savedLang = localStorage.getItem('grainledger_lang') || 'vi';
+export const normalizeLanguage = (value: string | null | undefined): 'vi' | 'en' =>
+  value?.toLowerCase().startsWith('en') ? 'en' : 'vi';
+const savedLang = normalizeLanguage(localStorage.getItem('grainledger_lang'));
 
 i18n
   .use(initReactI18next)
@@ -14,6 +16,8 @@ i18n
     },
     lng: savedLang,
     fallbackLng: 'vi',
+    supportedLngs: ['vi', 'en'],
+    load: 'languageOnly',
     interpolation: {
       escapeValue: false, // React already escapes
     },

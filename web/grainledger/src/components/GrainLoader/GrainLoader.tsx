@@ -19,7 +19,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
   size = "md",
   label,
   fullPage = false,
-  className = "light:text-black",
+  className = "",
 }) => {
   const dimension = sizeMap[size];
 

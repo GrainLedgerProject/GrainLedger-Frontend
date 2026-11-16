@@ -9,6 +9,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type StatusType =
   | 'BALANCED'
@@ -128,9 +129,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   size = 'md',
   className = '',
 }) => {
+  const { i18n } = useTranslation();
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
   const Icon = config.icon;
-  const displayLabel = label || config.defaultLabelVi;
+  const displayLabel = label || (i18n.language.startsWith('en') ? config.defaultLabelEn : config.defaultLabelVi);
 
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs gap-1' : 'px-2.5 py-1 text-xs gap-1.5 font-medium';
   const iconSize = size === 'sm' ? 12 : 14;
@@ -139,7 +141,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     <span
       className={`inline-flex items-center rounded-full border ${config.bg} ${config.border} ${config.text} ${sizeClasses} select-none ${className}`}
     >
-      <Icon size={iconSize} weight="bold" className="shrink-0" />
+      <Icon size={iconSize} weight="bold" className="shrink-0" aria-hidden="true" />
       <span>{displayLabel}</span>
     </span>
   );

@@ -122,7 +122,7 @@ export function RoleHomePage() {
   return (
     <div className="mx-auto max-w-screen-2xl space-y-6 pb-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
+        <div data-ui-detail="secondary" className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
           <span className="font-semibold text-accent-primary">
             {text(["BÀN ĐIỀU HÀNH", "WORKSPACE OVERVIEW"], locale)}
           </span>
@@ -143,15 +143,16 @@ export function RoleHomePage() {
       >
         <div
           aria-hidden="true"
+          data-ui-detail="secondary"
           className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[40px] border-accent-primary/5"
         />
         <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary">
+            <div data-ui-detail="secondary" className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary">
               <Leaf size={15} weight="duotone" aria-hidden="true" />
               {text(config.focus, locale)}
             </div>
-            <p className="mb-1 text-sm text-ink-secondary">
+            <p data-ui-detail="secondary" className="mb-1 text-sm text-ink-secondary">
               {text(["Xin chào", "Welcome"], locale)},{" "}
               <span className="font-semibold text-ink-primary">
                 {user?.displayName || text(["bạn", "there"], locale)}
@@ -163,7 +164,7 @@ export function RoleHomePage() {
             >
               {text(config.title, locale)}
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary">
+            <p data-ui-detail="secondary" className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary">
               {text(config.description, locale)}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-tertiary">

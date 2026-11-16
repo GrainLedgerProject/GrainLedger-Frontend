@@ -185,6 +185,7 @@ export const ReceivingTasksPage: React.FC = () => {
         t(
           "mill.receiving.measureSuccess",
           `Đã ghi nhận số cân thực tế cho chuyến xe ${selectedTask.sourceLotCode}`,
+          { code: selectedTask.sourceLotCode },
         ),
       );
       setIsMeasureModalOpen(false);
@@ -248,6 +249,7 @@ export const ReceivingTasksPage: React.FC = () => {
         t(
           "mill.receiving.reviewSuccess",
           `Đã hoàn tất duyệt đối soát chuyến xe ${selectedTask.sourceLotCode}`,
+          { code: selectedTask.sourceLotCode },
         ),
       );
       setIsReviewModalOpen(false);

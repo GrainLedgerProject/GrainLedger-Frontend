@@ -132,9 +132,9 @@ export function MetricCard({
       <p className="mt-3 text-xs leading-5 text-ink-tertiary">
         {unavailable ?? metric.detail}
       </p>
-      <span
+      <div
         aria-hidden="true"
-        className={`absolute bottom-0 left-5 right-5 h-0.5 rounded-full opacity-30 ${tones[metric.tone].bar}`}
+        className={`absolute bottom-0 left-0 right-0 h-2 w-full rounded-full opacity-30 ${tones[metric.tone].bar}`}
       />
     </article>
   );
