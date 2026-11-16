@@ -2,6 +2,7 @@ import type * as ApiSchemas from './generated/schemas';
 import type { RegistrationPendingDto, IssuedTokens, SessionUserDto } from './generated/schemas';
 export type { RegisterRequest, RegistrationPendingDto, VerifyEmailRequest, ResendVerificationRequest, LoginRequest, IssuedTokens, SessionUserDto, ForgotPasswordRequest, ResetPasswordRequest } from './generated/schemas';
 import { apiFetch } from './client';
+import { getApiUrl } from './config';
 
 export const authEndpoints = {
   register: (req: ApiSchemas.RegisterRequest) =>
@@ -57,16 +58,16 @@ export const authEndpoints = {
   getCsrf: () => apiFetch<{ token: string }>('/api/auth/csrf'),
 
   getGoogleAuthUrl: (returnUrl?: string) =>
-    returnUrl ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}` : '/api/auth/google',
+    getApiUrl(returnUrl ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}` : '/api/auth/google'),
 
   loginGoogle: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
-    window.location.assign(`/api/auth/google${qs}`);
+    window.location.assign(getApiUrl(`/api/auth/google${qs}`));
   },
 
   googleComplete: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
-    window.location.assign(`/api/auth/google/complete${qs}`);
+    window.location.assign(getApiUrl(`/api/auth/google/complete${qs}`));
   },
 
   getHealth: () => apiFetch<void>('/health'),

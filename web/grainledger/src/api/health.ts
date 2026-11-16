@@ -1,7 +1,9 @@
 /**
  * GrainLedger Backend Health Check
- * Validates actual connectivity to the backend server (Port 5080)
+ * Validates actual connectivity to the configured backend server.
  */
+
+import { getApiUrl } from './config';
 
 let inFlightCheck: Promise<boolean> | null = null;
 
@@ -60,7 +62,7 @@ export async function checkBackendHealth(): Promise<boolean> {
     };
 
     // Fallback check: /health directly
-    const directOk = await checkEndpoint("/health", 2500);
+    const directOk = await checkEndpoint(getApiUrl("/health"), 2500);
     return directOk;
   })().finally(() => {
     inFlightCheck = null;
