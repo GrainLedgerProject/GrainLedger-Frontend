@@ -1,7 +1,7 @@
 /**
  * GrainLedger Core API Client
  * Generated & typed according to OpenAPI 3.1.1 specification
- * Base URL: http://localhost:5080 (or proxied via /api)
+ * Base URL: configured by VITE_API_BASE_URL (same-origin by default).
  */
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
@@ -9,6 +9,7 @@ import { normalizeUserRole } from "@/shared/types/roles";
 import { COOKIE_KEYS, getCookie } from "@/shared/utils/cookies";
 import { isJwtExpired } from "@/shared/utils/jwt";
 import { logger } from "@/shared/utils/logger";
+import { getApiUrl } from './config';
 import type { IssuedTokens, ProblemDetails } from './generated/schemas';
 export type { ProblemDetails } from './generated/schemas';
 
@@ -59,7 +60,7 @@ export async function requestTokenRefresh(): Promise<string | null> {
   refreshPromise = (async () => {
     try {
       logger.info("Performing single-flight refresh token rotation...");
-      const res = await fetch("/api/auth/refresh", {
+      const res = await fetch(getApiUrl("/api/auth/refresh"), {
         method: "POST",
         credentials: "include",
         headers: {
@@ -174,7 +175,7 @@ export async function apiFetch<T>(
     headers,
   };
 
-  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = getApiUrl(endpoint);
 
   let response: Response;
   try {
@@ -184,7 +185,7 @@ export async function apiFetch<T>(
     logger.warn(`Network error on ${url}:`, netErr);
     useUiStore.getState().setOnline(false);
     useUiStore.getState().setBackendConnected(false);
-    throw new ApiError(0, "Không thể kết nối đến máy chủ backend (Port 5080).");
+    throw new ApiError(0, "Không thể kết nối đến máy chủ backend.");
   }
 
   // Update backend connection status based on HTTP response
