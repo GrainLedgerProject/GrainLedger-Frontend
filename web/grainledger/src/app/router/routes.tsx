@@ -175,9 +175,12 @@ const SafetyMarginPolicyPage = React.lazy(() =>
 
 // Export
 const BlendPlansPendingPage = React.lazy(() =>
-  import("@/features/export/pages/BlendPlansPendingPage").then((m) => ({
-    default: m.BlendPlansPendingPage,
+  import("@/features/export/pages/BlendPlanDecisionsPage").then((m) => ({
+    default: m.BlendPlanDecisionsPage,
   })),
+);
+const ResidueProfilesPage = React.lazy(() =>
+  import("@/features/compliance/pages/ResidueProfilesPage").then((m) => ({ default: m.ResidueProfilesPage })),
 );
 
 // Audit
@@ -572,6 +575,11 @@ export const router = createBrowserRouter(
               </L>
             </ProtectedRoute>
           ),
+        },
+
+        {
+          path: "/compliance/residue-profiles",
+          element: <ProtectedRoute><L><ResidueProfilesPage /></L></ProtectedRoute>,
         },
 
         // --- Export Planning & Shipment (Export Officer & Customer Manager) ---

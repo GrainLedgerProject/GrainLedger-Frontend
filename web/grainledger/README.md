@@ -20,6 +20,12 @@ Khi triển khai với backend riêng, đặt `VITE_API_BASE_URL=https://api.exa
 
 Khởi động lại dev server sau khi sửa `.env`. Các biến `VITE_*` được đưa vào mã trình duyệt khi build, vì vậy không đặt thông tin bí mật trong các biến này. `.env` và các file môi trường riêng được Git bỏ qua; `.env.example` được lưu trong repository.
 
+## Đồng bộ API
+
+Các API được khai báo trực tiếp trong `src/api/` theo nhóm chức năng (`auth.ts`, `ledger.ts`, `planning.ts`, ...), dùng chung `apiFetch` từ `client.ts`. Interface request/response nằm ngay trong file API tương ứng. Khi cập nhật endpoint, sửa trực tiếp file API rồi chạy `npm test` và `npm run build`.
+
+Xem [kết quả đối soát API và giao diện](docs/api-reconciliation.md) để biết endpoint mới, interface bổ sung và giới hạn của đặc tả.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -1,3 +1,4 @@
+import { NotificationCenter } from "./NotificationCenter";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { ConfirmPopover } from "@/components/ConfirmPopover/ConfirmPopover";
@@ -6,7 +7,6 @@ import { RoleChip } from "@/components/RoleChip/RoleChip";
 import { MinimalModeToggle } from "@/components/MinimalModeToggle/MinimalModeToggle";
 import { isCustomerSide } from "@/shared/types/roles";
 import {
-  BellIcon,
   CaretDownIcon,
   GlobeIcon,
   ListIcon,
@@ -17,7 +17,6 @@ import {
   SignOutIcon,
   SunIcon,
   UserIcon,
-  WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
@@ -121,7 +120,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   to="/home"
                   className="hover:text-ink-primary dark:hover:text-white transition-colors"
                 >
-                  Home
+                  {t("sidebar.home", "Tổng quan")}
                 </Link>
                 {breadcrumbs.map((bc, idx) => (
                   <React.Fragment key={idx}>
@@ -183,95 +182,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             type="button"
             onClick={() => setSearchOpen(true)}
             className="md:hidden w-10 h-10 rounded-full flex items-center justify-center text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
-            aria-label="Tìm kiếm"
+            aria-label={t("header.searchTitle")}
           >
             <MagnifyingGlassIcon size={18} weight="bold" />
           </button>
 
           {/* Notification Bell with Badge */}
           <div className="relative" ref={notificationsRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsUserMenuOpen(false);
-                setNotificationsOpen(!isNotificationsOpen);
-              }}
-              className="w-10 h-10 rounded-full flex items-center justify-center relative text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
-              aria-label="Thông báo và cảnh báo HOLD"
-            >
-              <BellIcon size={18} weight="bold" />
-              {/* Badge: 2 notifications */}
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent-danger ring-2 ring-white dark:ring-black animate-pulse" />
-            </button>
-
-            {/* Notifications Dropdown (Apple Liquid Glass) */}
-            <AnimatePresence>
-              {isNotificationsOpen && (
-                <motion.div
-                  key="notifications-dropdown"
-                  initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-surface-base dark:bg-surface-raised backdrop-blur-2xl border border-ink-tertiary/20 rounded-3xl shadow-xl p-4 z-50 text-xs space-y-2.5"
-                >
-                  <div className="flex items-center justify-between pb-2.5 border-b border-ink-tertiary/20 dark:border-surface-overlay font-bold text-ink-primary">
-                    <span>
-                      {t("header.notificationsTitle", "Cảnh báo & Duyệt")}
-                    </span>
-                    <span className="font-mono text-[10px] bg-accent-danger/10 text-accent-danger font-bold px-2 py-0.5 rounded-full">
-                      {t("header.newCount", "2 mới")}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    <Link
-                      to="/risk/holds"
-                      onClick={() => setNotificationsOpen(false)}
-                      className="block p-2 rounded bg-functional-hold-bg dark:bg-functional-hold-bg/30 border border-functional-hold-border/40 hover:border-functional-hold-border transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-accent-danger">
-                        <LockSimpleIcon size={14} weight="fill" />
-                        <span>
-                          {t(
-                            "header.holdAlert",
-                            "Cảnh báo HOLD mới: Lô LOT-2026-S1",
-                          )}
-                        </span>
-                      </div>
-                      <p className="text-xs text-ink-secondary mt-0.5">
-                        {t(
-                          "header.holdAlertDesc",
-                          "Tricyclazole tiệm cận ngưỡng MRL EU (0.009 mg/kg / 0.010 mg/kg).",
-                        )}
-                      </p>
-                    </Link>
-
-                    <Link
-                      to="/export/plans/pending"
-                      onClick={() => setNotificationsOpen(false)}
-                      className="block p-2 rounded bg-functional-stale-bg border border-functional-stale-border/40 hover:border-accent-warning transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-accent-warning">
-                        <WarningCircleIcon size={14} weight="fill" />
-                        <span>
-                          {t(
-                            "header.planAlert",
-                            "Phương án PLAN-001 chờ duyệt",
-                          )}
-                        </span>
-                      </div>
-                      <p className="text-xs text-ink-secondary mt-0.5">
-                        {t(
-                          "header.planAlertDesc",
-                          "Container C-101 (24,000 kg Gạo trắng 5% tấm) — Khách hàng Exporter A.",
-                        )}
-                      </p>
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <NotificationCenter key={`${user?.id}:${user?.organizationId}`} onOpen={() => setIsUserMenuOpen(false)} />
           </div>
 
           {/* Theme Toggle (Light / Dark) */}
@@ -311,7 +229,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             to="/"
             className="w-10 h-10 rounded-full flex items-center justify-center text-ink-secondary hover:text-ink-primary dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] active:scale-95 transition-all"
             title={t("header.helpTitle", "Giới thiệu & Hướng dẫn hệ thống")}
-            aria-label="Documentation"
+            aria-label={t("header.helpTitle")}
           >
             <QuestionIcon size={18} weight="bold" />
           </Link>

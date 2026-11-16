@@ -103,7 +103,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t(
               "admin.orgs.tag",
@@ -231,7 +231,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         ariaLabel={t("admin.orgs.modalTitle", "Tạo doanh nghiệp")}
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
@@ -239,10 +239,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-display font-bold text-base text-ink-primary">
-                  {t(
-                    "admin.orgs.modalTitle",
-                    "Thiết lập Doanh nghiệp Mới",
-                  )}
+                  {t("admin.orgs.modalTitle", "Thiết lập Doanh nghiệp Mới")}
                 </h2>
                 <p className="text-[11px] text-ink-secondary">
                   {t(

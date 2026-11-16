@@ -43,7 +43,7 @@ export function formatMessage(
   lang?: string
 ): string {
   const currentLang = lang || i18n.language || 'vi';
-  const dict = currentLang === 'en' ? MESSAGES_EN : MESSAGES_VI;
+  const dict = currentLang.toLowerCase().startsWith('en') ? MESSAGES_EN : MESSAGES_VI;
   let template: string = dict[code] || MESSAGES_VI[code] || '';
   for (const [key, value] of Object.entries(params)) {
     template = template.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));

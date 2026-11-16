@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Modal } from "@/components/Modal/Modal";
-import { StatusBadge, type StatusType } from "@/components/StatusBadge/StatusBadge";
+import {
+  StatusBadge,
+  type StatusType,
+} from "@/components/StatusBadge/StatusBadge";
 import { StalePlanBanner } from "@/components/StalePlanBanner/StalePlanBanner";
 import {
   CheckSquare,
@@ -80,7 +83,7 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
     mrlAssessment: {
       verdict: "PASS",
       substanceName: "Tricyclazole",
-      officialMrlMgKg: 0.010,
+      officialMrlMgKg: 0.01,
       safetyThresholdMgKg: 0.008,
       predictedBlendMgKg: 0.0062,
       bufferPercent: 20,
@@ -101,7 +104,7 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
         moisturePercent: 14.0,
         brokenPercent: 4.5,
         measuredTricyclazoleMgKg: 0.0055,
-        upperBound95MgKg: 0.0070,
+        upperBound95MgKg: 0.007,
       },
       {
         lotId: "lot-silo-02",
@@ -130,8 +133,8 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
     mrlAssessment: {
       verdict: "PASS",
       substanceName: "Hexaconazole",
-      officialMrlMgKg: 0.100,
-      safetyThresholdMgKg: 0.080,
+      officialMrlMgKg: 0.1,
+      safetyThresholdMgKg: 0.08,
       predictedBlendMgKg: 0.024,
       bufferPercent: 20,
     },
@@ -166,12 +169,13 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
     status: "STALE",
     proposedBy: "Trần Văn Bình (Export Officer)",
     proposedAt: "2026-11-12T14:00:00Z",
-    reviewNotes: "Lô Silo S3 vừa ghi nhận kết quả kiểm định phòng lab mới cập nhật, cần chạy lại đánh giá.",
+    reviewNotes:
+      "Lô Silo S3 vừa ghi nhận kết quả kiểm định phòng lab mới cập nhật, cần chạy lại đánh giá.",
     mrlAssessment: {
       verdict: "WARNING",
       substanceName: "Isoprothiolane",
-      officialMrlMgKg: 0.200,
-      safetyThresholdMgKg: 0.160,
+      officialMrlMgKg: 0.2,
+      safetyThresholdMgKg: 0.16,
       predictedBlendMgKg: 0.165,
       bufferPercent: 20,
     },
@@ -201,7 +205,7 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
         massSharePercent: 50,
         moisturePercent: 14.2,
         brokenPercent: 5.0,
-        measuredTricyclazoleMgKg: 0.010,
+        measuredTricyclazoleMgKg: 0.01,
         upperBound95MgKg: 0.012,
       },
     ],
@@ -219,11 +223,12 @@ const SEEDED_BLEND_PLANS: BlendPlanRecord[] = [
     proposedAt: "2026-11-10T09:00:00Z",
     reviewedBy: "Lê Nguyễn Hồng Phúc (Customer Manager)",
     reviewedAt: "2026-11-10T15:30:00Z",
-    reviewNotes: "Phương án phối trộn đạt chuẩn chất lượng và biên an toàn 20%. Cho phép rút gạo từ silo thực thi xếp container.",
+    reviewNotes:
+      "Phương án phối trộn đạt chuẩn chất lượng và biên an toàn 20%. Cho phép rút gạo từ silo thực thi xếp container.",
     mrlAssessment: {
       verdict: "PASS",
       substanceName: "Fenoxanil",
-      officialMrlMgKg: 0.020,
+      officialMrlMgKg: 0.02,
       safetyThresholdMgKg: 0.016,
       predictedBlendMgKg: 0.009,
       bufferPercent: 20,
@@ -255,8 +260,12 @@ export const BlendPlansPendingPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [plans, setPlans] = useState<BlendPlanRecord[]>(SEEDED_BLEND_PLANS);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(() => planId ?? null);
-  const [prevRoutePlanId, setPrevRoutePlanId] = useState<string | undefined>(planId);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(
+    () => planId ?? null,
+  );
+  const [prevRoutePlanId, setPrevRoutePlanId] = useState<string | undefined>(
+    planId,
+  );
 
   // Synchronize during render ONLY when route planId parameter actually changes
   if (planId !== prevRoutePlanId) {
@@ -273,7 +282,11 @@ export const BlendPlansPendingPage: React.FC = () => {
 
   const selectedPlan = useMemo(() => {
     if (!selectedPlanId) return null;
-    return plans.find((p) => p.id === selectedPlanId || p.planCode === selectedPlanId) || null;
+    return (
+      plans.find(
+        (p) => p.id === selectedPlanId || p.planCode === selectedPlanId,
+      ) || null
+    );
   }, [plans, selectedPlanId]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -388,7 +401,7 @@ export const BlendPlansPendingPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             THẨM ĐỊNH & PHÊ DUYỆT XUẤT KHẨU
           </span>
@@ -399,7 +412,9 @@ export const BlendPlansPendingPage: React.FC = () => {
             data-ui-detail="secondary"
             className="text-xs text-ink-secondary mt-0.5"
           >
-            Thẩm định công thức phối trộn rút gạo từ các silo, đối soát tỷ lệ tấm, độ ẩm và kiểm tra dư lượng MRL kèm biên an toàn 20% trước khi cho phép công nhân thực thi xếp hàng container.
+            Thẩm định công thức phối trộn rút gạo từ các silo, đối soát tỷ lệ
+            tấm, độ ẩm và kiểm tra dư lượng MRL kèm biên an toàn 20% trước khi
+            cho phép công nhân thực thi xếp hàng container.
           </p>
         </div>
 
@@ -527,7 +542,9 @@ export const BlendPlansPendingPage: React.FC = () => {
               className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
             >
               <option value="ALL">Tất cả trạng thái duyệt</option>
-              <option value="PENDING_REVIEW">Chờ thẩm định ({kpiPending})</option>
+              <option value="PENDING_REVIEW">
+                Chờ thẩm định ({kpiPending})
+              </option>
               <option value="APPROVED">Đã phê duyệt ({kpiApproved})</option>
               <option value="STALE">Cảnh báo STALE ({kpiStale})</option>
               <option value="REJECTED">Bị từ chối</option>
@@ -537,7 +554,11 @@ export const BlendPlansPendingPage: React.FC = () => {
 
         <div className="flex items-center justify-between text-xs text-ink-secondary pt-1 border-t border-ink-tertiary/10">
           <span>
-            Hiển thị <strong className="text-ink-primary">{filteredPlans.length}</strong> trên tổng số <strong className="text-ink-primary">{plans.length}</strong> phương án phối trộn
+            Hiển thị{" "}
+            <strong className="text-ink-primary">{filteredPlans.length}</strong>{" "}
+            trên tổng số{" "}
+            <strong className="text-ink-primary">{plans.length}</strong> phương
+            án phối trộn
           </span>
           <span className="font-mono text-xs text-accent-primary font-bold">
             Biên an toàn bắt buộc: -20% Buffer
@@ -572,7 +593,9 @@ export const BlendPlansPendingPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1.5 text-ink-tertiary text-[11px] mt-0.5">
                       <Calendar size={13} />
-                      <span>{new Date(plan.proposedAt).toLocaleString("vi-VN")}</span>
+                      <span>
+                        {new Date(plan.proposedAt).toLocaleString("vi-VN")}
+                      </span>
                     </div>
                   </td>
 
@@ -666,7 +689,8 @@ export const BlendPlansPendingPage: React.FC = () => {
                     Mã phương án: {selectedPlan.planCode}
                   </h2>
                   <p className="text-[11px] text-ink-secondary">
-                    Hồ sơ thẩm định phương án phối trộn xuất khẩu (Blend Plan Review)
+                    Hồ sơ thẩm định phương án phối trộn xuất khẩu (Blend Plan
+                    Review)
                   </p>
                 </div>
               </div>
@@ -693,37 +717,53 @@ export const BlendPlansPendingPage: React.FC = () => {
               {/* General Info Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-xs">
                 <div>
-                  <span className="text-ink-tertiary block">Container xếp hàng:</span>
+                  <span className="text-ink-tertiary block">
+                    Container xếp hàng:
+                  </span>
                   <span className="font-mono font-bold text-ink-primary">
                     {selectedPlan.containerCode}
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block">Đơn hàng xuất khẩu:</span>
+                  <span className="text-ink-tertiary block">
+                    Đơn hàng xuất khẩu:
+                  </span>
                   <span className="font-mono font-bold text-accent-primary">
                     {selectedPlan.orderNumber}
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block">Tổng khối lượng:</span>
+                  <span className="text-ink-tertiary block">
+                    Tổng khối lượng:
+                  </span>
                   <span className="font-mono font-bold text-ink-primary">
                     {selectedPlan.totalMassKg.toLocaleString("vi-VN")} kg
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-tertiary block">Trạng thái hiện tại:</span>
-                  <div className="mt-0.5">{getStatusBadge(selectedPlan.status)}</div>
+                  <span className="text-ink-tertiary block">
+                    Trạng thái hiện tại:
+                  </span>
+                  <div className="mt-0.5">
+                    {getStatusBadge(selectedPlan.status)}
+                  </div>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-ink-tertiary block">Hàng hóa & Thị trường:</span>
+                  <span className="text-ink-tertiary block">
+                    Hàng hóa & Thị trường:
+                  </span>
                   <span className="font-medium text-ink-primary">
-                    {selectedPlan.targetCommodity} &mdash; {selectedPlan.targetMarket}
+                    {selectedPlan.targetCommodity} &mdash;{" "}
+                    {selectedPlan.targetMarket}
                   </span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-ink-tertiary block">Người lập phương án:</span>
+                  <span className="text-ink-tertiary block">
+                    Người lập phương án:
+                  </span>
                   <span className="text-ink-secondary">
-                    {selectedPlan.proposedBy} ({new Date(selectedPlan.proposedAt).toLocaleString("vi-VN")})
+                    {selectedPlan.proposedBy} (
+                    {new Date(selectedPlan.proposedAt).toLocaleString("vi-VN")})
                   </span>
                 </div>
               </div>
@@ -732,7 +772,9 @@ export const BlendPlansPendingPage: React.FC = () => {
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-ink-primary uppercase tracking-wider flex items-center gap-1.5">
                   <Cube size={16} className="text-accent-primary" />
-                  <span>Tỷ lệ thành phần các lô rút từ Silo (Component Silo Lots)</span>
+                  <span>
+                    Tỷ lệ thành phần các lô rút từ Silo (Component Silo Lots)
+                  </span>
                 </h4>
                 <div className="rounded-xl border border-ink-tertiary/15 overflow-hidden">
                   <table className="w-full text-left text-xs border-collapse">
@@ -748,12 +790,17 @@ export const BlendPlansPendingPage: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-ink-tertiary/10">
                       {selectedPlan.components.map((comp) => (
-                        <tr key={comp.lotId} className="hover:bg-surface-raised/40 transition-colors">
+                        <tr
+                          key={comp.lotId}
+                          className="hover:bg-surface-raised/40 transition-colors"
+                        >
                           <td className="py-2.5 px-3">
                             <span className="font-mono font-bold text-ink-primary block">
                               {comp.lotCode}
                             </span>
-                            <span className="text-[11px] text-ink-tertiary">{comp.siloLocation}</span>
+                            <span className="text-[11px] text-ink-tertiary">
+                              {comp.siloLocation}
+                            </span>
                           </td>
                           <td className="py-2.5 px-3 font-mono text-ink-primary font-semibold">
                             {comp.massKg.toLocaleString("vi-VN")} kg
@@ -788,13 +835,22 @@ export const BlendPlansPendingPage: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-ink-secondary">Độ ẩm dự báo:</span>
                       <span className="font-mono font-bold text-accent-primary">
-                        {selectedPlan.predictedQuality.predictedMoisturePercent}% (Yêu cầu &le; {selectedPlan.predictedQuality.maxAllowedMoisturePercent}%)
+                        {selectedPlan.predictedQuality.predictedMoisturePercent}
+                        % (Yêu cầu &le;{" "}
+                        {
+                          selectedPlan.predictedQuality
+                            .maxAllowedMoisturePercent
+                        }
+                        %)
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-ink-secondary">Độ tấm dự báo:</span>
                       <span className="font-mono font-bold text-accent-primary">
-                        {selectedPlan.predictedQuality.predictedBrokenPercent}% (Yêu cầu &le; {selectedPlan.predictedQuality.maxAllowedBrokenPercent}%)
+                        {selectedPlan.predictedQuality.predictedBrokenPercent}%
+                        (Yêu cầu &le;{" "}
+                        {selectedPlan.predictedQuality.maxAllowedBrokenPercent}
+                        %)
                       </span>
                     </div>
                   </div>
@@ -807,15 +863,26 @@ export const BlendPlansPendingPage: React.FC = () => {
                   </span>
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-ink-secondary">Dư lượng dự báo:</span>
+                      <span className="text-ink-secondary">
+                        Dư lượng dự báo:
+                      </span>
                       <span className="font-mono font-bold text-accent-primary">
-                        {selectedPlan.mrlAssessment.predictedBlendMgKg.toFixed(4)} mg/kg
+                        {selectedPlan.mrlAssessment.predictedBlendMgKg.toFixed(
+                          4,
+                        )}{" "}
+                        mg/kg
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-ink-secondary">Ngưỡng an toàn sau -20%:</span>
+                      <span className="text-ink-secondary">
+                        Ngưỡng an toàn sau -20%:
+                      </span>
                       <span className="font-mono font-bold text-ink-primary">
-                        {selectedPlan.mrlAssessment.safetyThresholdMgKg.toFixed(4)} mg/kg (MRL: {selectedPlan.mrlAssessment.officialMrlMgKg.toFixed(4)})
+                        {selectedPlan.mrlAssessment.safetyThresholdMgKg.toFixed(
+                          4,
+                        )}{" "}
+                        mg/kg (MRL:{" "}
+                        {selectedPlan.mrlAssessment.officialMrlMgKg.toFixed(4)})
                       </span>
                     </div>
                   </div>
@@ -880,7 +947,7 @@ export const BlendPlansPendingPage: React.FC = () => {
         onClose={() => setIsRejectModalOpen(false)}
         ariaLabel="Từ chối phương án phối trộn"
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-xl bg-accent-danger/10 text-accent-danger flex items-center justify-center shrink-0">
@@ -891,7 +958,8 @@ export const BlendPlansPendingPage: React.FC = () => {
                   Từ Chối Phương Án Phối Trộn
                 </h2>
                 <p className="text-[11px] text-ink-secondary">
-                  Yêu cầu bộ phận xuất khẩu điều chỉnh lại công thức hoặc đổi silo
+                  Yêu cầu bộ phận xuất khẩu điều chỉnh lại công thức hoặc đổi
+                  silo
                 </p>
               </div>
             </div>
@@ -906,7 +974,8 @@ export const BlendPlansPendingPage: React.FC = () => {
 
           <div className="p-5 space-y-4 text-xs">
             <p className="text-ink-secondary">
-              Vui lòng nhập lý do từ chối để bộ phận lập kế hoạch xuất khẩu điều chỉnh lại công thức hoặc hoán đổi lô nguyên liệu thành phần:
+              Vui lòng nhập lý do từ chối để bộ phận lập kế hoạch xuất khẩu điều
+              chỉnh lại công thức hoặc hoán đổi lô nguyên liệu thành phần:
             </p>
 
             <div>

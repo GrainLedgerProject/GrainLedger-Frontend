@@ -297,7 +297,7 @@ export const PlotRegistrationPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("field.plot.badge", "ĐĂNG KÝ THỬA RUỘNG & BẢN ĐỒ GIS")}
           </span>

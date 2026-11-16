@@ -1,6 +1,7 @@
+import type { IssuedTokens } from "./auth";
 /**
  * GrainLedger Core API Client
- * Generated & typed according to OpenAPI 3.1.1 specification
+ * Shared authentication, token refresh and error handling.
  * Base URL: configured by VITE_API_BASE_URL (same-origin by default).
  */
 import { useAuthStore } from "@/app/store/authStore";
@@ -9,12 +10,10 @@ import { normalizeUserRole } from "@/shared/types/roles";
 import { COOKIE_KEYS, getCookie } from "@/shared/utils/cookies";
 import { isJwtExpired } from "@/shared/utils/jwt";
 import { logger } from "@/shared/utils/logger";
-import { getApiUrl } from './config';
-import type { IssuedTokens, ProblemDetails } from './generated/schemas';
-export type { ProblemDetails } from './generated/schemas';
+import { getApiUrl } from "./config";
 
 export interface ApiFetchOptions extends RequestInit {
-  responseType?: 'json' | 'blob' | 'text';
+  responseType?: "json" | "blob" | "text";
 }
 
 export class ApiError extends Error {
@@ -78,7 +77,7 @@ export async function requestTokenRefresh(): Promise<string | null> {
         return null;
       }
 
-      const data = await res.json() as IssuedTokens;
+      const data = (await res.json()) as IssuedTokens;
       const newAccessToken = data.accessToken;
       const newRefreshToken = data.refreshToken;
 
@@ -125,7 +124,7 @@ export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { responseType = 'json', ...requestOptions } = options;
+  const { responseType = "json", ...requestOptions } = options;
   const isAuthEndpoint =
     endpoint.includes("/api/auth/login") ||
     endpoint.includes("/api/auth/web-login") ||
@@ -160,7 +159,11 @@ export async function apiFetch<T>(
   }
 
   const headers = new Headers(options.headers || {});
-  if (!headers.has("Content-Type") && options.body !== undefined && !(options.body instanceof FormData)) {
+  if (
+    !headers.has("Content-Type") &&
+    options.body !== undefined &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -254,8 +257,10 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  if (response.ok && responseType === 'blob') return await response.blob() as T;
-  if (response.ok && responseType === 'text') return await response.text() as T;
+  if (response.ok && responseType === "blob")
+    return (await response.blob()) as T;
+  if (response.ok && responseType === "text")
+    return (await response.text()) as T;
 
   // Parse JSON response or problem details
   const contentType = response.headers.get("content-type") || "";
@@ -263,10 +268,12 @@ export async function apiFetch<T>(
     contentType.includes("application/json") ||
     contentType.includes("application/problem+json");
   if (response.ok && !isJson) {
-    if (/application\/(pdf|octet-stream)|^(image|audio|video)\//.test(contentType)) {
-      return await response.blob() as T;
+    if (
+      /application\/(pdf|octet-stream)|^(image|audio|video)\//.test(contentType)
+    ) {
+      return (await response.blob()) as T;
     }
-    return (await response.text() || undefined) as T;
+    return ((await response.text()) || undefined) as T;
   }
   const data = isJson ? await response.json().catch(() => null) : null;
 
@@ -278,4 +285,12 @@ export async function apiFetch<T>(
   }
 
   return data as T;
+}
+
+export interface ProblemDetails {
+  type?: null | string;
+  title?: null | string;
+  status?: null | number | string;
+  detail?: null | string;
+  instance?: null | string;
 }

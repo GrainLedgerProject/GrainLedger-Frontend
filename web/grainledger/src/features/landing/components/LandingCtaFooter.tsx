@@ -27,10 +27,10 @@ export const LandingCtaFooter: React.FC = () => {
                 to={isAuthenticated ? "/home" : "/sign-in"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-ink-primary hover:bg-white/95 shadow-lg transition-all"
               >
-                <span>
+                <span className="text-black">
                   {isAuthenticated ? "Vào Home" : "Đăng nhập vào hệ thống"}
                 </span>
-                <ArrowRight size={15} weight="bold" />
+                <ArrowRight className="text-black" size={15} weight="bold" />
               </Link>
             </motion.div>
           </div>

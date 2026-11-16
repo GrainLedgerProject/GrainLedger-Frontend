@@ -149,7 +149,7 @@ export const StockOverviewPage: React.FC = () => {
         <div>
           <span
             data-ui-detail="secondary"
-            className="text-xs font-mono font-bold text-accent-primary uppercase tracking-wider block"
+            className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
             {t("mill.stock.headerBadge", "SỔ CÁI TỒN KHO & ĐỊNH DANH LÔ")}
           </span>
