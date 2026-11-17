@@ -10,7 +10,7 @@ import { useAuth } from './AuthProvider';
 import type { RecoveryFailure } from './password-recovery';
 import { createPasswordReset, resetPasswordErrors } from './password-reset';
 
-type Props = { initialEmail: string; locale: 'vi' | 'en'; blurTarget: GlassViewProps['blurTarget'];
+type Props = { initialEmail: string; locale: 'vi' | 'en'; blurTarget?: GlassViewProps['blurTarget'];
   onRequestCode: () => void; onBackToSignIn: () => void };
 
 export function PasswordResetForm({ initialEmail, locale, blurTarget, onRequestCode, onBackToSignIn }: Props) {

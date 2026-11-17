@@ -3,15 +3,20 @@ import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp,
 
 import { useAppTheme } from '@/theme/ThemeProvider';
 
-// Landing-only presentation: the rest of the application keeps its Glass design.
 export function useLandingAppearance() {
   const { theme } = useAppTheme();
-  const dark = theme.scheme === 'dark';
-  return { theme, palette: {
-    background: dark ? '#000000' : '#F2F2F7', surface: dark ? '#1C1C1E' : '#FFFFFF',
-    grouped: dark ? '#2C2C2E' : '#E5E5EA', text: dark ? '#F2F2F7' : '#1C1C1E',
-    secondary: dark ? '#AEAEB2' : '#636366', separator: dark ? '#38383A' : '#D1D1D6',
-  } };
+  const c = theme.colors;
+  return {
+    theme,
+    palette: {
+      background: c.backgroundGrouped,
+      surface: c.surface,
+      grouped: c.surfaceRaised,
+      text: c.textPrimary,
+      secondary: c.textSecondary,
+      separator: c.border,
+    },
+  };
 }
 
 type ControlProps = Omit<PressableProps, 'style' | 'children'> & { label: string; kind?: 'primary' | 'plain' | 'choice';

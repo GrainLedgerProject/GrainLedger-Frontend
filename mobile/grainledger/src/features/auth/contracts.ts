@@ -1,5 +1,9 @@
 /** Source: web src/api/auth.ts and shared/types/roles.ts. No browser-cookie imports. */
 import { ApiError as AuthError } from '../../services/api/errors';
+import { safeStockDetailPath } from '../../navigation/stock-route';
+import { safeReceivingPath } from '../../navigation/mill-route';
+import { safeCompliancePath, type CompliancePath } from '../../navigation/compliance-route';
+import { safeGovernancePath, type GovernancePath } from '../../navigation/governance-route';
 export { AuthError };
 export interface SessionUserDto {
   id: string; email: string; displayName: string; phoneNumber: string | null;
@@ -69,8 +73,13 @@ export function parseTokens(value: unknown): IssuedTokens & { user: AuthUser; ex
   return { accessToken, refreshToken, tokenType: value.tokenType, expiresIn: value.expiresIn,
     user: parseUser(value.user), expiresAt };
 }
-export function safeReturnPath(value: unknown): '/home' | '/stock' | '/settings/profile' {
-  return value === '/stock' || value === '/settings/profile' ? value : '/home';
+export function safeReturnPath(value: unknown): '/home' | '/stock' | '/settings/profile' | `/stock/lots/${string}` | '/mill/receiving' | `/mill/receiving/${string}` | '/field/farmers/new' | CompliancePath | GovernancePath {
+  return value === '/stock' || value === '/settings/profile' || value === '/field/farmers/new' ? value
+    : safeStockDetailPath(value)
+    ?? safeReceivingPath(value)
+    ?? safeCompliancePath(value)
+    ?? safeGovernancePath(value)
+    ?? '/home';
 }
 export function validateLogin(email: string, password: string) {
   return { email: !email.trim() ? 'Enter your email.' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? 'Enter a valid email.' : undefined,

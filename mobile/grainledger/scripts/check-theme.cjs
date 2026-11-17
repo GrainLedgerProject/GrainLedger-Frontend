@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../src/theme/tokens.ts'), '
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const sandbox = { exports: {}, require: (name) => {
   assert.equal(name, 'react-native');
-  return { Platform: { select: (options) => options.default } };
+  return { Platform: { select: (options) => options.default }, StyleSheet: { hairlineWidth: 1 } };
 } };
 vm.runInNewContext(compiled, sandbox);
 const { palettes, resolveColorScheme, isThemeMode } = sandbox.exports;

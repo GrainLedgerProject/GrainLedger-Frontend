@@ -17,14 +17,21 @@ src/app/_layout.tsx                 Native root Stack; anchor index
   (tabs)/_layout.tsx                Authenticated Expo Router JS tabs; history back
     home.tsx                       /home — Phase 8 role-scoped dashboard
     stock/_layout.tsx              Native Stock stack; anchor index
-      index.tsx                    /stock — Stock placeholder
+      index.tsx                    /stock — Phase 9 read-only stock list/search/stage filters/paging
+      lots/[lotId].tsx             /stock/lots/:lotId — Phase 9 lot detail/positions/origin/restrictions
     settings/_layout.tsx           Native Account stack; anchor profile
       profile.tsx                  /settings/profile — session identity/logout; profile editing deferred
+  mill/_layout.tsx                 Native Mill stack
+    receiving/_layout.tsx          Native Receiving stack; anchor index
+      index.tsx                    /mill/receiving — Phase 9 / Group 4 receiving tasks list/filters/facility context
+      [id].tsx                     /mill/receiving/:id — Phase 9 / Group 4 receiving task detail/items/history
+  field/_layout.tsx                Authenticated native Field stack
+    farmers/new.tsx                /field/farmers/new — farmer management list/search/create/edit/delete; PO/MA
 ```
 
-Phase 8 Home reads only authorized dashboard sources. Stock remains a placeholder; Account shows session/logout only. Phase 6 protects all three common destinations for all seven roles, matching web route guards. No role workspace destinations are fabricated. `/explore` remains outside the shell; unused starter tabs are not mounted.
+Phase 8 Home reads only authorized dashboard sources. Phase 9 Stock 4.1 implements the read-only inventory list; 4.2 adds addressable lot detail with server-provided position balances/origin/restrictions. Account shows session/logout only. Phase 6 protects all three common destinations for all seven roles, matching web route guards. No role workspace destinations are fabricated. `/explore` remains outside the shell; unused starter tabs are not mounted.
 
-Future hierarchy remains aligned to the web inventory: `/stock/lots/:lotId` becomes `stock/lots/[lotId].tsx` in the Stock stack; `/settings/security` belongs to the Account stack. `/sign-in` and `/forgot-password` are public root routes; `/invite/:token` retains its path when later authorized. Admin/field/mill/compliance/export/risk/events retain exact prefixes/parameters in later branches. Do not create their placeholders/links prematurely. Role-specific navigation/guards require each feature's audited access policy.
+Stock detail now maps `/stock/lots/:lotId` to `stock/lots/[lotId].tsx` in the Stock stack, with list entry/back and canonical safe post-login return. Future `/settings/security` belongs to the Account stack. `/sign-in` and `/forgot-password` are public root routes; `/invite/:token` retains its path when later authorized. Admin/field/mill/compliance/export/risk/events retain exact prefixes/parameters in later branches. Do not create their placeholders/links prematurely. Role-specific navigation/guards require each feature's audited access policy.
 
 `src/navigation/tabs.ts` centralizes the three destinations/icons and SDK 58 tab-event policy. FloatingTabBar uses SDK 58 emitter/navigateToTab, honoring cancellation/re-selection and emitting long-press events. The custom pill reserves normal layout space, includes bottom/side insets, measures its full height and publishes that measurement to tab consumers. iOS icons change outline/fill; all platforms change icon tint, background and label emphasis. Tab scenes use a 160ms opacity fade, disabled when reduced motion is requested. Root and nested stacks remain native.
 
@@ -144,9 +151,9 @@ Each item delivers one reviewable slice and uses the per-screen acceptance gate 
 
 ### 3. Field and offline procurement
 
-- [ ] 3.1 Native owner-scoped draft/reference-cache adapter; verify switching accounts cannot expose another owner's records.
-- [ ] 3.2 Farmer list/search/detail adapter and UI; validate unknown response using source page.
-- [ ] 3.3 Farmer create/edit/duplicate handling; preserve source delete rules if exposed.
+- [ ] 3.1 Farmer-only owner/origin/access-scoped reference cache delivered with first Field screen. Generic draft/full receipt-reference adapters remain unfinished; native isolation/restart acceptance pending.
+- [ ] 3.2 Farmer list/search and source row details implemented at `/field/farmers/new`, strict array/items parser, real GET and honest limited/cache states; 14 Field fixture groups pass. No unused GET-farmer detail route invented; live/native acceptance pending.
+- [ ] 3.3 Same-screen create/edit/delete confirmation implemented with exact source envelopes, versions/contact semantics and operation IDs. Backend conflicts handled; unused duplicate-check response not guessed. Live duplicate/version/delete rules and native acceptance pending; no offline farmer outbox.
 - [ ] 3.4 Plot list/detail and farmer/season lookups; verify source relationships.
 - [ ] 3.5 Plot create/edit with native coordinate picker; verify source geometry and validation.
 - [ ] 3.6 Crop-season and plot-season maintenance; verify association/update/delete contracts independently.
@@ -160,10 +167,10 @@ Each item delivers one reviewable slice and uses the per-screen acceptance gate 
 
 ### 4. Stock and mill ledger
 
-- [ ] 4.1 Stock list/filter/paging; verify tenant/facility grants and mass formatting.
-- [ ] 4.2 Lot detail/positions/restrictions; preserve source detail behavior and allowed actions.
-- [ ] 4.3 Receiving task list/detail and facility context; verify role-scoped visibility.
-- [ ] 4.4 Receiving measurement entry; verify units, source validation and backend rejection details.
+- [ ] 4.1 Stock list/filter/paging implementation delivered in Phase 9: shared Glass UI, real GET, source filters, confirmed-metadata paging and exact current-page decimal totals; seven fixtures/lint/typecheck/navigation/theme pass. Live tenant/facility grants, summary-vs-position response discrepancy and native acceptance remain open (PROGRESS/API_MAPPING).
+- [ ] 4.2 Implementation delivered in Phase 9: authenticated dynamic detail route, list entry/back/safe login return, real GET-lot, optional summary/position balances/origin/restrictions and full request/empty/error states. Nine detail fixtures, existing Stock/Auth/navigation/theme checks, lint/typecheck pass. No source lot mutations exist to port. Deployed fields/grants and native acceptance remain open; source hardcoded origin examples are not copied (PROGRESS/API_MAPPING).
+- [ ] 4.3 Implementation delivered in Phase 9 / Group 4: authenticated /mill/receiving and /mill/receiving/:id routes, facility context picker, role-scoped guards (MO/MM/MA allowed, others denied), KPI statistics, filters, ISO 22095 ±0.5% tolerance variance calculation, procurement items breakdown, and measurement/review history. Seven receiving test fixtures, typecheck, lint, and all regression suites pass. Measurement entry (4.4) and reconciliation reviews (4.5) deferred as planned (PROGRESS/API_MAPPING).
+- [ ] 4.4 Implementation delivered: in-detail MO/MA measurement form, source KG/version/gross-net-zero-tare/single-item POST envelope, required/step/Decimal validation, conflict/uncertain errors, duplicate suppression and success reload. Nine measurement groups plus prior receiving/auth/navigation/theme and typecheck/lint pass. Source task-ID item linkage, missing-version fallback and live/native acceptance remain open; 4.5 review not started.
 - [ ] 4.5 Receiving review/reconciliation actions; verify authorized transitions.
 - [ ] 4.6 Operation lookups/draft/input-output lines; preserve decimal math and server policy inputs.
 - [ ] 4.7 Operation submission/confirmation/commit actions exposed by the source page; verify mass-balance rejection.
@@ -172,12 +179,12 @@ Each item delivers one reviewable slice and uses the per-screen acceptance gate 
 
 ### 5. Compliance, risk, audit and blend decisions
 
-- [ ] 5.1 Lab sample list/detail; verify filters and source scopes.
-- [ ] 5.2 Lab sample capture and handovers; preserve chain-of-custody contracts.
-- [ ] 5.3 Lab report list/detail/results; preserve MRL/assessment and version evidence.
-- [ ] 5.4 Lab report create/edit and native file attachment; verify multipart requirements.
-- [ ] 5.5 Lab report confirm/delete/file viewing; verify allowed transitions and authenticated file access.
-- [ ] 5.6 Safety-margin policy read/edit; preserve version/effective-date rules from source.
+- [ ] 5.1 Implementation delivered: CM-only `/compliance/lab-samples`, source page-local search/status/KPIs, explicit hasMore paging, selected-sample detail and real GET handover history; Glass HIG UI and distinct loading/data/empty/error states. Ten contract/access/race/transport fixtures plus auth/dashboard/navigation/theme checks pass. Live company grants/DTOs and native acceptance remain open (PROGRESS/API_MAPPING). Existing reads reused by authorized 5.2–5.6 batch.
+- [ ] 5.2 Implementation delivered: CM-only sample capture `/new` and LAB_DISPATCH handover form; exact source v2/v1 POST envelopes, stable unchanged-retry IDs/time, validation/request/uncertain states and actual list/history reload. Live chain-of-custody/grants/native acceptance pending.
+- [ ] 5.3 Implementation delivered: real report list/detail routes, strict nested result/evidence/assessment DTOs, source local filters/KPIs/hasMore; no fabricated MRL threshold. Live scope/DTO/native acceptance pending.
+- [ ] 5.4 Implementation delivered: report create/PUT edit, multiple actual result sets/tests, system DocumentPicker and JSON/base64 attachment (source is NOT multipart). Preserve report/set IDs and receivedAt. Verify deployed null-file retention/replacement/company-only/update behavior; no routed web edit consumer.
+- [ ] 5.5 Implementation delivered: explicit confirm checks/as-received with source matches [], typed deletion confirmation and authenticated file GET/native preview. Source DELETE wrapper lacks routed consumer: chosen v1 envelope, allowed transitions and backend concurrency need deployed verification. Native preview/document provider acceptance pending.
+- [ ] 5.6 PARTIAL / contract gap: CM/MA safety simulator and explicit unavailable server-policy state delivered. Historical web demo constants/formula are labeled and not persisted/applied. Source Save has no HTTP call; real policy read/save/version/effective-date/permissions require a confirmed backend contract. This remains the next open implementation requirement. STOP before 5.7.
 - [ ] 5.7 Residue profile list/detail; verify version and company permission scope.
 - [ ] 5.8 Residue profile publish/bind/retire actions exposed by source; verify source action contracts.
 - [ ] 5.9 Residue policy settings and report-selection/review workflows; split per action after page inspection.

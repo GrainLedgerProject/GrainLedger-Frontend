@@ -24,7 +24,7 @@ export function FloatingTabBar({ state, descriptors, emitter, navigateToTab, ins
           const { options } = descriptors[route.key];
           const selected = state.index === index;
           const label = typeof options.tabBarLabel === 'string' ? options.tabBarLabel : options.title ?? route.name;
-          const color = selected ? c.onPrimary : c.textSecondary;
+          const color = selected ? c.primary : c.textSecondary;
 
           return (
             <Pressable key={route.key} accessibilityRole="tab" accessibilityState={{ selected }}
@@ -35,7 +35,7 @@ export function FloatingTabBar({ state, descriptors, emitter, navigateToTab, ins
               onFocus={() => setFocusedKey(route.key)} onBlur={() => setFocusedKey(null)}
               style={({ pressed }) => [styles.tab, { minHeight: theme.layout.minTouchTarget,
                 borderRadius: theme.radius.control, paddingVertical: s.sm, paddingHorizontal: s.xs,
-                backgroundColor: selected ? c.primary : pressed ? c.surfaceRaised : 'transparent' },
+                backgroundColor: selected ? c.selectedSurface : pressed ? c.surfaceRaised : 'transparent' },
                 focusedKey === route.key ? { outlineWidth: 2, outlineOffset: 2, outlineColor: c.focus } : null]}>
               <View pointerEvents="none" accessible={false}>
                 {options.tabBarIcon?.({ focused: selected, color, size: 24 })}

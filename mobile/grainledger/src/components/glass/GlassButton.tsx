@@ -39,7 +39,7 @@ export function GlassButton({ label, variant = 'primary', loading = false, loadi
         <GlassView pointerEvents="none" padding="none" cornerRadius="control" blurTarget={blurTarget}
           opaque={opaque || blocked || variant === 'primary'}
           style={{ borderWidth: 1, borderRadius: theme.radius.control,
-            borderColor: pressed ? theme.colors.focus : theme.colors.controlBorder }}
+            borderColor: pressed ? theme.colors.focus : variant === 'primary' ? theme.colors.primary : theme.colors.border }}
           contentContainerStyle={[styles.content, { minHeight: theme.layout.minTouchTarget,
             paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.md, gap: theme.spacing.sm,
             backgroundColor: background ?? (pressed ? theme.colors.surfaceRaised : undefined) }]}>

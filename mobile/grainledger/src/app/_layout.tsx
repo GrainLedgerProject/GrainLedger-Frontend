@@ -43,6 +43,12 @@ function RootNavigator() {
         <Stack.Screen name="forgot-password" options={{ title: 'Password recovery' }} />
         <Stack.Protected guard={canAccess()} redirectTo={{ pathname: '/sign-in', params: { returnUrl: safeReturnPath(pathname) } }}>
           <Stack.Screen name="(tabs)" options={{ title: 'GrainLedger' }} />
+          <Stack.Screen name="mill" options={{ title: 'Mill' }} />
+          <Stack.Screen name="field" options={{ title: 'Field' }} />
+          <Stack.Screen name="compliance" options={{ title: 'Compliance' }} />
+          <Stack.Screen name="risk" options={{ title: 'HOLD' }} />
+          <Stack.Screen name="events" options={{ title: 'History' }} />
+          <Stack.Screen name="export" options={{ title: 'Plan review' }} />
         </Stack.Protected>
         <Stack.Screen name="theme-demo" options={{ title: 'Theme studio', headerShown: true }} />
       </Stack>

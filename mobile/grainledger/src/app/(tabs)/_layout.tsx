@@ -1,5 +1,4 @@
 import { BlurTargetView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router/js-tabs';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
@@ -22,9 +21,9 @@ export default function AppTabLayout() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.backgroundGrouped }}>
       <BlurTargetView ref={blurTarget} pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={theme.gradients.ambient} style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.backgroundGrouped }]} />
       </BlurTargetView>
       <Tabs backBehavior="history" tabBar={(props) => <FloatingTabBar {...props} blurTarget={blurTarget} />}
         screenOptions={{ headerShown: false, lazy: true, animation: reducedMotion ? 'none' : 'fade',

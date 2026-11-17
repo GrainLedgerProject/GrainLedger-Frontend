@@ -181,6 +181,7 @@ export function createAuthClient(options: ClientOptions) {
       data: { email: body.email.trim(), otp: body.otp, newPassword: body.newPassword }, signal });
   }
   return { configurationError, initialize, login, logout, refresh, request, getSession, api, forgotPassword, resetPassword,
+    updateUser: (user: AuthUser) => { publish({ user }); },
     getRequestScope: () => snapshot.status === 'authenticated' && snapshot.user
       ? JSON.stringify([generation, snapshot.user.id, snapshot.user.organizationId, snapshot.user.normalizedRole, [...snapshot.user.permissions].sort()]) : null,
     getSnapshot: () => snapshot, getServerSnapshot: () => initial,

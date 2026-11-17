@@ -52,8 +52,8 @@ export function GlassView({ children, ref, blurTarget, opaque = false, intensity
           blurMethod="dimezisBlurViewSdk31Plus" tint={theme.scheme} intensity={blurIntensity} style={StyleSheet.absoluteFill} />}
         <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,
           { backgroundColor: solid ? theme.colors.surface : theme.colors.glass }]} />
-        <LinearGradient pointerEvents="none" accessible={false} colors={[theme.colors.glassBorder, 'transparent']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.highlight} />
+        {solid ? null : <LinearGradient pointerEvents="none" accessible={false} colors={[theme.colors.glassBorder, 'transparent']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.highlight} />}
         <InsideGlass.Provider value={true}>
           <View style={[{ padding: padding === 'none' ? 0 : theme.spacing[padding] }, contentContainerStyle]}>
             {children}
