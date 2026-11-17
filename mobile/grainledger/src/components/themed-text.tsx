@@ -1,4 +1,3 @@
-import { typography } from '../theme/tokens';
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
@@ -12,56 +11,47 @@ export type ThemedTextProps = TextProps & {
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
 
-  return (
-    <Text
-      style={[
-        { color: theme.colors[themeColor ?? 'label'] },
-        styles[type],
-        type === 'linkPrimary' && { color: theme.colors.accent },
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
 }
 
 const styles = StyleSheet.create({
   small: {
-    ...typography.subheadline,
+    fontSize: 14,
     lineHeight: 20,
     fontWeight: 500,
   },
   smallBold: {
-    ...typography.subheadline,
+    fontSize: 14,
     lineHeight: 20,
     fontWeight: 700,
   },
   default: {
-    ...typography.callout,
+    fontSize: 16,
     lineHeight: 24,
     fontWeight: 500,
   },
   title: {
-    ...typography.body,
+    fontSize: 48,
     fontWeight: 600,
     lineHeight: 52,
   },
   subtitle: {
-    ...typography.largeTitle,
+    fontSize: 32,
     lineHeight: 44,
     fontWeight: 600,
   },
   link: {
     lineHeight: 30,
-    ...typography.subheadline,
+    fontSize: 14,
   },
   linkPrimary: {
     lineHeight: 30,
-    ...typography.subheadline,
+    fontSize: 14,
+    color: '#3c87f7',
   },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,
-    ...typography.caption,
+    fontSize: 12,
   },
 });

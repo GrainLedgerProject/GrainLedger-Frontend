@@ -1,4 +1,3 @@
-import { radii } from '../../theme/tokens';
 import { SymbolView } from 'expo-symbols';
 import { PropsWithChildren, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
@@ -18,12 +17,12 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
       <Pressable
         style={({ pressed }) => [styles.heading, pressed && styles.pressedHeading]}
         onPress={() => setIsOpen((value) => !value)}>
-        <ThemedView type="surfaceSecondary" style={styles.button}>
+        <ThemedView type="backgroundElement" style={styles.button}>
           <SymbolView
             name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
             size={14}
             weight="bold"
-            tintColor={theme.colors.label}
+            tintColor={theme.text}
             style={{ transform: [{ rotate: isOpen ? '-90deg' : '90deg' }] }}
           />
         </ThemedView>
@@ -32,7 +31,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
       </Pressable>
       {isOpen && (
         <Animated.View entering={FadeIn.duration(200)}>
-          <ThemedView type="surfaceSecondary" style={styles.content}>
+          <ThemedView type="backgroundElement" style={styles.content}>
             {children}
           </ThemedView>
         </Animated.View>
@@ -53,7 +52,7 @@ const styles = StyleSheet.create({
   button: {
     width: Spacing.four,
     height: Spacing.four,
-    borderRadius: radii.sm,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },

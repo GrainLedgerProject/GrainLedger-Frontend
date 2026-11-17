@@ -1,12 +1,5 @@
-import { Redirect } from 'expo-router';
-import { useAuthStore } from '../store/authStore';
+import { LandingScreen } from '@/features/landing/LandingScreen';
 
-export default function Index() {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return null;
-  }
-
-  return <Redirect href={isAuthenticated ? '/(tabs)' : '/login'} />;
+export default function LandingRoute() {
+  return <LandingScreen />;
 }

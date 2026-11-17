@@ -1,41 +1,29 @@
+/**
+ * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
+ * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://unistyl.es/), etc.
+ */
+
 import '@/global.css';
+
 import { Platform } from 'react-native';
-import { darkColors, layout, lightColors, spacing, type ThemeColors } from '../theme';
+import { palettes, fontFamilies, spacing } from '@/theme/tokens';
 
-export const Colors = {
-  light: {
-    ...lightColors,
-    text: lightColors.label,
-    textSecondary: lightColors.secondaryLabel,
-    backgroundElement: lightColors.surfaceSecondary,
-    backgroundSelected: lightColors.accentMuted,
-  },
-  dark: {
-    ...darkColors,
-    text: darkColors.label,
-    textSecondary: darkColors.secondaryLabel,
-    backgroundElement: darkColors.surfaceSecondary,
-    backgroundSelected: darkColors.accentMuted,
-  },
-} as const;
-
-export type ThemeColor = keyof ThemeColors;
-
-export const Fonts = Platform.select({
-  ios: { sans: 'System', serif: 'ui-serif', rounded: 'ui-rounded', mono: 'ui-monospace' },
-  android: { sans: 'sans-serif', serif: 'serif', rounded: 'sans-serif', mono: 'monospace' },
-  default: { sans: 'system-ui', serif: 'serif', rounded: 'system-ui', mono: 'monospace' },
+const legacyColors = (colors: typeof palettes.light) => ({
+  text: colors.textPrimary, background: colors.background, backgroundElement: colors.surface,
+  backgroundSelected: colors.surfaceRaised, textSecondary: colors.textSecondary,
 });
-
+export const Colors = { light: legacyColors(palettes.light), dark: legacyColors(palettes.dark) };
+export type ThemeColor = keyof typeof Colors.light;
+export const Fonts = fontFamilies;
 export const Spacing = {
-  half: spacing.xxs,
+  half: spacing.xs / 2,
   one: spacing.xs,
   two: spacing.sm,
   three: spacing.lg,
   four: spacing.xl,
   five: spacing.xxl,
-  six: spacing.huge,
+  six: spacing.hero,
 } as const;
 
-export const BottomTabInset = layout.tabBarHeight;
-export const MaxContentWidth = layout.maxContentWidth;
+export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const MaxContentWidth = 800;

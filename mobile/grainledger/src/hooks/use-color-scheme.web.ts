@@ -1,18 +1,13 @@
 import { useSyncExternalStore } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 
+// Stable snapshots keep the server and first client render consistent.
 const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
-/**
- * To support static rendering, this value needs to be re-calculated on the client side for web
- */
 export function useColorScheme() {
-  const isClient = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false
-  );
+  const hasHydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   const colorScheme = useRNColorScheme();
-
-  return isClient ? colorScheme : 'light';
+  return hasHydrated ? colorScheme : 'light';
 }

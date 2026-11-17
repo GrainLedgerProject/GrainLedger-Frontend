@@ -1,4 +1,3 @@
-import { radii } from '../theme/tokens';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
@@ -133,7 +132,7 @@ const styles = StyleSheet.create({
     height: 71,
   },
   background: {
-    borderRadius: radii.sheet,
+    borderRadius: 40,
     experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
     width: 128,
     height: 128,
