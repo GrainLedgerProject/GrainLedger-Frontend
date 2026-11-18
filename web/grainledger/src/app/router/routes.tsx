@@ -180,7 +180,17 @@ const BlendPlansPendingPage = React.lazy(() =>
   })),
 );
 const ResidueProfilesPage = React.lazy(() =>
-  import("@/features/compliance/pages/ResidueProfilesPage").then((m) => ({ default: m.ResidueProfilesPage })),
+  import("@/features/compliance/pages/ResidueProfilesPage").then((m) => ({
+    default: m.ResidueProfilesPage,
+  })),
+);
+
+const CompanyResiduePoliciesPage = React.lazy(() =>
+  import("@/features/compliance/pages/CompanyResiduePoliciesPage").then(
+    (m) => ({
+      default: m.CompanyResiduePoliciesPage,
+    }),
+  ),
 );
 
 // Audit
@@ -579,7 +589,24 @@ export const router = createBrowserRouter(
 
         {
           path: "/compliance/residue-profiles",
-          element: <ProtectedRoute><L><ResidueProfilesPage /></L></ProtectedRoute>,
+          element: (
+            <ProtectedRoute>
+              <L>
+                <ResidueProfilesPage />
+              </L>
+            </ProtectedRoute>
+          ),
+        },
+
+        {
+          path: "/compliance/company-policies",
+          element: (
+            <ProtectedRoute>
+              <L>
+                <CompanyResiduePoliciesPage />
+              </L>
+            </ProtectedRoute>
+          ),
         },
 
         // --- Export Planning & Shipment (Export Officer & Customer Manager) ---

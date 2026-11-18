@@ -178,18 +178,8 @@ export const ledgerEndpoints = {
 
   // Quarantine Holds
   getHolds: () => apiFetch<unknown>("/api/ledger/holds"),
-  issueHold: (req: object) =>
-    apiFetch<unknown>("/api/ledger/holds", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
   createHold: (req: object) =>
     apiFetch<unknown>("/api/ledger/holds", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-  respondHold: (id: string, req: object) =>
-    apiFetch<unknown>(`/api/ledger/holds/${encodeURIComponent(id)}/respond`, {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -270,25 +260,9 @@ export const ledgerEndpoints = {
   getReceivingTasks: () => apiFetch<unknown>("/api/ledger/receiving-tasks"),
   getReceiving: (id: string) =>
     apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
-  postReceivingMeasurements: (id: string, req: object) =>
-    apiFetch<unknown>(
-      `/api/ledger/receiving/${encodeURIComponent(id)}/measurements`,
-      {
-        method: "POST",
-        body: JSON.stringify(req),
-      },
-    ),
   recordReceivingMeasurement: (id: string, req: object) =>
     apiFetch<unknown>(
       `/api/ledger/receiving/${encodeURIComponent(id)}/measurements`,
-      {
-        method: "POST",
-        body: JSON.stringify(req),
-      },
-    ),
-  postReceivingReviews: (id: string, req: object) =>
-    apiFetch<unknown>(
-      `/api/ledger/receiving/${encodeURIComponent(id)}/reviews`,
       {
         method: "POST",
         body: JSON.stringify(req),

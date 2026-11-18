@@ -121,14 +121,6 @@ export const procurementEndpoints = {
       `/api/procurement-reference-data${qs}`,
     );
   },
-  getProcurementReferenceData: (params?: Record<string, string | number>) => {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    return apiFetch<ProcurementReferenceResponse>(
-      `/api/procurement-reference-data${qs}`,
-    );
-  },
   getSourceLot: (id: string) =>
     apiFetch<unknown>(`/api/source-lots/${encodeURIComponent(id)}`),
 

@@ -17,6 +17,7 @@ import {
   Flask,
   Globe,
   MagnifyingGlass,
+  ShieldCheck,
   SlidersHorizontal,
   WarningCircle,
   X,
@@ -27,7 +28,7 @@ const panel =
 const button =
   "p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors";
 const field =
-  "min-h-11 w-full rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-sm text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/15 disabled:opacity-50";
+  "w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
 const alert =
   "flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger";
 
@@ -149,6 +150,13 @@ export function ResidueProfilesPage() {
   };
   const publishedLabel = t("residueProfiles.published", "Đã công bố");
   const retiredLabel = t("residueProfiles.retired", "Đã ngừng sử dụng");
+  const StatusFilterIcon =
+    status === "published"
+      ? CheckCircle
+      : status === "retired"
+        ? Archive
+        : ShieldCheck;
+  const ScopeFilterIcon = scopeFilter === "company" ? Buildings : Globe;
   const scopeLabel = (profile: ResidueProfileVersion) =>
     profile.companyId
       ? t("residueProfiles.companyScope", "Phạm vi công ty")
@@ -198,10 +206,10 @@ export function ResidueProfilesPage() {
           className="flex items-start gap-2.5 rounded-xl border border-functional-balanced-border/40 bg-functional-balanced-bg p-3.5 text-xs text-accent-primary"
         >
           <CheckCircle
-            size={18}
+            size={16}
             weight="fill"
             aria-hidden="true"
-            className="shrink-0"
+            className="absolute left-3 top-2.5 text-ink-tertiary"
           />
           <span>
             {t(
@@ -289,9 +297,9 @@ export function ResidueProfilesPage() {
             </label>
             <div className="relative">
               <MagnifyingGlass
-                size={18}
+                size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-3 text-ink-tertiary"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <input
                 id="residue-search"
@@ -313,18 +321,25 @@ export function ResidueProfilesPage() {
             >
               {t("residueProfiles.status", "Trạng thái")}
             </label>
-            <select
-              id="residue-status"
-              className={field}
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
-              <option value="all">
-                {t("residueProfiles.allStatuses", "Tất cả trạng thái")}
-              </option>
-              <option value="published">{publishedLabel}</option>
-              <option value="retired">{retiredLabel}</option>
-            </select>
+            <span className="relative block">
+              <StatusFilterIcon
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="residue-status"
+                className={field}
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="all">
+                  {t("residueProfiles.allStatuses", "Tất cả trạng thái")}
+                </option>
+                <option value="published">{publishedLabel}</option>
+                <option value="retired">{retiredLabel}</option>
+              </select>
+            </span>
           </div>
           <div>
             <label
@@ -333,22 +348,29 @@ export function ResidueProfilesPage() {
             >
               {t("residueProfiles.scope", "Phạm vi áp dụng")}
             </label>
-            <select
-              id="residue-scope"
-              className={field}
-              value={scopeFilter}
-              onChange={(event) => setScopeFilter(event.target.value)}
-            >
-              <option value="all">
-                {t("residueProfiles.allScopes", "Tất cả phạm vi")}
-              </option>
-              <option value="system">
-                {t("residueProfiles.systemScope", "Phạm vi hệ thống")}
-              </option>
-              <option value="company">
-                {t("residueProfiles.companyScope", "Phạm vi công ty")}
-              </option>
-            </select>
+            <span className="relative block">
+              <ScopeFilterIcon
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="residue-scope"
+                className={field}
+                value={scopeFilter}
+                onChange={(event) => setScopeFilter(event.target.value)}
+              >
+                <option value="all">
+                  {t("residueProfiles.allScopes", "Tất cả phạm vi")}
+                </option>
+                <option value="system">
+                  {t("residueProfiles.systemScope", "Phạm vi hệ thống")}
+                </option>
+                <option value="company">
+                  {t("residueProfiles.companyScope", "Phạm vi công ty")}
+                </option>
+              </select>
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-tertiary/15 pt-3">
@@ -566,7 +588,20 @@ export function ResidueProfilesPage() {
                     status={selected.retirement ? "CLOSED" : "ACTIVE"}
                     label={selected.retirement ? retiredLabel : publishedLabel}
                   />
-                  <span className="rounded-full border border-ink-tertiary/20 px-3 py-1 text-xs text-ink-secondary">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-tertiary/20 px-3 py-1 text-xs text-ink-secondary">
+                    {selected.companyId ? (
+                      <Buildings
+                        size={14}
+                        aria-hidden="true"
+                        className="shrink-0"
+                      />
+                    ) : (
+                      <Globe
+                        size={14}
+                        aria-hidden="true"
+                        className="shrink-0"
+                      />
+                    )}
                     {scopeLabel(selected)}
                   </span>
                   <span className="rounded-full bg-accent-primary/10 px-3 py-1 font-mono text-xs text-accent-primary">

@@ -22,3 +22,19 @@ export interface PageQuery {
   page?: number;
   pageSize?: number;
 }
+
+/** Follow hasMore so catalog selectors and limit tables do not silently stop at page 1. */
+export async function collectPages<T>(
+  load: (
+    query: Required<PageQuery>,
+  ) => Promise<{ items: T[]; hasMore: boolean }>,
+): Promise<T[]> {
+  const items: T[] = [];
+  for (let page = 1; ; page++) {
+    const result = await load({ page, pageSize: 100 });
+    items.push(...result.items);
+    if (!result.hasMore) return items;
+    if (!result.items.length)
+      throw new Error("Invalid pagination response: hasMore without items.");
+  }
+}

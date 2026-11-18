@@ -1,852 +1,1564 @@
-import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { catalogsEndpoints, type ActiveSubstanceDto } from "@/api/catalogs";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import {
-  ShieldCheck,
-  Plus,
   ArrowsClockwise,
-  Globe,
-  Tag,
-  Flask,
-  Calendar,
+  ArrowRight,
+  CalendarBlank,
   CheckCircle,
+  FileArrowUp,
+  FileText,
+  Flask,
+  Globe,
+  ListBullets,
+  MagnifyingGlass,
+  NotePencil,
+  Plus,
+  ShieldCheck,
+  SquaresFour,
+  Trash,
   WarningCircle,
   X,
-  FileArrowUp,
 } from "@phosphor-icons/react";
+import { catalogsEndpoints, type MrlVersionDto } from "@/api/catalogs";
+import { ApiError } from "@/api/client";
+import { collectPages } from "@/api/query";
+import { useAuthStore } from "@/app/store/authStore";
+import { confirmAction } from "@/app/store/feedbackStore";
+import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { Modal } from "@/components/Modal";
+import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { mrlDecimal, mrlImportSchema } from "../model/mrlImport";
 
-interface MrlTableItem {
-  id: string;
-  marketName: string;
-  commodityName: string;
-  effectiveFrom: string;
-  effectiveTo?: string;
-  sourceRef: string;
-  isPublished: boolean;
-  limits?: Array<{
-    substanceId: string;
-    substanceName: string;
-    substanceCode: string;
-    limitValue: number;
-    unit: string;
-    safeMarginValue: number;
-  }>;
-}
+const panel =
+  "rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs";
+const field =
+  "w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
+const iconButton =
+  "p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50";
+const button =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-ink-tertiary/20 bg-surface-base px-4 py-2.5 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary disabled:opacity-50";
+const primary =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent-primary px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-accent-primary-dim disabled:opacity-50";
+const alert =
+  "flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger";
+const fieldLabel = "block space-y-1.5 text-xs font-semibold text-ink-secondary";
 
-interface LookupItem {
-  id: string;
-  name: string;
-  code?: string;
-}
-
-function pageItems<T>(response: unknown): T[] {
-  if (Array.isArray(response)) return response as T[];
-  if (
-    response &&
-    typeof response === "object" &&
-    "items" in response &&
-    Array.isArray(response.items)
-  )
-    return response.items as T[];
-  return [];
-}
-
-export const MrlVersionsPage: React.FC = () => {
+function MrlDialog({
+  open,
+  title,
+  subtitle,
+  icon,
+  onClose,
+  busy,
+  children,
+  footer,
+  className = "w-[48rem]",
+}: {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  icon: ReactNode;
+  onClose: () => void;
+  busy: boolean;
+  children: ReactNode;
+  footer?: ReactNode;
+  className?: string;
+}) {
   const { t } = useTranslation();
-  const [versions, setVersions] = useState<MrlTableItem[]>([]);
-  const [markets, setMarkets] = useState<LookupItem[]>([]);
-  const [commodities, setCommodities] = useState<LookupItem[]>([]);
-  const [substances, setSubstances] = useState<ActiveSubstanceDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Detail & Limits Modal
-  const [selectedVersion, setSelectedVersion] = useState<MrlTableItem | null>(
-    null,
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      ariaLabel={title}
+      className={className}
+      closeOnBackdrop={!busy}
+    >
+      <div className={`${panel} overflow-hidden`}>
+        <header className="flex items-center justify-between gap-3 border-b border-ink-tertiary/15 bg-surface-raised p-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+              {icon}
+            </div>
+            <div className="min-w-0">
+              {subtitle && (
+                <p className="text-xs text-ink-secondary">{subtitle}</p>
+              )}
+              <h3 className="break-words font-display text-lg font-bold text-ink-primary">
+                {title}
+              </h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            className={iconButton}
+            aria-label={t("apiAudit.close")}
+            disabled={busy}
+            onClick={onClose}
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </header>
+        <div className="space-y-5 p-4 sm:p-6">{children}</div>
+        {footer && (
+          <footer className="flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 p-4 sm:px-6">
+            {footer}
+          </footer>
+        )}
+      </div>
+    </Modal>
   );
-  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
-  const [selectedSubstanceId, setSelectedSubstanceId] = useState("");
-  const [limitValue, setLimitValue] = useState("0.010");
-  const [limitUnit, setLimitUnit] = useState("mg/kg");
+}
+const localNow = () => {
+  const date = new Date();
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+};
 
-  // Create Version Modal
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importRawJson, setImportRawJson] = useState("");
-  const [createForm, setCreateForm] = useState({
+export function MrlVersionsPage() {
+  const user = useAuthStore((state) => state.user);
+  const scope = [
+    user?.id,
+    user?.organizationId,
+    user?.permissions.toSorted().join("|"),
+  ].join(":");
+  return (
+    <MrlWorkspace
+      key={scope}
+      scope={scope}
+      canManage={Boolean(user?.permissions.includes("platform.configure"))}
+    />
+  );
+}
+
+function MrlWorkspace({
+  scope,
+  canManage,
+}: {
+  scope: string;
+  canManage: boolean;
+}) {
+  const { t, i18n } = useTranslation();
+  const cache = useQueryClient();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editor, setEditor] = useState<"create" | "edit" | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [rawJson, setRawJson] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [stale, setStale] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [marketFilter, setMarketFilter] = useState("");
+  const [lookupOpen, setLookupOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [form, setForm] = useState({
     marketId: "",
     commodityId: "",
-    effectiveFrom: new Date().toISOString().split("T")[0],
-    sourceRef: "Regulation (EC) No 396/2005 - LOQ Standard",
+    effectiveFrom: "",
+    effectiveTo: "",
+    sourceRef: "",
   });
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [versionsRes, marketsRes, commRes, subRes] = await Promise.all([
-        catalogsEndpoints.getMrlVersions().catch(() => []),
-        catalogsEndpoints.getMarkets().catch(() => []),
-        catalogsEndpoints.getCommodities().catch(() => []),
-        catalogsEndpoints.getActiveSubstances().catch(() => []),
+  const [limit, setLimit] = useState({ substanceId: "", value: "" });
+  const [lookup, setLookup] = useState({
+    marketId: "",
+    commodityId: "",
+    decisionAt: localNow(),
+  });
+  const [resolved, setResolved] = useState<MrlVersionDto | null>(null);
+  const listKey = ["mrl-catalog", scope];
+  const detailKey = ["mrl-detail", scope, selectedId];
+  const catalogs = useQuery({
+    queryKey: listKey,
+    retry: false,
+    queryFn: async () => {
+      const [versions, markets, commodities, substances] = await Promise.all([
+        collectPages(catalogsEndpoints.getMrlVersions),
+        collectPages(catalogsEndpoints.getMarkets),
+        collectPages(catalogsEndpoints.getCommodities),
+        collectPages(catalogsEndpoints.getActiveSubstances),
       ]);
-
-      const vItems = pageItems<MrlTableItem>(versionsRes);
-      const mItems = pageItems<LookupItem>(marketsRes);
-      const cItems = pageItems<LookupItem>(commRes);
-      const sItems = pageItems<ActiveSubstanceDto>(subRes);
-
-      setVersions(vItems);
-      setMarkets(mItems);
-      setCommodities(cItems);
-      setSubstances(sItems);
-
-      if (mItems.length > 0 && !createForm.marketId) {
-        setCreateForm((prev) => ({
-          ...prev,
-          marketId: mItems[0].id,
-          commodityId: cItems[0]?.id || "",
-        }));
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t("catalogs.mrl.errorLoad", "Không thể tải danh sách phiên bản MRL."),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  const handleCreateVersion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      await catalogsEndpoints.createMrlVersion({
-        marketId: createForm.marketId,
-        commodityId: createForm.commodityId,
-        effectiveFrom: new Date(createForm.effectiveFrom).toISOString(),
-        effectiveTo: null,
-        sourceRef: createForm.sourceRef,
-      });
-
-      setSuccessMsg(
-        t("catalogs.mrl.successCreate", "Đã tạo thành công phiên bản MRL mới"),
+      return { versions, markets, commodities, substances };
+    },
+  });
+  const detail = useQuery({
+    queryKey: detailKey,
+    enabled: Boolean(selectedId),
+    retry: false,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const resource = await catalogsEndpoints.getMrlVersion(selectedId!);
+      const limits = await collectPages((query) =>
+        catalogsEndpoints.getMrlLimits(selectedId!, query),
       );
-      setIsCreateModalOpen(false);
-      await loadData();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("catalogs.mrl.errorCreate", "Không thể tạo phiên bản MRL."));
-      }
-    } finally {
-      setSubmitting(false);
+      return { ...resource, limits };
+    },
+  });
+  const data = catalogs.data;
+  const selected = detail.data?.data;
+  const editable =
+    canManage &&
+    selected?.status === "DRAFT" &&
+    Boolean(detail.data?.etag) &&
+    !stale &&
+    !detail.isFetching;
+  const label = (version: MrlVersionDto) =>
+    [
+      data?.markets.find((item) => item.id === version.marketId)?.name ||
+        version.marketId,
+      data?.commodities.find((item) => item.id === version.commodityId)?.name ||
+        version.commodityId,
+    ].join(" · ");
+  const date = (value: string) =>
+    new Date(value).toLocaleString(i18n.language === "en" ? "en-GB" : "vi-VN");
+  const toLocal = (value: string) => {
+    const parsed = new Date(value);
+    return new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  };
+  const reportError = (err: unknown) => {
+    if (err instanceof ApiError && err.status === 412) {
+      setStale(true);
+      setError(t("apiAudit.conflict"));
+    } else if (
+      err instanceof ApiError &&
+      (err.status === 404 || err.status === 405)
+    ) {
+      setError(
+        err.problem?.code === "MRL_VERSION_NOT_AVAILABLE"
+          ? t("apiAudit.mrl.notAvailable")
+          : t("apiAudit.unavailable"),
+      );
+    } else {
+      const validation =
+        err instanceof ApiError
+          ? Object.values(err.problem?.errors ?? {})
+              .flat()
+              .join(" · ")
+          : "";
+      setError(
+        validation ||
+          (err instanceof Error ? err.message : t("apiAudit.failed")),
+      );
     }
   };
-
-  const handlePublish = async (versionId: string) => {
-    const confirmed = await confirmAction({
-      title: t("catalogs.mrl.confirmPublishTitle", "Công bố phiên bản MRL"),
-      description: t(
-        "catalogs.mrl.confirmPublish",
-        "Bạn có chắc chắn muốn công bố (Publish) phiên bản MRL này để áp dụng kiểm định xuất khẩu?",
-      ),
-      confirmLabel: t("catalogs.mrl.publish", "Công bố"),
-      variant: "warning",
+  const run = async (action: () => Promise<void>) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await action();
+    } catch (err) {
+      reportError(err);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
+  const refresh = async () => {
+    await cache.invalidateQueries({ queryKey: listKey });
+    if (selectedId) {
+      const result = await detail.refetch();
+      if (result.error) throw result.error;
+      setStale(false);
+    }
+  };
+  const saveVersion = (event: FormEvent) => {
+    event.preventDefault();
+    void run(async () => {
+      const effectiveFrom = new Date(form.effectiveFrom).toISOString();
+      const effectiveTo = form.effectiveTo
+        ? new Date(form.effectiveTo).toISOString()
+        : null;
+      if (effectiveTo && effectiveTo <= effectiveFrom)
+        throw new Error(t("apiAudit.invalidInterval"));
+      const request = {
+        ...form,
+        effectiveFrom,
+        effectiveTo,
+        sourceRef: form.sourceRef.trim(),
+      };
+      if (editor === "edit") {
+        if (!editable || !selected || !selectedId || !detail.data?.etag)
+          throw new Error(t("apiAudit.missingEtag"));
+        await catalogsEndpoints.updateMrlVersion(
+          selectedId,
+          {
+            sourceRef: request.sourceRef,
+            ...(form.effectiveFrom !== toLocal(selected.effectiveFrom)
+              ? { effectiveFrom }
+              : {}),
+            ...(form.effectiveTo !==
+            (selected.effectiveTo ? toLocal(selected.effectiveTo) : "")
+              ? { effectiveTo }
+              : {}),
+          },
+          detail.data.etag,
+        );
+      } else await catalogsEndpoints.createMrlVersion(request);
+      setEditor(null);
+      await refresh();
+      setNotice(t("apiAudit.saved"));
     });
-    if (!confirmed) return;
-
-    try {
-      await catalogsEndpoints.publishMrlVersion(versionId);
-      setSuccessMsg(
-        t(
-          "catalogs.mrl.successPublish",
-          "Đã công bố phiên bản MRL thành công. Thuật toán phối trộn sẽ áp dụng ngay lập tức.",
-        ),
-      );
-      await loadData();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t("catalogs.mrl.errorPublish", "Không thể công bố phiên bản."),
-        );
-      }
-    }
   };
-
-  const handleOpenLimits = async (version: MrlTableItem) => {
-    setSelectedVersion(version);
-    setIsLimitModalOpen(true);
-    setSelectedSubstanceId(substances[0]?.id || "");
-    try {
-      const limits = await catalogsEndpoints.getMrlLimits(version.id);
-      setSelectedVersion({
-        ...version,
-        limits: Array.isArray(limits) ? limits : [],
-      });
-    } catch {
-      // Keep version
-    }
-  };
-
-  const handleAddLimit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedVersion || !selectedSubstanceId) return;
-
-    try {
+  const saveLimit = (event: FormEvent) => {
+    event.preventDefault();
+    void run(async () => {
+      if (!editable || !selectedId || !detail.data?.etag)
+        throw new Error(t("apiAudit.missingEtag"));
+      if (!mrlDecimal.test(limit.value.trim()))
+        throw new Error(t("apiAudit.mrl.invalidLimit"));
       await catalogsEndpoints.upsertMrlLimit(
-        selectedVersion.id,
-        selectedSubstanceId,
-        {
-          limitValue: parseFloat(limitValue),
-          unit: limitUnit,
-        },
+        selectedId,
+        limit.substanceId,
+        { limitValue: limit.value.trim(), unit: "mg/kg" },
+        detail.data.etag,
       );
-      setSuccessMsg(
-        t("catalogs.mrl.successLimit", "Đã cập nhật ngưỡng MRL cho hoạt chất"),
-      );
-      // reload limits
-      const limits = await catalogsEndpoints.getMrlLimits(selectedVersion.id);
-      setSelectedVersion({
-        ...selectedVersion,
-        limits: Array.isArray(limits) ? limits : [],
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("catalogs.mrl.errorLimit", "Không thể lưu ngưỡng."));
-      }
+      await refresh();
+      setNotice(t("apiAudit.saved"));
+    });
+  };
+  const publish = () =>
+    void run(async () => {
+      if (!editable || !selectedId || !detail.data?.etag) return;
+      if (
+        !(await confirmAction({
+          title: t("apiAudit.mrl.publish"),
+          description: t("apiAudit.mrl.publishConfirm"),
+          confirmLabel: t("apiAudit.mrl.publish"),
+          variant: "warning",
+        }))
+      )
+        return;
+      await catalogsEndpoints.publishMrlVersion(selectedId, detail.data.etag);
+      await refresh();
+      setNotice(t("apiAudit.mrl.publishedNotice"));
+    });
+  const closeDetail = () => {
+    if (!busy) {
+      setSelectedId(null);
+      setStale(false);
+      setError("");
     }
   };
-
-  const handleImport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    try {
-      const parsed = JSON.parse(importRawJson);
-      await catalogsEndpoints.importMrlVersion(parsed);
-      setSuccessMsg("Đã import thành công bảng MRL chuẩn quốc tế.");
-      setIsImportModalOpen(false);
-      await loadData();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Không thể import dữ liệu MRL.");
+  const versions = data?.versions ?? [];
+  const searchTerm = search.trim().toLocaleLowerCase(i18n.language);
+  const visible = versions.filter(
+    (version) =>
+      (!filter || version.status === filter) &&
+      (!marketFilter || version.marketId === marketFilter) &&
+      (!searchTerm ||
+        [label(version), version.sourceRef, `v${version.versionNo}`]
+          .join(" ")
+          .toLocaleLowerCase(i18n.language)
+          .includes(searchTerm)),
+  );
+  const filtered = Boolean(searchTerm || filter || marketFilter);
+  const clearFilters = () => {
+    setSearch("");
+    setFilter("");
+    setMarketFilter("");
+  };
+  const openDetail = (version: MrlVersionDto) => {
+    setLookupOpen(false);
+    setSelectedId(version.id);
+    setStale(false);
+    setError("");
+    setNotice("");
+    setLimit({ substanceId: data?.substances[0]?.id || "", value: "" });
+  };
+  const statusBadge = (version: MrlVersionDto) => (
+    <StatusBadge
+      status={version.status === "PUBLISHED" ? "ACTIVE" : "PENDING"}
+      label={
+        version.status === "PUBLISHED"
+          ? t("apiAudit.mrl.published")
+          : t("apiAudit.mrl.draft")
       }
-    } finally {
-      setSubmitting(false);
-    }
+    />
+  );
+  const StatusFilterIcon =
+    filter === "PUBLISHED"
+      ? CheckCircle
+      : filter === "DRAFT"
+        ? NotePencil
+        : ShieldCheck;
+  const alerts = (
+    <>
+      {error && (
+        <div role="alert" className={alert}>
+          <WarningCircle
+            size={18}
+            weight="fill"
+            aria-hidden="true"
+            className="shrink-0"
+          />
+          <span>{error}</span>
+        </div>
+      )}
+      {notice && (
+        <div
+          role="status"
+          className="flex items-start gap-2.5 rounded-xl border border-functional-balanced-border/40 bg-functional-balanced-bg p-3.5 text-xs text-accent-primary"
+        >
+          <CheckCircle
+            size={18}
+            weight="fill"
+            aria-hidden="true"
+            className="shrink-0"
+          />
+          <span>{notice}</span>
+        </div>
+      )}
+    </>
+  );
+  const editVersion = () => {
+    if (!selected) return;
+    setForm({
+      marketId: selected.marketId,
+      commodityId: selected.commodityId,
+      effectiveFrom: toLocal(selected.effectiveFrom),
+      effectiveTo: selected.effectiveTo ? toLocal(selected.effectiveTo) : "",
+      sourceRef: selected.sourceRef,
+    });
+    setEditor("edit");
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
+    <div className="space-y-6 pb-8">
+      <header className="flex flex-col justify-between gap-4 border-b border-ink-tertiary/15 pb-4 xl:flex-row xl:items-center">
         <div>
           <span
             data-ui-detail="secondary"
             className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
-            {t("catalogs.mrl.tag", "QUẢN LÝ BẢNG GIỚI HẠN DƯ LƯỢNG MRL")}
+            {t("catalogs.mrl.tag")}
           </span>
-          <h2 className="text-2xl font-display font-bold text-ink-primary">
-            {t(
-              "catalogs.mrl.title",
-              "Ngưỡng Dư lượng MRL theo Thị trường Đích",
-            )}
+          <h2 className="font-display text-2xl font-bold text-ink-primary">
+            {t("catalogs.mrl.title")}
           </h2>
           <p
             data-ui-detail="secondary"
-            className="text-xs text-ink-secondary mt-0.5"
+            className="mt-0.5 max-w-2xl text-xs text-ink-secondary"
           >
-            {t(
-              "catalogs.mrl.subtitle",
-              "Quản lý bảng ngưỡng MRL có phiên bản hiệu lực cho 6 thị trường: EU, Mỹ, Nhật Bản, Hàn Quốc, Codex, Việt Nam.",
-            )}
+            {t("apiAudit.mrl.subtitle")}
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 self-start xl:self-auto">
           <button
             type="button"
-            onClick={loadData}
-            className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
-            title={t("common.reload", "Tải lại danh sách")}
+            className={button}
+            disabled={!data || busy}
+            onClick={() => {
+              setError("");
+              setNotice("");
+              setLookupOpen(true);
+            }}
+            aria-label={t("apiAudit.mrl.lookup")}
+          >
+            <Globe size={16} aria-hidden="true" />
+            {t("apiAudit.mrl.lookupAction")}
+          </button>
+          {canManage && (
+            <>
+              <button
+                type="button"
+                className={button}
+                disabled={busy}
+                onClick={() => {
+                  setError("");
+                  setNotice("");
+                  setImporting(true);
+                }}
+                aria-label={t("apiAudit.mrl.import")}
+              >
+                <FileArrowUp size={16} aria-hidden="true" />
+                {t("apiAudit.mrl.importAction")}
+              </button>
+              <button
+                type="button"
+                className={primary}
+                disabled={!data || busy}
+                aria-label={t("catalogs.mrl.createBtn")}
+                onClick={() => {
+                  setError("");
+                  setNotice("");
+                  setForm({
+                    marketId: data?.markets[0]?.id || "",
+                    commodityId: data?.commodities[0]?.id || "",
+                    effectiveFrom: localNow(),
+                    effectiveTo: "",
+                    sourceRef: "",
+                  });
+                  setEditor("create");
+                }}
+              >
+                <Plus size={16} weight="bold" aria-hidden="true" />
+                {t("apiAudit.mrl.createAction")}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className={`${iconButton} shrink-0`}
+            disabled={busy || catalogs.isFetching}
+            onClick={() => void run(refresh)}
+            aria-label={t("common.reload")}
           >
             <ArrowsClockwise
               size={16}
-              className={loading ? "motion-safe:animate-spin" : undefined}
+              aria-hidden="true"
+              className={
+                catalogs.isFetching ? "motion-safe:animate-spin" : undefined
+              }
             />
           </button>
-          <button
-            type="button"
-            onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary font-semibold text-xs transition-colors"
-          >
-            <FileArrowUp size={15} />
-            <span>Import MRL JSON</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <Plus size={16} weight="bold" />
-            <span>{t("catalogs.mrl.createBtn", "Tạo Phiên bản MRL mới")}</span>
-          </button>
         </div>
+      </header>
+      {!selectedId && !editor && !importing && !lookupOpen && alerts}
+      {catalogs.error && (
+        <div role="alert" className={alert}>
+          <WarningCircle
+            size={18}
+            weight="fill"
+            aria-hidden="true"
+            className="shrink-0"
+          />
+          <span>{catalogs.error.message}</span>
+        </div>
+      )}
+
+      <div
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        aria-label={t("apiAudit.mrl.summary")}
+      >
+        {[
+          {
+            label: t("residueProfiles.totalVersions"),
+            value: versions.length,
+            Icon: FileText,
+          },
+          {
+            label: t("apiAudit.mrl.publishedVersions"),
+            value: versions.filter((version) => version.status === "PUBLISHED")
+              .length,
+            Icon: CheckCircle,
+          },
+          {
+            label: t("apiAudit.mrl.draftVersions"),
+            value: versions.filter((version) => version.status === "DRAFT")
+              .length,
+            Icon: NotePencil,
+          },
+        ].map(({ label, value, Icon }) => (
+          <div key={label} className={`${panel} p-4`}>
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <p className="text-xs font-medium text-ink-secondary">{label}</p>
+              <Icon
+                size={18}
+                aria-hidden="true"
+                className="text-accent-primary"
+              />
+            </div>
+            <p className="font-display text-2xl font-bold text-ink-primary">
+              {data ? new Intl.NumberFormat(i18n.language).format(value) : "—"}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Alerts */}
-      {error && (
-        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
-          <WarningCircle size={18} weight="fill" className="shrink-0" />
-          <span>{error}</span>
+      <section
+        className={`${panel} space-y-4 p-4 sm:p-5`}
+        aria-label={t("apiAudit.mrl.filters")}
+      >
+        <div className="grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <div>
+            <label
+              htmlFor="mrl-search"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {t("apiAudit.mrl.search")}
+            </label>
+            <div className="relative">
+              <MagnifyingGlass
+                size={16}
+                aria-hidden="true"
+                className="absolute left-3 top-2.5 text-ink-tertiary"
+              />
+              <input
+                id="mrl-search"
+                type="search"
+                className={`${field} pl-10`}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t("apiAudit.mrl.searchPlaceholder")}
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              htmlFor="mrl-status"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {t("apiAudit.mrl.status")}
+            </label>
+            <span className="relative block">
+              <StatusFilterIcon
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="mrl-status"
+                className={field}
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              >
+                <option value="">{t("residueProfiles.allStatuses")}</option>
+                <option value="DRAFT">{t("apiAudit.mrl.draft")}</option>
+                <option value="PUBLISHED">{t("apiAudit.mrl.published")}</option>
+              </select>
+            </span>
+          </div>
+          <div>
+            <label
+              htmlFor="mrl-market-filter"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {t("apiAudit.mrl.market")}
+            </label>
+            <span className="relative block">
+              <Globe
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="mrl-market-filter"
+                className={field}
+                value={marketFilter}
+                onChange={(event) => setMarketFilter(event.target.value)}
+              >
+                <option value="">{t("apiAudit.mrl.allMarkets")}</option>
+                {data?.markets.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-tertiary/15 pt-3">
+          <p className="text-xs text-ink-secondary" role="status">
+            {t("residueProfiles.showing", {
+              count: visible.length,
+              total: versions.length,
+            })}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {filtered && (
+              <button
+                type="button"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-accent-primary hover:bg-accent-primary/5"
+                onClick={clearFilters}
+              >
+                <X size={14} aria-hidden="true" />
+                {t("residueProfiles.clearFilters")}
+              </button>
+            )}
+            <div
+              role="group"
+              aria-label={t("apiAudit.mrl.viewMode")}
+              className="inline-flex items-center gap-1 rounded-full border border-ink-tertiary/20 bg-surface-raised p-1"
+            >
+              {(
+                [
+                  {
+                    mode: "list",
+                    label: t("apiAudit.mrl.listView"),
+                    Icon: ListBullets,
+                  },
+                  {
+                    mode: "grid",
+                    label: t("apiAudit.mrl.gridView"),
+                    Icon: SquaresFour,
+                  },
+                ] as const
+              ).map(({ mode, label, Icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={viewMode === mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary ${viewMode === mode ? "bg-accent-primary text-white shadow-xs" : "text-ink-secondary hover:bg-surface-base hover:text-ink-primary"}`}
+                >
+                  <Icon size={16} aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      {catalogs.isPending && (
+        <div className="py-12">
+          <GrainLoader label={t("catalogs.mrl.loading")} />
         </div>
       )}
-      {successMsg && (
-        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
-          <CheckCircle size={18} weight="fill" className="shrink-0" />
-          <span>{successMsg}</span>
+      {catalogs.isSuccess && !visible.length && (
+        <div
+          className={`${panel} flex flex-col items-center px-5 py-12 text-center`}
+        >
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+            <FileText size={24} aria-hidden="true" />
+          </div>
+          <h3 className="font-display text-sm font-bold text-ink-primary">
+            {t("apiAudit.mrl.empty")}
+          </h3>
+          <p className="mt-1 max-w-md text-xs text-ink-secondary">
+            {filtered
+              ? t("apiAudit.mrl.emptyFiltered")
+              : t("catalogs.mrl.emptyDesc")}
+          </p>
+          {filtered && (
+            <button
+              type="button"
+              className={`${button} mt-4`}
+              onClick={clearFilters}
+            >
+              {t("residueProfiles.clearFilters")}
+            </button>
+          )}
         </div>
       )}
 
-      {/* Versions List */}
-      <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
-        {loading ? (
-          <div className="py-16 flex justify-center">
-            <GrainLoader
-              label={t(
-                "catalogs.mrl.loading",
-                "Đang đối chiếu quy định MRL quốc tế...",
-              )}
-            />
-          </div>
-        ) : versions.length === 0 ? (
-          <div className="py-16 text-center space-y-2">
-            <ShieldCheck
-              size={40}
-              className="mx-auto text-ink-tertiary opacity-60"
-            />
-            <p className="text-sm font-semibold text-ink-primary">
-              {t("catalogs.mrl.emptyTitle", "Chưa có bảng phiên bản MRL nào")}
-            </p>
-            <p className="text-xs text-ink-secondary max-w-sm mx-auto">
-              {t(
-                "catalogs.mrl.emptyDesc",
-                'Nhấn "Tạo Phiên bản MRL mới" để thiết lập bảng ngưỡng kiểm định dư lượng cho thị trường xuất khẩu.',
-              )}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/20 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
+      {viewMode === "list" && visible.length > 0 ? (
+        <div className={`${panel} overflow-hidden`}>
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label={t("apiAudit.mrl.versions")}
+            className="max-h-[70vh] overflow-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary"
+          >
+            <table className="w-full min-w-[880px] border-separate border-spacing-0 text-left text-xs">
+              <caption className="sr-only">
+                {t("apiAudit.mrl.versions")}
+              </caption>
+              <thead className="sticky top-0 z-20 bg-surface-raised text-ink-secondary">
                 <tr>
-                  <th className="py-3 px-4">
-                    {t("catalogs.mrl.thMarket", "Thị trường xuất khẩu")}
-                  </th>
-                  <th className="py-3 px-4">
-                    {t("catalogs.mrl.thCommodity", "Hàng hoá áp dụng")}
-                  </th>
-                  <th className="py-3 px-4">
-                    {t("catalogs.mrl.thEffectiveDate", "Ngày hiệu lực")}
-                  </th>
-                  <th className="py-3 px-4">
-                    {t("catalogs.mrl.thLegalBasis", "Căn cứ quy chuẩn pháp lý")}
-                  </th>
-                  <th className="py-3 px-4">
-                    {t("catalogs.mrl.thStatus", "Trạng thái phát hành")}
-                  </th>
-                  <th className="py-3 px-4 text-right">
-                    {t("common.actions", "Thao tác")}
-                  </th>
+                  {[
+                    t("apiAudit.mrl.market"),
+                    t("apiAudit.mrl.commodity"),
+                    t("apiAudit.mrl.period"),
+                    t("apiAudit.mrl.source"),
+                    t("apiAudit.mrl.status"),
+                    t("common.actions"),
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      scope="col"
+                      className="whitespace-nowrap border-b border-ink-tertiary/15 px-5 py-3 font-semibold"
+                    >
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-tertiary/10">
-                {versions.map((v) => (
-                  <tr
-                    key={v.id}
-                    className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
-                  >
-                    <td className="py-3 px-4 font-bold text-ink-primary">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Globe size={14} className="text-accent-info" />
-                        <span>{v.marketName || "Châu Âu (EU)"}</span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-ink-primary">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Tag size={13} className="text-accent-primary" />
-                        <span>{v.commodityName || "Gạo trắng hạt dài"}</span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-ink-secondary">
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar size={13} />
-                        <span>
-                          {new Date(v.effectiveFrom).toLocaleDateString(
-                            "vi-VN",
-                          )}
+              <tbody className="text-ink-primary">
+                {visible.map((version) => (
+                  <tr key={version.id} className="group">
+                    <th
+                      scope="row"
+                      className="sticky left-0 z-10 border-b border-ink-tertiary/15 bg-surface-base px-5 py-4 text-left font-semibold group-hover:bg-surface-raised dark:bg-surface-raised dark:group-hover:bg-surface-overlay"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe
+                          size={16}
+                          aria-hidden="true"
+                          className="shrink-0 text-accent-primary"
+                        />
+                        <span className="max-w-52 truncate">
+                          {data?.markets.find(
+                            (item) => item.id === version.marketId,
+                          )?.name || version.marketId}
                         </span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-ink-secondary">
-                      {v.sourceRef || "EC 396/2005 LOQ MRL"}
-                    </td>
-                    <td className="py-3 px-4">
-                      <StatusBadge
-                        status={v.isPublished ? "BALANCED" : "STALE"}
-                        label={
-                          v.isPublished
-                            ? t("catalogs.mrl.statusActive", "Đang hiệu lực")
-                            : t("catalogs.mrl.statusDraft", "Bản nháp (Draft)")
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLimits(v)}
-                          className="px-2.5 py-1 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-ink-tertiary/20 font-semibold text-accent-primary text-xs"
-                        >
-                          {t("catalogs.mrl.limitsBtn", "Chi tiết")}
-                        </button>
-
-                        {!v.isPublished && (
-                          <button
-                            type="button"
-                            onClick={() => handlePublish(v.id)}
-                            className="px-2.5 py-1 rounded-lg bg-accent-primary text-ink-inverse font-semibold text-xs hover:bg-accent-primary-dim"
-                          >
-                            {t("catalogs.mrl.publishBtn", "Công bố")}
-                          </button>
-                        )}
+                        <span className="rounded-md bg-surface-raised px-2 py-0.5 font-mono text-ink-secondary">
+                          v{version.versionNo}
+                        </span>
                       </div>
+                    </th>
+                    <td className="whitespace-nowrap border-b border-ink-tertiary/15 px-5 py-4 group-hover:bg-surface-raised/50">
+                      {data?.commodities.find(
+                        (item) => item.id === version.commodityId,
+                      )?.name || version.commodityId}
+                    </td>
+                    <td className="whitespace-nowrap border-b border-ink-tertiary/15 px-5 py-4 text-ink-secondary group-hover:bg-surface-raised/50">
+                      <p>{date(version.effectiveFrom)}</p>
+                      <p className="mt-1 text-ink-tertiary">
+                        {version.effectiveTo
+                          ? date(version.effectiveTo)
+                          : t("apiAudit.noEnd")}
+                      </p>
+                    </td>
+                    <td className="border-b border-ink-tertiary/15 px-5 py-4 text-ink-secondary group-hover:bg-surface-raised/50">
+                      <p className="max-w-64 truncate">
+                        {version.sourceRef || "—"}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap border-b border-ink-tertiary/15 px-5 py-4 group-hover:bg-surface-raised/50">
+                      {statusBadge(version)}
+                    </td>
+                    <td className="border-b border-ink-tertiary/15 px-5 py-4 group-hover:bg-surface-raised/50">
+                      <button
+                        type="button"
+                        className="inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 font-semibold text-accent-primary transition-colors hover:bg-accent-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary"
+                        aria-label={`${t("catalogs.mrl.limitsBtn")} · ${label(version)} · v${version.versionNo}`}
+                        onClick={() => openDetail(version)}
+                      >
+                        {t("catalogs.mrl.limitsBtn")}
+                        <ArrowRight size={16} aria-hidden="true" />
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      {/* Create Version Modal */}
-      {isCreateModalOpen && (
-        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary">
-                {t(
-                  "catalogs.mrl.createModalTitle",
-                  "Tạo Phiên bản Bảng MRL Mới",
-                )}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleCreateVersion}
-              className="p-5 space-y-4 text-xs"
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((version) => (
+            <button
+              type="button"
+              key={version.id}
+              aria-label={`${t("catalogs.mrl.limitsBtn")} · ${label(version)} · v${version.versionNo}`}
+              className={`${panel} group flex flex-col p-5 text-left transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary`}
+              onClick={() => openDetail(version)}
             >
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.mrl.marketLabel", "Thị trường xuất khẩu đích *")}
-                </label>
-                <select
-                  required
-                  value={createForm.marketId}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, marketId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
-                >
-                  {markets.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.code})
-                    </option>
-                  ))}
-                  {markets.length === 0 && (
-                    <option value="">Chưa có thị trường</option>
-                  )}
-                </select>
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+                  <Globe size={22} weight="bold" aria-hidden="true" />
+                </div>
+                {statusBadge(version)}
               </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "catalogs.mrl.commodityLabel",
-                    "Mặt hàng lúa gạo áp dụng *",
-                  )}
-                </label>
-                <select
-                  required
-                  value={createForm.commodityId}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      commodityId: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
-                >
-                  {commodities.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                    </option>
-                  ))}
-                  {commodities.length === 0 && (
-                    <option value="">Chưa có mặt hàng</option>
-                  )}
-                </select>
+              <div className="flex flex-wrap items-baseline gap-2">
+                <h3 className="break-words font-display text-base font-bold text-ink-primary">
+                  {data?.markets.find((item) => item.id === version.marketId)
+                    ?.name || version.marketId}
+                </h3>
+                <span className="rounded-md bg-surface-raised px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
+                  v{version.versionNo}
+                </span>
               </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "catalogs.mrl.effectiveFromLabel",
-                    "Ngày bắt đầu có hiệu lực pháp lý *",
-                  )}
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={createForm.effectiveFrom}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      effectiveFrom: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
-                />
+              <p className="mt-2 break-words text-sm font-medium text-ink-primary">
+                {data?.commodities.find(
+                  (item) => item.id === version.commodityId,
+                )?.name || version.commodityId}
+              </p>
+              <div className="mt-3 space-y-2 text-xs text-ink-secondary">
+                <p className="flex items-start gap-2">
+                  <CalendarBlank
+                    size={15}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0"
+                  />
+                  <span>
+                    {t("residueProfiles.effectiveSince", {
+                      date: date(version.effectiveFrom),
+                    })}
+                  </span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <CalendarBlank
+                    size={15}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0"
+                  />
+                  <span>
+                    {version.effectiveTo
+                      ? date(version.effectiveTo)
+                      : t("apiAudit.noEnd")}
+                  </span>
+                </p>
               </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("catalogs.mrl.sourceRefLabel", "Căn cứ văn bản pháp lý *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createForm.sourceRef}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, sourceRef: e.target.value })
-                  }
-                  placeholder="VD: Regulation (EC) No 396/2005"
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
-                />
+              <div
+                data-ui-detail="secondary"
+                className="mt-4 rounded-lg bg-surface-raised px-3 py-2 text-xs text-ink-secondary"
+              >
+                <p className="mb-1 font-semibold">{t("apiAudit.mrl.source")}</p>
+                <p className="line-clamp-2 break-words">
+                  {version.sourceRef || "—"}
+                </p>
               </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("common.saving", "Đang tạo...")
-                    : t("catalogs.mrl.submitCreateBtn", "Tạo phiên bản")}
-                </button>
+              <div className="mt-auto pt-4">
+                <span className="flex items-center justify-between gap-2 border-t border-ink-tertiary/15 pt-3 text-xs font-semibold text-accent-primary">
+                  {t("catalogs.mrl.limitsBtn")}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </span>
               </div>
-            </form>
-          </div>
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Threshold Limits Modal */}
-      {isLimitModalOpen && selectedVersion && (
-        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold text-accent-primary uppercase tracking-wider">
-                  {t(
-                    "catalogs.mrl.limitsModalTag",
-                    "THIẾT LẬP NGƯỠNG DƯ LƯỢNG MRL CHO THỊ TRƯỜNG",
-                  )}
+      <MrlDialog
+        open={Boolean(selectedId) && !editor}
+        onClose={closeDetail}
+        title={
+          selected
+            ? label(selected) + " · v" + selected.versionNo
+            : t("apiAudit.mrl.details")
+        }
+        subtitle={t("apiAudit.mrl.details")}
+        icon={<ShieldCheck size={20} weight="bold" aria-hidden="true" />}
+        busy={busy}
+        footer={
+          <>
+            <button
+              type="button"
+              className={button}
+              disabled={busy || detail.isFetching}
+              onClick={() =>
+                void run(async () => {
+                  const result = await detail.refetch();
+                  if (result.error) throw result.error;
+                  setStale(false);
+                })
+              }
+            >
+              <ArrowsClockwise size={16} aria-hidden="true" />
+              {t("common.reload")}
+            </button>
+            {canManage && selected?.status === "DRAFT" && (
+              <>
+                <button
+                  type="button"
+                  className={button}
+                  disabled={!editable || busy}
+                  onClick={editVersion}
+                >
+                  <NotePencil size={16} aria-hidden="true" />
+                  {t("apiAudit.mrl.edit")}
+                </button>
+                <button
+                  type="button"
+                  className={primary}
+                  disabled={!editable || busy || !detail.data?.limits.length}
+                  onClick={publish}
+                >
+                  <CheckCircle size={16} aria-hidden="true" />
+                  {t("apiAudit.mrl.publish")}
+                </button>
+              </>
+            )}
+          </>
+        }
+      >
+        {alerts}
+        {detail.isPending || detail.isFetching ? (
+          <div className="py-8">
+            <GrainLoader />
+          </div>
+        ) : detail.isError ? (
+          <div role="alert" className={alert}>
+            <WarningCircle size={18} aria-hidden="true" className="shrink-0" />
+            <span>{detail.error.message}</span>
+          </div>
+        ) : (
+          selected && (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                {statusBadge(selected)}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-tertiary/20 px-3 py-1 text-xs text-ink-secondary">
+                  <Globe size={14} aria-hidden="true" className="shrink-0" />
+                  {t("apiAudit.mrl.market")}:{" "}
+                  {data?.markets.find((item) => item.id === selected.marketId)
+                    ?.code || selected.marketId}
                 </span>
-                <h3 className="font-display font-bold text-lg text-ink-primary">
-                  {selectedVersion.marketName || "Châu Âu (EU)"} —{" "}
-                  {selectedVersion.commodityName || "Gạo xuất khẩu"}
-                </h3>
+                <span className="rounded-full bg-accent-primary/10 px-3 py-1 font-mono text-xs text-accent-primary">
+                  MRL
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsLimitModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-5 text-xs max-h-[75vh] overflow-y-auto">
-              {/* Add limit form */}
-              <form
-                onSubmit={handleAddLimit}
-                className="p-3.5 rounded-xl bg-surface-raised border space-y-3"
-              >
-                <span className="font-bold text-ink-primary block">
-                  {t(
-                    "catalogs.mrl.addLimitTitle",
-                    "Thêm hoặc cập nhật ngưỡng cho hoạt chất:",
-                  )}
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-ink-secondary mb-1">
-                      {t("catalogs.mrl.substanceLabel", "Hoạt chất BVTV")}
-                    </label>
-                    <select
-                      value={selectedSubstanceId}
-                      onChange={(e) => setSelectedSubstanceId(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 text-ink-primary font-semibold  focus:rounded-lg"
-                    >
-                      {substances.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-ink-secondary mb-1">
-                      {t("catalogs.mrl.mrlLimitLabel", "Ngưỡng tối đa (MRL)")}
-                    </label>
-                    <input
-                      type="text"
-                      value={limitValue}
-                      onChange={(e) => setLimitValue(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 font-mono font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-ink-secondary mb-1">
-                      {t("catalogs.mrl.unitLabel", "Đơn vị đo")}
-                    </label>
-                    <input
-                      type="text"
-                      value={limitUnit}
-                      onChange={(e) => setLimitUnit(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-surface-base border border-ink-tertiary/20 font-mono"
-                    />
-                  </div>
+              <dl className="grid gap-4 rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="flex items-center gap-1.5 text-xs text-ink-secondary">
+                    <Globe size={14} aria-hidden="true" className="shrink-0" />
+                    {t("apiAudit.mrl.market")}
+                  </dt>
+                  <dd className="mt-1 break-words font-semibold text-ink-primary">
+                    {data?.markets.find((item) => item.id === selected.marketId)
+                      ?.name || selected.marketId}
+                  </dd>
                 </div>
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim"
-                  >
-                    {t("catalogs.mrl.saveLimitBtn", "Lưu ngưỡng hoạt chất")}
-                  </button>
+                <div>
+                  <dt className="text-xs text-ink-secondary">
+                    {t("apiAudit.mrl.commodity")}
+                  </dt>
+                  <dd className="mt-1 break-words font-semibold text-ink-primary">
+                    {data?.commodities.find(
+                      (item) => item.id === selected.commodityId,
+                    )?.name || selected.commodityId}
+                  </dd>
                 </div>
-              </form>
-
-              {/* Limits Table */}
-              <div className="space-y-2">
-                <h4 className="font-bold text-xs text-ink-primary flex items-center gap-1.5">
-                  <Flask size={15} className="text-accent-primary" />
-                  <span>
-                    {t(
-                      "catalogs.mrl.tableTitle",
-                      "Bảng ngưỡng giới hạn & Biên an toàn (-20%)",
-                    )}
+                <div>
+                  <dt className="text-xs text-ink-secondary">
+                    {t("residueProfiles.effectiveFrom")}
+                  </dt>
+                  <dd className="mt-1 text-ink-primary">
+                    {date(selected.effectiveFrom)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-ink-secondary">
+                    {t("residueProfiles.effectiveTo")}
+                  </dt>
+                  <dd className="mt-1 text-ink-primary">
+                    {selected.effectiveTo
+                      ? date(selected.effectiveTo)
+                      : t("apiAudit.noEnd")}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-ink-secondary">
+                    {t("apiAudit.mrl.source")}
+                  </dt>
+                  <dd className="mt-1 break-words text-ink-primary">
+                    {selected.sourceRef || "—"}
+                  </dd>
+                </div>
+              </dl>
+              {canManage &&
+                selected.status === "DRAFT" &&
+                !detail.data?.etag && (
+                  <div role="alert" className={alert}>
+                    <WarningCircle
+                      size={18}
+                      aria-hidden="true"
+                      className="shrink-0"
+                    />
+                    <span>{t("apiAudit.missingEtag")}</span>
+                  </div>
+                )}
+              <section className="space-y-3">
+                <h4 className="flex items-center gap-2 border-b border-ink-tertiary/15 pb-3 text-sm font-bold text-ink-primary">
+                  <Flask
+                    size={18}
+                    className="text-accent-primary"
+                    aria-hidden="true"
+                  />
+                  {t("apiAudit.mrl.limits")}
+                  <span className="ml-auto rounded-full bg-accent-primary/10 px-2 py-0.5 font-mono text-xs text-accent-primary">
+                    {detail.data?.limits.length ?? 0}
                   </span>
                 </h4>
-
-                <div className="rounded-lg border border-ink-tertiary/20 overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-surface-raised text-ink-secondary font-semibold border-b">
-                      <tr>
-                        <th className="py-2.5 px-3">
-                          {t("catalogs.mrl.thSubstanceCode", "Mã hoạt chất")}
-                        </th>
-                        <th className="py-2.5 px-3">
-                          {t("catalogs.mrl.thSubstanceName", "Tên hoạt chất")}
-                        </th>
-                        <th className="py-2.5 px-3 font-mono">
-                          {t("catalogs.mrl.thMrlThreshold", "Ngưỡng MRL")}
-                        </th>
-                        <th className="py-2.5 px-3 font-mono">
-                          {t(
-                            "catalogs.mrl.thSafeMargin",
-                            "Biên an toàn (-20%)",
+                {detail.data?.limits.length ? (
+                  <div
+                    tabIndex={0}
+                    role="region"
+                    aria-label={t("apiAudit.mrl.limits")}
+                    className="max-h-80 overflow-auto rounded-xl border border-ink-tertiary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary"
+                  >
+                    <table className="w-full min-w-[440px] border-separate border-spacing-0 text-left text-xs">
+                      <caption className="sr-only">
+                        {t("apiAudit.mrl.limits")}
+                      </caption>
+                      <thead className="sticky top-0 z-10 bg-surface-raised text-ink-secondary">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="border-b border-ink-tertiary/15 px-4 py-3 font-semibold"
+                          >
+                            {t("apiAudit.mrl.substance")}
+                          </th>
+                          <th
+                            scope="col"
+                            className="border-b border-ink-tertiary/15 px-4 py-3 text-right font-semibold"
+                          >
+                            {t("apiAudit.mrl.limit")}
+                          </th>
+                          {canManage && selected.status === "DRAFT" && (
+                            <th
+                              scope="col"
+                              className="border-b border-ink-tertiary/15 px-4 py-3 text-right font-semibold"
+                            >
+                              {t("common.actions")}
+                            </th>
                           )}
-                        </th>
-                        <th className="py-2.5 px-3">
-                          {t("catalogs.mrl.thRiskLevel", "Mức rủi ro")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-ink-tertiary/10 font-mono">
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold text-accent-primary">
-                          TCZ001
-                        </td>
-                        <td className="py-2.5 px-3 font-body font-semibold">
-                          Tricyclazole
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-accent-danger">
-                          0.010 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 text-accent-primary font-bold">
-                          0.008 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-hold-bg text-accent-danger">
-                            {t("catalogs.mrl.riskCritical", "Cực cao (LOQ)")}
-                          </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold text-accent-primary">
-                          IPT002
-                        </td>
-                        <td className="py-2.5 px-3 font-body font-semibold">
-                          Isoprothiolane
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-ink-primary">
-                          6.000 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 text-accent-primary font-bold">
-                          4.800 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-balanced-bg text-accent-primary">
-                            {t("catalogs.mrl.riskLow", "Thấp")}
-                          </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold text-accent-primary">
-                          HXC003
-                        </td>
-                        <td className="py-2.5 px-3 font-body font-semibold">
-                          Hexaconazole
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-accent-danger">
-                          0.010 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 text-accent-primary font-bold">
-                          0.008 mg/kg
-                        </td>
-                        <td className="py-2.5 px-3 font-body">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-functional-stale-bg text-accent-warning">
-                            {t("catalogs.mrl.riskHigh", "Cao")}
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsLimitModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-surface-raised hover:bg-surface-overlay border font-semibold text-ink-primary"
+                        </tr>
+                      </thead>
+                      <tbody className="text-ink-primary">
+                        {detail.data.limits.map((row) => (
+                          <tr key={row.id}>
+                            <th
+                              scope="row"
+                              className="sticky left-0 border-b border-ink-tertiary/15 bg-surface-base px-4 py-3 text-left font-medium dark:bg-surface-raised"
+                            >
+                              {data?.substances.find(
+                                (item) => item.id === row.substanceId,
+                              )?.name || row.substanceId}
+                            </th>
+                            <td className="whitespace-nowrap border-b border-ink-tertiary/15 px-4 py-3 text-right font-mono">
+                              {row.limitValue} {row.unit}
+                            </td>
+                            {canManage && selected.status === "DRAFT" && (
+                              <td className="border-b border-ink-tertiary/15 px-4 py-3 text-right">
+                                <button
+                                  type="button"
+                                  className={`${iconButton} text-accent-danger hover:text-accent-danger`}
+                                  disabled={!editable || busy}
+                                  aria-label={t("apiAudit.mrl.deleteLimit")}
+                                  onClick={() =>
+                                    void run(async () => {
+                                      if (
+                                        !detail.data?.etag ||
+                                        !(await confirmAction({
+                                          title: t("apiAudit.mrl.deleteLimit"),
+                                          description: t(
+                                            "apiAudit.mrl.deleteConfirm",
+                                          ),
+                                          confirmLabel: t("common.delete"),
+                                          variant: "danger",
+                                        }))
+                                      )
+                                        return;
+                                      await catalogsEndpoints.deleteMrlLimit(
+                                        selected.id,
+                                        row.substanceId,
+                                        detail.data.etag,
+                                      );
+                                      await refresh();
+                                      setNotice(t("apiAudit.saved"));
+                                    })
+                                  }
+                                >
+                                  <Trash size={16} aria-hidden="true" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="rounded-xl bg-surface-raised/60 p-4 text-xs text-ink-secondary">
+                    {t("apiAudit.mrl.noLimits")}
+                  </p>
+                )}
+              </section>
+              {canManage && selected.status === "DRAFT" && (
+                <form
+                  onSubmit={saveLimit}
+                  className="space-y-4 rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4"
                 >
-                  {t("common.done", "Xong")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                  <h4 className="text-sm font-bold text-ink-primary">
+                    {t("catalogs.mrl.addLimitTitle")}
+                  </h4>
+                  <div className="grid items-end gap-3 sm:grid-cols-2">
+                    <label className={fieldLabel}>
+                      {t("apiAudit.mrl.substance")}
+                      <select
+                        className={field}
+                        value={limit.substanceId}
+                        required
+                        disabled={!editable || busy}
+                        onChange={(event) =>
+                          setLimit({
+                            ...limit,
+                            substanceId: event.target.value,
+                          })
+                        }
+                      >
+                        <option value="">{t("apiAudit.select")}</option>
+                        {data?.substances.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} ({item.code})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className={fieldLabel}>
+                      {t("apiAudit.mrl.limit")} (mg/kg)
+                      <input
+                        className={`${field} font-mono`}
+                        inputMode="decimal"
+                        required
+                        pattern="[0-9]{1,12}(\.[0-9]{1,12})?"
+                        value={limit.value}
+                        disabled={!editable || busy}
+                        onChange={(event) =>
+                          setLimit({ ...limit, value: event.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="flex justify-end">
+                    <button className={primary} disabled={!editable || busy}>
+                      {t("catalogs.mrl.saveLimitBtn")}
+                    </button>
+                  </div>
+                </form>
+              )}
+              {selected.status === "PUBLISHED" && (
+                <p className="flex items-start gap-2 rounded-xl bg-surface-raised/60 p-4 text-xs text-ink-secondary">
+                  <ShieldCheck
+                    size={18}
+                    aria-hidden="true"
+                    className="shrink-0 text-accent-primary"
+                  />
+                  {t("apiAudit.mrl.readonly")}
+                </p>
+              )}
+            </>
+          )
+        )}
+      </MrlDialog>
 
-      {/* Import MRL Modal */}
-      {isImportModalOpen && (
-        <div className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ink-primary flex items-center gap-2">
-                <FileArrowUp size={18} className="text-accent-primary" />
-                <span>Import Dữ liệu Phiên bản MRL</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleImport} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  JSON Cấu hình Bảng MRL & Giới hạn hoạt chất *
-                </label>
-                <textarea
-                  rows={9}
-                  required
-                  value={importRawJson}
-                  onChange={(e) => setImportRawJson(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono text-xs"
+      <MrlDialog
+        open={lookupOpen}
+        onClose={() => {
+          if (!busy) setLookupOpen(false);
+        }}
+        title={t("apiAudit.mrl.lookup")}
+        subtitle={t("apiAudit.mrl.versions")}
+        icon={<Globe size={20} weight="bold" aria-hidden="true" />}
+        busy={busy}
+        className="w-[40rem]"
+      >
+        {alerts}
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setResolved(null);
+            void run(async () => {
+              setResolved(
+                await catalogsEndpoints.resolveMrlVersion({
+                  ...lookup,
+                  decisionAt: new Date(lookup.decisionAt).toISOString(),
+                }),
+              );
+            });
+          }}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={fieldLabel}>
+              {t("apiAudit.mrl.market")}
+              <span className="relative block">
+                <Globe
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
                 />
-                <span className="text-xs text-ink-tertiary mt-1 block">
-                  Định dạng JSON chuẩn theo schema OpenAPI: marketId,
-                  commodityId, effectiveFrom, sourceRef, limits[].
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsImportModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
+                <select
+                  autoFocus
+                  className={field}
+                  required
+                  disabled={busy}
+                  value={lookup.marketId}
+                  onChange={(event) => {
+                    setResolved(null);
+                    setLookup({ ...lookup, marketId: event.target.value });
+                  }}
                 >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
-                >
-                  {submitting ? "Đang import..." : "Bắt đầu Import"}
-                </button>
-              </div>
-            </form>
+                  <option value="">{t("apiAudit.select")}</option>
+                  {data?.markets.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
+            <label className={fieldLabel}>
+              {t("apiAudit.mrl.commodity")}
+              <select
+                className={field}
+                required
+                disabled={busy}
+                value={lookup.commodityId}
+                onChange={(event) => {
+                  setResolved(null);
+                  setLookup({ ...lookup, commodityId: event.target.value });
+                }}
+              >
+                <option value="">{t("apiAudit.select")}</option>
+                {data?.commodities.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        </div>
-      )}
+          <label className={fieldLabel}>
+            {t("apiAudit.mrl.decisionAt")}
+            <input
+              className={field}
+              type="datetime-local"
+              required
+              disabled={busy}
+              value={lookup.decisionAt}
+              onChange={(event) => {
+                setResolved(null);
+                setLookup({ ...lookup, decisionAt: event.target.value });
+              }}
+            />
+          </label>
+          <div className="flex justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
+            <button
+              type="button"
+              className={button}
+              disabled={busy}
+              onClick={() => setLookupOpen(false)}
+            >
+              {t("common.cancel")}
+            </button>
+            <button className={primary} disabled={busy}>
+              <MagnifyingGlass size={16} aria-hidden="true" />
+              {t("apiAudit.mrl.lookup")}
+            </button>
+          </div>
+        </form>
+        {resolved && (
+          <div
+            role="status"
+            className="space-y-3 rounded-xl border border-functional-balanced-border/40 bg-functional-balanced-bg p-4 text-sm text-accent-primary"
+          >
+            <div className="flex items-start gap-2">
+              <CheckCircle
+                size={18}
+                aria-hidden="true"
+                className="mt-0.5 shrink-0"
+              />
+              <strong className="break-words">
+                {label(resolved)} · v{resolved.versionNo}
+              </strong>
+            </div>
+            <p className="text-xs">
+              {date(resolved.effectiveFrom)} —{" "}
+              {resolved.effectiveTo
+                ? date(resolved.effectiveTo)
+                : t("apiAudit.noEnd")}
+            </p>
+            <p className="break-words text-xs">{resolved.sourceRef}</p>
+            <button
+              type="button"
+              className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold underline"
+              onClick={() => openDetail(resolved)}
+            >
+              {t("catalogs.mrl.limitsBtn")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </MrlDialog>
+
+      <MrlDialog
+        open={Boolean(editor)}
+        onClose={() => {
+          if (!busy) setEditor(null);
+        }}
+        title={
+          editor === "create"
+            ? t("catalogs.mrl.createBtn")
+            : t("apiAudit.mrl.edit")
+        }
+        subtitle={t("apiAudit.mrl.versions")}
+        icon={
+          editor === "create" ? (
+            <Plus size={20} weight="bold" aria-hidden="true" />
+          ) : (
+            <NotePencil size={20} weight="bold" aria-hidden="true" />
+          )
+        }
+        busy={busy}
+        className="w-[40rem]"
+      >
+        {alerts}
+        <form onSubmit={saveVersion} className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={fieldLabel}>
+              {t("apiAudit.mrl.market")}
+              <span className="relative block">
+                <Globe
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                />
+                <select
+                  autoFocus
+                  className={field}
+                  required
+                  disabled={editor === "edit" || busy}
+                  value={form.marketId}
+                  onChange={(event) =>
+                    setForm({ ...form, marketId: event.target.value })
+                  }
+                >
+                  <option value="">{t("apiAudit.select")}</option>
+                  {data?.markets.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
+            <label className={fieldLabel}>
+              {t("apiAudit.mrl.commodity")}
+              <select
+                className={field}
+                required
+                disabled={editor === "edit" || busy}
+                value={form.commodityId}
+                onChange={(event) =>
+                  setForm({ ...form, commodityId: event.target.value })
+                }
+              >
+                <option value="">{t("apiAudit.select")}</option>
+                {data?.commodities.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={fieldLabel}>
+              {t("apiAudit.from")}
+              <input
+                className={field}
+                type="datetime-local"
+                required
+                value={form.effectiveFrom}
+                disabled={busy}
+                onChange={(event) =>
+                  setForm({ ...form, effectiveFrom: event.target.value })
+                }
+              />
+            </label>
+            <label className={fieldLabel}>
+              {t("apiAudit.until")}
+              <input
+                className={field}
+                type="datetime-local"
+                value={form.effectiveTo}
+                disabled={busy}
+                onChange={(event) =>
+                  setForm({ ...form, effectiveTo: event.target.value })
+                }
+              />
+            </label>
+          </div>
+          <label className={fieldLabel}>
+            {t("apiAudit.mrl.source")}
+            <input
+              className={field}
+              required
+              value={form.sourceRef}
+              disabled={busy}
+              onChange={(event) =>
+                setForm({ ...form, sourceRef: event.target.value })
+              }
+            />
+          </label>
+          <div className="flex justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
+            <button
+              type="button"
+              className={button}
+              disabled={busy}
+              onClick={() => setEditor(null)}
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              className={primary}
+              disabled={busy || (editor === "edit" && !editable)}
+            >
+              {busy ? t("common.saving") : t("apiAudit.save")}
+            </button>
+          </div>
+        </form>
+      </MrlDialog>
+      <MrlDialog
+        open={importing}
+        onClose={() => {
+          if (!busy) setImporting(false);
+        }}
+        title={t("apiAudit.mrl.import")}
+        subtitle={t("apiAudit.mrl.versions")}
+        icon={<FileArrowUp size={20} weight="bold" aria-hidden="true" />}
+        busy={busy}
+        className="w-[40rem]"
+      >
+        {alerts}
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void run(async () => {
+              let parsed: unknown;
+              try {
+                parsed = JSON.parse(rawJson);
+              } catch (cause) {
+                throw new Error(t("apiAudit.mrl.invalidJson"), { cause });
+              }
+              const result = mrlImportSchema.safeParse(parsed);
+              if (!result.success)
+                throw new Error(
+                  t("apiAudit.mrl.invalidImport") +
+                    " · " +
+                    result.error.issues
+                      .map((issue) => issue.path.join("."))
+                      .join(", "),
+                );
+              await catalogsEndpoints.importMrlVersion(result.data);
+              setImporting(false);
+              setRawJson("");
+              await refresh();
+              setNotice(t("apiAudit.saved"));
+            });
+          }}
+        >
+          <label className={fieldLabel}>
+            {t("apiAudit.mrl.jsonLabel")}
+            <textarea
+              autoFocus
+              required
+              rows={12}
+              className={`${field} font-mono text-xs`}
+              value={rawJson}
+              disabled={busy}
+              onChange={(event) => setRawJson(event.target.value)}
+            />
+          </label>
+          <p className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4 text-xs leading-relaxed text-ink-secondary">
+            {t("apiAudit.mrl.importHelp")}
+          </p>
+          <div className="flex justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
+            <button
+              type="button"
+              className={button}
+              disabled={busy}
+              onClick={() => setImporting(false)}
+            >
+              {t("common.cancel")}
+            </button>
+            <button className={primary} disabled={busy}>
+              <FileArrowUp size={16} aria-hidden="true" />
+              {busy ? t("common.saving") : t("apiAudit.mrl.import")}
+            </button>
+          </div>
+        </form>
+      </MrlDialog>
     </div>
   );
-};
+}

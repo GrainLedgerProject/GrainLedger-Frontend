@@ -353,7 +353,7 @@ export const PlotRegistrationPage: React.FC = () => {
       )}
 
       {/* Controls & Filter Bar */}
-      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
           <div className="relative w-full sm:w-64">
             <input
@@ -364,7 +364,7 @@ export const PlotRegistrationPage: React.FC = () => {
               )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
             />
             <MagnifyingGlass
               size={16}

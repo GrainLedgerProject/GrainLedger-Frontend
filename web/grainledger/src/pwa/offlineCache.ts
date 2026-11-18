@@ -206,7 +206,7 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
     logger.info("Synchronizing offline reference data and farmer catalog...");
     const [farmersRes, refRes, plotSeasonsRes, plotsRes] = await Promise.all([
       procurementEndpoints.getFarmers({ pageSize: 200 }).catch(() => null),
-      procurementEndpoints.getProcurementReferenceData().catch(() => null),
+      procurementEndpoints.getReferenceData().catch(() => null),
       procurementEndpoints.getPlotSeasons({ pageSize: 100 }).catch(() => null),
       procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
     ]);

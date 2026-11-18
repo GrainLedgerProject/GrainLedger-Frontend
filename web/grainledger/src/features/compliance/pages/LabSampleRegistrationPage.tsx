@@ -264,7 +264,7 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
         },
       };
 
-      await sampleEndpoints.captureSample(payload);
+      await sampleEndpoints.createSample(payload);
       setSuccessMsg(
         t(
           "compliance.lab.successCreate",

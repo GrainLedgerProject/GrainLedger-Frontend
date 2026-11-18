@@ -1,25 +1,46 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchResource } from "./client";
+import Decimal from "decimal.js";
+import { withApiQuery, type PageQuery } from "./query";
 
-type ListParams = Record<string, string | number | boolean | undefined>;
-
-function withQuery(path: string, params?: ListParams) {
-  if (!params) return path;
-  const query = new URLSearchParams(
-    Object.entries(params)
-      .filter(([, value]) => value !== undefined && value !== "")
-      .map(([key, value]) => [key, String(value)]),
-  ).toString();
-  return query ? `${path}?${query}` : path;
+export interface CatalogPage<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  totalCount?: number;
 }
-
-export interface ActiveSubstanceDto {
+export interface CatalogListQuery extends PageQuery {
+  q?: string;
+  sortBy?: string;
+  sortDirection?: "asc" | "desc";
+}
+export interface CatalogEntryDto {
   id: string;
   code: string;
   name: string;
+}
+export interface ActiveSubstanceDto extends CatalogEntryDto {
   category?: string;
   safetyIntervalDays?: number;
 }
-
+export interface CommodityDto extends CatalogEntryDto {
+  createdBy: string | null;
+  version: number;
+  canEdit: boolean;
+  canDelete: boolean;
+  isArchived: boolean;
+}
+export interface MeasurementUnitDto extends CatalogEntryDto {
+  quantityKind: string;
+  createdBy: string | null;
+  version: number;
+  canEdit: boolean;
+  canDelete: boolean;
+  isDeleted: boolean;
+}
+export interface QualityAttributeDto extends CatalogEntryDto {
+  unit: string;
+}
 export interface MrlLimitDto {
   id: string;
   mrlVersionId: string;
@@ -27,7 +48,6 @@ export interface MrlLimitDto {
   limitValue: number;
   unit: string;
 }
-
 export interface MrlVersionDto {
   id: string;
   marketId: string;
@@ -35,217 +55,263 @@ export interface MrlVersionDto {
   versionNo: number;
   effectiveFrom: string;
   effectiveTo: string | null;
-  status: string;
+  status: "DRAFT" | "PUBLISHED";
   publishedBy: string | null;
   publishedAt: string | null;
   sourceRef: string;
 }
-
-export interface MrlVersionListResponse {
-  items: MrlVersionDto[];
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
+export type MrlVersionListResponse = CatalogPage<MrlVersionDto>;
+export type MrlLimitListResponse = CatalogPage<MrlLimitDto>;
+export interface MrlVersionQuery extends PageQuery {
+  marketId?: string;
+  commodityId?: string;
+  status?: "DRAFT" | "PUBLISHED";
+}
+export interface ResolveMrlVersionQuery {
+  marketId: string;
+  commodityId: string;
+  decisionAt: string;
+}
+export interface UpdateMrlVersionRequest {
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  sourceRef?: string;
 }
 
-export interface MrlLimitListResponse {
-  items: MrlLimitDto[];
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
+/** The exact ETag read with the record is required for all catalog mutations. */
+function ifMatch(etag: string) {
+  if (!etag)
+    throw new Error("Missing catalog ETag. Reload the record before editing.");
+  return { "If-Match": etag };
+}
+
+/** Write a JSON number without rounding a reviewed decimal through a JS Number. */
+function mrlLimitBody(request: UpsertMrlLimitRequest): string {
+  if (request.limitValue === null) return JSON.stringify(request);
+  const value = new Decimal(request.limitValue).toFixed();
+  if (!/^\d{1,12}(?:\.\d{1,12})?$/.test(value))
+    throw new Error(
+      "MRL limits require a nonnegative decimal with at most 12 integer and 12 decimal digits.",
+    );
+  return `{"limitValue":${value},"unit":${JSON.stringify(request.unit)}}`;
 }
 
 export const catalogEndpoints = {
-  // Active substances
-  getActiveSubstances: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/active-substances", params)),
+  getActiveSubstances: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<ActiveSubstanceDto>>(
+      withApiQuery("/api/active-substances", query),
+    ),
   getActiveSubstance: (id: string) =>
-    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`),
+    apiFetchResource<ActiveSubstanceDto>(
+      `/api/active-substances/${encodeURIComponent(id)}`,
+    ),
   createActiveSubstance: (req: CreateActiveSubstanceRequest) =>
-    apiFetch<unknown>("/api/active-substances", {
+    apiFetch<ActiveSubstanceDto>("/api/active-substances", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateActiveSubstance: (id: string, req: UpdateActiveSubstanceRequest) =>
-    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  patchActiveSubstance: (id: string, req: UpdateActiveSubstanceRequest) =>
-    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  deleteActiveSubstance: (id: string) =>
-    apiFetch<unknown>(`/api/active-substances/${encodeURIComponent(id)}`, {
+  updateActiveSubstance: (
+    id: string,
+    req: UpdateActiveSubstanceRequest,
+    etag: string,
+  ) =>
+    apiFetch<ActiveSubstanceDto>(
+      `/api/active-substances/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: ifMatch(etag),
+        body: JSON.stringify(req),
+      },
+    ),
+  deleteActiveSubstance: (id: string, etag: string) =>
+    apiFetch<void>(`/api/active-substances/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: ifMatch(etag),
     }),
-
-  // Markets
-  getMarkets: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/markets", params)),
+  getMarkets: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<CatalogEntryDto>>(withApiQuery("/api/markets", query)),
   getMarket: (id: string) =>
-    apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`),
+    apiFetchResource<CatalogEntryDto>(`/api/markets/${encodeURIComponent(id)}`),
   createMarket: (req: CreateMarketRequest) =>
-    apiFetch<unknown>("/api/markets", {
+    apiFetch<CatalogEntryDto>("/api/markets", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateMarket: (id: string, req: UpdateMarketRequest) =>
-    apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`, {
+  updateMarket: (id: string, req: UpdateMarketRequest, etag: string) =>
+    apiFetch<CatalogEntryDto>(`/api/markets/${encodeURIComponent(id)}`, {
       method: "PATCH",
+      headers: ifMatch(etag),
       body: JSON.stringify(req),
     }),
-  patchMarket: (id: string, req: UpdateMarketRequest) =>
-    apiFetch<unknown>(`/api/markets/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-
-  // Commodities
-  getCommodities: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/commodities", params)),
+  getCommodities: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<CommodityDto>>(
+      withApiQuery("/api/commodities", query),
+    ),
   getCommodity: (id: string) =>
-    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`),
+    apiFetchResource<CommodityDto>(
+      `/api/commodities/${encodeURIComponent(id)}`,
+    ),
   createCommodity: (req: CreateCommodityRequest) =>
-    apiFetch<unknown>("/api/commodities", {
+    apiFetch<CommodityDto>("/api/commodities", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateCommodity: (id: string, req: UpdateCommodityRequest) =>
-    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
+  updateCommodity: (id: string, req: UpdateCommodityRequest, etag: string) =>
+    apiFetch<CommodityDto>(`/api/commodities/${encodeURIComponent(id)}`, {
       method: "PATCH",
+      headers: ifMatch(etag),
       body: JSON.stringify(req),
     }),
-  patchCommodity: (id: string, req: UpdateCommodityRequest) =>
-    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  deleteCommodity: (id: string) =>
-    apiFetch<unknown>(`/api/commodities/${encodeURIComponent(id)}`, {
+  deleteCommodity: (id: string, etag: string) =>
+    apiFetch<void>(`/api/commodities/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: ifMatch(etag),
     }),
-
-  // Quality attributes
-  getQualityAttributes: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/quality-attributes", params)),
+  getQualityAttributes: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<QualityAttributeDto>>(
+      withApiQuery("/api/quality-attributes", query),
+    ),
   getQualityAttribute: (id: string) =>
-    apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`),
+    apiFetchResource<QualityAttributeDto>(
+      `/api/quality-attributes/${encodeURIComponent(id)}`,
+    ),
   createQualityAttribute: (req: CreateQualityAttributeRequest) =>
-    apiFetch<unknown>("/api/quality-attributes", {
+    apiFetch<QualityAttributeDto>("/api/quality-attributes", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateQualityAttribute: (id: string, req: UpdateQualityAttributeRequest) =>
-    apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  patchQualityAttribute: (id: string, req: UpdateQualityAttributeRequest) =>
-    apiFetch<unknown>(`/api/quality-attributes/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-
-  // Rice varieties
-  getRiceVarieties: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/rice-varieties", params)),
+  updateQualityAttribute: (
+    id: string,
+    req: UpdateQualityAttributeRequest,
+    etag: string,
+  ) =>
+    apiFetch<QualityAttributeDto>(
+      `/api/quality-attributes/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: ifMatch(etag),
+        body: JSON.stringify(req),
+      },
+    ),
+  getRiceVarieties: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<CatalogEntryDto>>(
+      withApiQuery("/api/rice-varieties", query),
+    ),
   getRiceVariety: (id: string) =>
-    apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`),
+    apiFetchResource<CatalogEntryDto>(
+      `/api/rice-varieties/${encodeURIComponent(id)}`,
+    ),
   createRiceVariety: (req: CreateRiceVarietyRequest) =>
-    apiFetch<unknown>("/api/rice-varieties", {
+    apiFetch<CatalogEntryDto>("/api/rice-varieties", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateRiceVariety: (id: string, req: UpdateRiceVarietyRequest) =>
-    apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`, {
+  updateRiceVariety: (
+    id: string,
+    req: UpdateRiceVarietyRequest,
+    etag: string,
+  ) =>
+    apiFetch<CatalogEntryDto>(`/api/rice-varieties/${encodeURIComponent(id)}`, {
       method: "PATCH",
+      headers: ifMatch(etag),
       body: JSON.stringify(req),
     }),
-  patchRiceVariety: (id: string, req: UpdateRiceVarietyRequest) =>
-    apiFetch<unknown>(`/api/rice-varieties/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-
-  // Measurement units
-  getMeasurementUnits: (params?: ListParams) =>
-    apiFetch<unknown>(withQuery("/api/measurement-units", params)),
+  getMeasurementUnits: (query?: CatalogListQuery) =>
+    apiFetch<CatalogPage<MeasurementUnitDto>>(
+      withApiQuery("/api/measurement-units", query),
+    ),
   getMeasurementUnit: (id: string) =>
-    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`),
+    apiFetchResource<MeasurementUnitDto>(
+      `/api/measurement-units/${encodeURIComponent(id)}`,
+    ),
   createMeasurementUnit: (req: CreateMeasurementUnitRequest) =>
-    apiFetch<unknown>("/api/measurement-units", {
+    apiFetch<MeasurementUnitDto>("/api/measurement-units", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateMeasurementUnit: (id: string, req: UpdateMeasurementUnitRequest) =>
-    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  patchMeasurementUnit: (id: string, req: UpdateMeasurementUnitRequest) =>
-    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(req),
-    }),
-  deleteMeasurementUnit: (id: string) =>
-    apiFetch<unknown>(`/api/measurement-units/${encodeURIComponent(id)}`, {
+  updateMeasurementUnit: (
+    id: string,
+    req: UpdateMeasurementUnitRequest,
+    etag: string,
+  ) =>
+    apiFetch<MeasurementUnitDto>(
+      `/api/measurement-units/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: ifMatch(etag),
+        body: JSON.stringify(req),
+      },
+    ),
+  deleteMeasurementUnit: (id: string, etag: string) =>
+    apiFetch<void>(`/api/measurement-units/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: ifMatch(etag),
     }),
-
-  // MRL table versions
-  getMrlVersions: () => apiFetch<MrlVersionListResponse>("/api/mrl-versions"),
+  getMrlVersions: (query?: MrlVersionQuery) =>
+    apiFetch<MrlVersionListResponse>(withApiQuery("/api/mrl-versions", query)),
   getMrlVersion: (id: string) =>
-    apiFetch<MrlVersionDto>(`/api/mrl-versions/${encodeURIComponent(id)}`),
+    apiFetchResource<MrlVersionDto>(
+      `/api/mrl-versions/${encodeURIComponent(id)}`,
+    ),
   createMrlVersion: (req: CreateMrlVersionRequest) =>
-    apiFetch<unknown>("/api/mrl-versions", {
+    apiFetch<MrlVersionDto>("/api/mrl-versions", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  updateMrlVersion: (id: string, req: unknown) =>
-    apiFetch<unknown>(`/api/mrl-versions/${encodeURIComponent(id)}`, {
+  updateMrlVersion: (id: string, req: UpdateMrlVersionRequest, etag: string) =>
+    apiFetch<MrlVersionDto>(`/api/mrl-versions/${encodeURIComponent(id)}`, {
       method: "PATCH",
+      headers: ifMatch(etag),
       body: JSON.stringify(req),
     }),
   importMrlVersion: (req: ImportMrlVersionRequest) =>
-    apiFetch<unknown>("/api/mrl-versions/import", {
+    apiFetch<MrlVersionDto>("/api/mrl-versions/import", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  getMrlLimits: (versionId: string) =>
-    apiFetch<unknown>(
-      `/api/mrl-versions/${encodeURIComponent(versionId)}/limits`,
+  getMrlLimits: (
+    versionId: string,
+    query?: PageQuery & { substanceId?: string },
+  ) =>
+    apiFetch<MrlLimitListResponse>(
+      withApiQuery(
+        `/api/mrl-versions/${encodeURIComponent(versionId)}/limits`,
+        query,
+      ),
     ),
   upsertMrlLimit: (
     versionId: string,
     substanceId: string,
     req: UpsertMrlLimitRequest,
+    etag: string,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<MrlLimitDto>(
       `/api/mrl-versions/${encodeURIComponent(versionId)}/limits/${encodeURIComponent(substanceId)}`,
       {
         method: "PUT",
-        body: JSON.stringify(req),
+        headers: ifMatch(etag),
+        body: mrlLimitBody(req),
       },
     ),
-  deleteMrlLimit: (versionId: string, substanceId: string) =>
-    apiFetch<unknown>(
+  deleteMrlLimit: (versionId: string, substanceId: string, etag: string) =>
+    apiFetch<void>(
       `/api/mrl-versions/${encodeURIComponent(versionId)}/limits/${encodeURIComponent(substanceId)}`,
       {
         method: "DELETE",
+        headers: ifMatch(etag),
       },
     ),
-  publishMrlVersion: (versionId: string) =>
-    apiFetch<unknown>(
+  publishMrlVersion: (versionId: string, etag: string) =>
+    apiFetch<MrlVersionDto>(
       `/api/mrl-versions/${encodeURIComponent(versionId)}/publish`,
       {
         method: "POST",
+        headers: ifMatch(etag),
       },
     ),
-  resolveMrlVersion: () => apiFetch<unknown>("/api/mrl-versions/resolve"),
+  resolveMrlVersion: (query: ResolveMrlVersionQuery) =>
+    apiFetch<MrlVersionDto>(withApiQuery("/api/mrl-versions/resolve", query)),
 };
-
 export const catalogsEndpoints = catalogEndpoints;
 
 export interface CreateActiveSubstanceRequest {

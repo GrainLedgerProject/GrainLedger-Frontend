@@ -14,6 +14,25 @@ import { getApiUrl } from "./config";
 
 export interface ApiFetchOptions extends RequestInit {
   responseType?: "json" | "blob" | "text";
+  onResponse?: (response: Response) => void;
+}
+
+export interface ApiResource<T> {
+  data: T;
+  etag: string | null;
+}
+
+/** Keep concurrency metadata local to the record being edited, never in a shared cache. */
+export async function apiFetchResource<T>(
+  endpoint: string,
+): Promise<ApiResource<T>> {
+  let etag: string | null = null;
+  const data = await apiFetch<T>(endpoint, {
+    onResponse: (response) => {
+      etag = response.headers.get("ETag");
+    },
+  });
+  return { data, etag };
 }
 
 export class ApiError extends Error {
@@ -124,7 +143,7 @@ export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { responseType = "json", ...requestOptions } = options;
+  const { responseType = "json", onResponse, ...requestOptions } = options;
   const isAuthEndpoint =
     endpoint.includes("/api/auth/login") ||
     endpoint.includes("/api/auth/web-login") ||
@@ -252,6 +271,8 @@ export async function apiFetch<T>(
     }
   }
 
+  if (response.ok) onResponse?.(response);
+
   // Handle successful empty response (204 No Content)
   if (response.status === 204 || response.status === 205) {
     return undefined as T;
@@ -288,6 +309,8 @@ export async function apiFetch<T>(
 }
 
 export interface ProblemDetails {
+  code?: string;
+  errors?: Record<string, string[]>;
   type?: null | string;
   title?: null | string;
   status?: null | number | string;

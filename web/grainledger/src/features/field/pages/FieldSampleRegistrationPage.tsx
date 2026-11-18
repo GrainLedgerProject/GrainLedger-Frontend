@@ -156,7 +156,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
         },
       };
 
-      const created = (await sampleEndpoints.captureSample(payload)) as {
+      const created = (await sampleEndpoints.createSample(payload)) as {
         code?: string;
       } | null;
 

@@ -92,7 +92,7 @@ export interface IssuedTokens {
   accessToken: string;
   refreshToken: string;
   tokenType: string;
-  expiresIn: number | string;
+  expiresIn: number;
   user: SessionUserDto;
 }
 
@@ -110,7 +110,7 @@ export interface RegisterRequest {
 export interface RegistrationPendingDto {
   registrationId: string;
   email: string;
-  expiresIn: number | string;
+  expiresIn: number;
 }
 
 export interface ResendVerificationRequest {

@@ -14,11 +14,6 @@ export const sampleEndpoints = {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  captureSample: (req: CaptureSampleRequest) =>
-    apiFetch<unknown>("/api/samples", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
   getSampleHandovers: (id: string) =>
     apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}/handovers`),
   recordSampleHandover: (id: string, req: RecordSampleHandoverRequest) =>
@@ -38,11 +33,6 @@ export const labReportEndpoints = {
   getLabReport: (id: string) =>
     apiFetch<LabReportResponse>(`/api/lab-reports/${encodeURIComponent(id)}`),
   createLabReport: (req: CaptureLabReportRequest) =>
-    apiFetch<LabReportResponse>("/api/lab-reports", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-  captureLabReport: (req: CaptureLabReportRequest) =>
     apiFetch<LabReportResponse>("/api/lab-reports", {
       method: "POST",
       body: JSON.stringify(req),

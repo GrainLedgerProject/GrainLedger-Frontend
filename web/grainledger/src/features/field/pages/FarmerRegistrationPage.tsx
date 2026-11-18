@@ -349,7 +349,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       )}
 
       {/* Search & Statistics Filter Bar */}
-      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
