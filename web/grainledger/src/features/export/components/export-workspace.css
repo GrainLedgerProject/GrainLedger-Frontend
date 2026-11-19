@@ -1,0 +1,410 @@
+.export-workspace {
+  color: var(--color-ink-primary);
+  container: export-workspace / inline-size;
+}
+.export-action-dialog {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(76rem, calc(100dvw - 2rem));
+  max-block-size: calc(100dvh - 2rem);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 1rem;
+  background: var(--color-surface-base);
+}
+.export-action-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+.export-action-dialog[data-kind="create-order"] {
+  inline-size: min(48rem, calc(100dvw - 2rem));
+}
+.export-action-dialog[data-kind="order"],
+.export-action-dialog[data-kind="closure"] {
+  inline-size: min(60rem, calc(100dvw - 2rem));
+}
+.export-action-dialog-body {
+  min-block-size: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem;
+}
+.export-workspace :is(input:not([type="checkbox"]), select, textarea) {
+  min-block-size: 2.75rem;
+  inline-size: 100%;
+  border: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 25%, transparent);
+  border-radius: 0.75rem;
+  background: var(--color-surface-raised);
+  padding: 0.625rem 0.875rem;
+  color: var(--color-ink-primary);
+  font-size: 0.8125rem;
+}
+.export-workspace label {
+  color: var(--color-ink-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.export-workspace
+  :is(input, select, textarea, button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 3px;
+}
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-block-size: 2.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 25%, transparent);
+  border-radius: 0.875rem;
+  background: var(--color-surface-base);
+  color: var(--color-ink-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.export-button:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+}
+.export-button-primary {
+  border-color: var(--color-accent-primary);
+  background: var(--color-accent-primary);
+  color: var(--color-ink-inverse);
+}
+.export-button-primary:hover {
+  background: var(--color-accent-primary-dim);
+  color: var(--color-ink-inverse);
+}
+.export-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.export-button-icon {
+  inline-size: 2.75rem;
+  padding: 0.625rem;
+  border-radius: 999px;
+}
+.export-workspace-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-block-end: 1rem;
+  border-block-end: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 15%, transparent);
+}
+.export-workspace-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 2.75rem;
+  border-radius: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+}
+.export-workspace-nav a:hover {
+  background: var(--color-surface-raised);
+}
+.export-workspace-nav a[aria-current="page"] {
+  color: var(--color-ink-inverse);
+  background: var(--color-accent-primary);
+}
+.export-stat {
+  min-inline-size: 0;
+}
+.export-stat > p {
+  overflow-wrap: anywhere;
+}
+.export-table-scroll {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: 36rem;
+  border: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 20%, transparent);
+  border-radius: 1rem;
+  container-type: inline-size;
+}
+.export-data-table {
+  inline-size: 100%;
+  min-inline-size: 40rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.75rem;
+  text-align: start;
+}
+.export-data-table :is(th, td) {
+  padding: 0.875rem 1rem;
+  border-block-end: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 15%, transparent);
+  vertical-align: middle;
+}
+.export-data-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+}
+.export-data-table thead th {
+  background: var(--color-surface-raised);
+  color: var(--color-ink-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.export-data-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--color-surface-base);
+  text-align: start;
+}
+.export-data-table tbody tr:hover :is(th, td),
+.export-data-table tr[data-selected="true"] :is(th, td) {
+  background: var(--color-surface-raised);
+}
+.export-data-table tbody tr:last-child :is(th, td) {
+  border-block-end: 0;
+}
+.export-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+@container (width < 560px) {
+  .export-data-table :is(th, td) {
+    padding: 0.75rem;
+  }
+  .export-row-actions {
+    min-inline-size: 9rem;
+  }
+}
+@media (pointer: coarse) {
+  .export-workspace :is(input:not([type="checkbox"]), select, textarea) {
+    font-size: 1rem;
+    min-block-size: 3rem;
+  }
+  .export-button,
+  .export-workspace-nav a {
+    min-block-size: 3rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .export-button {
+    transition: none;
+  }
+}
+
+/* Shared materials; each workspace defines its own task layout. */
+.export-surface {
+  border: 1px solid
+    color-mix(in srgb, var(--color-ink-tertiary) 20%, transparent);
+  border-radius: 1rem;
+  background: var(--color-surface-base);
+}
+.export-quiet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-block-size: 2.75rem;
+  color: var(--color-accent-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.export-quiet-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.export-orders-layout,
+.export-planning-layout,
+.export-dossiers-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.export-order-ledger-intro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  padding: 0.5rem 0.25rem 1rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+.export-order-ledger-intro > div {
+  min-inline-size: 0;
+}
+.export-orders-layout .export-table-scroll {
+  max-block-size: 42rem;
+}
+.export-workspace progress {
+  accent-color: var(--color-accent-primary);
+}
+.export-dispatch-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+}
+.export-dispatch-toolbar > div {
+  min-inline-size: 0;
+  max-inline-size: none;
+}
+.export-dispatch-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.export-dispatch-lane {
+  min-inline-size: 0;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-surface-raised) 65%, transparent);
+  border: 1px solid var(--color-border-subtle);
+  border-block-start: 3px solid var(--color-ink-tertiary);
+  border-radius: 1rem;
+}
+.export-dispatch-lane[data-stage="LOADING"] {
+  border-block-start-color: var(--color-accent-warning);
+}
+.export-dispatch-lane[data-stage="CLOSED"] {
+  border-block-start-color: var(--color-accent-primary);
+}
+.export-planning-steps {
+  display: grid;
+  gap: 1.25rem;
+}
+.export-planning-steps li {
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+.export-step-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-subtle);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+}
+.export-plan-versions {
+  display: grid;
+  gap: 1rem;
+}
+.export-plan-version {
+  padding: 1.25rem;
+  border: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-accent-primary);
+  border-radius: 0.875rem;
+}
+.export-version-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.75rem;
+  min-block-size: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface-raised);
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.export-record-index {
+  max-block-size: 34rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  padding: 0.5rem;
+}
+.export-record-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  min-block-size: 5rem;
+  padding: 1rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  text-align: start;
+  color: var(--color-ink-primary);
+}
+.export-record-choice > svg:first-child {
+  color: var(--color-ink-tertiary);
+  flex-shrink: 0;
+}
+.export-record-choice:hover {
+  background: var(--color-surface-raised);
+}
+.export-record-choice[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--color-accent-primary) 7%,
+    var(--color-surface-base)
+  );
+  border-color: var(--color-accent-primary);
+}
+.export-record-choice[aria-pressed="true"] > svg {
+  color: var(--color-accent-primary);
+}
+.export-dossier-summary {
+  display: grid;
+  gap: 1.5rem;
+}
+.export-dossier-preview {
+  container: dossier-preview / inline-size;
+}
+.export-snapshot-download {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--color-surface-raised);
+  border-radius: 0.875rem;
+}
+.export-row-actions {
+  flex-wrap: wrap;
+  flex-wrap: balance;
+}
+@container export-workspace (inline-size > 40rem) {
+  .export-dispatch-toolbar {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(10rem, 0.7fr);
+  }
+}
+@container dossier-preview (inline-size > 38rem) {
+  .export-dossier-summary {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.6fr);
+  }
+}
+@container export-workspace (inline-size > 48rem) {
+  .export-planning-layout {
+    grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.7fr);
+  }
+  .export-dossiers-layout {
+    grid-template-columns: minmax(16rem, 0.75fr) minmax(0, 1.6fr);
+  }
+}
+@container export-workspace (inline-size > 60rem) {
+  .export-dispatch-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container export-workspace (inline-size > 68rem) {
+  .export-orders-layout {
+    grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 1fr);
+  }
+}

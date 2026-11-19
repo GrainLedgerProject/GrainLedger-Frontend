@@ -24,12 +24,12 @@ Khởi động lại dev server sau khi sửa `.env`. Các biến `VITE_*` đư�
 
 Các API được khai báo trực tiếp trong `src/api/` theo nhóm chức năng (`auth.ts`, `ledger.ts`, `planning.ts`, ...), dùng chung `apiFetch` từ `client.ts`. Interface request/response nằm ngay trong file API tương ứng. Khi cập nhật endpoint, sửa trực tiếp file API rồi chạy `npm test` và `npm run build`.
 
-Xem [kết quả đối soát API và giao diện](docs/api-reconciliation.md) để biết endpoint mới, interface bổ sung và giới hạn của đặc tả.
+Xem [kết quả triển khai workflow và giới hạn API](docs/frontend-workflow-completion.md) để biết trạng thái màn hình và các phần còn phụ thuộc backend.
 
 ## Tổ chức mã nguồn
 
 - Mỗi nghiệp vụ trong `src/features/` sở hữu URL trong `paths.ts`, điều kiện truy cập và màn hình tải theo nhu cầu trong `routes.tsx`. Dùng chung path hoặc hàm dựng URL cho sidebar, dashboard và liên kết tới bản ghi.
-- `src/app/router/` ghép route và kiểm tra quyền, `src/app/navigation/` định nghĩa menu, `src/app/layout/` chứa khung ứng dụng. Màn hình chờ có `handle.kind === "placeholder"` để phân biệt khi kiểm tra điều hướng.
+- `src/app/router/` ghép route và kiểm tra quyền, `src/app/navigation/` định nghĩa menu, `src/app/layout/` chứa khung ứng dụng. `handle.kind === "integration-pending"` nhận diện màn hình còn chờ nối API nghiệp vụ. Chín route chờ trước đây không còn dựng `PlaceholderPage`.
 - Trong feature, `pages/` ghép màn hình, `components/` hiển thị từng tác vụ, `hooks/` quản lý truy vấn và thao tác ghi, `model/` chứa parser và quy tắc nghiệp vụ. Chỉ tạo thư mục có mã sử dụng.
 - `src/shared/ui/` chứa thành phần dùng chung. `src/api/` sở hữu DTO, ETag và HTTP. Adapter trong `src/app/providers/` kết nối HTTP với phiên đăng nhập và trạng thái kết nối khi khởi động.
 - `src/pwa/` quản lý service worker và IndexedDB. Logic lưu, gửi lại và lọc phiếu thu mua theo tài khoản và doanh nghiệp nằm trong `src/features/field/offline/`.

@@ -1,21 +1,17 @@
-import { useAuthStore } from "@/app/store/authStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { ArrowsClockwise, CaretRight, CheckCircle, FolderOpen, MagnifyingGlass, WarningCircle, X } from "@phosphor-icons/react";
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { CorrectionStatusBadge } from "../components/CorrectionStatusBadge";
 import { useCorrectionReview } from "../hooks/useCorrectionReview";
 import { CorrectionWorkbench } from "../components/CorrectionWorkbench";
 
 export const CorrectionManagementPage: React.FC = () => {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
-
-  const isManager =
-    user?.role === "MILL_MANAGER" || user?.role === "MILL_ADMIN";
-
+  const text = useWorkflowText();
   const {
-    corrections, loading, error, statusFilter, setStatusFilter, searchQuery, setSearchQuery,
+    corrections, loading, error, notFound, statusFilter, setStatusFilter, searchQuery, setSearchQuery,
     selectedCorrection, closeWorkbench,
     fetchCorrections, handleOpenWorkbench, filteredCorrections, stats,
   } = useCorrectionReview();
@@ -68,6 +64,7 @@ export const CorrectionManagementPage: React.FC = () => {
       </div>
 
       {/* Alerts */}
+      {notFound && <p role="alert">{text("Không tìm thấy hồ sơ trong phạm vi truy cập hiện tại.", "The record was not found in your current access scope.")}</p>}
       {error && (
         <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
           <WarningCircle size={18} weight="fill" className="shrink-0" />
@@ -385,7 +382,6 @@ export const CorrectionManagementPage: React.FC = () => {
         <CorrectionWorkbench
           key={selectedCorrection.id}
           selectedCorrection={selectedCorrection}
-          isManager={isManager}
           onClose={closeWorkbench}
         />
       )}

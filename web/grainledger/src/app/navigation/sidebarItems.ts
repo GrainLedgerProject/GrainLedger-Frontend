@@ -127,6 +127,11 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: ClockCounterClockwise,
           },
           {
+            label: t("nav.mill.reconciliations", "Đối soát & Xác nhận"),
+            path: millPaths.reconciliations,
+            icon: CheckSquare,
+          },
+          {
             label: t("nav.events", "Tìm sự kiện"),
             path: auditPaths.events,
             icon: MagnifyingGlass,
@@ -260,11 +265,6 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: ShieldCheck,
           },
           {
-            label: t("nav.export.plansPending", "Duyệt phương án"),
-            path: exportPaths.pending,
-            icon: CheckSquare,
-          },
-          {
             label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
             path: catalogsPaths.mrlVersions,
             icon: BookOpen,
@@ -289,22 +289,26 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
           {
             label: t("nav.export.orders", "Đơn xuất khẩu"),
             path: exportPaths.orders,
+            permission: "export-orders.read",
             icon: Export,
             isPrimary: true,
           },
           {
             label: t("nav.export.plans", "Yêu cầu phương án"),
             path: exportPaths.plans,
+            permission: "export-orders.read",
             icon: ChartPieSlice,
           },
           {
             label: t("nav.export.containers", "Xếp container"),
             path: exportPaths.containers,
+            permission: "export-orders.read",
             icon: Truck,
           },
           {
             label: t("nav.export.dossiers", "Hồ sơ & Chứng từ"),
             path: exportPaths.dossiers,
+            permission: "export-orders.read",
             icon: FileText,
           },
           {
@@ -358,16 +362,6 @@ export function getSidebarItems(role: UserRole, permissions: string[], t: TFunct
       label: t("apiAudit.policy.title"),
       path: compliancePaths.companyPolicies,
       icon: Flask,
-    });
-  }
-  if (
-    permissions.includes("export-orders.read") &&
-    !navItems.some((item) => item.path === exportPaths.pending)
-  ) {
-    navItems.push({
-      label: t("nav.export.plansPending", "Duyệt phương án"),
-      path: exportPaths.pending,
-      icon: CheckSquare,
     });
   }
   if (

@@ -12,7 +12,7 @@ export function lazyScreen(load: () => Promise<{ default: ComponentType }>) {
 interface ScreenOptions {
   roles?: UserRole[];
   permission?: string;
-  kind?: "placeholder";
+  kind?: "placeholder" | "integration-pending";
 }
 
 export function screenRoute(path: string, screen: ReactElement, { roles, permission, kind }: ScreenOptions = {}): RouteObject {

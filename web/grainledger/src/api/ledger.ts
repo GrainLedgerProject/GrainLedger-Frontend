@@ -83,6 +83,37 @@ export interface CreateCorrectionRequest {
   reason: string;
 }
 
+export interface PhysicalPosition {
+  lotId: string;
+  locationId: string;
+  quantityKg: string;
+}
+
+export interface ReconcileCorrectionRequest {
+  evidenceId: string;
+  reason: string;
+  reconciliation: PhysicalPosition[];
+  replacementOperationId: string;
+  replacementVersion: string;
+}
+
+export interface CorrectionOperation {
+  id: string;
+  version: string;
+  status: string;
+  kind: string;
+  ownerId: string;
+  facilityId: string;
+  equipmentId: string;
+  occurredAt: string;
+  declaredLossKg: string;
+  varianceKg?: string;
+  confirmedVersion?: string | null;
+  boundCorrectionId?: string | null;
+  inputs: { lotId: string; locationId: string; quantityKg: string; poolRevision?: string }[];
+  outputs: { id: string; code?: string; commodityId: string; stage: string; productIdentity?: string; locationId: string; quantityKg: string; originalLotId?: string }[];
+}
+
 export interface RecordOperationRequest {
   facilityId?: string;
   operationType: "DRYING" | "MILLING" | "BLENDING" | "BAGGING";
@@ -204,7 +235,7 @@ export const ledgerEndpoints = {
     ),
 
   // Operations
-  getOperations: () => apiFetch<unknown>("/api/ledger/operations"),
+  getOperations: (query?: PageQuery & { status?: string; ownerId?: string; facilityId?: string }) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
   recordOperation: (req: object) =>
     apiFetch<unknown>("/api/ledger/operations", {
       method: "POST",
@@ -240,7 +271,7 @@ export const ledgerEndpoints = {
     ),
 
   // Quarantine Holds
-  getHolds: () => apiFetch<unknown>("/api/ledger/holds"),
+  getHolds: (query?: PageQuery) => apiFetch<unknown>(withApiQuery("/api/ledger/holds", query)),
   createHold: (req: object) =>
     apiFetch<unknown>("/api/ledger/holds", {
       method: "POST",
@@ -253,13 +284,13 @@ export const ledgerEndpoints = {
     }),
 
   // Corrections & Reconciliations
-  getCorrections: () => apiFetch<unknown>("/api/ledger/corrections"),
+  getCorrections: (query?: PageQuery) => apiFetch<unknown>(withApiQuery("/api/ledger/corrections", query)),
   createCorrection: (req: CreateCorrectionRequest) =>
     apiFetch<{ id: string }>("/api/ledger/corrections", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  reconcileCorrection: (id: string, req: object) =>
+  reconcileCorrection: (id: string, req: ReconcileCorrectionRequest) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/reconcile`,
       {
@@ -267,7 +298,7 @@ export const ledgerEndpoints = {
         body: JSON.stringify(req),
       },
     ),
-  commitCorrection: (id: string, req: object) =>
+  commitCorrection: (id: string, req: { replacementOperationId: string }) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/commit`,
       {
@@ -275,7 +306,7 @@ export const ledgerEndpoints = {
         body: JSON.stringify(req),
       },
     ),
-  cancelCorrection: (id: string, req: object) =>
+  cancelCorrection: (id: string, req: { evidenceId: string; reason: string }) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/cancel`,
       {
@@ -371,7 +402,7 @@ export const ledgerEndpoints = {
       body: JSON.stringify(req),
     }),
   getEvidence: (id: string) =>
-    apiFetch<unknown>(`/api/ledger/evidence/${encodeURIComponent(id)}`),
+    apiFetch<Blob>(`/api/ledger/evidence/${encodeURIComponent(id)}`, { responseType: "blob" }),
 
   // Traceability and residue evaluation
   traceLot: (req: LotTraceRequest) =>

@@ -9,7 +9,7 @@ export const exportEndpoints = {
       withApiQuery("/api/export-orders", query),
     ),
   createOrder: (body: CreateExportOrderRequest) =>
-    apiFetch<unknown>("/api/export-orders", {
+    apiFetch<ExportOrderDetail>("/api/export-orders", {
       method: "POST",
       body: JSON.stringify(body),
     }),

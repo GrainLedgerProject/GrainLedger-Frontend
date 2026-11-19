@@ -5,6 +5,9 @@ export interface CorrectionRecord {
   category?: string;
   reason: string;
   reconciliationNotes?: string;
+  evidenceId?: string | null;
+  replacementOperationId?: string | null;
+  reconciliation?: import("@/api/ledger").PhysicalPosition[] | null;
   status: "PENDING_REVIEW" | "RECONCILED" | "COMMITTED" | "CANCELLED";
   createdAt: string;
   createdBy?: string;

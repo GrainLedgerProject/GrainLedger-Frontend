@@ -1,6 +1,6 @@
 import { lazyScreen, screenRoute } from "@/app/router/screenRoute";
 import { millPaths, requestCorrectionPermission } from "./paths";
-import { PlaceholderPage } from "@/app/router/PlaceholderPage";
+const executionPage = lazyScreen(() => import("./pages/ApprovedPlanExecutionPage").then(m => ({ default: m.ApprovedPlanExecutionPage })));
 
 const receivingTasksPage = lazyScreen(() =>
   import("./pages/ReceivingTasksPage").then(module => ({ default: module.ReceivingTasksPage })),
@@ -22,14 +22,9 @@ export const millRoutes = [
   screenRoute(millPaths.receiving, receivingTasksPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
   screenRoute(millPaths.operation, operationEntryPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
   screenRoute(millPaths.requestCorrection, correctionRequestPage, { roles: ["MILL_OPERATOR"], permission: requestCorrectionPermission }),
-  screenRoute(millPaths.reconciliations, correctionManagementPage, { roles: ["MILL_MANAGER", "MILL_ADMIN"] }),
-  screenRoute(millPaths.reconciliation, correctionManagementPage, { roles: ["MILL_MANAGER", "MILL_ADMIN"] }),
-  screenRoute(millPaths.executePlan, <PlaceholderPage
-    titleVi="Thực thi Phương án Phối trộn đã Duyệt (Approved Plan Execution)"
-    titleEn="Approved Plan Execution"
-    roles={["MILL_OPERATOR"]}
-    descriptionVi="Nhân viên vận hành lấy đúng số lượng gạo từ các silo đã được Customer Manager phê duyệt để thực hiện mẻ phối trộn xuất khẩu."
-  />, { roles: ["MILL_OPERATOR", "MILL_ADMIN"], kind: "placeholder" }),
+  screenRoute(millPaths.reconciliations, correctionManagementPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
+  screenRoute(millPaths.reconciliation, correctionManagementPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
+  screenRoute(millPaths.executePlan, executionPage, { roles: ["MILL_OPERATOR", "MILL_ADMIN"], kind: "integration-pending" }),
   screenRoute(millPaths.stock, stockOverviewPage),
   screenRoute(millPaths.lot, stockOverviewPage),
 ];

@@ -1,14 +1,9 @@
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { ApiError } from "@/api/client";
-
-export function useWorkflowText() {
-  const { i18n } = useTranslation();
-  return (vi: string, en: string) => i18n.language?.startsWith("en") ? en : vi;
-}
+import { useWorkflowText } from "./useWorkflowText";
 
 export function Workflow({ title, children }: { title: string; children: ReactNode }) {
-  return <main className="gl-workflow space-y-5 pb-8"><h1 className="font-display text-2xl font-bold text-ink-primary">{title}</h1>{children}</main>;
+  return <div className="gl-workflow space-y-5 pb-8"><h1 className="font-display text-2xl font-bold text-ink-primary">{title}</h1>{children}</div>;
 }
 
 export function Panel({ title, children }: { title: string; children: ReactNode }) {

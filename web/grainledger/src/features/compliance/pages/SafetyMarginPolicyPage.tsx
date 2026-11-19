@@ -375,13 +375,6 @@ export const SafetyMarginPolicyPage: React.FC = () => {
             <BookOpen size={15} className="text-accent-primary" />
             <span>Hướng dẫn kỹ thuật ISO</span>
           </button>
-          <Link
-            to="/export/plans/pending"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <span>Duyệt Phương Án</span>
-            <ArrowRight size={14} weight="bold" />
-          </Link>
         </div>
       </div>
 

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
+import { useAuthStore } from "@/app/store/authStore";
+import { ContainerNotices } from "@/features/export/components/ContainerNotices";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
@@ -25,8 +27,24 @@ interface HoldOrder {
   evidenceId: string | null;
 }
 
+async function readAllHolds(): Promise<HoldOrder[]> {
+  const records: HoldOrder[] = [];
+  for (let page = 1; ; page++) {
+    const response = await ledgerEndpoints.getHolds({ page, pageSize: 100 });
+    if (Array.isArray(response)) return [...records, ...response];
+    const result = response as { items: HoldOrder[]; hasMore?: boolean };
+    if (!Array.isArray(result?.items)) throw new Error("Invalid HOLD list response");
+    records.push(...result.items);
+    if (!result.hasMore) return records;
+    if (!result.items.length) throw new Error("Invalid HOLD pagination");
+  }
+}
+
 export const HoldManagementPage: React.FC = () => {
   const { t } = useTranslation();
+  const user = useAuthStore(s => s.user);
+  const canIssue = user?.role === "CUSTOMER_MANAGER" && user.permissions.includes("holds.manage");
+  const canRespond = user?.role === "MILL_MANAGER" && user.permissions.includes("holds.process");
   const [holds, setHolds] = useState<HoldOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +64,7 @@ export const HoldManagementPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await ledgerEndpoints.getHolds().catch(() => []);
-      const items = Array.isArray(res)
-        ? res
-        : (res as { items?: HoldOrder[] })?.items || [];
-      setHolds(items as HoldOrder[]);
+      setHolds(await readAllHolds());
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -75,12 +89,9 @@ export const HoldManagementPage: React.FC = () => {
 
     async function initHolds() {
       try {
-        const res = await ledgerEndpoints.getHolds().catch(() => []);
+        const items = await readAllHolds();
         if (!active) return;
-        const items = Array.isArray(res)
-          ? res
-          : (res as { items?: HoldOrder[] })?.items || [];
-        setHolds(items as HoldOrder[]);
+        setHolds(items);
       } catch (err: unknown) {
         if (!active) return;
         if (err instanceof Error) {
@@ -106,6 +117,7 @@ export const HoldManagementPage: React.FC = () => {
 
   const handleIssueHold = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canIssue) return;
     setSubmitting(true);
     setError(null);
 
@@ -143,6 +155,7 @@ export const HoldManagementPage: React.FC = () => {
   };
 
   const handleRespondHold = async (hold: HoldOrder, responseKind: string) => {
+    if (!canRespond) return;
     try {
       await ledgerEndpoints.respondToHold(hold.id, {
         operationId: crypto.randomUUID(),
@@ -205,20 +218,21 @@ export const HoldManagementPage: React.FC = () => {
           >
             <ArrowsClockwiseIcon size={16} />
           </button>
-          <button
+          {canIssue && <button
             type="button"
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:opacity-90 transition-all shadow-xs"
           >
             <LockSimpleIcon size={16} weight="bold" />
             <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
-          </button>
+          </button>}
         </div>
       </div>
 
       {/* Alerts */}
+      {user?.role === "CUSTOMER_EXPORT_OFFICER" && <ContainerNotices/>}
       {error && (
-        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
+        <div role="alert" className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
           <WarningCircleIcon size={18} weight="fill" className="shrink-0" />
           <span>{error}</span>
         </div>
@@ -261,7 +275,7 @@ export const HoldManagementPage: React.FC = () => {
               )}
             />
           </div>
-        ) : holds.length === 0 ? (
+        ) : error ? null : holds.length === 0 ? (
           <div className="py-16 text-center space-y-2">
             <CheckCircleIcon
               size={40}
@@ -338,7 +352,7 @@ export const HoldManagementPage: React.FC = () => {
                       />
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
-                      <button
+                      {canRespond && <button
                         type="button"
                         onClick={() =>
                           handleRespondHold(h, "TRANSFER_QUARANTINE")
@@ -353,7 +367,7 @@ export const HoldManagementPage: React.FC = () => {
                           "risk.hold.btnTransferQuarantine",
                           "Chuyển kho cách ly",
                         )}
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}
@@ -364,7 +378,7 @@ export const HoldManagementPage: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
+      {isModalOpen && canIssue && (
         <div
           role="dialog"
           aria-modal="true"
