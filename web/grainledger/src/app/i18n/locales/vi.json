@@ -691,6 +691,7 @@
       "thLot": "Lô bị phong tỏa",
       "thMass": "Khối lượng khóa (kg)",
       "thReason": "Lý do phong tỏa",
+      "thOwner": "Chủ sở hữu",
       "thIssuer": "Người ban hành",
       "thStatus": "Trạng thái lệnh",
       "thActions": "Thao tác",

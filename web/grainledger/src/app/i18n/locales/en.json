@@ -691,6 +691,7 @@
       "thLot": "Quarantined Lot",
       "thMass": "Locked Mass (kg)",
       "thReason": "Quarantine Reason",
+      "thOwner": "Owner",
       "thIssuer": "Issuing Authority",
       "thStatus": "Order Status",
       "thActions": "Actions",

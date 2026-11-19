@@ -14,14 +14,15 @@ import {
 
 interface HoldOrder {
   id: string;
-  holdCode?: string;
-  lotCode?: string;
-  reasonCode: string;
-  notes?: string;
-  issuedAt: string;
-  status: "ACTIVE_HOLD" | "QUARANTINED" | "UNDER_RETEST";
-  lotQuantityKg?: string;
-  ownerName?: string;
+  lotId: string;
+  lotCode: string;
+  reason: string;
+  status: "ACTIVE" | "RELEASED" | "QUARANTINED";
+  ownerId: string;
+  ownerName: string;
+  response: string | null;
+  createdAt: string;
+  evidenceId: string | null;
 }
 
 export const HoldManagementPage: React.FC = () => {
@@ -157,7 +158,7 @@ export const HoldManagementPage: React.FC = () => {
           "risk.hold.updatedSuccess",
           "Đã cập nhật xử lý lệnh HOLD cho lô {{lot}}",
           {
-            lot: hold.lotCode || hold.id,
+            lot: hold.lotCode,
           },
         ),
       );
@@ -294,7 +295,7 @@ export const HoldManagementPage: React.FC = () => {
                     {t("risk.hold.thIssuedAt", "Thời điểm ban hành")}
                   </th>
                   <th className="py-3 px-4">
-                    {t("risk.hold.thNotes", "Ghi chú bằng chứng")}
+                    {t("risk.hold.thOwner", "Chủ sở hữu")}
                   </th>
                   <th className="py-3 px-4">
                     {t("risk.hold.thStatus", "Trạng thái")}
@@ -313,26 +314,22 @@ export const HoldManagementPage: React.FC = () => {
                     <td className="py-3 px-4 font-mono font-bold text-accent-danger">
                       <span className="inline-flex items-center gap-1.5">
                         <LockSimpleIcon size={14} weight="fill" />
-                        <span>{h.lotCode || `LOT-${h.id.slice(0, 8)}`}</span>
+                        <span>{h.lotCode}</span>
                       </span>
                     </td>
                     <td className="py-3 px-4 font-semibold text-ink-primary">
-                      {h.reasonCode}
+                      {h.reason}
                     </td>
                     <td className="py-3 px-4 font-mono text-ink-secondary">
                       <span className="inline-flex items-center gap-1">
                         <CalendarIcon size={13} />
                         <span>
-                          {new Date(h.issuedAt).toLocaleDateString("vi-VN")}
+                          {new Date(h.createdAt).toLocaleDateString("vi-VN")}
                         </span>
                       </span>
                     </td>
                     <td className="py-3 px-4 text-ink-secondary max-w-xs truncate">
-                      {h.notes ||
-                        t(
-                          "risk.hold.defaultNotes",
-                          "Vượt ngưỡng an toàn phòng thí nghiệm",
-                        )}
+                      {h.ownerName}
                     </td>
                     <td className="py-3 px-4">
                       <StatusBadge
