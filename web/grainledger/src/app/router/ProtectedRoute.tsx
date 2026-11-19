@@ -1,5 +1,5 @@
 import { useAuthStore } from "@/app/store/authStore";
-import { RoleChip } from "@/components/RoleChip/RoleChip";
+import { RoleChip } from "@/shared/ui/RoleChip";
 import type { UserRole } from "@/shared/types/roles";
 import { ArrowLeft, ShieldWarning } from "@phosphor-icons/react";
 import React, { type ReactNode } from "react";
@@ -8,11 +8,13 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: UserRole[];
+  requiredPermission?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
+  requiredPermission,
 }) => {
   const { isAuthenticated, user, accessToken } = useAuthStore();
   const location = useLocation();
@@ -33,7 +35,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // If specific roles are required, verify access
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if ((allowedRoles && !allowedRoles.includes(user.role)) ||
+      (requiredPermission && !user.permissions.includes(requiredPermission))) {
     return (
       <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-functional-hold-bg text-accent-danger flex items-center justify-center mx-auto">
@@ -47,8 +50,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <span className="inline-block align-middle mx-1">
             <RoleChip role={user.role} size="sm" />
           </span>
-          . Màn hình này chỉ dành cho:{" "}
-          {allowedRoles.map((r) => (
+          . {allowedRoles && "Màn hình này chỉ dành cho: "}
+          {allowedRoles?.map((r) => (
             <span key={r} className="inline-block align-middle mx-0.5">
               <RoleChip role={r} size="sm" />
             </span>

@@ -3,6 +3,63 @@ import { apiFetch } from "./client";
 
 import { parseLedgerHistoryResponse, type LedgerHistoryQuery } from "./history";
 
+export interface FacilityDto {
+  id: string;
+  name: string;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  createdBy?: string;
+}
+
+export interface LocationDto {
+  id: string;
+  facilityId: string;
+  name: string;
+  kind: "STORE" | "ISOLATION" | string;
+  cleared: boolean;
+  mixedBulk: boolean;
+  ownerId: string | null;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  createdBy?: string;
+  poolRevision?: string | null;
+  currentPoolLotId?: string | null;
+}
+
+export interface EquipmentDto {
+  id: string;
+  facilityId: string;
+  name: string;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canRetire?: boolean;
+  createdBy?: string;
+}
+
+export interface PolicyDto {
+  id: string;
+  facilityId: string;
+  kind: "DRYING" | "MILLING" | "MERGE" | "BLENDING" | "BAGGING" | string;
+  tolerancePercent: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
+export interface SetupApiResponse {
+  facilities?: FacilityDto[];
+  locations?: LocationDto[];
+  equipment?: EquipmentDto[];
+  policies?: PolicyDto[];
+  commodities?: unknown[];
+  assignments?: unknown[];
+  owners?: unknown[];
+  compatibilities?: unknown[];
+  mixedBulkPolicies?: unknown[];
+}
+
 export interface LedgerNotification {
   id: string;
   holdId: string | null;
@@ -18,6 +75,12 @@ export interface NotificationQuery extends PageQuery {
   status?: "READ" | "UNREAD";
   sortBy?: "createdAt" | "readAt";
   sortDirection?: "asc" | "desc";
+}
+
+export interface CreateCorrectionRequest {
+  id: string;
+  operationId: string;
+  reason: string;
 }
 
 export interface RecordOperationRequest {
@@ -39,7 +102,7 @@ export interface HoldRequest {
 }
 
 export const ledgerEndpoints = {
-  getSetup: () => apiFetch<unknown>("/api/ledger/setup"),
+  getSetup: () => apiFetch<SetupApiResponse>("/api/ledger/setup"),
   getLookups: () => apiFetch<unknown>("/api/ledger/lookups"),
   getLots: (params?: Record<string, string | number | undefined>) => {
     if (!params) return apiFetch<unknown>("/api/ledger/lots");
@@ -191,8 +254,8 @@ export const ledgerEndpoints = {
 
   // Corrections & Reconciliations
   getCorrections: () => apiFetch<unknown>("/api/ledger/corrections"),
-  createCorrection: (req: object) =>
-    apiFetch<unknown>("/api/ledger/corrections", {
+  createCorrection: (req: CreateCorrectionRequest) =>
+    apiFetch<{ id: string }>("/api/ledger/corrections", {
       method: "POST",
       body: JSON.stringify(req),
     }),

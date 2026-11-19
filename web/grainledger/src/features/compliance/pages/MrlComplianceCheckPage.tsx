@@ -9,9 +9,9 @@ import {
   type LabResultSetInput,
   type LabReportResponse,
 } from "@/api/compliance";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   TestTube,
   ShieldCheck,

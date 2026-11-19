@@ -1,5 +1,5 @@
 import { useUiStore } from "@/app/store/uiStore";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import {
   getQueuedProcurements,
   getUnassignedProcurementCount,
@@ -8,7 +8,7 @@ import {
   onProcurementSyncStateChanged,
   syncQueuedProcurements,
   type QueuedProcurement,
-} from "@/pwa/procurementQueue";
+} from "@/features/field/offline/procurementQueue";
 import {
   ArrowsClockwise,
   CheckCircle,

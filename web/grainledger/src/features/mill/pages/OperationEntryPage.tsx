@@ -8,9 +8,9 @@
 import { ledgerEndpoints } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
 import { useDraftStore } from "@/app/store/draftStore";
-import { HoldBanner } from "@/components/HoldBanner/HoldBanner";
-import { LedgerRejectionCard } from "@/components/LedgerRejectionCard/LedgerRejectionCard";
-import { MassValue } from "@/components/MassValue/MassValue";
+import { HoldBanner } from "@/features/risk/components/HoldBanner";
+import { LedgerRejectionCard } from "@/features/mill/components/LedgerRejectionCard";
+import { MassValue } from "@/shared/ui/MassValue";
 import { checkMassBalance, toDecimal } from "@/shared/utils/decimalMass";
 import {
   ArrowRight,

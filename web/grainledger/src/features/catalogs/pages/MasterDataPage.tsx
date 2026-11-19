@@ -6,9 +6,9 @@ import { ApiError } from "@/api/client";
 import { useAuthStore } from "@/app/store/authStore";
 import { useTranslation } from "react-i18next";
 import { catalogsEndpoints } from "@/api/catalogs";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { Modal } from "@/components/Modal";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { Modal } from "@/shared/ui/Modal";
 import {
   Database,
   Plus,

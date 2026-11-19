@@ -8,10 +8,10 @@ import {
   getCachedFarmers,
   saveCachedFarmers,
   type CachedFarmer,
-} from "@/pwa/offlineCache";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
+} from "@/features/field/offline/offlineCache";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
 import {
   UserPlus,
   MagnifyingGlass,

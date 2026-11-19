@@ -1,4 +1,4 @@
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { authEndpoints } from "@/api/auth";
 import {
   ArrowLeft,

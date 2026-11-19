@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { pageItems } from "@/api/query";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
 import { catalogsEndpoints, type ActiveSubstanceDto } from "@/api/catalogs";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   Plant,
   Plus,
@@ -29,10 +31,7 @@ interface SprayRecord {
 
 export const PesticideDeclarationPage: React.FC = () => {
   const { t } = useTranslation();
-  const [declarations, setDeclarations] = useState<SprayRecord[]>([]);
-  const [substances, setSubstances] = useState<ActiveSubstanceDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal State
@@ -46,56 +45,22 @@ export const PesticideDeclarationPage: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
+  const spraysQuery = useQuery({
+    queryKey: ["field-spray-declarations"],
+    queryFn: async () => pageItems<SprayRecord>(await procurementEndpoints.getSprayDeclarations()),
+  });
+  const substancesQuery = useQuery({
+    queryKey: ["field-spray-substances"],
+    queryFn: async () => pageItems<ActiveSubstanceDto>(await catalogsEndpoints.getActiveSubstances({ pageSize: 50 })),
+  });
+  const declarations = spraysQuery.data ?? [];
+  const substances = substancesQuery.data ?? [];
+  const loading = spraysQuery.isFetching || substancesQuery.isFetching;
+  const error = actionError ?? spraysQuery.error?.message ?? substancesQuery.error?.message;
+  const loadData = () => {
     setError(null);
-    try {
-      const [sprayRes, subRes] = await Promise.all([
-        procurementEndpoints.getSprayDeclarations().catch(() => []),
-        catalogsEndpoints.getActiveSubstances({ pageSize: 50 }).catch(() => []),
-      ]);
-
-      const sprayItems: SprayRecord[] = Array.isArray(sprayRes)
-        ? sprayRes
-        : sprayRes &&
-            typeof sprayRes === "object" &&
-            "items" in sprayRes &&
-            Array.isArray(sprayRes.items)
-          ? (sprayRes.items as SprayRecord[])
-          : [];
-      const subItems: ActiveSubstanceDto[] = Array.isArray(subRes)
-        ? subRes
-        : subRes &&
-            typeof subRes === "object" &&
-            "items" in subRes &&
-            Array.isArray(subRes.items)
-          ? (subRes.items as ActiveSubstanceDto[])
-          : [];
-
-      setDeclarations(sprayItems);
-      setSubstances(subItems);
-      if (subItems.length > 0 && !formData.substanceId) {
-        setFormData((prev) => ({ ...prev, substanceId: subItems[0].id }));
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "field.pesticide.errorLoad",
-            "Không thể tải lịch sử khai báo phun thuốc.",
-          ),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    return Promise.all([spraysQuery.refetch(), substancesQuery.refetch()]);
   };
-
-  useEffect(() => {
-    void loadData();
-  }, []);
 
   const handleOpenCreate = () => {
     setFormData({
@@ -196,7 +161,7 @@ export const PesticideDeclarationPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadData}
+            onClick={() => void loadData()}
             className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.reload", "Tải lại dữ liệu")}
           >

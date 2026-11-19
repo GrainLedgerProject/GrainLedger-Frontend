@@ -872,6 +872,7 @@
       "submitButton": "Validate & Record in Ledger"
     },
     "corrections": {
+      "loadOperationsError": "Unable to load operations.",
       "badge": "AUDIT CORRECTION REQUEST",
       "title": "Request Ledger Correction",
       "subtitle": "Append-only integrity: Discrepancies are resolved via compensating postings backed by physical evidence.",

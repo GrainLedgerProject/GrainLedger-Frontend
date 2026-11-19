@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ledgerEndpoints } from "@/api/ledger";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   LockSimpleIcon,
   ArrowsClockwiseIcon,

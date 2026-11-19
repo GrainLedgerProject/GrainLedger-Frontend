@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { ledgerEndpoints } from "@/api/ledger";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import {
   Calendar,
   ClockCounterClockwise,

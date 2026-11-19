@@ -1,7 +1,7 @@
 import { ledgerEndpoints } from "@/api/ledger";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { MassValue } from "@/components/MassValue/MassValue";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { MassValue } from "@/shared/ui/MassValue";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   Archive,
   ArrowsClockwise,

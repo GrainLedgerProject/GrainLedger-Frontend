@@ -6,7 +6,7 @@
  */
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { authApi } from "@/features/auth/api/authApi";
 import {
   signInSchema,

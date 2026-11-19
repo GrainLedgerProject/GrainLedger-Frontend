@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { currentOfflineOwnerKey } from '@/pwa/owner';
+import { currentOfflineOwnerKey } from '@/app/store/sessionOwner';
 
 interface DraftState {
   drafts: Record<string, unknown>;

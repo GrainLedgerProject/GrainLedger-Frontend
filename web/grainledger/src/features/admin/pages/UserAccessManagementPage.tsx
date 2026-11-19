@@ -3,10 +3,10 @@ import {
   type AdminUserDto,
   type OrganizationDto,
 } from "@/api/admin";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal/Modal";
-import { RoleChip } from "@/components/RoleChip/RoleChip";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { RoleChip } from "@/shared/ui/RoleChip";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { ROLE_DEFINITIONS, type UserRole } from "@/shared/types/roles";
 import {
   ArrowsClockwise,

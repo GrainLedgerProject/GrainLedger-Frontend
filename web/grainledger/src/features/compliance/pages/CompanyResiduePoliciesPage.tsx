@@ -15,7 +15,7 @@ import {
 } from "@/api/residue";
 import { ApiError } from "@/api/client";
 import { useAuthStore } from "@/app/store/authStore";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import {
   choiceFingerprint,
   policyChoices,

@@ -481,3 +481,14 @@ textarea:focus {
 .animate-grain-breathe {
   animation: grain-breathe 1.8s ease-in-out infinite;
 }
+
+@layer components {
+  .gl-workflow label { @apply flex flex-col gap-1.5 text-sm font-medium text-ink-secondary; }
+  .gl-workflow :is(input:not([type=checkbox]), select, textarea) { @apply min-h-11 w-full rounded-lg border border-ink-tertiary/30 bg-surface-base px-3 py-2 text-ink-primary; }
+  .gl-workflow button { @apply min-h-11 rounded-lg border border-ink-tertiary/25 px-4 py-2 text-sm font-semibold hover:bg-surface-overlay disabled:cursor-not-allowed disabled:opacity-50; }
+  .gl-workflow button[type=submit] { @apply border-accent-primary bg-accent-primary text-white hover:bg-accent-primary-dim; }
+  .gl-workflow a { @apply font-semibold text-accent-primary underline underline-offset-2; }
+  .gl-workflow table { @apply w-full text-left text-sm; }
+  .gl-workflow th, .gl-workflow td { @apply border-b border-ink-tertiary/20 px-3 py-2; }
+  .gl-workflow :is(button, a, input, select, textarea):focus-visible { @apply outline-2 outline-offset-2 outline-accent-primary; }
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Copy, X, ClockCounterClockwise } from '@phosphor-icons/react';
-import { Modal } from '@/components/Modal/Modal';
+import { Modal } from '@/shared/ui/Modal';
 import type { AuditEvent } from '../model/historyEvent';
 import { detailLabel, detailValue, eventLabel, readableDecimal, structuredDetails } from '../model/eventPresentation';
 

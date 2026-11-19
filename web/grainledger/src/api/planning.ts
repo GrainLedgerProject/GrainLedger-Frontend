@@ -11,7 +11,7 @@ export const planningEndpoints = {
       ),
     ),
   createDraft: (id: string, body: CreateBlendPlanDraftRequest) =>
-    apiFetch<unknown>(
+    apiFetch<BlendPlanDraftDto>(
       `/api/export-containers/${encodeURIComponent(id)}/blend-plans/drafts`,
       { method: "POST", body: JSON.stringify(body) },
     ),
@@ -25,7 +25,7 @@ export const planningEndpoints = {
       { method: "POST", body: JSON.stringify(body) },
     ),
   previewPlan: (id: string, body: PreviewBlendPlanRequest) =>
-    apiFetch<unknown>(`/api/blend-plans/${encodeURIComponent(id)}/preview`, {
+    apiFetch<BlendPreview>(`/api/blend-plans/${encodeURIComponent(id)}/preview`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -242,4 +242,14 @@ export interface BlendPlanDecision {
       }
     >;
   };
+}
+
+export interface BlendPreview {
+  outcome: string;
+  reasons: string[];
+  assessmentStatus: string;
+  previewReference: string | null;
+  canPropose: boolean;
+  selection: { selectedMassKg: string; allocations: { lotId: string; lotCode: string; locationId: string; quantityKg: string }[] } | null;
+  assessmentFindings: { code: string; status: string; actual: string | null; limit: string | null; unit: string | null }[];
 }

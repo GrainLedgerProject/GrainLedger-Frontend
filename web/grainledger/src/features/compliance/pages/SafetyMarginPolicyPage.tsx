@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Modal } from "@/components/Modal/Modal";
+import { Modal } from "@/shared/ui/Modal";
 import {
   ShieldCheck,
   Calculator,

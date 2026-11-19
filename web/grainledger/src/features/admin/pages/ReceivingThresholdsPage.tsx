@@ -1,9 +1,9 @@
 import { adminEndpoints, type OrganizationDto } from "@/api/admin";
 import { ledgerEndpoints } from "@/api/ledger";
 import { confirmAction, toast } from "@/app/store/feedbackStore";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   ArrowsClockwise,
   Buildings,

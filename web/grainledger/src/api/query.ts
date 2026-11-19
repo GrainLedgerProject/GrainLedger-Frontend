@@ -38,3 +38,12 @@ export async function collectPages<T>(
       throw new Error("Invalid pagination response: hasMore without items.");
   }
 }
+
+/** Accept paged responses and the legacy list format used by field lookups. */
+export function pageItems<T>(response: unknown): T[] {
+  if (Array.isArray(response)) return response as T[];
+  if (response && typeof response === "object" && "items" in response && Array.isArray(response.items)) {
+    return response.items as T[];
+  }
+  return [];
+}

@@ -1,4 +1,5 @@
-import type { UserRole } from '@/shared/types/roles';
+import type { UserProfile } from '@/shared/types/session';
+export type { UserProfile } from '@/shared/types/session';
 import {
   clearAuthCookies,
   COOKIE_KEYS,
@@ -9,21 +10,8 @@ import {
 import { extractUserProfileFromJwt, isJwtValidFormat } from '@/shared/utils/jwt';
 import { create } from 'zustand';
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  displayName: string;
-  phoneNumber?: string;
-  role: UserRole;
-  organizationId?: string;
-  organizationName?: string;
-  organizationColor?: string;
-  assignedFacilities?: string[];
-  isActive: boolean;
-  permissions: string[];
-}
-
 interface AuthState {
+  sessionVersion: number;
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -92,6 +80,7 @@ const isSessionAuthenticated = Boolean(
 );
 
 export const useAuthStore = create<AuthState>((set) => ({
+  sessionVersion: 0,
   user: initialUser,
   accessToken: resolvedAccess,
   refreshToken: resolvedRefresh,
@@ -148,13 +137,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     setCookie(COOKIE_KEYS.ACCESS_TOKEN, access, accessDays);
     setCookie(COOKIE_KEYS.REFRESH_TOKEN, refresh, refreshDays);
 
-    set({
+    set((state) => ({
+      sessionVersion: state.sessionVersion + 1,
       user,
       isAuthenticated: Boolean(user && access && isJwtValidFormat(access)),
       accessToken: access,
       refreshToken: refresh,
       isLoading: false,
-    });
+    }));
   },
 
   logout: () => {
@@ -177,13 +167,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
 
-    set({
+    set((state) => ({
+      sessionVersion: state.sessionVersion + 1,
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
       hasUnsavedDrafts: false,
-    });
+    }));
   },
 
   updateProfile: (updates) => {

@@ -1,8 +1,8 @@
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { RoleChip } from "@/components/RoleChip/RoleChip";
-import { SettingsLayout } from "@/components/SettingsLayout/SettingsLayout";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { RoleChip } from "@/shared/ui/RoleChip";
+import { SettingsLayout } from "@/app/layout/SettingsLayout";
 import { authApi } from "@/features/auth/api/authApi";
 import {
   editProfileSchema,

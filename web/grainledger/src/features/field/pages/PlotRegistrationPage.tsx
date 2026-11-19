@@ -1,11 +1,13 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { pageItems } from "@/api/query";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints } from "@/api/procurement";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { MapLocationPicker } from "@/components/MapLocationPicker/MapLocationPicker";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { MapLocationPicker } from "@/features/field/components/MapLocationPicker";
 import {
   MapPin,
   MagnifyingGlass,
@@ -81,13 +83,10 @@ function parseToGeoJsonPoint(coordStr: string): {
 }
 
 export const PlotRegistrationPage: React.FC = () => {
-  const { t } = useTranslation();
-  const [plots, setPlots] = useState<PlotRecord[]>([]);
-  const [farmers, setFarmers] = useState<FarmerOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal State for Create/Edit
@@ -104,10 +103,9 @@ export const PlotRegistrationPage: React.FC = () => {
   // Modal State for Viewing Plot Map
   const [viewingMapPlot, setViewingMapPlot] = useState<PlotRecord | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const plotsQuery = useQuery({
+    queryKey: ["field-plots", searchQuery, selectedFarmerId, i18n.language],
+    queryFn: async () => {
       const plotParams: Record<string, string | number> = { pageSize: 50 };
       if (searchQuery) plotParams.search = searchQuery;
       if (selectedFarmerId) plotParams.farmerId = selectedFarmerId;
@@ -117,43 +115,24 @@ export const PlotRegistrationPage: React.FC = () => {
         procurementEndpoints.getFarmers({ pageSize: 100 }),
       ]);
 
-      const plotItems = Array.isArray(plotsRes)
-        ? plotsRes
-        : (plotsRes as any)?.items || [];
-      const farmerItems = Array.isArray(farmersRes)
-        ? farmersRes
-        : (farmersRes as any)?.items || [];
+      const plotItems = pageItems<PlotRecord>(plotsRes);
+      const farmerItems = pageItems<FarmerOption>(farmersRes);
 
       // Map farmer names to plots
-      const farmerMap = new Map(farmerItems.map((f: any) => [f.id, f.name]));
-      const enrichedPlots = plotItems.map((p: any) => ({
+      const farmerMap = new Map(farmerItems.map((f) => [f.id, f.name]));
+      const enrichedPlots = plotItems.map((p) => ({
         ...p,
         farmerName:
           farmerMap.get(p.farmerId) ||
           t("field.plot.unknownFarmer", "Nông hộ chưa rõ"),
       }));
-
-      setPlots(enrichedPlots);
-      setFarmers(farmerItems);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "field.plot.errLoad",
-            "Không thể tải danh sách thửa ruộng từ máy chủ.",
-          ),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadData();
-  }, [searchQuery, selectedFarmerId]);
+      return { plots: enrichedPlots, farmers: farmerItems };
+    },
+  });
+  const { plots = [], farmers = [] } = plotsQuery.data ?? {};
+  const loading = plotsQuery.isFetching;
+  const error = actionError ?? plotsQuery.error?.message;
+  const loadData = () => { setError(null); return plotsQuery.refetch(); };
 
   const handleOpenCreate = () => {
     setEditingPlot(null);
@@ -318,7 +297,7 @@ export const PlotRegistrationPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadData}
+            onClick={() => void loadData()}
             className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
@@ -363,7 +342,7 @@ export const PlotRegistrationPage: React.FC = () => {
                 "Tìm theo mã thửa đất...",
               )}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); }}
               className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
             />
             <MagnifyingGlass
@@ -374,7 +353,7 @@ export const PlotRegistrationPage: React.FC = () => {
 
           <select
             value={selectedFarmerId}
-            onChange={(e) => setSelectedFarmerId(e.target.value)}
+            onChange={(e) => { setSelectedFarmerId(e.target.value); }}
             className="px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-semibold text-ink-primary focus:rounded-lg"
           >
             <option value="">

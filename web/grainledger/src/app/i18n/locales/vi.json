@@ -872,6 +872,7 @@
       "submitButton": "Kiểm tra & Ghi vào sổ cái"
     },
     "corrections": {
+      "loadOperationsError": "Không thể tải danh sách công đoạn.",
       "badge": "YÊU CẦU ĐIỀU CHỈNH SỐ LIỆU",
       "title": "Tạo Yêu Cầu Sửa Bút Toán",
       "subtitle": "Hệ thống chỉ-ghi-thêm: Mọi sai sót được khắc phục bằng bút toán bù có bằng chứng đối soát.",

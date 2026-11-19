@@ -1,5 +1,5 @@
 import type { ApiPage, PageQuery } from "./query";
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchResource } from "./client";
 import { withApiQuery } from "./query";
 
 export const exportEndpoints = {
@@ -13,8 +13,9 @@ export const exportEndpoints = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  getOrderResource: (id: string) => apiFetchResource<ExportOrderDetail>(`/api/export-orders/${encodeURIComponent(id)}`),
   getOrder: (id: string) =>
-    apiFetch<unknown>(`/api/export-orders/${encodeURIComponent(id)}`),
+    apiFetch<ExportOrderDetail>(`/api/export-orders/${encodeURIComponent(id)}`),
   updateOrder: (id: string, body: UpdateExportOrderRequest) =>
     apiFetch<unknown>(`/api/export-orders/${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -36,22 +37,22 @@ export const exportEndpoints = {
         query,
       ),
     ),
-  addContainers: (id: string, body: AddExportContainersRequest) =>
+  addContainers: (id: string, body: AddExportContainersRequest, etag: string) =>
     apiFetch<unknown>(
       `/api/export-orders/${encodeURIComponent(id)}/containers`,
-      { method: "POST", body: JSON.stringify(body) },
+      { method: "POST", headers: { "If-Match": etag }, body: JSON.stringify(body) },
     ),
   getOrderHistory: (id: string) =>
     apiFetch<unknown>(`/api/export-orders/${encodeURIComponent(id)}/history`),
   getContainer: (id: string) =>
-    apiFetch<unknown>(`/api/export-containers/${encodeURIComponent(id)}`),
+    apiFetch<ExportContainerDto>(`/api/export-containers/${encodeURIComponent(id)}`),
   updateContainer: (id: string, body: UpdateExportContainerRequest) =>
     apiFetch<unknown>(`/api/export-containers/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
   getPlanningContext: (id: string) =>
-    apiFetch<unknown>(
+    apiFetch<BlendPlanningContext>(
       `/api/export-containers/${encodeURIComponent(id)}/planning-context`,
     ),
   getStockPreview: (id: string) =>
@@ -63,7 +64,7 @@ export const exportEndpoints = {
       `/api/export-containers/${encodeURIComponent(id)}/inventory-scope`,
     ),
   getCandidates: (id: string, query: CandidateQuery) =>
-    apiFetch<unknown>(
+    apiFetch<CandidatePage>(
       withApiQuery(
         `/api/export-containers/${encodeURIComponent(id)}/candidates`,
         query,
@@ -182,4 +183,22 @@ export interface CandidateLineageQuery {
 export interface CandidateResidueQuery extends CandidateLineageQuery {
   candidateRevision: string;
   substanceIds: string;
+}
+
+export interface ExportOrderDetail extends ExportOrderSummary {
+  limits: (ExportLimitInput & { attributeName?: string; attributeCode?: string; unit?: string })[];
+  allocatedMassKg: string;
+  remainingMassKg: string;
+  specificationVersion: number;
+  canEdit: boolean;
+}
+export interface BlendPlanningContext {
+  orderVersion: number;
+  containerVersion: number;
+  canCreateDraft: boolean;
+  allowedTargetProducts: string[];
+  missingDependencies: { code: string; description: string }[];
+}
+export interface CandidatePage extends ApiPage<{ lotId: string; lotCode: string; locationId: string; locationName: string; availableKg: string }> {
+  scopeRevision: string;
 }

@@ -1,5 +1,5 @@
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { SettingsLayout } from "@/components/SettingsLayout/SettingsLayout";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { SettingsLayout } from "@/app/layout/SettingsLayout";
 import { authApi } from "@/features/auth/api/authApi";
 import {
   changePasswordSchema,
@@ -15,7 +15,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import React, { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useWatch, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 export const ChangePasswordPage: React.FC = () => {
@@ -29,14 +29,14 @@ export const ChangePasswordPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
   });
 
-  const newPasswordValue = watch("newPassword", "");
+  const newPasswordValue = useWatch({ control, name: "newPassword", defaultValue: "" });
 
   // Strength score
   const passwordStrength = useMemo(() => {

@@ -1,4 +1,4 @@
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { authApi } from "@/features/auth/api/authApi";
 import {
   acceptInvitationSchema,
@@ -15,7 +15,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import React, { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useWatch, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -37,13 +37,13 @@ export const AcceptInvitationPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<AcceptInvitationFormValues>({
     resolver: zodResolver(acceptInvitationSchema),
   });
 
-  const passwordValue = watch("password", "");
+  const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
 
   // Calculate Password Strength
   const passwordStrength = useMemo(() => {
