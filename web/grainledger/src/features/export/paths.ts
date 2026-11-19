@@ -14,3 +14,11 @@ export const exportPaths = {
 export function blendPlanRequestPath(orderId: string, containerId: string) {
   return exportPaths.requestPlan.replace(":orderId", encodeURIComponent(orderId)).replace(":containerId", encodeURIComponent(containerId));
 }
+
+export function planReviewPath(planId: string) {
+  return exportPaths.review.replace(":planId", encodeURIComponent(planId));
+}
+
+export function containerPath(pattern: string, id: string) {
+  return pattern.replace(":id", encodeURIComponent(id));
+}

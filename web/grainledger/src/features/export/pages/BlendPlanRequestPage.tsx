@@ -33,7 +33,7 @@ function BlendPlanRequest({ orderId, containerId }: { orderId: string; container
     <Link to={exportPaths.orders + "?order=" + encodeURIComponent(orderId)}>{t("Về đơn hàng", "Back to order")}</Link>
     <Feedback error={container.error ?? context.error ?? plans.error} pending={container.isPending || (matched && context.isPending)}/>
     {container.data && !matched && <p role="alert">{t("Container không thuộc đơn hàng này.", "This container belongs to another order.")}</p>}
-    {matched && context.data && <Panel title={container.data.internalCode}>
+    {matched && container.data && context.data && <Panel title={container.data.internalCode}>
       <p>{t("Khối lượng mục tiêu", "Target mass")} · {container.data.targetMassKg} kg</p>
       {context.data.missingDependencies?.map(d => <p key={d.code}>{d.description}</p>)}
       {canPropose && context.data.canCreateDraft && <form className="space-y-3" onSubmit={e => { e.preventDefault(); if (context.data) create.submit({ orderVersion: context.data.orderVersion, containerVersion: context.data.containerVersion, targetProductIdentity: target }); }}>
