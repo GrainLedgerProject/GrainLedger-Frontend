@@ -55,11 +55,11 @@
       "residueProfiles": "Residue profiles"
     },
     "export": {
-      "orders": "Export Orders",
+      "orders": "Orders & Dispatch",
       "plans": "Request Blend Plan",
       "plansPending": "Pending Plan Approvals",
       "containers": "Container Loading",
-      "dossiers": "Compliance Dossiers"
+      "dossiers": "Export Dossier Archive"
     },
     "stock": {
       "overview": "Stock by Location",

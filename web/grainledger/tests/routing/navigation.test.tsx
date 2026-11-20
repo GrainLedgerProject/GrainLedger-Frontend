@@ -93,4 +93,41 @@ describe("application navigation", () => {
     render(<MemoryRouter initialEntries={[millPaths.requestCorrection]}><MillScreens /></MemoryRouter>);
     expect(screen.getByText("Không có quyền truy cập màn hình này")).toBeTruthy();
   });
+
+  it.each([
+    ["/export/orders", "/export/orders"],
+    ["/export/plans", "/export/orders"],
+    ["/export/containers", "/export/orders"],
+    ["/export/containers/cont-123/loading", "/export/orders"],
+    ["/export/containers/cont-123/closure", "/export/orders"],
+    ["/export/containers/cont-123/plan", "/export/orders"],
+    ["/export/plans/plan-123/review", "/export/orders"],
+    ["/export/dossiers", "/export/dossiers"],
+    ["/export/containers/cont-123/dossier", "/export/dossiers"],
+  ])("highlights the correct sidebar item when visiting %s", (pathname, expectedActivePath) => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      accessToken: "mock-access",
+      user: {
+        id: "export-officer",
+        email: "officer@example.test",
+        displayName: "Export Officer",
+        role: "CUSTOMER_EXPORT_OFFICER",
+        isActive: true,
+        permissions: ["export-orders.read"],
+      },
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[pathname]}>
+          <AppSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const links = screen.getAllByRole("link");
+    const activeLink = links.find((link) => link.getAttribute("aria-current") === "page");
+    expect(activeLink).toBeDefined();
+    expect(activeLink?.getAttribute("href")).toBe(expectedActivePath);
+  });
 });

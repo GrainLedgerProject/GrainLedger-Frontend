@@ -1,4 +1,4 @@
-﻿import {
+import {
   ArrowsClockwise,
   ArrowUpRight,
   CalendarBlank,
@@ -8,13 +8,10 @@
   Leaf,
   MapPin,
   ShieldCheck,
-  WifiHigh,
-  WifiSlash,
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useUiStore } from "@/app/store/uiStore";
-import { ROLE_DEFINITIONS } from "@/shared/types/roles";
 import { useDashboard } from "../model/useDashboard";
 import {
   sourceCopy,
@@ -86,7 +83,6 @@ export function RoleHomePage() {
     errors.length > 0 ||
     fetching ||
     sources.length < config.sources.length;
-  const meta = ROLE_DEFINITIONS[role];
   const date = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-GB", {
     weekday: "long",
     day: "numeric",
@@ -122,13 +118,13 @@ export function RoleHomePage() {
   return (
     <div className="mx-auto max-w-screen-2xl space-y-6 pb-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div data-ui-detail="secondary" className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
+        {/* <div data-ui-detail="secondary" className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
           <span className="font-semibold text-accent-primary">
             {text(["BÀN ĐIỀU HÀNH", "WORKSPACE OVERVIEW"], locale)}
           </span>
           <span aria-hidden="true">/</span>
           <span>{meta[locale === "vi" ? "labelVi" : "labelEn"]}</span>
-        </div>
+        </div> */}
         <div className="flex items-center gap-2 text-xs text-ink-secondary">
           <CalendarBlank size={15} aria-hidden="true" />
           <time dateTime={now.toISOString()} className="capitalize">
@@ -148,11 +144,17 @@ export function RoleHomePage() {
         />
         <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
-            <div data-ui-detail="secondary" className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary">
+            <div
+              data-ui-detail="secondary"
+              className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary"
+            >
               <Leaf size={15} weight="duotone" aria-hidden="true" />
               {text(config.focus, locale)}
             </div>
-            <p data-ui-detail="secondary" className="mb-1 text-sm text-ink-secondary">
+            <p
+              data-ui-detail="secondary"
+              className="mb-1 text-sm text-ink-secondary"
+            >
               {text(["Xin chào", "Welcome"], locale)},{" "}
               <span className="font-semibold text-ink-primary">
                 {user?.displayName || text(["bạn", "there"], locale)}
@@ -164,7 +166,10 @@ export function RoleHomePage() {
             >
               {text(config.title, locale)}
             </h1>
-            <p data-ui-detail="secondary" className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary">
+            <p
+              data-ui-detail="secondary"
+              className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary"
+            >
               {text(config.description, locale)}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-tertiary">
@@ -195,23 +200,6 @@ export function RoleHomePage() {
                 <ArrowUpRight size={18} aria-hidden="true" />
               </Link>
             )}
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs ${connected ? "text-accent-primary" : "text-ink-tertiary"}`}
-            >
-              {connected ? (
-                <WifiHigh size={15} aria-hidden="true" />
-              ) : (
-                <WifiSlash size={15} aria-hidden="true" />
-              )}
-              {text(
-                !connectionChecked
-                  ? ["Đang kiểm tra kết nối", "Checking connection"]
-                  : connected
-                    ? ["Đã kết nối hệ thống", "System connected"]
-                    : ["Chưa kết nối hệ thống", "System not connected"],
-                locale,
-              )}
-            </span>
           </div>
         </div>
       </section>

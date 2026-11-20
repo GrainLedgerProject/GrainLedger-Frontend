@@ -7,23 +7,27 @@ import {
   ArrowRight,
   Calendar,
   Export,
+  FileText,
   Plus,
   Scales,
   ShieldCheck,
+  Truck,
 } from "@phosphor-icons/react";
 import { exportEndpoints, type ExportOrderSummary } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { Decimal } from "@/shared/utils/decimalMass";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { useExportWorkspaceData } from "../hooks/useExportWorkspaceData";
 import {
   allocationPercent,
+  containerStatus,
   massLabel,
   shippingDate,
   sumMass,
 } from "../model/exportPresentation";
-import { blendPlanRequestPath, exportPaths } from "../paths";
+import { blendPlanRequestPath, containerPath, exportPaths } from "../paths";
 import {
   ExportEmpty,
   ExportSearch,
@@ -139,14 +143,17 @@ export function ExportOrdersWorkspace({
               ]}
             >
               {rows.map((o) => (
-                <tr key={o.id} data-selected={data.orderId === o.id}>
+                <tr
+                  key={o.id}
+                  className="cursor-pointer hover:bg-surface-raised/40 transition-colors"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a")) return;
+                    if (open) open({ kind: "order", orderId: o.id });
+                    else data.selectOrder(o.id);
+                  }}
+                >
                   <th scope="row">
                     <span className="font-mono font-bold">{o.code}</span>
-                    {data.orderId === o.id && (
-                      <span className="mt-1 block text-[10px] font-medium text-accent-primary">
-                        {text("Đang xem", "Selected")}
-                      </span>
-                    )}
                   </th>
                   <td>
                     <div className="flex items-center gap-2 whitespace-nowrap text-ink-secondary">
@@ -162,7 +169,7 @@ export function ExportOrdersWorkspace({
                     <button
                       className="export-button"
                       type="button"
-                      aria-pressed={data.orderId === o.id}
+                      aria-haspopup="dialog"
                       onClick={() => {
                         if (open) open({ kind: "order", orderId: o.id });
                         else data.selectOrder(o.id);
@@ -328,7 +335,7 @@ function OrderAllocation({
                 </p>
               )}
             </div>
-            {canWrite && order.canEdit && data.detail.data?.etag && (
+            {canWrite && order.canEdit && new Decimal(order.remainingMassKg).gt(0) && data.detail.data?.etag && (
               <form
                 aria-label={text(
                   "Thêm container cho đơn hàng",
@@ -392,6 +399,39 @@ function OrderAllocation({
                       {text("Thêm container", "Add container")}
                     </button>
                   </div>
+                  {/* Quick suggestion buttons */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                    <span className="text-[11px] text-ink-secondary">
+                      {text("Gợi ý nhanh:", "Quick suggestions:")}
+                    </span>
+                    {new Decimal(order.remainingMassKg).gte(25000) && (
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
+                        onClick={() => setMass("25000")}
+                      >
+                        25,000 kg (20ft)
+                      </button>
+                    )}
+                    {new Decimal(order.remainingMassKg).gte(28000) && (
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
+                        onClick={() => setMass("28000")}
+                      >
+                        28,000 kg (40ft)
+                      </button>
+                    )}
+                    {new Decimal(order.remainingMassKg).gt(0) && (
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-accent-primary transition-colors"
+                        onClick={() => setMass(order.remainingMassKg)}
+                      >
+                        {text("Toàn bộ còn lại", "All remaining")} ({massLabel(order.remainingMassKg, locale)} kg)
+                      </button>
+                    )}
+                  </div>
                 </fieldset>
                 <Feedback error={add.error} />
                 {add.isError && (
@@ -412,29 +452,58 @@ function OrderAllocation({
             </h3>
             {data.containers.data?.length ? (
               <ul className="space-y-2">
-                {data.containers.data.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-tertiary/15 p-3"
-                  >
-                    <div>
-                      <p className="font-mono text-xs font-bold">
-                        {c.internalCode}
-                      </p>
-                      <p className="mt-1 font-mono text-xs text-ink-secondary">
-                        {massLabel(c.targetMassKg, locale)} kg
-                      </p>
-                    </div>
-                    <Link
-                      className="export-button"
-                      to={blendPlanRequestPath(order.id, c.id)}
+                {data.containers.data.map((c) => {
+                  const badge = containerStatus(c.status);
+                  return (
+                    <li
+                      key={c.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-tertiary/15 p-3"
                     >
-                      {text("Phối trộn", "Blend plans")}
-                      <span className="sr-only"> · {c.internalCode}</span>
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </Link>
-                  </li>
-                ))}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-mono text-xs font-bold">
+                            {c.internalCode}
+                          </p>
+                          <StatusBadge
+                            status={badge.type}
+                            label={text(...badge.label)}
+                            size="sm"
+                          />
+                        </div>
+                        <p className="mt-1 font-mono text-xs text-ink-secondary">
+                          {massLabel(c.targetMassKg, locale)} kg
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {c.status === "CLOSED" ? (
+                          <Link
+                            className="export-button"
+                            to={containerPath(exportPaths.dossier, c.id)}
+                          >
+                            <FileText size={14} aria-hidden="true" />
+                            {text("Hồ sơ", "Dossier")}
+                          </Link>
+                        ) : (
+                          <Link
+                            className="export-button"
+                            to={containerPath(exportPaths.loading, c.id)}
+                          >
+                            <Truck size={14} aria-hidden="true" />
+                            {text("Xếp hàng", "Loading")}
+                          </Link>
+                        )}
+                        <Link
+                          className="export-button"
+                          to={blendPlanRequestPath(order.id, c.id)}
+                        >
+                          {text("Phối trộn", "Blend plans")}
+                          <span className="sr-only"> · {c.internalCode}</span>
+                          <ArrowRight size={14} aria-hidden="true" />
+                        </Link>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               !data.containers.isPending &&

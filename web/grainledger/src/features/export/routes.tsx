@@ -29,6 +29,11 @@ const request = lazyScreen(() =>
 const review = lazyScreen(() =>
   import("./pages/BlendPlanReviewPage").then(m => ({ default: m.BlendPlanReviewPage })),
 );
+const planStep = lazyScreen(() =>
+  import("./pages/ContainerWorkflowPage").then((m) => ({
+    default: m.ContainerPlanPage,
+  })),
+);
 const loading = lazyScreen(() =>
   import("./pages/ContainerWorkflowPage").then((m) => ({
     default: m.ContainerLoadingPage,
@@ -61,6 +66,7 @@ export const exportRoutes = [
   screenRoute(exportPaths.pending, plans, readers),
   screenRoute(exportPaths.review, review, readers),
   screenRoute(exportPaths.containers, containers, readers),
+  screenRoute(exportPaths.planStep, planStep, readers),
   screenRoute(exportPaths.loading, loading, readers),
   screenRoute(exportPaths.closure, closure, readers),
   screenRoute(exportPaths.dossiers, dossiers, readers),

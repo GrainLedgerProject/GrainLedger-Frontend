@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExportActionProvider } from "../components/ExportActionProvider";
 import { useExportAction } from "../model/exportActions";
 import { Export, Plus } from "@phosphor-icons/react";
@@ -11,7 +12,12 @@ import { ExportOrdersWorkspace } from "../components/ExportOrdersWorkspace";
 import { ExportContainerList } from "../components/ExportContainerList";
 import { ExportDossiersWorkspace } from "../components/ExportDossiersWorkspace";
 import { ExportPlansWorkspace } from "../components/ExportPlansWorkspace";
-import { ExportEmpty, ExportPageHeader } from "../components/ExportWorkspaceUI";
+import { AllocateContainerModal } from "../components/AllocateContainerModal";
+import {
+  ExportEmpty,
+  ExportPageHeader,
+  ExportWorkspaceNav,
+} from "../components/ExportWorkspaceUI";
 
 export function ExportWorkspacePage({
   view = "orders",
@@ -32,9 +38,10 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
   const user = useAuthStore((s) => s.user);
   const canWrite = user?.permissions.includes("export-orders.write") ?? false;
   const canPropose = user?.permissions.includes("blend.propose") ?? false;
+  const [allocating, setAllocating] = useState(false);
   const copy = {
     orders: {
-      title: text("Đơn hàng xuất khẩu", "Export orders"),
+      title: text("Đơn hàng & Điều phối", "Orders & dispatch"),
       eyebrow: text("QUẢN LÝ HỢP ĐỒNG & PHÂN BỔ", "CONTRACTS & ALLOCATION"),
       description: text(
         "Quản lý lịch giao hàng, quy cách chất lượng và phân bổ khối lượng vào từng container.",
@@ -61,7 +68,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
       ),
     },
     dossiers: {
-      title: text("Hồ sơ theo container", "Container records"),
+      title: text("Kho hồ sơ xuất khẩu", "Export dossier archive"),
       eyebrow: text(
         "HỒ SƠ ĐÓNG NIÊM & CHỨNG TỪ",
         "CLOSURE DOSSIERS & DOCUMENTS",
@@ -92,8 +99,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
         refresh={() => void data.refresh()}
         refreshing={refreshing}
         actions={
-          view === "orders" &&
-          canWrite && (
+          view === "orders" && canWrite ? (
             <button
               type="button"
               className="export-button export-button-primary"
@@ -102,7 +108,22 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
               <Plus size={16} aria-hidden="true" />
               {text("Thêm đơn hàng", "Add order")}
             </button>
-          )
+          ) : view === "containers" && canWrite && data.orderId ? (
+            <button
+              type="button"
+              className="export-button export-button-primary"
+              onClick={() => setAllocating(true)}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {text("Phân bổ thêm container", "Allocate more containers")}
+            </button>
+          ) : undefined
+        }
+      />
+      <ExportWorkspaceNav
+        view={view}
+        params={
+          new URLSearchParams(data.orderId ? { order: data.orderId } : {})
         }
       />
       <Feedback error={data.orders.error} />
@@ -159,12 +180,24 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
                       containers={data.containers.data}
                       orderId={data.orderId}
                       scope={scope}
+                      onAllocate={
+                        canWrite && data.orderId
+                          ? () => setAllocating(true)
+                          : undefined
+                      }
                     />
                   ))}
               </>
             )}
           </>
         )
+      )}
+      {canWrite && data.orderId && (
+        <AllocateContainerModal
+          orderId={data.orderId}
+          isOpen={allocating}
+          onClose={() => setAllocating(false)}
+        />
       )}
     </div>
   );

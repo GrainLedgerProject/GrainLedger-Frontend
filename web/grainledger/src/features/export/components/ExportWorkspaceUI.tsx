@@ -34,13 +34,13 @@ export function ExportPageHeader({
   return (
     <header className="flex flex-col justify-between gap-4 border-b border-ink-tertiary/15 pb-5 sm:flex-row sm:items-center">
       <div className="max-w-3xl">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent-primary">
+        <p data-ui-detail="secondary" className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent-primary">
           {eyebrow}
         </p>
         <h1 className="font-display text-2xl font-bold text-ink-primary">
           {title}
         </h1>
-        <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
+        <p data-ui-detail="secondary" className="mt-1 text-xs leading-relaxed text-ink-secondary">
           {subtitle}
         </p>
       </div>

@@ -6,18 +6,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useIsMutating, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, X } from "@phosphor-icons/react";
-import { exportEndpoints } from "@/api/exports";
-import { collectPages } from "@/api/query";
 import { Modal } from "@/shared/ui/Modal";
-import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { ExportActionContext, type ExportAction } from "../model/exportActions";
-import { ExportContainerList } from "./ExportContainerList";
 import { ExportOrderDetails as Order } from "./ExportOrdersWorkspace";
 import { ExportEmpty } from "./ExportWorkspaceUI";
+import { Feedback } from "@/shared/ui/Workflow";
+import { useExportWorkspaceData } from "../hooks/useExportWorkspaceData";
+import { ExportContainerList } from "./ExportContainerList";
 
 const Plan = lazy(() =>
   import("../pages/BlendPlanRequestPage").then((m) => ({
@@ -39,6 +38,26 @@ const CreateOrder = lazy(() =>
 );
 
 type Frame = { id: string; action: ExportAction };
+
+function OrderContainers({ orderId }: { orderId: string }) {
+  const text = useWorkflowText();
+  const { containers, order } = useExportWorkspaceData("containers", orderId);
+  return (
+    <>
+      <Feedback pending={containers.isPending} error={containers.error} />
+      {containers.isError && (
+        <button type="button" className="export-button" onClick={() => void containers.refetch()}>
+          {text("Tải lại container", "Reload containers")}
+        </button>
+      )}
+      {containers.data && (
+        <ExportContainerList orderId={orderId} containers={containers.data}
+          scope={<div><p className="text-xs text-ink-secondary">{text("Đơn hàng", "Order")}</p><strong className="font-mono">{order?.code ?? orderId}</strong></div>}
+        />
+      )}
+    </>
+  );
+}
 type SubmittedForm = { frame: string; form: HTMLFormElement };
 
 export function ExportActionProvider({ children }: { children: ReactNode }) {
@@ -64,7 +83,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
   const titles = {
     "create-order": text("Tạo đơn xuất khẩu", "Create export order"),
     order: text("Chi tiết đơn hàng", "Order details"),
-    containers: text("Container của đơn hàng", "Order containers"),
+    containers: text("Điều phối container", "Container dispatch"),
     plan: text("Phương án phối trộn", "Blend planning"),
     review: text("Chi tiết đề xuất phối trộn", "Blend proposal details"),
     loading: text("Xếp hàng lên container", "Container loading"),
@@ -164,7 +183,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
         isOpen={Boolean(current)}
         ariaLabel={current ? titles[current.action.kind] : undefined}
         onClose={() => requestClose("close")}
-        closeOnBackdrop={false}
+        closeOnBackdrop={!busy}
         closedBy={busy || hasDirty ? "none" : "closerequest"}
       >
         <div
@@ -285,7 +304,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
       <Modal
         isOpen={discard !== null}
         ariaLabel={text("Bỏ thay đổi chưa lưu?", "Discard unsaved changes?")}
-        closeOnBackdrop={false}
+        closeOnBackdrop={!busy}
         onClose={() => setDiscard(null)}
       >
         <div className="export-workspace w-[calc(100dvw-2rem)] max-w-md space-y-4 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6">
@@ -326,30 +345,5 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
         </div>
       </Modal>
     </ExportActionContext.Provider>
-  );
-}
-
-function OrderContainers({ orderId }: { orderId: string }) {
-  const text = useWorkflowText();
-  const containers = useQuery({
-    queryKey: ["export-container-list", orderId],
-    queryFn: () =>
-      collectPages((query) => exportEndpoints.getContainers(orderId, query)),
-  });
-  return (
-    <>
-      <Feedback error={containers.error} pending={containers.isPending} />
-      {containers.data && (
-        <ExportContainerList
-          containers={containers.data}
-          orderId={orderId}
-          scope={
-            <p className="text-xs font-semibold">
-              {text("Container theo đơn đang xem", "Containers for this order")}
-            </p>
-          }
-        />
-      )}
-    </>
   );
 }

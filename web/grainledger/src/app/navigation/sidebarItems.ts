@@ -14,7 +14,6 @@ import {
   ArrowsClockwise,
   BookOpen,
   Buildings,
-  ChartPieSlice,
   CheckSquare,
   ClockCounterClockwise,
   Crosshair,
@@ -37,7 +36,7 @@ import {
   Users,
 } from "@phosphor-icons/react";
 
-interface NavItem {
+export interface NavItem {
   label: string;
   permission?: string;
   path: string;
@@ -49,6 +48,7 @@ interface NavItem {
   badge?: number | string;
   badgeTone?: "danger" | "warning" | "primary";
   isPrimary?: boolean;
+  activeMatch?: (pathname: string) => boolean;
 }
 
 function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: number): NavItem[] {
@@ -287,29 +287,23 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: House,
           },
           {
-            label: t("nav.export.orders", "Đơn xuất khẩu"),
+            label: t("nav.export.orders", "Đơn hàng & Điều phối"),
             path: exportPaths.orders,
             permission: "export-orders.read",
             icon: Export,
             isPrimary: true,
+            activeMatch: (pathname: string) =>
+              pathname.startsWith(exportPaths.orders) ||
+              pathname.startsWith(exportPaths.plans) ||
+              (pathname.startsWith(exportPaths.containers) && !pathname.includes("/dossier")),
           },
           {
-            label: t("nav.export.plans", "Yêu cầu phương án"),
-            path: exportPaths.plans,
-            permission: "export-orders.read",
-            icon: ChartPieSlice,
-          },
-          {
-            label: t("nav.export.containers", "Xếp container"),
-            path: exportPaths.containers,
-            permission: "export-orders.read",
-            icon: Truck,
-          },
-          {
-            label: t("nav.export.dossiers", "Hồ sơ & Chứng từ"),
+            label: t("nav.export.dossiers", "Kho hồ sơ xuất khẩu"),
             path: exportPaths.dossiers,
             permission: "export-orders.read",
             icon: FileText,
+            activeMatch: (pathname: string) =>
+              pathname.startsWith(exportPaths.dossiers) || pathname.includes("/dossier"),
           },
           {
             label: t("nav.risk.holdAlerts", "Cảnh báo HOLD"),

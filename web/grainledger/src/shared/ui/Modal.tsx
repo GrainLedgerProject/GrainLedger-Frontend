@@ -24,6 +24,7 @@ export const Modal: React.FC<ModalProps> = ({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
   const pressedOutsideRef = useRef(false);
+  const justClosedRef = useRef(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -67,8 +68,27 @@ export const Modal: React.FC<ModalProps> = ({
           event.clientX > rect.right ||
           event.clientY < rect.top ||
           event.clientY > rect.bottom
-        )
+        ) {
+          justClosedRef.current = true;
+          setTimeout(() => {
+            justClosedRef.current = false;
+          }, 100);
           onCloseRef.current();
+        }
+      }}
+      onClick={(event) => {
+        if (!closeOnBackdrop || justClosedRef.current) return;
+        if (event.target === event.currentTarget) {
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+          ) {
+            onCloseRef.current();
+          }
+        }
       }}
     >
       {children}

@@ -70,6 +70,18 @@ export function ContainerLoadingForm({
     Boolean(c.approval);
   const locked = command.isPending || command.uncertain;
 
+  const enteredTotal = Object.values(quantities).reduce((acc, val) => {
+    if (val && /^[0-9]+(?:\.[0-9]{1,6})?$/.test(val.trim())) {
+      try {
+        return acc.plus(val.trim());
+      } catch {
+        return acc;
+      }
+    }
+    return acc;
+  }, new Decimal(0));
+  const remainingAfterEntered = new Decimal(c.remainingKg).minus(enteredTotal);
+
   function fail(message: string) {
     setError(message);
     requestAnimationFrame(() => errorSummary.current?.focus());
@@ -274,6 +286,30 @@ export function ContainerLoadingForm({
                   </div>
 
                   <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-ink-secondary">
+                        {text("Khối lượng nạp", "Load quantity")}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={
+                          a.restricted ||
+                          !a.loadingPositionReady ||
+                          new Decimal(a.remainingKg).lte(0)
+                        }
+                        onClick={() => {
+                          const available = new Decimal(a.remainingKg);
+                          const needed = Decimal.max(0, new Decimal(c.remainingKg));
+                          const fill = available.lt(needed) ? available.toString() : needed.toString();
+                          setQuantities({ ...quantities, [i]: fill });
+                          setConfirmed(false);
+                          setError("");
+                        }}
+                        className="text-[11px] font-semibold text-accent-primary hover:underline transition-colors disabled:opacity-40"
+                      >
+                        {text("Điền tối đa (" + a.remainingKg + " kg)", "Fill max (" + a.remainingKg + " kg)")}
+                      </button>
+                    </div>
                     <label htmlFor={`${uid}-mass-${i}`} className={labelClass}>
                       {text("Thực xếp (kg)", "Actually loaded (kg)")} · {a.lotCode}
                       <input
@@ -299,6 +335,32 @@ export function ContainerLoadingForm({
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Live Loading Summary */}
+            <div className="p-3.5 rounded-xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/15 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="text-ink-secondary block">
+                  {text("Tổng thực xếp lần này:", "This load total:")}
+                </span>
+                <span className="font-mono text-base font-bold text-ink-primary">
+                  {enteredTotal.toString()} kg
+                </span>
+              </div>
+              <div>
+                <span className="text-ink-secondary block">
+                  {text("Còn lại sau lần xếp này:", "Remaining after this load:")}
+                </span>
+                <span
+                  className={`font-mono text-base font-bold ${
+                    remainingAfterEntered.lt(0)
+                      ? "text-accent-danger"
+                      : "text-accent-primary"
+                  }`}
+                >
+                  {remainingAfterEntered.toString()} kg
+                </span>
+              </div>
             </div>
 
             {/* Confirmation Checkbox */}

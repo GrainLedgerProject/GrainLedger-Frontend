@@ -99,10 +99,11 @@ export const AppSidebar: React.FC = () => {
             {navItems.map((item) => {
               const Icon = item.icon;
 
-              const isActive =
-                location.pathname === item.path ||
-                (item.path !== dashboardPaths.home &&
-                  location.pathname.startsWith(item.path + "/"));
+              const isActive = item.activeMatch
+                ? item.activeMatch(location.pathname)
+                : location.pathname === item.path ||
+                  (item.path !== dashboardPaths.home &&
+                    location.pathname.startsWith(item.path + "/"));
 
               const showExpanded = !isSidebarCollapsed || isMobileSidebarOpen;
 

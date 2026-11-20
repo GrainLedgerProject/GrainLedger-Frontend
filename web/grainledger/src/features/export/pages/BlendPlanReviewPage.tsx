@@ -1,4 +1,5 @@
 import { ExportActionLink as Link } from "../components/ExportActionLink";
+import { ExportActionProvider } from "../components/ExportActionProvider";
 import { useState, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -65,7 +66,11 @@ type DecisionCommand = {
 
 export function BlendPlanReviewPage() {
   const { planId = "" } = useParams();
-  return <BlendPlanReviewContent key={planId} planId={planId} />;
+  return (
+    <ExportActionProvider>
+      <BlendPlanReviewContent key={planId} planId={planId} />
+    </ExportActionProvider>
+  );
 }
 
 export function BlendPlanReviewContent({
@@ -544,7 +549,7 @@ export function BlendPlanReviewContent({
       )}
       <Modal
         isOpen={confirmation !== null}
-        closeOnBackdrop={false}
+        closeOnBackdrop={!command.isPending}
         onClose={() => {
           if (!command.isPending) setConfirmation(null);
         }}

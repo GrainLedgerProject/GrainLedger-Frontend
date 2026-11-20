@@ -1,4 +1,5 @@
 import { ExportActionLink as Link } from "../components/ExportActionLink";
+import { ExportActionProvider } from "../components/ExportActionProvider";
 import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,17 +43,19 @@ export function BlendPlanRequestPage() {
   const { orderId = "", containerId = "" } = useParams();
   const [params, setParams] = useSearchParams();
   return (
-    <BlendPlanRequestContent
-      key={containerId + orderId}
-      orderId={orderId}
-      containerId={containerId}
-      selectedPlanId={params.get("plan")}
-      selectPlan={(id) => {
-        const next = new URLSearchParams(params);
-        next.set("plan", id);
-        setParams(next);
-      }}
-    />
+    <ExportActionProvider>
+      <BlendPlanRequestContent
+        key={containerId + orderId}
+        orderId={orderId}
+        containerId={containerId}
+        selectedPlanId={params.get("plan")}
+        selectPlan={(id) => {
+          const next = new URLSearchParams(params);
+          next.set("plan", id);
+          setParams(next);
+        }}
+      />
+    </ExportActionProvider>
   );
 }
 

@@ -1,4 +1,5 @@
 import { ExportActionLink as Link } from "../components/ExportActionLink";
+import { ExportActionProvider } from "../components/ExportActionProvider";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
@@ -22,8 +23,10 @@ import {
   exportPaths,
   planReviewPath,
 } from "../paths";
+import { BlendPlanRequestModalContent } from "./BlendPlanRequestPage";
 import {
   ArrowLeft,
+  ArrowRight,
   ArrowsClockwise,
   CaretLeft,
   CaretRight,
@@ -65,6 +68,9 @@ function mapContainerStatus(status: string): {
   }
 }
 
+export function ContainerPlanPage() {
+  return <ContainerWorkflowPage step="plan" />;
+}
 export function ContainerLoadingPage() {
   return <ContainerWorkflowPage step="loading" />;
 }
@@ -78,10 +84,14 @@ export function ContainerDossierPage() {
 function ContainerWorkflowPage({
   step,
 }: {
-  step: "loading" | "closure" | "dossier";
+  step: "plan" | "loading" | "closure" | "dossier";
 }) {
   const { id = "" } = useParams();
-  return <ContainerWorkflowContent key={id} id={id} step={step} />;
+  return (
+    <ExportActionProvider>
+      <ContainerWorkflowContent key={id} id={id} step={step} />
+    </ExportActionProvider>
+  );
 }
 
 export function ContainerWorkflowContent({
@@ -90,7 +100,7 @@ export function ContainerWorkflowContent({
   embedded = false,
 }: {
   id: string;
-  step: "loading" | "closure" | "dossier";
+  step: "plan" | "loading" | "closure" | "dossier";
   embedded?: boolean;
 }) {
   const text = useWorkflowText();
@@ -107,27 +117,34 @@ export function ContainerWorkflowContent({
   });
 
   const title =
-    step === "loading"
-      ? text("Xếp hàng lên container", "Container loading")
-      : step === "closure"
-        ? text("Đóng niêm container", "Container closure")
-        : text("Hồ sơ tuân thủ container", "Container compliance dossier");
+    step === "plan"
+      ? text("Phương án phối trộn container", "Container blend plan")
+      : step === "loading"
+        ? text("Xếp hàng lên container", "Container loading")
+        : step === "closure"
+          ? text("Đóng niêm container", "Container closure")
+          : text("Hồ sơ tuân thủ container", "Container compliance dossier");
 
   const subtitle =
-    step === "loading"
+    step === "plan"
       ? text(
-          "Ghi nhận khối lượng thực xếp theo từng mẻ bảo lưu đã được phê duyệt.",
-          "Record actual loading masses according to approved reservation batches.",
+          "Lập phương án, tính toán mô phỏng MRL và đề xuất bảo lưu tồn kho cho container.",
+          "Plan blend versions, simulate MRL assessment and submit reservation proposal.",
         )
-      : step === "closure"
+      : step === "loading"
         ? text(
-            "Cập nhật số hiệu container, số chì niêm phong và khóa chứng thư xuất xưởng.",
-            "Save container number, seal identifier, and close compliance dossier.",
+            "Ghi nhận khối lượng thực xếp theo từng mẻ bảo lưu đã được phê duyệt.",
+            "Record actual loading masses according to approved reservation batches.",
           )
-        : text(
-            "Tra cứu hồ sơ đóng niêm, snapshot JSON và chứng từ xuất khẩu.",
-            "Review the closure dossier, JSON snapshot and export documents.",
-          );
+        : step === "closure"
+          ? text(
+              "Cập nhật số hiệu container, số chì niêm phong và khóa chứng thư xuất xưởng.",
+              "Save container number, seal identifier, and close compliance dossier.",
+            )
+          : text(
+              "Tra cứu hồ sơ đóng niêm, snapshot JSON và chứng từ xuất khẩu.",
+              "Review the closure dossier, JSON snapshot and export documents.",
+            );
 
   const c = execution.data?.container;
   const readiness = execution.data?.readiness;
@@ -321,8 +338,13 @@ export function ContainerWorkflowContent({
               className="flex flex-wrap gap-2 pt-2 border-t border-ink-tertiary/10"
             >
               <Link
+                aria-current={step === "plan" ? "step" : undefined}
                 to={blendPlanRequestPath(c.orderId, id)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all shadow-xs"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  step === "plan"
+                    ? "bg-accent-primary text-white shadow-xs"
+                    : "bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary"
+                }`}
               >
                 <ChartPieSlice size={16} />
                 <span>{text("Phối trộn", "Blend planning")}</span>
@@ -370,8 +392,34 @@ export function ContainerWorkflowContent({
           </section>
 
           {/* Readiness check panel */}
-          {step !== "dossier" && c.status !== "CLOSED" && (
+          {step !== "dossier" && step !== "plan" && c.status !== "CLOSED" && (
             <ContainerReadiness readiness={readiness} />
+          )}
+
+          {/* Plan Step Content */}
+          {step === "plan" && (
+            <div className="space-y-4">
+              <BlendPlanRequestModalContent
+                orderId={c.orderId}
+                containerId={id}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Link
+                  to={`${exportPaths.orders}?order=${encodeURIComponent(c.orderId)}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>{text("Về đơn hàng", "Back to order")}</span>
+                </Link>
+                <Link
+                  to={containerPath(exportPaths.loading, id)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold transition-all shadow-xs ml-auto"
+                >
+                  <span>{text("Chuyển sang bước Xếp hàng", "Proceed to loading")}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
           )}
 
           {/* Loading Step Content */}
@@ -437,28 +485,74 @@ export function ContainerWorkflowContent({
                   </ul>
                 </section>
               )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Link
+                  to={blendPlanRequestPath(c.orderId, id)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>{text("Phương án phối trộn", "Blend planning")}</span>
+                </Link>
+                <Link
+                  to={containerPath(exportPaths.closure, id)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold transition-all shadow-xs ml-auto"
+                >
+                  <span>{text("Chuyển sang bước Niêm phong", "Proceed to closure")}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
             </>
           )}
 
           {/* Closure Step Content */}
           {step === "closure" && (
-            <ContainerClosureForm
-              container={c}
-              readiness={readiness}
-              canWrite={Boolean(canWrite)}
-              canClose={Boolean(canWrite && canAssess)}
-              refreshing={execution.isFetching || execution.isError}
-              saved={refresh}
-            />
+            <>
+              <ContainerClosureForm
+                container={c}
+                readiness={readiness}
+                canWrite={Boolean(canWrite)}
+                canClose={Boolean(canWrite && canAssess)}
+                refreshing={execution.isFetching || execution.isError}
+                saved={refresh}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Link
+                  to={containerPath(exportPaths.loading, id)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>{text("Quay lại Xếp hàng", "Back to loading")}</span>
+                </Link>
+                <Link
+                  to={containerPath(exportPaths.dossier, id)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold transition-all shadow-xs ml-auto"
+                >
+                  <span>{text("Xem Hồ sơ & Chứng từ", "View dossier & documents")}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </>
           )}
 
           {/* Dossier Step Content */}
           {step === "dossier" && (
-            <ContainerDossierPanel
-              container={c}
-              canWrite={Boolean(canWrite)}
-              saved={refresh}
-            />
+            <>
+              <ContainerDossierPanel
+                container={c}
+                canWrite={Boolean(canWrite)}
+                saved={refresh}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Link
+                  to={containerPath(exportPaths.closure, id)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary hover:text-ink-primary text-xs font-semibold transition-all shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>{text("Xem bước Niêm phong", "View closure")}</span>
+                </Link>
+              </div>
+            </>
           )}
 
           {/* Related Plans Panel */}

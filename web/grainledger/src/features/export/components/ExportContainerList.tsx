@@ -5,6 +5,7 @@ import {
   ChartPieSlice,
   FileText,
   LockSimple,
+  Plus,
   Truck,
 } from "@phosphor-icons/react";
 import type { ExportContainerDto } from "@/api/exports";
@@ -23,10 +24,12 @@ export function ExportContainerList({
   containers,
   orderId,
   scope,
+  onAllocate,
 }: {
   containers: ExportContainerDto[];
   orderId: string;
-  scope: ReactNode;
+  scope?: ReactNode;
+  onAllocate?: () => void;
 }) {
   const text = useWorkflowText();
   const id = useId();
@@ -134,13 +137,24 @@ export function ExportContainerList({
               kg
             </span>
           </p>
-          <Link
-            className="inline-flex items-center gap-1.5 font-semibold text-accent-primary"
-            to={`${exportPaths.orders}?order=${encodeURIComponent(orderId)}`}
-          >
-            {text("Phân bổ thêm container", "Allocate more containers")}
-            <ArrowRight size={14} aria-hidden="true" />
-          </Link>
+          {onAllocate ? (
+            <button
+              type="button"
+              className="export-button export-button-primary inline-flex items-center gap-1.5"
+              onClick={onAllocate}
+            >
+              <Plus size={15} aria-hidden="true" />
+              {text("Phân bổ thêm container", "Allocate more containers")}
+            </button>
+          ) : (
+            <Link
+              className="inline-flex items-center gap-1.5 font-semibold text-accent-primary"
+              to={`${exportPaths.orders}?order=${encodeURIComponent(orderId)}`}
+            >
+              {text("Chi tiết đơn hàng", "Order details")}
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </section>
       {!rows.length ? (
@@ -162,6 +176,18 @@ export function ExportContainerList({
                 )
           }
           icon={<Truck size={24} />}
+          action={
+            !containers.length && onAllocate ? (
+              <button
+                type="button"
+                className="export-button export-button-primary"
+                onClick={onAllocate}
+              >
+                <Plus size={15} aria-hidden="true" />
+                {text("Phân bổ container ngay", "Allocate container now")}
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <div className="export-dispatch-board">

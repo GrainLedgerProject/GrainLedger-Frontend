@@ -30,6 +30,14 @@ export function exportActionFromPath(path: string): ExportAction | null {
       containerId: decodeURIComponent(plan.params.containerId),
       planId: url.searchParams.get("plan") ?? undefined,
     };
+  const planStep = matchPath(exportPaths.planStep, url.pathname);
+  if (planStep?.params.id)
+    return {
+      kind: "plan",
+      orderId: url.searchParams.get("order") ?? "",
+      containerId: decodeURIComponent(planStep.params.id),
+      planId: url.searchParams.get("plan") ?? undefined,
+    };
   const review = matchPath(exportPaths.review, url.pathname);
   if (review?.params.planId)
     return { kind: "review", planId: decodeURIComponent(review.params.planId) };

@@ -557,6 +557,25 @@ describe("Export workspaces", () => {
         .getByRole("link", { name: "Quản lý container" })
         .getAttribute("href"),
     ).toBe("/export/containers?order=second");
+    fireEvent.click(within(dialog).getByRole("link", { name: "Quản lý container" }));
+    const dispatch = await screen.findByRole("dialog", { name: "Điều phối container" });
+    await within(dispatch).findByRole("heading", { name: "CT-LOAD" });
+    expect(screen.getByTestId("workspace-location").textContent).toBe("/export/orders?order=order");
+    fireEvent.click(within(dispatch).getByRole("button", { name: "Quay lại thao tác trước" }));
+    expect(await screen.findByRole("dialog", { name: "Chi tiết đơn hàng" })).toBeTruthy();
+  });
+  it("lets a read-only admin clear an archive search and track containers in place", async () => {
+    const user = useAuthStore.getState().user!;
+    useAuthStore.setState({ user: { ...user, role: "MILL_ADMIN", permissions: ["export-orders.read"] } });
+    mount("/export/dossiers?order=order");
+    const search = await screen.findByLabelText("Tìm mã container");
+    fireEvent.change(search, { target: { value: "missing" } });
+    fireEvent.click(screen.getByRole("button", { name: "Xóa tìm kiếm" }));
+    await screen.findByText("Chưa có chứng từ đính kèm.");
+    fireEvent.click(screen.getByRole("link", { name: "Theo dõi container" }));
+    const dialog = await screen.findByRole("dialog", { name: "Điều phối container" });
+    expect(await within(dialog).findByRole("heading", { name: "CT-LOAD" })).toBeTruthy();
+    expect(screen.getByTestId("workspace-location").textContent).toBe("/export/dossiers?order=order");
   });
   it("validates remaining allocation and sends a new container with the viewed ETag", async () => {
     const send = vi
@@ -609,6 +628,49 @@ describe("Export workspaces", () => {
     expect(screen.queryByRole("heading", { name: "CT-CLOSED" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "CT-PLAN" })).toBeNull();
     expect(execution).not.toHaveBeenCalled();
+  });
+  it("opens container allocation modal directly from the container page and adds a container with viewed ETag", async () => {
+    const send = vi
+      .spyOn(exportEndpoints, "addContainers")
+      .mockResolvedValue({});
+    mount("/export/containers?order=order");
+    await screen.findByRole("heading", { name: "CT-LOAD" });
+
+    const allocateButtons = screen.getAllByRole("button", {
+      name: "Phân bổ thêm container",
+    });
+    expect(allocateButtons.length).toBeGreaterThan(0);
+    fireEvent.click(allocateButtons[0]);
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Phân bổ thêm container",
+    });
+    expect(dialog).toBeTruthy();
+
+    const form = await within(dialog).findByRole("form", {
+      name: "Thêm container cho đơn hàng",
+    });
+    const input = within(form).getByLabelText(
+      "Khối lượng mục tiêu của container mới (kg)",
+    ) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "41" } });
+    fireEvent.submit(form);
+    expect(input.validationMessage).toContain("không vượt phần còn phân bổ");
+    expect(send).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "40.000001" } });
+    fireEvent.submit(form);
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith(
+        "order",
+        {
+          operationId: expect.any(String),
+          containers: [{ targetMass: "40.000001", unit: "KG" }],
+        },
+        '"v2"',
+      ),
+    );
   });
   it("restricts the dossier archive to closed containers and keeps the selected order on its container link", async () => {
     mount("/export/dossiers?order=order&container=closed");

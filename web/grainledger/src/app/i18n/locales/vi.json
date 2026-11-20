@@ -55,11 +55,11 @@
       "residueProfiles": "Hồ sơ dư lượng"
     },
     "export": {
-      "orders": "Đơn xuất khẩu",
+      "orders": "Đơn hàng & Điều phối",
       "plans": "Phương án phối trộn",
       "plansPending": "Duyệt phương án",
       "containers": "Xếp container",
-      "dossiers": "Hồ sơ & Chứng từ"
+      "dossiers": "Kho hồ sơ xuất khẩu"
     },
     "stock": {
       "overview": "Tồn kho theo vị trí",

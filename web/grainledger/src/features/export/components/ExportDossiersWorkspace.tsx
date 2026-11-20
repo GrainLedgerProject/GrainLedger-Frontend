@@ -16,6 +16,7 @@ import type { ExportContainerDto } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { useAuthStore } from "@/app/store/authStore";
 import { containerPath, exportPaths } from "../paths";
 import { massLabel } from "../model/exportPresentation";
 import { saveExportFile } from "../model/saveExportFile";
@@ -68,7 +69,7 @@ export function ExportDossiersWorkspace({
               {text("Kho hồ sơ", "Dossier archive")}
             </h2>
             <span className="ml-auto font-mono text-xs text-ink-secondary">
-              {closed.length}
+              {search.trim() ? `${rows.length} / ${closed.length}` : closed.length}
             </span>
           </div>
           {scope}
@@ -137,7 +138,8 @@ export function ExportDossiersWorkspace({
                       "No closed containers yet.",
                     )
               }
-              description={text(
+              action={closed.length > 0 && <button type="button" className="export-button" onClick={() => setSearch("")}>{text("Xóa tìm kiếm", "Clear search")}</button>}
+              description={closed.length ? text("Thử mã container khác hoặc xóa tìm kiếm.", "Try another container code or clear the search.") : text(
                 "Hồ sơ xuất hiện sau khi hoàn tất thực xếp và đóng niêm.",
                 "Records appear after actual loading and closure.",
               )}
@@ -164,7 +166,7 @@ export function ExportDossiersWorkspace({
       </aside>
       {selected ? (
         <DossierPreview key={selected.id} container={selected} />
-      ) : (
+      ) : rows.length > 0 ? (
         <div className="export-surface grid min-h-80 place-items-center p-6">
           <ExportEmpty
             title={
@@ -182,13 +184,16 @@ export function ExportDossiersWorkspace({
             icon={<FileText size={28} />}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
 function DossierPreview({ container }: { container: ExportContainerDto }) {
   const text = useWorkflowText();
+  const canAttach = useAuthStore(({ user }) =>
+    user?.role === "CUSTOMER_EXPORT_OFFICER" && user.permissions.includes("containers.write"),
+  );
   const typeLabel = (value: string) =>
     documentTypes[value] ? text(...documentTypes[value]) : value;
   const id = useId();
@@ -249,7 +254,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
           </div>
         </div>
         <Link
-          className="export-button"
+          className="export-button export-button-primary"
           to={containerPath(exportPaths.dossier, container.id)}
         >
           {text("Chi tiết & chứng từ", "Details & documents")}
@@ -493,10 +498,10 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                         "Không có chứng từ phù hợp.",
                         "No matching documents.",
                       )
-                    : text(
+                    : canAttach ? text(
                         "Chưa có chứng từ đính kèm. Mở hồ sơ chi tiết để bổ sung.",
                         "No attached documents. Open the full dossier to add them.",
-                      )}
+                      ) : text("Chưa có chứng từ đính kèm.", "No attached documents.")}
                 </p>
               )}
             </>

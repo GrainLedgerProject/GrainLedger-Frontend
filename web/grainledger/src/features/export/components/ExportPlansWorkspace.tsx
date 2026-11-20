@@ -128,7 +128,7 @@ export function ExportPlansWorkspace({
             <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </section>
-        <section className="px-2 py-3">
+        {/* <section className="px-2 py-3">
           <h2 className="mb-4 text-xs font-semibold text-ink-secondary">
             {text("Quy trình lập phương án", "Planning workflow")}
           </h2>
@@ -169,7 +169,7 @@ export function ExportPlansWorkspace({
               </li>
             ))}
           </ol>
-        </section>
+        </section> */}
       </aside>
       <ExportSection
         title={text("Phiên bản phương án", "Plan versions")}

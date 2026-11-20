@@ -63,7 +63,7 @@
   padding: 0.625rem 1rem;
   border: 1px solid
     color-mix(in srgb, var(--color-ink-tertiary) 25%, transparent);
-  border-radius: 0.875rem;
+  border-radius: 999px;
   background: var(--color-surface-base);
   color: var(--color-ink-secondary);
   font-size: 0.75rem;
@@ -170,6 +170,11 @@
   background: var(--color-surface-base);
   text-align: start;
 }
+.export-data-table thead th:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+}
 .export-data-table tbody tr:hover :is(th, td),
 .export-data-table tr[data-selected="true"] :is(th, td) {
   background: var(--color-surface-raised);
@@ -236,14 +241,16 @@
   align-items: start;
 }
 .export-order-ledger-intro {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem 3rem;
-  padding: 0.5rem 0.25rem 1rem;
-  border-block-end: 1px solid var(--color-border-subtle);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
 }
 .export-order-ledger-intro > div {
   min-inline-size: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 1rem;
+  background: var(--color-surface-base);
 }
 .export-orders-layout .export-table-scroll {
   max-block-size: 42rem;
@@ -396,6 +403,11 @@
   }
   .export-dossiers-layout {
     grid-template-columns: minmax(16rem, 0.75fr) minmax(0, 1.6fr);
+  }
+}
+@container export-workspace (inline-size <= 48rem) {
+  .export-record-index {
+    max-block-size: 15rem;
   }
 }
 @container export-workspace (inline-size > 60rem) {
