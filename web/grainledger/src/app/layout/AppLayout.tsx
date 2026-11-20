@@ -11,12 +11,12 @@ export const AppLayout: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="app-workspace min-h-screen bg-surface-canvas flex flex-row selection:bg-accent-primary/20 selection:text-accent-primary">
+    <div className="app-workspace min-h-dvh bg-surface-canvas flex flex-row selection:bg-accent-primary/20 selection:text-accent-primary">
       {/* App Sidebar */}
       <AppSidebar />
 
       {/* Main Workspace Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-clip">
         <AppHeader />
         <CompanyContextBar />
 

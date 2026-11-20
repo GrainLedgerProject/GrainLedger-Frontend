@@ -1,4 +1,20 @@
-import { ArrowsClockwise, ArrowRight, CalendarBlank, CheckCircle, FileArrowUp, FileText, Globe, ListBullets, MagnifyingGlass, NotePencil, Plus, ShieldCheck, SquaresFour, WarningCircle, X } from "@phosphor-icons/react";
+import {
+  ArrowsClockwise,
+  ArrowRight,
+  CalendarBlank,
+  CheckCircle,
+  FileArrowUp,
+  FileText,
+  Globe,
+  ListBullets,
+  MagnifyingGlass,
+  NotePencil,
+  Plus,
+  ShieldCheck,
+  SquaresFour,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { panel, field, iconButton, button, primary, alert } from "./mrlStyles";
 import { MrlStatusBadge } from "./MrlStatusBadge";
@@ -142,7 +158,9 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
           </button>
         </div>
       </header>
-      {!selectedId && !editor && !importing && !lookupOpen && <MrlAlerts error={error} notice={notice} />}
+      {!selectedId && !editor && !importing && !lookupOpen && (
+        <MrlAlerts error={error} notice={notice} />
+      )}
       {catalogs.error && (
         <div role="alert" className={alert}>
           <WarningCircle
@@ -303,12 +321,12 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
                 [
                   {
                     mode: "list",
-                    label: t("apiAudit.mrl.listView"),
+                    // label: t("apiAudit.mrl.listView"),
                     Icon: ListBullets,
                   },
                   {
                     mode: "grid",
-                    label: t("apiAudit.mrl.gridView"),
+                    // label: t("apiAudit.mrl.gridView"),
                     Icon: SquaresFour,
                   },
                 ] as const
@@ -318,7 +336,7 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
                   type="button"
                   aria-pressed={viewMode === mode}
                   onClick={() => setViewMode(mode)}
-                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary ${viewMode === mode ? "bg-accent-primary text-white shadow-xs" : "text-ink-secondary hover:bg-surface-base hover:text-ink-primary"}`}
+                  className={`inline-flex min-h-5 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary ${viewMode === mode ? "bg-accent-primary text-white shadow-xs" : "text-ink-secondary hover:bg-surface-base hover:text-ink-primary"}`}
                 >
                   <Icon size={16} aria-hidden="true" />
                   {label}

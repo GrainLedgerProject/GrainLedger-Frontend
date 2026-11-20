@@ -91,7 +91,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
     />
   );
   return (
-    <div className="export-workspace space-y-6 pb-12">
+    <div className="text-ink-primary [container:workspace/inline-size] space-y-6">
       <ExportPageHeader
         title={copy.title}
         subtitle={copy.description}
@@ -102,7 +102,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
           view === "orders" && canWrite ? (
             <button
               type="button"
-              className="export-button export-button-primary"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
               onClick={() => open({ kind: "create-order" })}
             >
               <Plus size={16} aria-hidden="true" />
@@ -111,7 +111,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
           ) : view === "containers" && canWrite && data.orderId ? (
             <button
               type="button"
-              className="export-button export-button-primary"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
               onClick={() => setAllocating(true)}
             >
               <Plus size={16} aria-hidden="true" />
@@ -149,7 +149,7 @@ function ExportWorkspaceContent({ view }: { view: ExportView }) {
             ) : (
               <>
                 {!data.containers.data && (
-                  <div className="export-surface max-w-xl p-5">{scope}</div>
+                  <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base max-w-xl p-5">{scope}</div>
                 )}
                 <Feedback
                   pending={data.containers.isPending}

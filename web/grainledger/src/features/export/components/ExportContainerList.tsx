@@ -88,9 +88,9 @@ export function ExportContainerList({
     <div className="space-y-5">
       <section
         aria-label={text("Điều phối container", "Container dispatch")}
-        className="export-surface p-4 sm:p-5"
+        className="rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 sm:p-5"
       >
-        <div className="export-dispatch-toolbar">
+        <div className="grid grid-cols-1 items-end gap-4 [&>div]:min-w-0 [&>div]:max-w-none [@container_workspace_(width>40rem)]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(10rem,0.7fr)]">
           <div>{scope}</div>
           <ExportSearch
             label={text("Tìm mã container", "Search container code")}
@@ -98,10 +98,14 @@ export function ExportContainerList({
             onChange={setSearch}
           />
           <div>
-            <label htmlFor={id} className="mb-1 block">
+            <label
+              htmlFor={id}
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
               {text("Trạng thái container", "Container status")}
             </label>
             <select
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               id={id}
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -140,7 +144,7 @@ export function ExportContainerList({
           {onAllocate ? (
             <button
               type="button"
-              className="export-button export-button-primary inline-flex items-center gap-1.5"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim inline-flex items-center gap-1.5"
               onClick={onAllocate}
             >
               <Plus size={15} aria-hidden="true" />
@@ -180,7 +184,7 @@ export function ExportContainerList({
             !containers.length && onAllocate ? (
               <button
                 type="button"
-                className="export-button export-button-primary"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
                 onClick={onAllocate}
               >
                 <Plus size={15} aria-hidden="true" />
@@ -190,7 +194,7 @@ export function ExportContainerList({
           }
         />
       ) : (
-        <div className="export-dispatch-board">
+        <div className="grid grid-cols-1 items-start gap-4 [@container_workspace_(width>60rem)]:grid-cols-3">
           {stages
             .filter(
               (stage) =>
@@ -209,7 +213,7 @@ export function ExportContainerList({
                 <section
                   key={stage}
                   aria-label={label}
-                  className="export-dispatch-lane"
+                  className="min-w-0 rounded-2xl border border-ink-tertiary/20 border-t-[3px] border-t-ink-tertiary bg-surface-raised/65 p-4 data-[stage=LOADING]:border-t-accent-warning data-[stage=CLOSED]:border-t-accent-primary"
                   data-stage={stage}
                 >
                   <header className="mb-4">
@@ -234,7 +238,10 @@ export function ExportContainerList({
                     {items.map((c) => {
                       const badge = containerStatus(c.status);
                       return (
-                        <article key={c.id} className="export-surface p-4">
+                        <article
+                          key={c.id}
+                          className="rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4"
+                        >
                           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="break-all font-mono text-sm font-bold">
                               {c.internalCode}
@@ -257,7 +264,7 @@ export function ExportContainerList({
                           <div className="mt-5 space-y-2">
                             {c.status === "CLOSED" ? (
                               <Link
-                                className="export-button export-button-primary w-full"
+                                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim w-full"
                                 to={containerPath(exportPaths.dossier, c.id)}
                               >
                                 <FileText size={16} aria-hidden="true" />
@@ -271,7 +278,7 @@ export function ExportContainerList({
                             ) : (
                               <>
                                 <Link
-                                  className="export-button export-button-primary w-full"
+                                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim w-full"
                                   to={containerPath(exportPaths.loading, c.id)}
                                 >
                                   <Truck size={16} aria-hidden="true" />
@@ -284,7 +291,7 @@ export function ExportContainerList({
                                 </Link>
                                 <div className="flex flex-wrap justify-between gap-2">
                                   <Link
-                                    className="export-quiet-link"
+                                    className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-accent-primary hover:underline hover:underline-offset-2"
                                     to={blendPlanRequestPath(orderId, c.id)}
                                   >
                                     {text("Phối trộn", "Blend plans")}
@@ -294,7 +301,7 @@ export function ExportContainerList({
                                     </span>
                                   </Link>
                                   <Link
-                                    className="export-quiet-link"
+                                    className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-accent-primary hover:underline hover:underline-offset-2"
                                     to={containerPath(
                                       exportPaths.closure,
                                       c.id,

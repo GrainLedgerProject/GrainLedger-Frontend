@@ -219,7 +219,9 @@ export function BlendPlanReviewContent({
           ? text("Đã thu hồi", "Revoked")
           : text("Chờ quyết định", "Pending decision");
   return (
-    <div className="export-workspace space-y-6 pb-12">
+    <div
+      className={`text-ink-primary [container:workspace/inline-size] space-y-6${embedded ? "" : " pb-12"}`}
+    >
       <div hidden={embedded}>
         <ExportPageHeader
           title={text("Chi tiết đề xuất phối trộn", "Blend proposal details")}
@@ -232,7 +234,10 @@ export function BlendPlanReviewContent({
           refreshing={busy}
         />
         <ExportWorkspaceNav view="plans" params={context} />
-        <Link className="export-button" to={`${exportPaths.plans}?${context}`}>
+        <Link
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+          to={`${exportPaths.plans}?${context}`}
+        >
           <ArrowLeft size={15} aria-hidden="true" />
           {text("Về danh sách phương án", "Back to plans")}
         </Link>
@@ -241,7 +246,7 @@ export function BlendPlanReviewContent({
         <div className="flex justify-end">
           <button
             type="button"
-            className="export-button"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
             disabled={busy}
             onClick={() => void refresh()}
           >
@@ -263,7 +268,7 @@ export function BlendPlanReviewContent({
               description={plan.data.targetProductIdentity ?? undefined}
               actions={
                 <Link
-                  className="export-button"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                   to={`${blendPlanRequestPath(plan.data.orderId, plan.data.containerId)}?plan=${encodeURIComponent(planId)}`}
                 >
                   {text("Mở phiên bản phương án", "Open plan version")}
@@ -514,7 +519,7 @@ export function BlendPlanReviewContent({
                       {current.status === "PENDING" && (
                         <>
                           <button
-                            className="export-button export-button-primary"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
                             disabled={busy || !approving}
                             onClick={() => open("approve")}
                           >
@@ -522,7 +527,7 @@ export function BlendPlanReviewContent({
                             {labels.approve}
                           </button>
                           <button
-                            className="export-button"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                             disabled={busy}
                             onClick={() => open("reject")}
                           >
@@ -532,7 +537,7 @@ export function BlendPlanReviewContent({
                       )}
                       {current.activeApproval && (
                         <button
-                          className="export-button"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                           disabled={busy}
                           onClick={() => open("revoke")}
                         >
@@ -558,7 +563,7 @@ export function BlendPlanReviewContent({
         {confirmation && (
           <form
             onSubmit={submit}
-            className="export-workspace w-[calc(100vw-2rem)] max-w-lg space-y-4 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6 dark:bg-surface-raised"
+            className="text-ink-primary [container:workspace/inline-size] w-[calc(100vw-2rem)] max-w-lg space-y-4 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6 dark:bg-surface-raised"
           >
             <h2 className="font-display text-lg font-bold">
               {labels[confirmation.action]}
@@ -573,6 +578,7 @@ export function BlendPlanReviewContent({
               <label className="block space-y-2">
                 <span>{text("Lý do", "Reason")}</span>
                 <textarea
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                   required
                   maxLength={2000}
                   rows={3}
@@ -586,7 +592,7 @@ export function BlendPlanReviewContent({
             {command.isError && (
               <button
                 type="button"
-                className="export-button"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                 onClick={() => {
                   setConfirmation(null);
                   void refresh();
@@ -599,7 +605,7 @@ export function BlendPlanReviewContent({
               <button
                 autoFocus
                 type="button"
-                className="export-button"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                 disabled={command.isPending}
                 onClick={() => setConfirmation(null)}
               >
@@ -607,7 +613,7 @@ export function BlendPlanReviewContent({
               </button>
               <button
                 type="submit"
-                className="export-button export-button-primary"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
                 disabled={
                   command.isPending ||
                   (confirmation.action !== "approve" && !reason.trim())

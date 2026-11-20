@@ -64,12 +64,12 @@ export function ExportPlansWorkspace({
       .slice()
       .sort((a, b) => b.versionNo - a.versionNo) ?? [];
   return (
-    <div className="export-planning-layout">
+    <div className="grid grid-cols-1 items-start gap-6 [@container_workspace_(width>48rem)]:grid-cols-[minmax(15rem,0.7fr)_minmax(0,1.7fr)]">
       <aside
         className="space-y-4"
         aria-label={text("Nhu cầu phối trộn", "Blend demand")}
       >
-        <section className="export-surface space-y-4 p-5">
+        <section className="rounded-2xl border border-ink-tertiary/20 bg-surface-base space-y-4 p-5">
           <div className="flex items-center gap-2 border-b border-ink-tertiary/15 pb-3">
             <ChartPieSlice
               size={20}
@@ -82,10 +82,14 @@ export function ExportPlansWorkspace({
           </div>
           {scope}
           <div>
-            <label htmlFor={id} className="mb-1 block">
+            <label
+              htmlFor={id}
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
               {text("Container", "Container")}
             </label>
             <select
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               id={id}
               value={selected?.id ?? ""}
               onChange={(e) => {
@@ -121,7 +125,7 @@ export function ExportPlansWorkspace({
             </div>
           )}
           <Link
-            className="export-quiet-link"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-accent-primary hover:underline hover:underline-offset-2"
             to={`${exportPaths.containers}?order=${encodeURIComponent(orderId)}`}
           >
             {text("Xem container của đơn", "View order containers")}
@@ -132,7 +136,7 @@ export function ExportPlansWorkspace({
           <h2 className="mb-4 text-xs font-semibold text-ink-secondary">
             {text("Quy trình lập phương án", "Planning workflow")}
           </h2>
-          <ol className="export-planning-steps">
+          <ol className="grid gap-5">
             {[
               [
                 text("Tạo phiên bản", "Create version"),
@@ -156,8 +160,8 @@ export function ExportPlansWorkspace({
                 ),
               ],
             ].map(([title, detail], index) => (
-              <li key={title}>
-                <span className="export-step-number" aria-hidden="true">
+              <li key={title} className="flex items-start gap-3">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ink-tertiary/20 text-[11px] font-semibold text-ink-secondary" aria-hidden="true">
                   {index + 1}
                 </span>
                 <div>
@@ -182,7 +186,7 @@ export function ExportPlansWorkspace({
           selected &&
           selected.status !== "CLOSED" && (
             <Link
-              className="export-button export-button-primary"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
               to={blendPlanRequestPath(orderId, selected.id)}
             >
               <Plus size={15} aria-hidden="true" />
@@ -207,6 +211,7 @@ export function ExportPlansWorkspace({
               {text("Lọc phiên bản", "Filter versions")}
             </label>
             <select
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               id={`${id}-state`}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -248,7 +253,7 @@ export function ExportPlansWorkspace({
           !plans.error &&
           (rows.length ? (
             <ol
-              className="export-plan-versions"
+              className="grid gap-4"
               aria-label={text(
                 "Các phiên bản phương án phối trộn",
                 "Blend plan versions",
@@ -258,10 +263,10 @@ export function ExportPlansWorkspace({
                 const status = planStatus(p);
                 return (
                   <li key={p.id}>
-                    <article className="export-plan-version">
+                    <article className="rounded-[0.875rem] border border-ink-tertiary/20 border-s-[3px] border-s-accent-primary p-5">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <span className="export-version-number">
+                          <span className="grid min-h-11 w-11 shrink-0 place-items-center rounded-[0.875rem] bg-surface-raised font-mono text-sm font-bold text-accent-primary">
                             v{p.versionNo}
                           </span>
                           <div>
@@ -294,9 +299,15 @@ export function ExportPlansWorkspace({
                             {massLabel(p.targetMassKg, text("vi", "en"))} kg
                           </p>
                         </div>
-                        <div className="export-row-actions">
+                        <div className="flex flex-wrap items-center gap-2 [flex-wrap:balance] [@container_(width<560px)]:min-w-36">
                           <Link
-                            className={`export-button ${!p.hasProposal && index === 0 && p.status !== "CANCELLED" ? "export-button-primary" : ""}`}
+                            className={
+                              !p.hasProposal &&
+                              index === 0 &&
+                              p.status !== "CANCELLED"
+                                ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
+                                : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+                            }
                             to={`${blendPlanRequestPath(orderId, selected.id)}?plan=${encodeURIComponent(p.id)}`}
                           >
                             <Calculator size={15} aria-hidden="true" />
@@ -305,7 +316,7 @@ export function ExportPlansWorkspace({
                           </Link>
                           {p.hasProposal && (
                             <Link
-                              className="export-button export-button-primary"
+                              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
                               to={planReviewPath(p.id)}
                             >
                               {text("Xem đề xuất", "View proposal")}

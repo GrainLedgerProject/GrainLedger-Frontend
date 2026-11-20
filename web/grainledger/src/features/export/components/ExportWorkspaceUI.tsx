@@ -13,7 +13,6 @@ import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { exportPaths } from "../paths";
 import type { ExportView } from "../model/exportPresentation";
-import "./export-workspace.css";
 
 export function ExportPageHeader({
   title,
@@ -34,13 +33,19 @@ export function ExportPageHeader({
   return (
     <header className="flex flex-col justify-between gap-4 border-b border-ink-tertiary/15 pb-5 sm:flex-row sm:items-center">
       <div className="max-w-3xl">
-        <p data-ui-detail="secondary" className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent-primary">
+        <p
+          data-ui-detail="secondary"
+          className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent-primary"
+        >
           {eyebrow}
         </p>
         <h1 className="font-display text-2xl font-bold text-ink-primary">
           {title}
         </h1>
-        <p data-ui-detail="secondary" className="mt-1 text-xs leading-relaxed text-ink-secondary">
+        <p
+          data-ui-detail="secondary"
+          className="mt-1 text-xs leading-relaxed text-ink-secondary"
+        >
           {subtitle}
         </p>
       </div>
@@ -48,7 +53,7 @@ export function ExportPageHeader({
         {refresh && (
           <button
             type="button"
-            className="export-button export-button-icon"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary w-11 px-2.5"
             disabled={refreshing}
             aria-label={text("Tải lại dữ liệu", "Reload data")}
             onClick={refresh}
@@ -105,13 +110,14 @@ export function ExportWorkspaceNav({
   return (
     <nav
       aria-label={text("Nghiệp vụ xuất khẩu", "Export workspaces")}
-      className="export-workspace-nav"
+      className="flex flex-wrap gap-2 border-b border-ink-tertiary/15 pb-4"
     >
       {links.map(({ id, path, label, icon: Icon }) => (
         <Link
           key={id}
           to={path + (context.size ? `?${context}` : "")}
           aria-current={view === id ? "page" : undefined}
+          className="flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-ink-secondary hover:bg-surface-raised aria-[current=page]:bg-accent-primary aria-[current=page]:text-ink-inverse [@media(pointer:coarse)]:min-h-12"
         >
           <Icon
             size={16}
@@ -139,7 +145,7 @@ export function ExportStat({
   accent?: boolean;
 }) {
   return (
-    <div className="export-stat rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised sm:p-5">
+    <div className="min-w-0 [&>p]:[overflow-wrap:anywhere] rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised sm:p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-secondary">
           {label}
@@ -263,7 +269,7 @@ export function ExportSearch({
         <input
           id={id}
           type="search"
-          className="!pl-9"
+          className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg pl-10"
           value={value}
           placeholder={placeholder ?? label}
           onChange={(e) => onChange(e.target.value)}
@@ -285,16 +291,16 @@ export function ExportTable({
   const id = useId();
   return (
     <div
-      className="export-table-scroll"
+      className="relative max-h-[36rem] max-w-full overflow-auto rounded-2xl border border-ink-tertiary/20 [container-type:inline-size]"
       role="region"
       aria-labelledby={id}
       tabIndex={0}
     >
-      <table className="export-data-table">
+      <table className="w-full min-w-[40rem] border-separate border-spacing-0 text-start text-xs [&_:is(th,td)]:border-b [&_:is(th,td)]:border-ink-tertiary/15 [&_:is(th,td)]:px-4 [&_:is(th,td)]:py-3.5 [&_:is(th,td)]:align-middle [@container_(width<560px)]:[&_:is(th,td)]:!p-3 [&_tbody_tr:last-child>*]:border-b-0 [&_tbody_tr:hover>*]:bg-surface-raised [&_tbody_tr[data-selected=true]>*]:bg-surface-raised">
         <caption id={id} className="sr-only">
           {caption}
         </caption>
-        <thead>
+        <thead className="sticky top-0 z-20 whitespace-nowrap bg-surface-raised text-left text-[11px] font-semibold uppercase tracking-wider text-ink-secondary [&_th]:bg-surface-raised [&_th:first-child]:sticky [&_th:first-child]:start-0 [&_th:first-child]:z-10">
           <tr>
             {columns.map((column, i) => (
               <th key={i} scope="col">
@@ -303,7 +309,9 @@ export function ExportTable({
             ))}
           </tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody className="[&_th]:sticky [&_th]:start-0 [&_th]:z-10 [&_th]:bg-surface-base [&_th]:text-start">
+          {children}
+        </tbody>
       </table>
     </div>
   );

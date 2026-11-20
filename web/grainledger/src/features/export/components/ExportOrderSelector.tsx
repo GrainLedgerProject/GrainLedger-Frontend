@@ -16,13 +16,23 @@ export function ExportOrderSelector({
   const id = useId();
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="mb-1 block">
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+      >
         {text("Đơn hàng", "Order")}
       </label>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
-        {!orders.some((o) => o.id === value) && (
-          <option value={value}>{text("Chọn đơn hàng", "Select order")}</option>
-        )}
+
+      <select
+        className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+        id={id}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="" disabled>
+          {text("Chọn đơn hàng", "Select order")}
+        </option>
+
         {orders.map((o) => (
           <option key={o.id} value={o.id}>
             {o.code} · {shippingDate(o.shippingFrom, text("vi", "en"))} –{" "}

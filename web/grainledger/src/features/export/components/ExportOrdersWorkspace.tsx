@@ -60,7 +60,7 @@ export function ExportOrdersWorkspace({
   return (
     <div className="space-y-5">
       <div className="min-w-0 space-y-5">
-        <div className="export-order-ledger-intro">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4 [&>div]:min-w-0 [&>div]:rounded-2xl [&>div]:border [&>div]:border-ink-tertiary/20 [&>div]:bg-surface-base [&>div]:px-5 [&>div]:py-4">
           <div className="flex items-center gap-3">
             <Export
               size={24}
@@ -116,6 +116,7 @@ export function ExportOrdersWorkspace({
                 {text("Sắp xếp đơn hàng", "Sort orders")}
               </label>
               <select
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 id={id}
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
@@ -167,7 +168,7 @@ export function ExportOrdersWorkspace({
                   </td>
                   <td>
                     <button
-                      className="export-button"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                       type="button"
                       aria-haspopup="dialog"
                       onClick={() => {
@@ -251,7 +252,7 @@ function OrderAllocation({
       actions={
         order && (
           <Link
-            className="export-button"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
             to={`${exportPaths.containers}?order=${encodeURIComponent(order.id)}`}
           >
             {text("Quản lý container", "Manage containers")}
@@ -335,116 +336,120 @@ function OrderAllocation({
                 </p>
               )}
             </div>
-            {canWrite && order.canEdit && new Decimal(order.remainingMassKg).gt(0) && data.detail.data?.etag && (
-              <form
-                aria-label={text(
-                  "Thêm container cho đơn hàng",
-                  "Add an order container",
-                )}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const input = e.currentTarget.elements.namedItem(
-                    "targetMass",
-                  ) as HTMLInputElement;
-                  if (
-                    !e.currentTarget.reportValidity() ||
-                    !data.detail.data?.etag
-                  )
-                    return;
-                  const valid =
-                    new Decimal(mass).gt(0) &&
-                    new Decimal(mass).lte(order.remainingMassKg);
-                  input.setCustomValidity(
-                    valid
-                      ? ""
-                      : text(
-                          "Nhập khối lượng dương không vượt phần còn phân bổ.",
-                          "Enter a positive mass within the unallocated amount.",
-                        ),
-                  );
-                  if (e.currentTarget.reportValidity())
-                    add.submit({ mass, etag: data.detail.data.etag });
-                }}
-                className="space-y-3 border-t border-ink-tertiary/15 pt-4"
-              >
-                <fieldset disabled={add.isPending} className="space-y-3">
-                  <legend className="mb-2 text-xs font-semibold">
-                    {text("Thêm container", "Add container")}
-                  </legend>
-                  <label htmlFor={id} className="mb-1 block">
-                    {text(
-                      "Khối lượng mục tiêu của container mới (kg)",
-                      "New container target (kg)",
-                    )}
-                  </label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      id={id}
-                      name="targetMass"
-                      required
-                      inputMode="decimal"
-                      pattern="[0-9]+([.][0-9]{1,6})?"
-                      value={mass}
-                      onChange={(e) => {
-                        setMass(e.target.value);
-                        e.target.setCustomValidity("");
-                      }}
-                      className="font-mono"
-                    />
-                    <button
-                      className="export-button export-button-primary shrink-0"
-                      type="submit"
-                    >
-                      <Plus size={15} aria-hidden="true" />
+            {canWrite &&
+              order.canEdit &&
+              new Decimal(order.remainingMassKg).gt(0) &&
+              data.detail.data?.etag && (
+                <form
+                  aria-label={text(
+                    "Thêm container cho đơn hàng",
+                    "Add an order container",
+                  )}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.elements.namedItem(
+                      "targetMass",
+                    ) as HTMLInputElement;
+                    if (
+                      !e.currentTarget.reportValidity() ||
+                      !data.detail.data?.etag
+                    )
+                      return;
+                    const valid =
+                      new Decimal(mass).gt(0) &&
+                      new Decimal(mass).lte(order.remainingMassKg);
+                    input.setCustomValidity(
+                      valid
+                        ? ""
+                        : text(
+                            "Nhập khối lượng dương không vượt phần còn phân bổ.",
+                            "Enter a positive mass within the unallocated amount.",
+                          ),
+                    );
+                    if (e.currentTarget.reportValidity())
+                      add.submit({ mass, etag: data.detail.data.etag });
+                  }}
+                  className="space-y-3 border-t border-ink-tertiary/15 pt-4"
+                >
+                  <fieldset disabled={add.isPending} className="space-y-3">
+                    <legend className="mb-2 text-xs font-semibold">
                       {text("Thêm container", "Add container")}
+                    </legend>
+                    <label htmlFor={id} className="mb-1 block">
+                      {text(
+                        "Khối lượng mục tiêu của container mới (kg)",
+                        "New container target (kg)",
+                      )}
+                    </label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        id={id}
+                        name="targetMass"
+                        required
+                        inputMode="decimal"
+                        pattern="[0-9]+([.][0-9]{1,6})?"
+                        value={mass}
+                        onChange={(e) => {
+                          setMass(e.target.value);
+                          e.target.setCustomValidity("");
+                        }}
+                        className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono"
+                      />
+                      <button
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim shrink-0"
+                        type="submit"
+                      >
+                        <Plus size={15} aria-hidden="true" />
+                        {text("Thêm container", "Add container")}
+                      </button>
+                    </div>
+                    {/* Quick suggestion buttons */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                      <span className="text-[11px] text-ink-secondary">
+                        {text("Gợi ý nhanh:", "Quick suggestions:")}
+                      </span>
+                      {new Decimal(order.remainingMassKg).gte(25000) && (
+                        <button
+                          type="button"
+                          className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
+                          onClick={() => setMass("25000")}
+                        >
+                          25,000 kg (20ft)
+                        </button>
+                      )}
+                      {new Decimal(order.remainingMassKg).gte(28000) && (
+                        <button
+                          type="button"
+                          className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
+                          onClick={() => setMass("28000")}
+                        >
+                          28,000 kg (40ft)
+                        </button>
+                      )}
+                      {new Decimal(order.remainingMassKg).gt(0) && (
+                        <button
+                          type="button"
+                          className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-accent-primary transition-colors"
+                          onClick={() => setMass(order.remainingMassKg)}
+                        >
+                          {text("Toàn bộ còn lại", "All remaining")} (
+                          {massLabel(order.remainingMassKg, locale)} kg)
+                        </button>
+                      )}
+                    </div>
+                  </fieldset>
+                  <Feedback error={add.error} />
+                  {add.isError && (
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+                      onClick={() => void data.detail.refetch()}
+                    >
+                      {text("Tải lại phiên bản", "Reload version")}
                     </button>
-                  </div>
-                  {/* Quick suggestion buttons */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                    <span className="text-[11px] text-ink-secondary">
-                      {text("Gợi ý nhanh:", "Quick suggestions:")}
-                    </span>
-                    {new Decimal(order.remainingMassKg).gte(25000) && (
-                      <button
-                        type="button"
-                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
-                        onClick={() => setMass("25000")}
-                      >
-                        25,000 kg (20ft)
-                      </button>
-                    )}
-                    {new Decimal(order.remainingMassKg).gte(28000) && (
-                      <button
-                        type="button"
-                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-ink-primary transition-colors"
-                        onClick={() => setMass("28000")}
-                      >
-                        28,000 kg (40ft)
-                      </button>
-                    )}
-                    {new Decimal(order.remainingMassKg).gt(0) && (
-                      <button
-                        type="button"
-                        className="px-2.5 py-1 rounded-lg bg-surface-base border border-ink-tertiary/20 text-xs font-mono font-medium hover:bg-surface-raised text-accent-primary transition-colors"
-                        onClick={() => setMass(order.remainingMassKg)}
-                      >
-                        {text("Toàn bộ còn lại", "All remaining")} ({massLabel(order.remainingMassKg, locale)} kg)
-                      </button>
-                    )}
-                  </div>
-                </fieldset>
-                <Feedback error={add.error} />
-                {add.isError && (
-                  <button
-                    type="button"
-                    className="export-button"
-                    onClick={() => void data.detail.refetch()}
-                  >
-                    {text("Tải lại phiên bản", "Reload version")}
-                  </button>
-                )}
-              </form>
-            )}
+                  )}
+                </form>
+              )}
           </div>
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-ink-secondary">
@@ -477,7 +482,7 @@ function OrderAllocation({
                       <div className="flex items-center gap-2">
                         {c.status === "CLOSED" ? (
                           <Link
-                            className="export-button"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                             to={containerPath(exportPaths.dossier, c.id)}
                           >
                             <FileText size={14} aria-hidden="true" />
@@ -485,7 +490,7 @@ function OrderAllocation({
                           </Link>
                         ) : (
                           <Link
-                            className="export-button"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                             to={containerPath(exportPaths.loading, c.id)}
                           >
                             <Truck size={14} aria-hidden="true" />
@@ -493,7 +498,7 @@ function OrderAllocation({
                           </Link>
                         )}
                         <Link
-                          className="export-button"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                           to={blendPlanRequestPath(order.id, c.id)}
                         >
                           {text("Phối trộn", "Blend plans")}

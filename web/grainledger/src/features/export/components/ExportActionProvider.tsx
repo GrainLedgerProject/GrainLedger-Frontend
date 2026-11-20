@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeft, X } from "@phosphor-icons/react";
+import { ArrowLeft, ClipboardText, FileText, Package, Plus, Scales, SealCheck, Truck } from "@phosphor-icons/react";
 import { Modal } from "@/shared/ui/Modal";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { ExportActionContext, type ExportAction } from "../model/exportActions";
@@ -17,6 +17,7 @@ import { ExportEmpty } from "./ExportWorkspaceUI";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useExportWorkspaceData } from "../hooks/useExportWorkspaceData";
 import { ExportContainerList } from "./ExportContainerList";
+import { ExportDialogFrame } from "./ExportDialogFrame";
 
 const Plan = lazy(() =>
   import("../pages/BlendPlanRequestPage").then((m) => ({
@@ -39,6 +40,17 @@ const CreateOrder = lazy(() =>
 
 type Frame = { id: string; action: ExportAction };
 
+const actionIcons = {
+  "create-order": Plus,
+  order: ClipboardText,
+  containers: Truck,
+  plan: Scales,
+  review: SealCheck,
+  loading: Package,
+  closure: SealCheck,
+  dossier: FileText,
+};
+
 function OrderContainers({ orderId }: { orderId: string }) {
   const text = useWorkflowText();
   const { containers, order } = useExportWorkspaceData("containers", orderId);
@@ -46,7 +58,7 @@ function OrderContainers({ orderId }: { orderId: string }) {
     <>
       <Feedback pending={containers.isPending} error={containers.error} />
       {containers.isError && (
-        <button type="button" className="export-button" onClick={() => void containers.refetch()}>
+        <button type="button" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4" onClick={() => void containers.refetch()}>
           {text("Tải lại container", "Reload containers")}
         </button>
       )}
@@ -77,6 +89,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
   const positions = useRef(new Map<string, number>());
   const previousFrame = useRef<string | undefined>(undefined);
   const current = frames.at(-1);
+  const ActionIcon = current ? actionIcons[current.action.kind] : ClipboardText;
   const hasDirty = frames.some((frame) =>
     [...(dirtyForms.get(frame.id) ?? [])].some((form) => form.isConnected),
   );
@@ -181,51 +194,33 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
       {children}
       <Modal
         isOpen={Boolean(current)}
+        className="rounded-2xl shadow-xl"
         ariaLabel={current ? titles[current.action.kind] : undefined}
         onClose={() => requestClose("close")}
         closeOnBackdrop={!busy}
         closedBy={busy || hasDirty ? "none" : "closerequest"}
       >
-        <div
-          className="export-workspace export-action-dialog"
-          data-kind={current?.action.kind}
-        >
-          <header className="export-action-dialog-header">
-            <div className="flex min-w-0 items-center gap-3">
-              {frames.length > 1 && (
-                <button
-                  type="button"
-                  className="export-button export-button-icon"
-                  disabled={busy}
-                  aria-label={text(
-                    "Quay lại thao tác trước",
-                    "Back to previous action",
-                  )}
-                  onClick={() => requestClose("back")}
-                >
-                  <ArrowLeft size={18} aria-hidden="true" />
-                </button>
-              )}
-              <h2
-                ref={heading}
-                tabIndex={-1}
-                className="font-display text-lg font-bold"
-              >
-                {current && titles[current.action.kind]}
-              </h2>
-            </div>
+        <ExportDialogFrame
+          kind={current?.action.kind}
+          title={current ? titles[current.action.kind] : ""}
+          icon={<ActionIcon size={20} weight="duotone" />}
+          headingRef={heading}
+          bodyRef={body}
+          closeLabel={text("Đóng thao tác", "Close action")}
+          closeDisabled={busy}
+          onClose={() => requestClose("close")}
+          backAction={frames.length > 1 && (
             <button
               type="button"
-              autoFocus
-              className="export-button export-button-icon shrink-0"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary w-11 px-2.5 shrink-0"
               disabled={busy}
-              onClick={() => requestClose("close")}
-              aria-label={text("Đóng thao tác", "Close action")}
+              aria-label={text("Quay lại thao tác trước", "Back to previous action")}
+              onClick={() => requestClose("back")}
             >
-              <X size={18} aria-hidden="true" />
+              <ArrowLeft size={18} aria-hidden="true" />
             </button>
-          </header>
-          {busy && (
+          )}
+          notice={busy && (
             <p role="status" className="px-5 pt-3 text-xs text-ink-secondary">
               {text(
                 "Đang gửi yêu cầu. Vui lòng chờ trước khi đóng.",
@@ -233,73 +228,65 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
               )}
             </p>
           )}
-          <div
-            ref={body}
-            className="export-action-dialog-body"
-            onScroll={(event) => {
-              if (current)
-                positions.current.set(
-                  current.id,
-                  event.currentTarget.scrollTop,
-                );
-            }}
-          >
-            {frames.map((frame) => (
-              <div
-                key={frame.id}
-                hidden={frame.id !== current?.id}
-                onChangeCapture={(event) => {
-                  const form = (event.target as HTMLElement).closest("form");
-                  if (form) {
-                    setDirtyForms((previous) => {
-                      const next = new Map(previous);
-                      const forms = new Set(next.get(frame.id));
-                      forms.add(form);
-                      next.set(frame.id, forms);
-                      return next;
-                    });
-                  }
-                }}
-                onSubmitCapture={(event) => {
-                  const form = (event.target as HTMLElement).closest("form");
-                  if (!form) return;
-                  const pending = { frame: frame.id, form };
-                  submitted.current = pending;
-                  queueMicrotask(() => {
-                    if (submitted.current === pending) submitted.current = null;
+          onBodyScroll={(event) => {
+            if (current) positions.current.set(current.id, event.currentTarget.scrollTop);
+          }}
+        >
+          {frames.map((frame) => (
+            <div
+              key={frame.id}
+              hidden={frame.id !== current?.id}
+              onChangeCapture={(event) => {
+                const form = (event.target as HTMLElement).closest("form");
+                if (form) {
+                  setDirtyForms((previous) => {
+                    const next = new Map(previous);
+                    const forms = new Set(next.get(frame.id));
+                    forms.add(form);
+                    next.set(frame.id, forms);
+                    return next;
                   });
-                }}
+                }
+              }}
+              onSubmitCapture={(event) => {
+                const form = (event.target as HTMLElement).closest("form");
+                if (!form) return;
+                const pending = { frame: frame.id, form };
+                submitted.current = pending;
+                queueMicrotask(() => {
+                  if (submitted.current === pending) submitted.current = null;
+                });
+              }}
+            >
+              <Suspense
+                fallback={
+                  <ExportEmpty
+                    pending
+                    title={text("Đang mở thao tác…", "Opening action…")}
+                  />
+                }
               >
-                <Suspense
-                  fallback={
-                    <ExportEmpty
-                      pending
-                      title={text("Đang mở thao tác…", "Opening action…")}
-                    />
-                  }
-                >
-                  {frame.action.kind === "create-order" ? (
-                    <CreateOrder saved={created} />
-                  ) : frame.action.kind === "order" ? (
-                    <Order orderId={frame.action.orderId} />
-                  ) : frame.action.kind === "containers" ? (
-                    <OrderContainers orderId={frame.action.orderId} />
-                  ) : frame.action.kind === "plan" ? (
-                    <Plan {...frame.action} />
-                  ) : frame.action.kind === "review" ? (
-                    <Review planId={frame.action.planId} embedded />
-                  ) : (
-                    <Container
-                      id={frame.action.containerId}
-                      step={frame.action.kind}
-                      embedded
-                    />
-                  )}
-                </Suspense>
-              </div>
-            ))}
-          </div>
-        </div>
+                {frame.action.kind === "create-order" ? (
+                  <CreateOrder saved={created} />
+                ) : frame.action.kind === "order" ? (
+                  <Order orderId={frame.action.orderId} />
+                ) : frame.action.kind === "containers" ? (
+                  <OrderContainers orderId={frame.action.orderId} />
+                ) : frame.action.kind === "plan" ? (
+                  <Plan {...frame.action} />
+                ) : frame.action.kind === "review" ? (
+                  <Review planId={frame.action.planId} embedded />
+                ) : (
+                  <Container
+                    id={frame.action.containerId}
+                    step={frame.action.kind}
+                    embedded
+                  />
+                )}
+              </Suspense>
+            </div>
+          ))}
+        </ExportDialogFrame>
       </Modal>
       <Modal
         isOpen={discard !== null}
@@ -307,7 +294,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
         closeOnBackdrop={!busy}
         onClose={() => setDiscard(null)}
       >
-        <div className="export-workspace w-[calc(100dvw-2rem)] max-w-md space-y-4 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6">
+        <div className="text-ink-primary [container:workspace/inline-size] w-[calc(100dvw-2rem)] max-w-md space-y-4 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6">
           <h2 className="font-display text-lg font-bold">
             {text("Bỏ thay đổi chưa lưu?", "Discard unsaved changes?")}
           </h2>
@@ -323,7 +310,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              className="export-button"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
               aria-describedby="export-discard-description"
               disabled={busy}
               onClick={() => {
@@ -335,7 +322,7 @@ export function ExportActionProvider({ children }: { children: ReactNode }) {
             <button
               type="button"
               autoFocus
-              className="export-button export-button-primary"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
               aria-describedby="export-discard-description"
               onClick={() => setDiscard(null)}
             >

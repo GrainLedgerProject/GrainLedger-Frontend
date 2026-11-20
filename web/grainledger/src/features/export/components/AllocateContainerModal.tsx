@@ -1,7 +1,8 @@
 import { useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Decimal from "decimal.js";
-import { Plus, ShieldCheck, Truck, X } from "@phosphor-icons/react";
+import { Plus, ShieldCheck, Truck } from "@phosphor-icons/react";
+import { ExportDialogFrame } from "./ExportDialogFrame";
 import { exportEndpoints } from "@/api/exports";
 import { useExportCommand } from "@/features/export/hooks/useExportCommand";
 import { Modal } from "@/shared/ui/Modal";
@@ -105,40 +106,26 @@ export function AllocateContainerModal({
   return (
     <Modal
       isOpen={isOpen}
+      className="rounded-2xl shadow-xl"
       onClose={() => {
         if (!add.isPending) onClose();
       }}
       closeOnBackdrop={!add.isPending}
       ariaLabel={text("Phân bổ thêm container", "Allocate more containers")}
     >
-      <div className="export-workspace w-[calc(100dvw-2rem)] max-w-lg space-y-5 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6 shadow-xl dark:border-surface-overlay">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-ink-tertiary/15 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
-              <Truck size={20} weight="duotone" />
-            </div>
-            <div>
-              <h2 className="font-display text-lg font-bold text-ink-primary">
-                {text("Phân bổ thêm container", "Allocate more containers")}
-              </h2>
-              {order && (
-                <p className="font-mono text-xs text-ink-secondary">
-                  {text("Đơn hàng", "Order")}: <span className="font-bold text-accent-primary">{order.code}</span>
-                </p>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="export-button export-button-icon"
-            disabled={add.isPending}
-            onClick={onClose}
-            aria-label={text("Đóng", "Close")}
-          >
-            <X size={18} />
-          </button>
-        </div>
+      <ExportDialogFrame
+        kind="allocate"
+        title={text("Phân bổ thêm container", "Allocate more containers")}
+        icon={<Truck size={20} weight="duotone" />}
+        subtitle={order && (
+          <p className="font-mono text-xs text-ink-secondary">
+            {text("Đơn hàng", "Order")}: <span className="font-bold text-accent-primary">{order.code}</span>
+          </p>
+        )}
+        closeLabel={text("Đóng", "Close")}
+        closeDisabled={add.isPending}
+        onClose={onClose}
+      >
 
         {/* Loading / Error States */}
         {detail.isPending && (
@@ -198,7 +185,7 @@ export function AllocateContainerModal({
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
-                    className="export-button"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                     onClick={onClose}
                   >
                     {text("Đóng", "Close")}
@@ -300,7 +287,7 @@ export function AllocateContainerModal({
                 <div className="flex items-center justify-end gap-3 border-t border-ink-tertiary/15 pt-4">
                   <button
                     type="button"
-                    className="export-button"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
                     disabled={add.isPending}
                     onClick={onClose}
                   >
@@ -308,7 +295,7 @@ export function AllocateContainerModal({
                   </button>
                   <button
                     type="submit"
-                    className="export-button export-button-primary"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
                     disabled={add.isPending || !mass}
                   >
                     <Plus size={16} aria-hidden="true" />
@@ -321,7 +308,7 @@ export function AllocateContainerModal({
             )}
           </div>
         )}
-      </div>
+      </ExportDialogFrame>
     </Modal>
   );
 }

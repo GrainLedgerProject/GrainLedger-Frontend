@@ -53,9 +53,9 @@ export function ExportDossiersWorkspace({
   const selected =
     requested === null ? rows[0] : rows.find((c) => c.id === requested);
   return (
-    <div className="export-dossiers-layout">
+    <div className="grid grid-cols-1 items-start gap-6 [@container_workspace_(width>48rem)]:grid-cols-[minmax(16rem,0.75fr)_minmax(0,1.6fr)]">
       <aside
-        className="export-surface self-start"
+        className="rounded-2xl border border-ink-tertiary/20 bg-surface-base self-start"
         aria-label={text("Kho hồ sơ", "Dossier archive")}
       >
         <div className="space-y-4 border-b border-ink-tertiary/15 p-5">
@@ -69,7 +69,9 @@ export function ExportDossiersWorkspace({
               {text("Kho hồ sơ", "Dossier archive")}
             </h2>
             <span className="ml-auto font-mono text-xs text-ink-secondary">
-              {search.trim() ? `${rows.length} / ${closed.length}` : closed.length}
+              {search.trim()
+                ? `${rows.length} / ${closed.length}`
+                : closed.length}
             </span>
           </div>
           {scope}
@@ -88,7 +90,7 @@ export function ExportDossiersWorkspace({
         </div>
         {rows.length ? (
           <ul
-            className="export-record-index"
+            className="max-h-[34rem] space-y-1 overflow-y-auto overscroll-contain px-2 py-2 [scrollbar-gutter:stable_both-edges] [@container_workspace_(width<=48rem)]:max-h-60"
             aria-label={text(
               "Container có hồ sơ đóng niêm",
               "Closed-container records",
@@ -99,7 +101,7 @@ export function ExportDossiersWorkspace({
                 <button
                   type="button"
                   aria-pressed={selected?.id === c.id}
-                  className="export-record-choice"
+                  className="flex min-h-20 w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-4 text-start text-ink-primary hover:bg-surface-raised aria-pressed:border-accent-primary aria-pressed:bg-accent-primary/[0.07] [&>svg:first-child]:shrink-0 [&>svg:first-child]:text-ink-tertiary aria-pressed:[&>svg:first-child]:text-accent-primary"
                   onClick={() => {
                     const next = new URLSearchParams(params);
                     next.set("container", c.id);
@@ -125,7 +127,7 @@ export function ExportDossiersWorkspace({
             ))}
           </ul>
         ) : (
-          <div className="p-4">
+          <div className="px-5 py-4">
             <ExportEmpty
               title={
                 closed.length
@@ -138,16 +140,33 @@ export function ExportDossiersWorkspace({
                       "No closed containers yet.",
                     )
               }
-              action={closed.length > 0 && <button type="button" className="export-button" onClick={() => setSearch("")}>{text("Xóa tìm kiếm", "Clear search")}</button>}
-              description={closed.length ? text("Thử mã container khác hoặc xóa tìm kiếm.", "Try another container code or clear the search.") : text(
-                "Hồ sơ xuất hiện sau khi hoàn tất thực xếp và đóng niêm.",
-                "Records appear after actual loading and closure.",
-              )}
+              action={
+                closed.length > 0 && (
+                  <button
+                    type="button"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+                    onClick={() => setSearch("")}
+                  >
+                    {text("Xóa tìm kiếm", "Clear search")}
+                  </button>
+                )
+              }
+              description={
+                closed.length
+                  ? text(
+                      "Thử mã container khác hoặc xóa tìm kiếm.",
+                      "Try another container code or clear the search.",
+                    )
+                  : text(
+                      "Hồ sơ xuất hiện sau khi hoàn tất thực xếp và đóng niêm.",
+                      "Records appear after actual loading and closure.",
+                    )
+              }
               icon={<FolderOpen size={24} />}
             />
           </div>
         )}
-        <div className="border-t border-ink-tertiary/15 p-4">
+        <div className="border-t border-ink-tertiary/15 px-5 py-4">
           <p className="text-[11px] leading-relaxed text-ink-secondary">
             {containers.length - closed.length}{" "}
             {text(
@@ -156,7 +175,7 @@ export function ExportDossiersWorkspace({
             )}
           </p>
           <Link
-            className="export-quiet-link mt-2"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-accent-primary hover:underline hover:underline-offset-2 mt-2"
             to={`${exportPaths.containers}?order=${encodeURIComponent(orderId)}`}
           >
             {text("Theo dõi container", "Track containers")}
@@ -167,7 +186,7 @@ export function ExportDossiersWorkspace({
       {selected ? (
         <DossierPreview key={selected.id} container={selected} />
       ) : rows.length > 0 ? (
-        <div className="export-surface grid min-h-80 place-items-center p-6">
+        <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base grid min-h-80 place-items-center p-6">
           <ExportEmpty
             title={
               closed.length && requested
@@ -191,8 +210,10 @@ export function ExportDossiersWorkspace({
 
 function DossierPreview({ container }: { container: ExportContainerDto }) {
   const text = useWorkflowText();
-  const canAttach = useAuthStore(({ user }) =>
-    user?.role === "CUSTOMER_EXPORT_OFFICER" && user.permissions.includes("containers.write"),
+  const canAttach = useAuthStore(
+    ({ user }) =>
+      user?.role === "CUSTOMER_EXPORT_OFFICER" &&
+      user.permissions.includes("containers.write"),
   );
   const typeLabel = (value: string) =>
     documentTypes[value] ? text(...documentTypes[value]) : value;
@@ -236,7 +257,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
   const d = dossier.data;
   return (
     <section
-      className="export-surface export-dossier-preview min-w-0 self-start"
+      className="rounded-2xl border border-ink-tertiary/20 bg-surface-base [container:dossier/inline-size] min-w-0 self-start"
       aria-label={text("Xem trước hồ sơ", "Dossier preview")}
     >
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-ink-tertiary/15 px-5 py-5 sm:px-6">
@@ -254,7 +275,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
           </div>
         </div>
         <Link
-          className="export-button export-button-primary"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
           to={containerPath(exportPaths.dossier, container.id)}
         >
           {text("Chi tiết & chứng từ", "Details & documents")}
@@ -269,7 +290,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
         {dossier.isError && (
           <button
             type="button"
-            className="export-button"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
             disabled={dossier.isFetching}
             onClick={() => void dossier.refetch()}
           >
@@ -278,7 +299,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
         )}
         {d && (
           <>
-            <div className="export-dossier-summary">
+            <div className="grid gap-6 [@container_dossier_(width>38rem)]:grid-cols-[minmax(0,1fr)_minmax(10rem,0.6fr)]">
               <div>
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <LockSimple
@@ -340,7 +361,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                   </div>
                 </dl>
               </div>
-              <div className="export-snapshot-download">
+              <div className="flex flex-col items-start gap-3 rounded-[0.875rem] bg-surface-raised p-5">
                 <FileCode
                   size={30}
                   className="text-accent-primary"
@@ -357,7 +378,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                 </p>
                 <button
                   type="button"
-                  className="export-button w-full"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4 w-full"
                   disabled={download.isPending}
                   onClick={() =>
                     download.mutate({
@@ -409,7 +430,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
           {workflow.isError && (
             <button
               type="button"
-              className="export-button"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
               disabled={workflow.isFetching}
               onClick={() => void workflow.refetch()}
             >
@@ -424,6 +445,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                     {text("Loại chứng từ", "Document type")}
                   </label>
                   <select
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                     id={id}
                     value={type}
                     onChange={(e) => setType(e.target.value)}
@@ -476,7 +498,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                       </div>
                       <button
                         type="button"
-                        className="export-button export-button-icon"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary w-11 px-2.5"
                         aria-label={`${text("Tải", "Download")} ${file.filename} v${file.version}`}
                         disabled={download.isPending}
                         onClick={() =>
@@ -498,10 +520,15 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                         "Không có chứng từ phù hợp.",
                         "No matching documents.",
                       )
-                    : canAttach ? text(
-                        "Chưa có chứng từ đính kèm. Mở hồ sơ chi tiết để bổ sung.",
-                        "No attached documents. Open the full dossier to add them.",
-                      ) : text("Chưa có chứng từ đính kèm.", "No attached documents.")}
+                    : canAttach
+                      ? text(
+                          "Chưa có chứng từ đính kèm. Mở hồ sơ chi tiết để bổ sung.",
+                          "No attached documents. Open the full dossier to add them.",
+                        )
+                      : text(
+                          "Chưa có chứng từ đính kèm.",
+                          "No attached documents.",
+                        )}
                 </p>
               )}
             </>

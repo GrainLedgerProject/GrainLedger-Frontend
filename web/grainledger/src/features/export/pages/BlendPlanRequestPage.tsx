@@ -146,7 +146,7 @@ function BlendPlanRequestContent({
   const selected = plans.data?.find((p) => p.id === selectedPlanId);
 
   return (
-    <div className="export-workspace space-y-6 pb-12">
+    <div className={`text-ink-primary [container:workspace/inline-size] space-y-6${embedded ? "" : " pb-12"}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div hidden={embedded}>

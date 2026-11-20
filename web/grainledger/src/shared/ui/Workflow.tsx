@@ -2,8 +2,27 @@ import type { ReactNode } from "react";
 import { ApiError } from "@/api/client";
 import { useWorkflowText } from "./useWorkflowText";
 
-export function Workflow({ title, children }: { title: string; children: ReactNode }) {
-  return <div className="gl-workflow space-y-5 pb-8"><h1 className="font-display text-2xl font-bold text-ink-primary">{title}</h1>{children}</div>;
+export function Workflow({ title, description, actions, children }: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  const heading = <h1 className="font-display text-2xl font-bold text-ink-primary">{title}</h1>;
+  return (
+    <div className="gl-workflow space-y-5 pb-8">
+      {description || actions ? (
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-tertiary/15 pb-4">
+          <div>
+            {heading}
+            {description && <p data-ui-detail="secondary" className="mt-1 text-xs text-ink-secondary">{description}</p>}
+          </div>
+          {actions}
+        </header>
+      ) : heading}
+      {children}
+    </div>
+  );
 }
 
 export function Panel({ title, children }: { title: string; children: ReactNode }) {
