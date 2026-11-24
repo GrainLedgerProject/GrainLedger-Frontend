@@ -1,86 +1,89 @@
-# Frontend feature gap report
+# UI functionality gap report
 
 ## Scope and method
 
-Static comparison of the original `apps/web/src/` with the replacement web application `GrainLedger-Frontend/web/grainledger/src/`, including its routes, page handlers and API clients. Backend source was consulted where needed. Mobile is outside this comparison. No live UI, API, database, or tests were run; findings describe code paths, not observed production behavior. Features can be distributed across different replacement pages; a route, button, or API wrapper alone does not establish functional parity.
+Static comparison of the original web UI (`~/github/GrainLedger/apps/web/src/`) with the current web UI (`web/grainledger/src/`). Functionality, not layout, is compared. Backend source (`~/github/GrainLedger/backend/src/GrainLedger.Api/`) was consulted where useful. No live UI, API, or tests were run. Findings describe inspected source paths, not observed production behavior.
 
-Evidence shorthand: **O** = `apps/web/src/`; **N** = `GrainLedger-Frontend/web/grainledger/src/`; **B** = `backend/src/GrainLedger.Api/`. Line numbers describe the inspected snapshots and can move. Existing `GrainLedger-Frontend/UI_API_MISMATCH_REPORT.md` is older; some of its findings have since changed, notably lab-report API integration and blend decision routes. This report uses current source instead.
+Evidence shorthand: **Old** = original web UI source; **Current** = current web UI source; **Backend** = backend API source. Line numbers describe inspected snapshots and may change.
 
-**Status:** Missing = no equivalent routed workflow found; Partial = some capability exists but material original behavior is absent or incompatible; Unsafe = visible action can present invented data, suppress failures, or construct incorrect operational evidence. Priorities are migration recommendations, not a claim that every feature is used in every deployment.
-
-## Executive summary
-
-**Do not cut over yet.** Missing or incomplete workflows include traceability, export orders and blend proposal authoring, crop-season administration, residue-rule authoring/adoption, export assessment setup, and important capture, receiving, stock, correction and laboratory operations. Several screens look complete but use fabricated values, incomplete requests, or local-only policy changes. These are higher risk than an obvious placeholder.
-
-| Priority | Migration blockers |
-|---|---|
-| P0 — trust and accounting | Remove fabricated operational evidence and false success; fix receiving, HOLD, processing, corrections, policy persistence and laboratory capture; preserve backend authorization and actual session revocation. |
-| P1 — workflow parity | Restore traceability; capture details and custody; export order and blend proposal flows; residue profile and assessment policy/evidence; staff and crop-season setup. |
-| P2 — completeness | Restore MRL spreadsheet import, list filters/pagination and other detail-navigation gaps; review old deep links and role access. |
+**Priority:** Fix spray capture, receiving, session revocation, and simulated policy screens first. Then restore missing residue/assessment workflows, custody and trace detail, and planning controls.
 
 ## Identity and administration
 
-| Status | Original capability and replacement gap | Evidence |
+| Gap | Impact | Evidence |
 |---|---|---|
-| Missing | Google sign-in, self-registration, email verification/resend, and completion of password reset. Replacement has email/password sign-in and can request a reset code, but no code/new-password completion screen was found. | O `LocalAuth.tsx:46-104,113-151`; N `features/auth/pages/SignInPage.tsx:84-125,395-408`, `features/auth/pages/ForgotPasswordPage.tsx:20-29`, `api/auth.ts:104-143`. |
-| Partial | Original validates the session at startup and supports sign-out of current or all sessions. Replacement restores local auth state, and its header calls local logout; no callers of its server logout/logout-all methods were found. Stale or revoked sessions may remain presented as authenticated until a request fails; local logout does not establish server revocation. | O `App.tsx:49-67,123-135,282-287`; N `app/store/authStore.ts:59-99`, `app/router/ProtectedRoute.tsx:17-33`, `components/AppHeader/AppHeader.tsx:97-100`, `api/auth.ts:76-84`. |
-| Missing | Company crop-season administration: create, edit, archive and search. Replacement has API methods but no equivalent routed page found. | O `AdminCropSeasons.tsx:19-72`, `App.tsx:171`; N `api/procurement.ts:200-215`, `app/router/routes.tsx:297-357`. |
-| Partial | User/organization management exists, but replacement uses static role choices rather than original backend role list filtered by organization type. Original also blocks changing one's own organization, role or active status in its UI; replacement form lacks that guard. Backend authorization remains authoritative. | O `Administration.tsx:17-25,56-83`; N `features/admin/pages/UserAccessManagementPage.tsx:49-56,78-83,353-435`. |
-| Partial | Master-data management exists, but MRL CSV/XLSX import with parsing, validation and preview is replaced by raw JSON entry. MRL lookup failures are converted to empty arrays, obscuring failures; compare version concurrency and pagination before declaring parity. | O `AdminMrl.tsx:3-4,74-113,139-202`; N `features/catalogs/pages/MrlVersionsPage.tsx:76-107,241-259`. |
-| Partial | Original administration uses `platform.configure` checks; replacement uses role-based guards for several pages. Audit role/permission mapping against backend rather than assuming the two access models match. | O `AdminWorkspace.tsx:8-20`; N `app/router/routes.tsx:297-357`. |
+| **Google sign-in missing** | Current sign-in offers email/password only. Backend still exposes Google auth. | Old `LocalAuth.tsx:113-123`; Current `features/auth/pages/SignInPage.tsx:85-115`; Backend `Features/Identity/Authentication/SessionEndpoints.cs:23-33` |
+| **Server-side logout missing** | Current header clears local session without calling server logout. Old UI revoked current session. | Old `App.tsx:123-135`; Current `app/layout/AppHeader.tsx:97-101`, `app/store/authStore.ts:150-178`, `api/auth.ts:76-79` |
+| **Sign out on all devices missing** | Old profile revoked all sessions; current API wrapper has no UI caller. | Old `App.tsx:267-287`; Current `api/auth.ts:81-84` |
+| **Role choices not filtered by organization type** | Current editor permits combinations backend rejects. | Old `Administration.tsx:76-83`; Current `features/admin/pages/UserAccessManagementPage.tsx:353-395` |
+| **Crop-season sorting missing** | Current season management retains search, pagination and CRUD, but not old name/date ascending/descending controls. | Old `AdminCropSeasons.tsx:29-36,64-66`; Current `features/field/pages/CropSeasonsPage.tsx:55-69` |
 
-Replacement also exposes invitation activation and authenticated password-change pages whose API functions currently throw rather than perform those operations. These are not claimed as lost original features: original supports password recovery, not necessarily those new flows. Do not present them as working. Evidence: N `features/auth/api/authApi.ts:57-72,84-91`.
+**Retained:** Email registration and verification, password-reset completion, user and organization management, general catalogs, and crop-season CRUD.
 
 ## Field capture and procurement
 
-| Status | Original capability and replacement gap | Evidence |
+| Gap | Impact | Evidence |
 |---|---|---|
-| Missing | Plot-season registration, editing and deletion from the plot workflow. Replacement reads existing plot seasons and defines a create API helper, but no capture page or caller was found. This blocks users from creating records needed by spray and procurement workflows. | O `PlotDetail.tsx:125-132`, `PlotSeasonCreate.tsx:72-93`, `PlotSeasonDetail.tsx:25-37`; N `app/router/routes.tsx:375-435`, `api/procurement.ts:220-243`, `features/field/pages/ProcurementReceiptPage.tsx:186-198`. |
-| Unsafe / partial | Spray declaration page lacks usable plot-season selection and uses a random ID when missing; it supplies a fixed evidence reference and can fall back to hard-coded substance data. Original supports selected plot seasons, user-entered evidence, multiple products and declaration details; no replacement detail route found. Backend can reject invalid links; fixed evidence must not be treated as genuine. | O `Spray.tsx:55-124`, `App.tsx:224-229`; N `features/field/pages/PesticideDeclarationPage.tsx:40-76,111-139,395-410`, `app/router/routes.tsx:401-409`; B `Features/Capture/SprayDeclarations/SprayDeclarationEndpoints.cs:19-20,88`. |
-| Partial | Sample creation accepts a raw source-lot UUID rather than selecting an accepted source lot. Handover calls an API but replacement does not expose the original custody history and general handover workflow. Preserve actual source-lot and sample links and lab dispatch/acknowledgement semantics. | O `Samples.tsx:32-35,64-123`; N `features/field/pages/FieldSampleRegistrationPage.tsx:127-159,207-250,432-444,490-503`; B `Features/Capture/Samples/SampleEndpoints.cs:110-111`. |
-| Unsafe / partial | Procurement submission is API-backed, but form defaults include plausible mass and moisture; missing site, location, commodity or season references can be replaced with random IDs. One receipt line is submitted; original supports multiple plot-season lines and checks line limits. Farmer filtering can fall back to unrelated seasons. | O `ProcurementForm.tsx:31,83-89,128-133`; N `features/field/pages/ProcurementReceiptPage.tsx:95-100,436-479,499-568`; B `Features/Capture/Procurement/ProcurementEndpoints.cs:18-25,44-46`. |
-| Partial | Farmer and plot API writes exist, but replacement creates a fresh operation ID on each submit. Original retains an uncertain request for replay with the same ID, avoiding a new attempt after ambiguous network failure. Replacement plot capture also lacks original's interactive map and device-location workflow. | O `FarmerCreate.tsx:68-86`, `PlotCreate.tsx:93-115,122-145`; N `features/field/pages/FarmerRegistrationPage.tsx:199-212`, `features/field/pages/PlotRegistrationPage.tsx:180-229,657-659`. |
+| **Spray capture has no plot-season selector** | Submit substitutes random plot-season UUID and fixed evidence reference. Backend requires existing plot-season; valid capture cannot be constructed through this form. Old UI also supported multiple products and declaration details. | Old `Spray.tsx:28-52,55-130`; Current `features/field/pages/PesticideDeclarationPage.tsx:39-45,86-104,315-377`; Backend `Features/Capture/SprayDeclarations/SprayDeclarationEndpoints.cs:87-90,206` |
+| **Spray detail and list context incomplete** | Current list shows first item without old declaration-detail workflow. | Old `Spray.tsx:117-130`; Current `features/field/pages/PesticideDeclarationPage.tsx:247-283` |
+| **Sample custody incomplete** | Current capture requires manually entered source-lot UUID and supports lab dispatch, but lacks old sample detail, custody history, general handover and lab acknowledgement. | Old `Samples.tsx:14-29,64-125`; Current `features/field/pages/FieldSampleRegistrationPage.tsx:127-266,432-504` |
+| **Receipt and source-lot detail missing** | Current receipt list has no detail action. Old flow opened receipt and source-lot details and linked samples. | Old `Procurement.tsx:61-99`; Current `features/field/pages/ProcurementReceiptPage.tsx:799-909`, `features/field/paths.ts` |
+| **Farmer and plot duplicate warnings missing** | Old capture checked likely duplicate farmers and nearby plots before creation. Backend endpoints remain available. | Old `FarmerCreate.tsx:58,100`, `PlotCreate.tsx:65-66,141`; Current `features/field/pages/FarmerRegistrationPage.tsx:174-242`, `PlotRegistrationPage.tsx:182-237` |
+| **Related-record navigation incomplete** | Old farmer detail linked plots; plot detail linked plot seasons and spray records. Current manages these separately without equivalent contextual navigation. | Old `Farmers.tsx:125-133`, `PlotDetail.tsx:90-132`; Current `features/field/pages/CropSeasonsPage.tsx:140-165` |
+| **Safe retry coverage narrower** | Old farmer, plot, spray and sample capture retained pending requests for retry. Current offline queue is procurement-specific; other inspected forms submit directly. This is a retry parity gap, not proof that old UI supported full offline operation. | Old `FarmerCreate.tsx:68-86`, `PlotCreate.tsx:93-119`, `Spray.tsx:83-98`, `Samples.tsx:48-56`; Current `features/field/pages/OfflineSyncQueuePage.tsx:11,33-47` |
 
-## Ledger: receiving, inventory and operations
+**Retained:** Farmer and plot CRUD, map/GPS selection, crop-season and plot-season management, receipt capture/listing, and procurement sync queue.
 
-| Status | Original capability and replacement gap | Evidence |
+## Ledger, receiving and stock
+
+| Gap | Impact | Evidence |
 |---|---|---|
-| Unsafe | Receiving supports per-procurement-item measurement, measurement history, threshold preview, and reviewed decisions. Replacement submits the selected task ID as `procurementItemId`, uses a random measurement-set ID if missing, and inserts a fixed 0.5% explanation. It does not expose the same filtering/pagination and review context. Use actual item and measurement IDs and server-provided thresholds and outcomes. | O `LedgerReceiving.tsx:58-127,202-269`; N `features/mill/pages/ReceivingTasksPage.tsx:62-75,159-183,209-246`. |
-| Partial | Inventory has scoped filters and pagination, positions and lineage, lot and ledger history, transfers, HOLDs and notifications. Replacement stock view has a narrower lot query and derives KPIs from the fetched page; separate history/HOLD screens do not restore all stock actions and context. Do not label page-local totals as full inventory totals. | O `LedgerStock.tsx:13-128`; N `features/mill/pages/StockOverviewPage.tsx:52-76,128-143`, `api/ledger.ts:179-200,234-267`. |
-| Unsafe | Original HOLD workflow selects a real lot and supports responses and isolation transfer without implicit release. Replacement constructs HOLD creation with a random lot UUID and shows active-looking statuses; its response action is not an isolation transfer. It also converts list failures into an empty list. | O `LedgerStock.tsx:74,111-128`; N `features/risk/pages/HoldManagementPage.tsx:35-40,44-62,75-82,106-120,144-154,308-360`. |
-| Partial | Original processing includes draft/review, correction-bound replacement and commit workflows. Replacement has operation entry and API calls, but uses process-type hard-coded tolerances and does not provide the same draft/review lifecycle. | O `LedgerOperations.tsx:52-59,93-110,262-280`; N `features/mill/pages/OperationEntryPage.tsx:154-166,376-416,468-515`. |
-| Partial | Original corrections reconcile actual output positions and evidence, then bind and commit a replacement operation. Replacement displays correction actions but lacks the necessary physical-position, evidence and replacement inputs; relevant controls are disabled. | O `LedgerOperations.tsx:320-379`; N `features/mill/pages/CorrectionManagementPage.tsx:290-421,1118-1178`. |
-| Missing | Traceability: lot or lab-result start, forward/backward and current/history views, complete-result checks, graph/table, source lineage and evidence. Replacement `/risk/traceback` is a placeholder, although API methods exist. | O `LedgerTraceability.tsx:27-139`; N `app/router/routes.tsx:742-762`, `api/ledger.ts:339-357`; B `Features/Ledger/Traceability/LotTraceability.cs:16-36`. |
-| Partial / unsafe | Facility, location and equipment screens exist, but staff-to-facility assignment and mixed-bulk policy workflows are absent from the setup page. Balance policy and compatibility screen initializes and reloads fixed rules; some write errors are ignored and deletion is local-only. Restore persisted, evidence-backed setup, assignments and clearance as supported by original. | O `LedgerSetup.tsx:17-124`; N `features/admin/pages/FacilityConfigPage.tsx:72-82,145-169`, `features/admin/pages/BalancePolicyPage.tsx:42-119,144-189,192-251`; N `api/ledger.ts:120-141`. |
+| **Receiving measurement uses wrong identifier** | Current request sends task ID as `procurementItemId`, one measurement line, zero tare and net equal to entered weight. Old flow measured individual procurement lines. | Old `LedgerReceiving.tsx:202-265`; Current `features/mill/pages/ReceivingTasksPage.tsx:159-183` |
+| **Receiving review context incomplete** | Current review can generate measurement-set UUID when missing and supplies fixed decision text, including a 0.5% explanation. Old UI exposed threshold-aware review, measurement history and shortage/remeasurement decisions. | Old `LedgerReceiving.tsx:202-269`; Current `features/mill/pages/ReceivingTasksPage.tsx:209-246` |
+| **Receiving queue controls missing** | Old queue supported facility scope, search, status/owner filters, sorting and pagination. Current loader requests tasks without those controls. | Old `LedgerReceiving.tsx:109-120,212-218`; Current `features/mill/pages/ReceivingTasksPage.tsx:62-75` |
+| **Processing lifecycle incomplete** | Current operation entry covers basic input and mass balance. Old workspace supported multi-input allocations, multiple outputs, merge, editable drafts, variance review and commit queues. | Old `LedgerOperations.tsx:52-60,100-120,140-280`; Current `features/mill/pages/OperationEntryPage.tsx:109-215` |
+| **Correction reconciliation incomplete** | Current correction screens do not provide all old physical-position, evidence and replacement-operation inputs. | Old `LedgerOperations.tsx:320-379`; Current `features/mill/pages/CorrectionManagementPage.tsx:290-421,1118-1178` |
+| **Stock filtering and context reduced** | Old stock workspace supported owner/facility/location filters, positions, restrictions, lineage, residue bounds and history. Current overview has narrower stage/search filtering; separate screens cover some, but not all, context. | Old `LedgerStock.tsx:14-98,112-129`; Current `features/mill/pages/StockOverviewPage.tsx:52-76,257-316` |
+| **Stock totals limited to loaded page** | Current overview calculates KPIs from fetched rows, not necessarily entire inventory. | Current `features/mill/pages/StockOverviewPage.tsx:52-60,128-143` |
+| **Facility assignments and mixed-bulk setup missing** | Current facility setup covers facilities, locations and equipment, but not old staff-to-facility assignment or mixed-bulk compatibility configuration. Backend management endpoints exist. | Old `LedgerSetup.tsx:80-85,103-116`; Current `features/admin/hooks/useFacilityConfig.ts:8-24`; Backend `Features/Ledger/Endpoints/LedgerManagementEndpoints.cs:23-49` |
+| **Balance/compatibility policy persistence unreliable** | Current page initializes fixed rules, suppresses some write failures and deletes compatibility rules locally. Old setup used scoped, versioned policy records. | Old `LedgerSetup.tsx:96-119`; Current `features/admin/pages/BalancePolicyPage.tsx:42-119,165-178,192-251` |
+
+## Traceability
+
+**Core trace is present:** Current UI supports lot selection, forward/backward and current/history views, relationships and source contributions. Traceability is not wholly missing.
+
+| Gap | Impact | Evidence |
+|---|---|---|
+| **Detailed lot trace incomplete** | Old trace included lab-result entry, expanded farmer/plot/season/procurement provenance, correction references, residue evidence and actual container/loading edges. Current trace does not expose all those paths. | Old `LedgerTraceability.tsx:35-42,96-149`; Current `features/risk/pages/TraceabilityPage.tsx:400-429,524-679`; Backend `Features/Ledger/Traceability/LotTraceability.cs:53-59,77-123` |
+| **Container source trace incomplete** | Current container trace shows contributions and basic ancestry, but not old detailed actual-loading/history view or interactive flowchart. | Old `ContainerSourceTrace.tsx:12-32`; Current `features/risk/pages/ContainerTracePage.tsx:51-76`, `api/containerExecution.ts:192-206` |
+| **Residue-bound evaluation UI missing** | Old stock, trace and container workflows exposed residue preview plus saved evaluation history/detail/create. Current API wrappers exist, but no UI caller found. | Old `ResidueBounds.tsx:57-124`, `LedgerStock.tsx:72`, `LedgerTraceability.tsx:143-146`; Current `api/ledger.ts:448-464` |
 
 ## Laboratory, residue and MRL
 
-| Status | Original capability and replacement gap | Evidence |
+| Gap | Impact | Evidence |
 |---|---|---|
-| Unsafe / partial | Replacement can read and submit lab reports, but its create form starts with example laboratory, substance, numeric result and conclusion; generates sample/seal references and a file name; submits no file content; and creates only one result. Confirmation starts with review checks selected and submits an empty match list. Original supports real result sets and user-reviewed sample matching, report identity/transcription confirmation, evidence review and trace/source navigation. Backend validation may reject some requests; do not assume acceptance or persisted fabricated data without runtime proof. | O `LabReports.tsx:326-401,596-679`; N `features/compliance/pages/MrlComplianceCheckPage.tsx:91-116,237-356`; N `api/compliance.ts:31-72`. |
-| Partial | Replacement residue profiles page actually reads profiles and can retire an eligible profile. Missing original scientific rule create/edit/clone/publish and company policy adoption/override and reviewed history workflows. | O `ResidueRuleMaintenance.tsx:92-157`, `CompanyResiduePolicies.tsx:13-32,68-120`; N `features/compliance/pages/ResidueProfilesPage.tsx:34-110`. |
-| Missing / unsafe | Original export assessment screen manages market assessment policy and finished-lot measured-quality evidence. Replacement safety-margin page uses hard-coded substance and threshold data, not equivalent persisted policy/evidence setup. Do not treat its figures as authoritative or lab confirmation as market certification. | O `ExportAssessment.tsx:25-138`; N `features/compliance/pages/SafetyMarginPolicyPage.tsx:22-80`; B `Features/Catalogs/BlendAssessment/BlendAssessmentPolicies.cs:75-77`. |
-| Partial | MRL version management is present, including draft, limit and publish controls, but spreadsheet import and robust failure visibility are missing as noted above. API calls and displayed version status also need contract/concurrency verification before cutover. | O `AdminMrl.tsx:117-202`; N `features/catalogs/pages/MrlVersionsPage.tsx:88-107,133-259`. |
+| **Residue-rule authoring and publication missing** | Current profiles page lists and retires profiles, but lacks old create/revise/publish workflow for reviewed scientific rules and processing factors. Backend supports rule creation. | Old `ResidueRuleMaintenance.tsx:92-110,127-204`; Current `features/compliance/pages/ResidueProfilesPage.tsx:54-86`, `api/residue.ts:18-33`; Backend `Features/Catalogs/ResidueRules/ResidueRules.cs:94,207` |
+| **Lab-result residue review incomplete** | Current evidence page supports fallback groups, previews, supersession and publication, but no equivalent interactive report-result binding review and confirmation was found. Client exposes review endpoints. | Old `ResidueEvidenceControls.tsx:53-76,100-182`; Current `features/compliance/pages/ResidueEvidencePage.tsx:17-81`, `api/residue.ts:73-89` |
+| **MRL spreadsheet import missing** | Old UI accepted CSV/XLSX, previewed groups, mapped market/commodity and reviewed excluded rows. Current import accepts pasted JSON. | Old `AdminMrl.tsx:139-173,220-243`; Current `features/catalogs/components/MrlVersionImport.tsx:33-65`, `features/catalogs/model/mrlImport.ts:1-23` |
+| **Export assessment setup missing** | Old UI published reviewed market assessment policies and recorded finished-lot quality observations. Current has API wrappers but no equivalent page caller found. | Old `ExportAssessment.tsx:44-75,96-138`; Current `api/planning.ts:65-105` |
+| **Safety-margin screen is not assessment replacement** | Screen uses hardcoded data and save displays local success rather than persisting old assessment policy. | Current `features/compliance/pages/SafetyMarginPolicyPage.tsx:264-342` |
 
-## Exports and planning
+**Retained:** Core lab-report capture supports original files, multiple sample sections, structured results and CSV/TSV import. Company residue-policy adoption, MRL lookup/version management and receiving-loss percentage thresholds also exist.
 
-| Status | Original capability and replacement gap | Evidence |
+## Exports, blend planning and containers
+
+| Gap | Impact | Evidence |
 |---|---|---|
-| Missing | Export order search, create/edit, detail and specifications/version history, and container targets. Replacement `/export/orders` is a placeholder even though client methods exist. | O `ExportOrders.tsx:163-270`; N `app/router/routes.tsx:587-601`, `api/exports.ts:5-45`. |
-| Partial | Original blend workspace selects eligible stock, previews assessment, submits proposals and inspects findings/lineage. Replacement blend-plan request is a placeholder. Its **routed** decision page is API-backed and supports viewing/approving/rejecting/revoking existing proposals; it does not provide proposal authoring. Do not confuse the separate seeded `BlendPlansPendingPage` file with the actual current route. | O `BlendPlanning.tsx:62-120,286-405,422-457`; N `app/router/routes.tsx:604-653`, `features/export/pages/BlendPlanDecisionsPage.tsx:30-84,106-155`. |
-| Placeholder; not necessarily regression | Replacement also advertises approved-plan execution, container loading/closure and dossiers as placeholders. Route descriptions are not proof that original UI or backend already implement those workflows; assess separately against approved scope rather than counting them as original parity failures. | N `app/router/routes.tsx:494-507,656-739`; see `docs/plans/container-loading-plan.md`. |
+| **Blend candidate investigation reduced** | Old planner listed candidates, filters for excluded/other-product stock and candidate lineage. Current planner fetches candidates but inspected UI presents count and preview without equivalent controls. | Old `BlendPlanning.tsx:418-425,484-508,587-596`; Current `features/export/pages/BlendPlanRequestPage.tsx:535-543,575-623` |
+| **Manual blend adjustment and optimization controls missing** | Old planner allowed ratio changes and reassessment plus objectives such as minimizing locations/lots or retaining quality and residue headroom. | Old `BlendPlanning.tsx:71-130,509-529,597-637`; Current `features/export/pages/BlendPlanRequestPage.tsx:545-551` |
+| **Assessment diagnostics reduced** | Current preview shows allocations and basic findings, but not old solver/calculation steps, excluded inputs and detailed optimization diagnostics. | Old `BlendPlanning.tsx:29-58,244-256,612-637`; Current `features/export/pages/BlendPlanRequestPage.tsx:626-759` |
 
-## Cross-cutting migration checks
+**Retained:** Export order management, blend draft/proposal and decisions, container readiness, actual loading and closure, production, workflow handoffs/reviews, and dossier/document handling have current counterparts. Different route or layout alone is not a gap.
 
-1. **Do not substitute examples for live state.** Empty, failed and unavailable data must remain distinct. Remove generated lot/sample identifiers, fixed operational values, and success messages after failed writes; retain actual backend validation and conflict handling.
-2. **Port end-to-end journeys, not just screens:** farmer → plot → season → procurement → source lot → receiving → stock → processing → sample/lab → trace → export. Preserve permission and owner/facility scope, version/ETag concurrency, immutable history, and exact decimal mass strings.
-3. **Navigation and authorization:** original uses `/capture/...`, `/ledger/...`, `/lab-reports`, `/residue-policies` and other URLs (O `App.tsx:20-34,78-80`); replacement uses a different route tree. No old-path aliases were found in its route definitions. Assess bookmarks and links for an explicit redirect/migration policy, and test each original role against backend permissions.
-4. **Acceptance:** compare original and replacement using isolated test data and the same role and backend; exercise successful writes, rejected writes, stale-version conflicts, empty/error states and cross-screen navigation. Do not run migrations or write-based smoke tests on shared Supabase without approval.
+## Recommended order
 
-## Follow-up order
-
-1. Fix false operational data, unsafe request construction, suppressed failures and server session handling.
-2. Restore capture/receiving, stock, corrections and traceability end to end, including scope and exact mass.
-3. Restore actual laboratory evidence capture, residue authoring/adoption, assessment policies and quality evidence.
-4. Restore export order and blend proposal workflows; retain the working server-backed decision screen.
-5. Complete administration, MRL file import, navigation and role parity; validate each journey with isolated backend data.
+1. Fix invalid spray and receiving requests; restore server-side logout and all-device revocation.
+2. Replace simulated or locally successful policy actions with persisted workflows.
+3. Restore residue-rule authoring, report-result review, bounds and export assessment.
+4. Complete procurement/source-lot detail, custody history, ledger correction and trace detail.
+5. Restore blend investigation/adjustment, MRL spreadsheet import and remaining list controls.
