@@ -66,7 +66,7 @@ export const residueEndpoints = {
       `/api/residue-report-selections/${encodeURIComponent(id)}`,
     ),
   previewReportSelection: (request: ResidueReportSelection) =>
-    apiFetch<unknown>("/api/residue-report-selections/preview", {
+    apiFetch<{ lower: string | null; upper: string | null; unit: string | null; reasons: string[] }>("/api/residue-report-selections/preview", {
       method: "POST",
       body: JSON.stringify(request),
     }),

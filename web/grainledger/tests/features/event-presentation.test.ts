@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import { ledgerHistoryKinds } from '@/api/history';
+import i18n from '@/app/i18n';
 import { detailLabel, detailValue, eventLabel, readableDecimal, structuredDetails } from '@/features/audit/model/eventPresentation';
 
 describe('Readable event details', () => {
+  it('defines a translation for each backend history kind in both locales', () => {
+    for (const language of ['vi', 'en']) {
+      for (const kind of ledgerHistoryKinds) {
+        expect(i18n.getResource(language, 'translation', `audit.events.types.${kind}`)).toEqual(expect.any(String));
+      }
+    }
+  });
+
   it('provides human labels while preserving unknown field names and values', () => {
     expect(eventLabel('MILLING', 'vi')).toBe('Xay xát');
     expect(eventLabel('MILLING', 'en')).toBe('Rice milling');
+    expect(eventLabel('FUTURE_KIND', 'vi')).toBe('FUTURE KIND');
+    expect(detailValue('kind', 'PROCESSING_COMPENSATION', 'vi')).toBe('Đảo bút toán chế biến');
     expect(detailLabel('declaredLossKg', 'vi')).toBe('Hao hụt khai báo');
     expect(detailLabel('customValue', 'vi')).toBe('Custom Value');
     expect(detailValue('customValue', 'original-value', 'vi')).toBe('original-value');

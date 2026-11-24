@@ -11,5 +11,7 @@ export * from "./residue";
 export * from "./exports";
 export * from "./planning";
 export * from "./history";
+export * from "./containerExecution";
+export * from "./containerPreparation";
 
 export type { ApiPage, PageQuery } from "./query";

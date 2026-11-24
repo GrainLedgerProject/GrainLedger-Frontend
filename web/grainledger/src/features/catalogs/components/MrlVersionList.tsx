@@ -321,12 +321,12 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
                 [
                   {
                     mode: "list",
-                    // label: t("apiAudit.mrl.listView"),
+                    label: t("apiAudit.mrl.listView"),
                     Icon: ListBullets,
                   },
                   {
                     mode: "grid",
-                    // label: t("apiAudit.mrl.gridView"),
+                    label: t("apiAudit.mrl.gridView"),
                     Icon: SquaresFour,
                   },
                 ] as const

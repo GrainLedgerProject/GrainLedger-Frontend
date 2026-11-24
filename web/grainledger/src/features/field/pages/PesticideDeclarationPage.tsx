@@ -324,7 +324,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, appliedOn: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono"
               />
             </div>
 
@@ -346,7 +346,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                   "field.pesticide.productNamePlaceholder",
                   "VD: Beam 75WP, Anvil 5SC",
                 )}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               />
             </div>
 
@@ -363,7 +363,7 @@ export const PesticideDeclarationPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, substanceId: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               >
                 {substances.map((s) => (
                   <option key={s.id} value={s.id}>

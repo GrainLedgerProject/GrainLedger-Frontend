@@ -273,7 +273,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
                   "admin.orgs.namePlaceholder",
                   "VD: Công ty Cổ phần Xuất nhập khẩu Lúa Gạo Sông Tiền",
                 )}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               />
             </div>
 
@@ -284,7 +284,7 @@ export const CustomerOrganizationsPage: React.FC = () => {
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as "Mill" | "Customer")}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               >
                 <option value="Customer">
                   {t(

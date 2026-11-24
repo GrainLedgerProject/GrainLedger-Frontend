@@ -1,7 +1,7 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { procurementEndpoints } from "@/api/procurement";
+import { procurementEndpoints, type RegisterFarmerRequest } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import {
@@ -12,6 +12,7 @@ import {
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
+import { Feedback } from "@/shared/ui/Workflow";
 import {
   UserPlus,
   MagnifyingGlass,
@@ -50,12 +51,14 @@ export const FarmerRegistrationPage: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFarmer, setEditingFarmer] = useState<FarmerRecord | null>(null);
+  const formId = useId();
   const [formData, setFormData] = useState({
-    code: "",
     name: "",
     contact: "",
   });
+  const [formError, setFormError] = useState<Error | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const pendingRegistration = useRef<RegisterFarmerRequest | null>(null);
 
   // Manual reload / refresh handler used by user actions (reload button, submit, delete)
   const loadFarmers = useCallback(async () => {
@@ -150,8 +153,8 @@ export const FarmerRegistrationPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingFarmer(null);
+    setFormError(null);
     setFormData({
-      code: `FARMER-${Date.now().toString().slice(-4)}`,
       name: "",
       contact: "",
     });
@@ -160,8 +163,8 @@ export const FarmerRegistrationPage: React.FC = () => {
 
   const handleOpenEdit = (farmer: FarmerRecord) => {
     setEditingFarmer(farmer);
+    setFormError(null);
     setFormData({
-      code: farmer.code || "",
       name: farmer.name || "",
       contact: farmer.contact || "",
     });
@@ -170,52 +173,60 @@ export const FarmerRegistrationPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (submitting) return;
+    const name = formData.name.trim();
+    const contact = formData.contact.trim() || null;
+    if (!name) {
+      setFormError(new Error(t("field.farmer.nameRequired", "Vui lòng nhập họ và tên nông dân.")));
+      return;
+    }
 
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     setSuccessMsg(null);
 
     try {
       if (editingFarmer) {
-        // Update
+        const version = editingFarmer.version;
+        if (version === undefined || version < 1) {
+          throw new Error(t("field.farmer.reloadBeforeEditing", "Tải lại danh sách nông hộ trước khi chỉnh sửa."));
+        }
         await procurementEndpoints.updateFarmer(editingFarmer.id, {
-          code: formData.code.trim(),
-          name: formData.name.trim(),
-          contact: formData.contact.trim() || null,
-          expectedVersion: editingFarmer.version || 1,
+          code: null,
+          name,
+          contact,
+          expectedVersion: version,
         });
         setSuccessMsg(
           t(
             "field.farmer.updatedSuccess",
             "Đã cập nhật thông tin nông hộ {{name}}",
             {
-              name: formData.name,
+              name,
             },
           ),
         );
       } else {
-        // Create
-        const entityId = crypto.randomUUID();
-        const clientOperationId = crypto.randomUUID();
-        await procurementEndpoints.createFarmer({
-          deviceId: "grainledger-web",
-          clientOperationId,
-          capturedAt: new Date().toISOString(),
-          payloadSchemaVersion: 2,
-          payload: {
-            entityId,
-            code: formData.code.trim(),
-            name: formData.name.trim(),
-            contact: formData.contact.trim() || "",
-          },
-        });
+        const pending = pendingRegistration.current;
+        const request = pending?.payload?.name === name && pending.payload.contact === contact
+          ? pending
+          : {
+              deviceId: "grainledger-web",
+              clientOperationId: crypto.randomUUID(),
+              capturedAt: new Date().toISOString(),
+              payloadSchemaVersion: 2,
+              payload: { entityId: crypto.randomUUID(), code: null, name, contact },
+            };
+        pendingRegistration.current = request;
+        const farmer = await procurementEndpoints.createFarmer(request);
+        pendingRegistration.current = null;
         setSuccessMsg(
           t(
             "field.farmer.registeredSuccess",
-            "Đã đăng ký thành công nông hộ {{name}}",
+            "Đã đăng ký nông hộ {{name}} (mã {{code}})",
             {
-              name: formData.name,
+              name: farmer.name,
+              code: farmer.code,
             },
           ),
         );
@@ -224,11 +235,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       setIsModalOpen(false);
       await loadFarmers();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("field.farmer.errAction", "Thao tác không thành công."));
-      }
+      setFormError(err instanceof Error ? err : new Error(t("field.farmer.errAction", "Thao tác không thành công.")));
     } finally {
       setSubmitting(false);
     }
@@ -506,13 +513,14 @@ export const FarmerRegistrationPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        className="w-96"
         ariaLabel={
           editingFarmer
             ? t("field.farmer.modalEdit", "Cập nhật nông hộ")
             : t("field.farmer.modalNew", "Đăng ký nông hộ")
         }
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
+        <div className="w-full bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
           <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-ink-primary">
               {editingFarmer
@@ -530,29 +538,24 @@ export const FarmerRegistrationPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
             <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                {t(
-                  "field.farmer.farmerCodeLabel",
-                  "Mã Nông hộ (Định danh hệ thống) *",
-                )}
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                placeholder="VD: FARMER-001"
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
-              />
+              <p className="mb-1 font-semibold text-ink-secondary">
+                {t("field.farmer.farmerCodeLabel", "Mã nông hộ")}
+              </p>
+              {editingFarmer ? (
+                <p className="font-mono text-ink-primary">{editingFarmer.code}</p>
+              ) : (
+                <p className="text-ink-secondary">
+                  {t("field.farmer.farmerCodeAssigned", "Hệ thống sẽ cấp mã sau khi đăng ký.")}
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
+              <label htmlFor={`${formId}-name`} className="block font-semibold text-ink-secondary mb-1">
                 {t("field.farmer.farmerNameLabel", "Họ và tên Nông dân *")}
               </label>
               <input
+                id={`${formId}-name`}
                 type="text"
                 required
                 value={formData.name}
@@ -560,28 +563,30 @@ export const FarmerRegistrationPage: React.FC = () => {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="VD: Nguyễn Văn An"
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
+              <label htmlFor={`${formId}-contact`} className="block font-semibold text-ink-secondary mb-1">
                 {t(
                   "field.farmer.farmerContactLabel",
                   "Số điện thoại / Thông tin liên hệ",
                 )}
               </label>
               <input
+                id={`${formId}-contact`}
                 type="text"
                 value={formData.contact}
                 onChange={(e) =>
                   setFormData({ ...formData, contact: e.target.value })
                 }
                 placeholder="VD: 0912 345 678 · Huyện Cái Bè, Tiền Giang"
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               />
             </div>
 
+            <Feedback error={formError} />
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"

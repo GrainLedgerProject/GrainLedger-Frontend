@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   containerExecutionEndpoints,
@@ -12,27 +13,47 @@ import { Factory, PaperPlaneTilt } from "@phosphor-icons/react";
 export function ContainerProductionPanel({
   container: c,
   canWrite,
+  canReview = false,
   saved,
 }: {
   container: ContainerExecution;
   canWrite: boolean;
+  canReview?: boolean;
   saved: () => Promise<void>;
 }) {
   const text = useWorkflowText();
+  const [reason, setReason] = useState("");
   const production = useQuery({
     queryKey: ["container-production", c.id],
     queryFn: () => containerExecutionEndpoints.getProduction(c.id),
     staleTime: 0,
   });
 
-  const command = useContainerCommand(
-    (operationId, input: { version: number; proposalId: string }) =>
-      containerExecutionEndpoints.requestProduction(c.id, {
-        operationId,
-        ...input,
-      }),
-    saved,
-  );
+  const command = useContainerCommand<{
+    version: number;
+    action: "request";
+    proposalId: string;
+  } | {
+    version: number;
+    action: "approve" | "reject";
+    reason: string;
+  }>((operationId, input) => {
+    if (input.action === "request") {
+      return containerExecutionEndpoints.requestProduction(c.id, { operationId, version: input.version, proposalId: input.proposalId });
+    }
+    const body = { operationId, version: input.version, reason: input.reason };
+    return input.action === "approve"
+      ? containerExecutionEndpoints.approveProduction(c.id, body)
+      : containerExecutionEndpoints.rejectProduction(c.id, body);
+  }, async () => {
+    setReason("");
+    await saved();
+  });
+  const reviewable = canReview && production.data && ["PRODUCED", "APPROVED", "REJECTED"].includes(production.data.state)
+    && Boolean(production.data.outputId) && c.status !== "CLOSED" && !c.holds.length;
+  function review(action: "approve" | "reject") {
+    if (production.data && reason.trim()) command.submit({ action, version: production.data.version, reason: reason.trim() });
+  }
 
   return (
     <section
@@ -91,6 +112,7 @@ export function ContainerProductionPanel({
               }
               onClick={() =>
                 command.submit({
+                  action: "request",
                   version: c.version,
                   proposalId: c.approval!.proposalId,
                 })
@@ -104,6 +126,20 @@ export function ContainerProductionPanel({
             </button>
           </div>
         )}
+
+      {reviewable && (
+        <form onSubmit={event => { event.preventDefault(); review("approve"); }} className="gl-workflow">
+          <fieldset disabled={command.isPending || command.uncertain || production.isFetching} className="space-y-3">
+            <label>{text("Lý do duyệt đầu ra thực tế", "Actual output review reason")}
+              <textarea value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} required />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" disabled={!reason.trim()}>{text("Duyệt đầu ra", "Approve output")}</button>
+              <button type="button" disabled={!reason.trim()} onClick={() => review("reject")}>{text("Từ chối đầu ra", "Reject output")}</button>
+            </div>
+          </fieldset>
+        </form>
+      )}
 
       <ContainerCommandFeedback
         error={command.error}

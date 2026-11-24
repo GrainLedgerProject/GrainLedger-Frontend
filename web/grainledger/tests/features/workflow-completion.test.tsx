@@ -159,10 +159,10 @@ describe("correction package", () => {
   });
 });
 
-describe("the nine formerly pending routes", () => {
-  it("uses explicit screens and identifies backend-limited workflows", () => {
-    const paths = ["/export/orders", "/export/orders/order/containers/container/plan", "/export/containers", "/export/containers/container/loading", "/export/containers/container/closure", "/export/dossiers", "/export/containers/container/dossier", "/mill/plan-executions/plan", "/risk/traceback"];
-    expect(paths.map(p => matchRoutes(appRoutes, p)?.at(-1)?.route.handle?.kind)).toEqual(["screen", "screen", "screen", "screen", "screen", "screen", "screen", "integration-pending", "screen"]);
+describe("workflow routes", () => {
+  it("routes export, preparation, mill work and tracing to explicit screens", () => {
+    const paths = ["/export/orders", "/export/orders/order/containers/container/plan", "/export/containers", "/export/containers/container/loading", "/export/containers/container/closure", "/export/dossiers", "/export/containers/container/dossier", "/mill/plan-executions/plan", "/mill/plan-executions", "/risk/traceback", "/risk/container-trace", "/ledger/container-preparation"];
+    expect(paths.map(p => matchRoutes(appRoutes, p)?.at(-1)?.route.handle?.kind)).toEqual(paths.map(() => "screen"));
   });
   it.each([ContainerLoadingPage, ContainerClosurePage, ContainerDossierPage])("renders actual execution data without exposing writes to a read-only role", async Component => {
     mount(<Routes><Route path="/:id" element={<Component/>}/></Routes>, "/container");
@@ -173,9 +173,50 @@ describe("the nine formerly pending routes", () => {
   it("does not call export plan APIs under operator permissions", async () => {
     login("MILL_OPERATOR", ["containers.operate", "conversions.write"]);
     const send = vi.spyOn(planningEndpoints, "getBlendPlan");
+    const work = vi.spyOn(containerExecutionEndpoints, "getWorkItems").mockResolvedValue({ items: [
+      { containerId: "container", code: "CT-001", facilityId: "facility", state: "HANDOFF_AVAILABLE", proposalId: "proposal", mode: "DIRECT_STOCK" },
+    ] });
+    vi.spyOn(containerExecutionEndpoints, "listProduction").mockResolvedValue({ items: [] });
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({});
     mount(<ApprovedPlanExecutionPage/>);
-    expect(await screen.findByText(/Màn hình chưa hiển thị danh sách lệnh bàn giao/)).toBeTruthy();
+    expect(await screen.findByRole("option", { name: /CT-001/ })).toBeTruthy();
+    fireEvent.change(screen.getByRole("combobox", { name: "Container" }), { target: { value: "container" } });
+    await screen.findByRole("heading", { name: "Bàn giao, duyệt phạm vi và HOLD" });
+    expect(work).toHaveBeenCalled();
+    expect(containerExecutionEndpoints.getWorkflow).toHaveBeenCalledWith("container");
     expect(send).not.toHaveBeenCalled();
+  });
+  it("saves a mill production draft with the approved recipe and current task version", async () => {
+    login("MILL_OPERATOR", ["containers.operate", "conversions.write"]);
+    vi.spyOn(containerExecutionEndpoints, "getWorkItems").mockResolvedValue({ items: [
+      { containerId: "container", code: "CT-001", facilityId: "facility", state: "REQUESTED", proposalId: "proposal", mode: "BLEND_INPUT_STOCK" },
+    ] });
+    vi.spyOn(containerExecutionEndpoints, "listProduction").mockResolvedValue({ items: [] });
+    const task = {
+      containerId: "container", state: "REQUESTED", version: 7, facilityId: "facility", ownerId: "owner",
+      outputCommodityId: "rice", plannedKg: "100.000000", targetKg: "25.000000",
+      inputs: [{ lotId: "lot", lotCode: "LOT-01", locationId: "input", approvedKg: "80.000000", quantityKg: "40.000000", poolRevision: 5 }],
+    };
+    vi.spyOn(containerExecutionEndpoints, "getProduction").mockResolvedValue(task);
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
+      equipment: [{ id: "equipment", name: "Mixer", facilityId: "facility" }],
+      locations: [{ id: "output", name: "Output silo", facilityId: "facility", kind: "STORE", mixedBulk: false, ownerId: "owner" }],
+    });
+    const save = vi.spyOn(containerExecutionEndpoints, "saveProductionDraft").mockResolvedValue(task);
+    mount(<ApprovedPlanExecutionPage />, "/mill/plan-executions?container=container");
+    fireEvent.change(await screen.findByLabelText("Thiết bị"), { target: { value: "equipment" } });
+    fireEvent.change(screen.getByLabelText("Vị trí đầu ra"), { target: { value: "output" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu bản nháp" }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith("container", expect.objectContaining({
+      version: 7,
+      operationId: expect.any(String),
+      draft: expect.objectContaining({
+        equipmentId: "equipment",
+        ownerId: "owner",
+        inputs: [{ lotId: "lot", locationId: "input", quantityKg: "20.000000", poolRevision: 5 }],
+        outputs: [expect.objectContaining({ commodityId: "rice", locationId: "output", quantityKg: "25.000000" })],
+      }),
+    })));
   });
   it("rejects a container/order mismatch before loading planning context", async () => {
     const context = vi.spyOn(exportEndpoints, "getPlanningContext");

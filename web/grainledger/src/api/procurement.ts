@@ -1,4 +1,37 @@
 import { apiFetch } from "./client";
+import { withApiQuery, type ApiPage, type PageQuery } from "./query";
+
+interface ReferenceVersion {
+  createdBy: string | null;
+  version: number;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface CropSeason extends CreateCropSeasonRequest {
+  id: string;
+  name: string;
+}
+
+export interface CropSeasonReference extends CropSeason, ReferenceVersion {}
+
+export interface PlotSeason {
+  id: string;
+  plotId: string;
+  seasonId: string;
+  riceVariety: string;
+}
+
+export interface PlotSeasonReference extends PlotSeason, ReferenceVersion {
+  plotCode: string;
+  seasonName: string;
+}
+
+export interface PlotListItem extends Omit<PlotResponse, "geometry">, ReferenceVersion {}
+
+interface ReferenceQuery extends PageQuery {
+  search?: string;
+}
 
 /**
  * Initial stock recorded for line item
@@ -132,7 +165,7 @@ export const procurementEndpoints = {
     return apiFetch<unknown>(`/api/farmers${qs}`);
   },
   createFarmer: (req: RegisterFarmerRequest) =>
-    apiFetch<unknown>("/api/farmers", {
+    apiFetch<FarmerResponse>("/api/farmers", {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -159,10 +192,10 @@ export const procurementEndpoints = {
     const qs = params
       ? "?" + new URLSearchParams(params as Record<string, string>).toString()
       : "";
-    return apiFetch<unknown>(`/api/plots${qs}`);
+    return apiFetch<ApiPage<PlotListItem> | PlotListItem[]>(`/api/plots${qs}`);
   },
   createPlot: (req: RegisterPlotRequest) =>
-    apiFetch<unknown>("/api/plots", {
+    apiFetch<PlotResponse>("/api/plots", {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -182,54 +215,46 @@ export const procurementEndpoints = {
       body: req ? JSON.stringify(req) : undefined,
     }),
   getPlot: (id: string) =>
-    apiFetch<unknown>(`/api/plots/${encodeURIComponent(id)}`),
+    apiFetch<PlotResponse & { version: number; canEdit: boolean }>(`/api/plots/${encodeURIComponent(id)}`),
 
   // Crop Seasons
-  getCropSeasons: (params?: Record<string, string | number>) => {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    return apiFetch<unknown>(`/api/crop-seasons${qs}`);
-  },
+  getCropSeasons: (params?: ReferenceQuery & { companyId?: string }) =>
+    apiFetch<ApiPage<CropSeasonReference>>(withApiQuery("/api/crop-seasons", params)),
   getCropSeason: (id: string) =>
-    apiFetch<unknown>(`/api/crop-seasons/${encodeURIComponent(id)}`),
+    apiFetch<CropSeasonReference>(`/api/crop-seasons/${encodeURIComponent(id)}`),
   createCropSeason: (req: CreateCropSeasonRequest) =>
-    apiFetch<unknown>("/api/crop-seasons", {
+    apiFetch<CropSeason>("/api/crop-seasons", {
       method: "POST",
       body: JSON.stringify(req),
     }),
   updateCropSeason: (id: string, req: UpdateCropSeasonRequest) =>
-    apiFetch<unknown>(`/api/crop-seasons/${encodeURIComponent(id)}`, {
+    apiFetch<CropSeasonReference>(`/api/crop-seasons/${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(req),
     }),
   deleteCropSeason: (id: string, req: DeleteCropSeasonRequest) =>
-    apiFetch<unknown>(`/api/crop-seasons/${encodeURIComponent(id)}`, {
+    apiFetch<void>(`/api/crop-seasons/${encodeURIComponent(id)}`, {
       method: "DELETE",
       body: req ? JSON.stringify(req) : undefined,
     }),
 
   // Plot Seasons
-  getPlotSeasons: (params?: Record<string, string | number>) => {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    return apiFetch<unknown>(`/api/plot-seasons${qs}`);
-  },
+  getPlotSeasons: (params?: ReferenceQuery & { plotId?: string; seasonId?: string }) =>
+    apiFetch<ApiPage<PlotSeasonReference>>(withApiQuery("/api/plot-seasons", params)),
   getPlotSeason: (id: string) =>
-    apiFetch<unknown>(`/api/plot-seasons/${encodeURIComponent(id)}`),
+    apiFetch<PlotSeasonReference>(`/api/plot-seasons/${encodeURIComponent(id)}`),
   createPlotSeason: (req: RegisterPlotSeasonRequest) =>
-    apiFetch<unknown>("/api/plot-seasons", {
+    apiFetch<PlotSeason>("/api/plot-seasons", {
       method: "POST",
       body: JSON.stringify(req),
     }),
   updatePlotSeason: (id: string, req: UpdatePlotSeasonRequest) =>
-    apiFetch<unknown>(`/api/plot-seasons/${encodeURIComponent(id)}`, {
+    apiFetch<PlotSeasonReference>(`/api/plot-seasons/${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(req),
     }),
   deletePlotSeason: (id: string, req: DeletePlotSeasonRequest) =>
-    apiFetch<unknown>(`/api/plot-seasons/${encodeURIComponent(id)}`, {
+    apiFetch<void>(`/api/plot-seasons/${encodeURIComponent(id)}`, {
       method: "DELETE",
       body: req ? JSON.stringify(req) : undefined,
     }),
@@ -296,6 +321,14 @@ export interface FarmerInput {
   contact: null | string;
 }
 
+export interface FarmerResponse {
+  id: string;
+  code: string;
+  name: string;
+  contact: string | null;
+  createdAt: string;
+}
+
 export interface PlotDuplicateRequest {
   geometry: unknown;
   excludeId: null | string;
@@ -307,6 +340,18 @@ export interface PlotInput {
   code: null | string;
   geometry: unknown;
   areaHa: number | string;
+}
+
+export type PlotGeometry =
+  | { type: "Point"; coordinates: [number, number] }
+  | { type: "Polygon"; coordinates: [number, number][][] };
+
+export interface PlotResponse {
+  id: string;
+  farmerId: string;
+  code: string;
+  geometry: PlotGeometry;
+  areaHa: number;
 }
 
 export interface PlotSeasonInput {

@@ -483,7 +483,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={sealCode}
                   onChange={(e) => setSealCode(e.target.value)}
                   placeholder="VD: SEAL-RED-9921"
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 />
               </div>
 
@@ -499,7 +499,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={sourceLotId}
                   onChange={(e) => setSourceLotId(e.target.value)}
                   placeholder="UUID của lô thu mua nguồn"
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 />
               </div>
 
@@ -515,7 +515,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   value={materialDescription}
                   onChange={(e) => setMaterialDescription(e.target.value)}
                   placeholder="VD: Mẫu thóc Jasmine 85 thu tại ruộng hộ Trần Văn Bảy..."
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 />
               </div>
 
@@ -585,7 +585,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={fromParty}
                   onChange={(e) => setFromParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 />
               </div>
 
@@ -598,7 +598,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={toParty}
                   onChange={(e) => setToParty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 />
               </div>
 
@@ -610,7 +610,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={laboratoryName}
                   onChange={(e) => setLaboratoryName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   <option value="">Chọn phòng kiểm định</option>
                   <option value="Viện Kiểm Nghiệm NIFC">
@@ -636,7 +636,7 @@ export const FieldSampleRegistrationPage: React.FC = () => {
                   required
                   value={sealCondition}
                   onChange={(e) => setSealCondition(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   <option value="">Chọn tình trạng niêm chì</option>
                   <option value="NGUYÊN VẸN">

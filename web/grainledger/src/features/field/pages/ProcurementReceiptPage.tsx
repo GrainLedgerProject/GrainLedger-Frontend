@@ -941,7 +941,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                 required
                 value={formData.farmerId}
                 onChange={(e) => handleFarmerChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               >
                 <option value="">
                   {t(
@@ -975,7 +975,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                       plotSeasonId: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   {currentPlotSeasons.map((ps) => (
                     <option key={ps.id} value={ps.id}>
@@ -1007,7 +1007,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                       receivingLocationId: locId,
                     }));
                   }}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   {receivingOptions.map((opt) => (
                     <option
@@ -1055,7 +1055,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                         measuredWeightKg: val,
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
                     KG
@@ -1085,7 +1085,7 @@ export const ProcurementReceiptPage: React.FC = () => {
                         moisturePercent: val,
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono text-accent-info font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono text-accent-info font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
                     %

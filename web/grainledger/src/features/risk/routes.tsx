@@ -1,6 +1,7 @@
 import { lazyScreen, screenRoute } from "@/app/router/screenRoute";
 import { riskPaths } from "./paths";
 const traceabilityPage = lazyScreen(() => import("./pages/TraceabilityPage").then(m => ({ default: m.TraceabilityPage })));
+const containerTracePage = lazyScreen(() => import("./pages/ContainerTracePage").then(m => ({ default: m.ContainerTracePage })));
 
 const holdManagementPage = lazyScreen(() =>
   import("./pages/HoldManagementPage").then(module => ({ default: module.HoldManagementPage })),
@@ -8,6 +9,7 @@ const holdManagementPage = lazyScreen(() =>
 
 export const riskRoutes = [
   screenRoute(riskPaths.traceback, traceabilityPage, { roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "MILL_ADMIN"] }),
+  screenRoute(riskPaths.containerTrace, containerTracePage, { roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"] }),
   screenRoute(riskPaths.newHold, holdManagementPage, { roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"] }),
   screenRoute(riskPaths.holds, holdManagementPage, { roles: ["MILL_MANAGER", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "MILL_ADMIN"] }),
 ];

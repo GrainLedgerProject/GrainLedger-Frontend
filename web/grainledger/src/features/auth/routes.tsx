@@ -19,6 +19,7 @@ const changePasswordPage = lazyScreen(() =>
 
 export const publicAuthRoutes = [
   screenRoute(authPaths.signIn, signInPage),
+  screenRoute(authPaths.register, lazyScreen(() => import("./pages/RegisterPage").then(module => ({ default: module.RegisterPage })))),
   screenRoute(authPaths.invite, acceptInvitationPage),
   screenRoute(authPaths.forgotPassword, forgotPasswordPage),
 ];

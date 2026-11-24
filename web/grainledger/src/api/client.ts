@@ -70,7 +70,7 @@ async function rotateToken(start: ApiSession): Promise<string | null> {
   } catch {
     assertSameSession(start);
     apiSession.setConnected(false);
-    throw new ApiError(0, "Không thể kết nối đến máy chủ backend.");
+    throw new ApiError(0, "Không thể kết nối đến máy chủ.");
   }
 
   const tokens = res.ok ? await res.json().catch(() => null) as IssuedTokens | null : null;
@@ -110,9 +110,10 @@ export async function apiFetch<T>(
   options: ApiFetchOptions = {},
 ): Promise<T> {
   const { responseType = "json", onResponse, ...requestOptions } = options;
+  const isLoginEndpoint =
+    endpoint === "/api/auth/login" || endpoint === "/api/auth/web-login";
   const isAuthEndpoint =
-    endpoint.includes("/api/auth/login") ||
-    endpoint.includes("/api/auth/web-login") ||
+    isLoginEndpoint ||
     endpoint.includes("/api/auth/refresh") ||
     endpoint.includes("/api/auth/register") ||
     endpoint.includes("/api/auth/verify-email") ||
@@ -171,7 +172,7 @@ export async function apiFetch<T>(
     if (!isAuthEndpoint) assertSameSession(session);
     logger.warn(`Network error on ${url}:`, netErr);
     apiSession.setConnected(false);
-    throw new ApiError(0, "Không thể kết nối đến máy chủ backend.");
+    throw new ApiError(0, "Không thể kết nối đến máy chủ.");
   }
 
   if (!isAuthEndpoint) assertSameSession(session);
@@ -263,7 +264,9 @@ export async function apiFetch<T>(
   if (!response.ok) {
     const problem = data as ProblemDetails;
     const msg =
-      problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
+      isLoginEndpoint && response.status === 401
+        ? "Tài khoản hoặc mật khẩu không đúng"
+        : problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
     throw new ApiError(response.status, msg, problem);
   }
 

@@ -2,7 +2,9 @@ import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
+import { ledgerHistoryKinds } from "@/api/history";
 import { ledgerEndpoints } from "@/api/ledger";
+import { eventLabel } from "../model/eventPresentation";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
@@ -20,11 +22,14 @@ import {
   WarningCircle,
   X,
   ArrowsClockwise,
+  SortAscendingIcon,
 } from "@phosphor-icons/react";
 
 export const EventHistoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const entityFilterId = React.useId();
+  const eventTypeFilterId = React.useId();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +135,12 @@ export const EventHistoryPage: React.FC = () => {
     void loadEvents();
     return () => controller.abort();
   }, [page, reload, searchTerm, t]);
+
+  const entityLabels: Record<AuditEvent["entityType"], string> = {
+    Lot: t("audit.events.filterLot", "Lô hàng"),
+    Operation: t("audit.events.filterOperation", "Công đoạn chế biến"),
+    Event: t("audit.events.otherEvent", "Sự kiện khác"),
+  };
 
   const filteredEvents = events.filter((evt) => {
     const matchesEntity =
@@ -248,58 +259,48 @@ export const EventHistoryPage: React.FC = () => {
             )}
           </div>
 
-          <div>
+          <div className="relative items-center gap-2">
+            <label htmlFor={entityFilterId} className="sr-only">
+              {t("audit.events.thEntity", "Đối tượng")}
+            </label>
+            <SortAscendingIcon aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary" size={16} />
             <select
+              id={entityFilterId}
               value={entityFilter}
               onChange={(e) => setEntityFilter(e.target.value)}
-              className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             >
               <option value="ALL">
                 {t(
                   "audit.events.filterAllEntities",
-                  "Tất cả đối tượng (All Entities)",
+                  "Tất cả đối tượng",
                 )}
               </option>
-              <option value="Lot">
-                {t("audit.events.filterLot", "Lô hàng (Lot)")}
-              </option>
-              <option value="Operation">
-                {t(
-                  "audit.events.filterOperation",
-                  "Công đoạn chế biến (Operation)",
-                )}
-              </option>
-              <option value="Event">
-                {t("audit.events.otherEvent", "Sự kiện khác")}
-              </option>
+              {Object.entries(entityLabels).map(([type, label]) => (
+                <option key={type} value={type}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Funnel className="text-ink-tertiary shrink-0" size={16} />
+          <div className="relative items-center gap-2">
+            <label htmlFor={eventTypeFilterId} className="sr-only">
+              {t("audit.events.thEventType", "Loại sự kiện")}
+            </label>
+            <Funnel aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary" size={16} />
             <select
+              id={eventTypeFilterId}
               value={eventTypeFilter}
               onChange={(e) => setEventTypeFilter(e.target.value)}
-              className="min-w-0 flex-1 w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
             >
               <option value="ALL">
                 {t("audit.events.filterAllTypes", "Tất cả loại sự kiện")}
               </option>
-              {[
-                "PROCUREMENT_COMMITTED",
-                "DRYING",
-                "MILLING",
-                "MERGE",
-                "BLENDING",
-                "BAGGING",
-                "HOLD",
-                "HOLD_RESPONSE",
-                "VARIANCE_CONFIRMATION",
-                "CORRECTION_REQUEST",
-                "CORRECTION",
-              ].map((kind) => (
+              {ledgerHistoryKinds.map((kind) => (
                 <option key={kind} value={kind}>
-                  {kind}
+                  {eventLabel(kind, i18n.language)}
                 </option>
               ))}
             </select>
@@ -406,7 +407,7 @@ export const EventHistoryPage: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         {getEntityIcon(evt.entityType)}
                         <span className="font-semibold text-ink-primary text-xs">
-                          {evt.entityType}:
+                          {entityLabels[evt.entityType]}:
                         </span>
                         <span className="font-mono text-xs text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded-lg">
                           {evt.entityId}
@@ -415,7 +416,7 @@ export const EventHistoryPage: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary">
-                        {evt.eventType}
+                        {eventLabel(evt.eventType, i18n.language)}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-ink-secondary truncate max-w-[150px] font-mono text-xs">

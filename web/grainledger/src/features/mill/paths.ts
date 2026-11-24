@@ -1,9 +1,12 @@
 export const millPaths = {
   receiving: "/mill/receiving",
   operation: "/mill/operations/new",
+  varianceReview: "/mill/operations/variance",
+  stockTransfer: "/stock/transfer",
   requestCorrection: "/mill/corrections/new",
   reconciliations: "/mill/reconciliations",
   reconciliation: "/mill/reconciliations/:id",
+  executePlans: "/mill/plan-executions",
   executePlan: "/mill/plan-executions/:planId",
   stock: "/stock",
   lot: "/stock/lots/:lotId",

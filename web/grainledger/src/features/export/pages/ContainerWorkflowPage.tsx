@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/app/store/authStore";
+import { riskPaths } from "@/features/risk/paths";
 import { containerExecutionEndpoints } from "@/api/containerExecution";
 import { planningEndpoints } from "@/api/planning";
 import { collectPages } from "@/api/query";
@@ -15,6 +16,8 @@ import { ContainerLoadingForm } from "../components/ContainerLoadingForm";
 import { ContainerClosureForm } from "../components/ContainerClosureForm";
 import { ContainerDossierPanel } from "../components/ContainerDossierPanel";
 import { ContainerProductionPanel } from "../components/ContainerProductionPanel";
+import { ContainerControls } from "../components/ContainerControls";
+import { ContainerHoldForm } from "../components/ContainerHoldForm";
 import { useContainerWorkspace } from "../hooks/useContainerWorkspace";
 import { ExportWorkspaceNav } from "../components/ExportWorkspaceUI";
 import {
@@ -81,6 +84,15 @@ export function ContainerDossierPage() {
   return <ContainerWorkflowPage step="dossier" />;
 }
 
+function ManagerContainerControls({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
+  const workflow = useQuery({
+    queryKey: ["container-workflow", id],
+    queryFn: () => containerExecutionEndpoints.getWorkflow(id),
+  });
+  if (!workflow.data) return <Feedback error={workflow.error} pending={workflow.isPending} />;
+  return <div className="gl-workflow"><ContainerControls workflow={workflow.data} canReview refresh={refresh} /></div>;
+}
+
 function ContainerWorkflowPage({
   step,
 }: {
@@ -109,6 +121,10 @@ export function ContainerWorkflowContent({
     user?.role === "CUSTOMER_EXPORT_OFFICER" &&
     user.permissions.includes("containers.write");
   const canAssess = user?.permissions.includes("residue.evaluate") ?? false;
+  const canReview = user?.role === "CUSTOMER_MANAGER" && user.permissions.includes("blend.approve");
+  const canHold = user?.role === "CUSTOMER_MANAGER" && user.permissions.includes("holds.manage");
+  const canTrace = (user?.role === "CUSTOMER_MANAGER" || user?.role === "MILL_ADMIN")
+    && (user.permissions.includes("trace.read.tenant") || user.permissions.includes("trace.read.all"));
   const { execution, refresh } = useContainerWorkspace(id);
   const plans = useQuery({
     queryKey: ["container-plans", id],
@@ -226,6 +242,11 @@ export function ContainerWorkflowContent({
 
       {c && readiness && (
         <>
+          {canTrace && (
+            <Link className="inline-flex text-sm font-semibold text-accent-primary hover:underline" to={riskPaths.containerTrace + "?container=" + encodeURIComponent(c.id)}>
+              {text("Truy xuất nguồn của thực xếp", "Trace actual loaded stock")}
+            </Link>
+          )}
           {/* Container Overview Card */}
           <section aria-label={c.code} className={`${panelClass}`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
@@ -429,6 +450,7 @@ export function ContainerWorkflowContent({
                 <ContainerProductionPanel
                   container={c}
                   canWrite={Boolean(canWrite && canAssess)}
+                  canReview={Boolean(canReview)}
                   saved={refresh}
                 />
               )}
@@ -503,6 +525,12 @@ export function ContainerWorkflowContent({
                 </Link>
               </div>
             </>
+          )}
+          {step === "loading" && canReview && c.status !== "CLOSED" && (
+            <ManagerContainerControls id={c.id} refresh={refresh} />
+          )}
+          {(step === "loading" || step === "dossier") && canHold && (
+            <ContainerHoldForm container={c} saved={refresh} />
           )}
 
           {/* Closure Step Content */}

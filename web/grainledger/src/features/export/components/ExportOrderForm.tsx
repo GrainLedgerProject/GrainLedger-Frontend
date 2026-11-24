@@ -1,16 +1,14 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { Decimal } from "@/shared/utils/decimalMass";
-import { useQuery } from "@tanstack/react-query";
-import { catalogsEndpoints } from "@/api/catalogs";
 import {
   exportEndpoints,
   type CreateExportOrderRequest,
   type ExportLimitInput,
 } from "@/api/exports";
-import { collectPages } from "@/api/query";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useExportCommand } from "../hooks/useExportCommand";
+import { useExportOrderCatalogs } from "../hooks/useExportOrderCatalogs";
 import {
   Calendar,
   Export,
@@ -42,27 +40,7 @@ export function ExportOrderForm({
   const [shippingFrom, setShippingFrom] = useState("");
   const [limits, setLimits] = useState([newLimit()]);
 
-  const catalogs = useQuery({
-    queryKey: ["export-order-catalogs"],
-    queryFn: async () => {
-      const [markets, commodities, attributes, units] = await Promise.all([
-        collectPages(catalogsEndpoints.getMarkets),
-        collectPages(catalogsEndpoints.getCommodities),
-        collectPages(catalogsEndpoints.getQualityAttributes),
-        collectPages(catalogsEndpoints.getMeasurementUnits),
-      ]);
-      return {
-        markets,
-        commodities: commodities.filter((x) => !x.isArchived),
-        attributes,
-        units: units.filter(
-          (x) =>
-            !x.isDeleted &&
-            ["KG", "G", "T"].includes(x.code.toUpperCase()),
-        ),
-      };
-    },
-  });
+  const catalogs = useExportOrderCatalogs();
 
   const create = useExportCommand(
     async (operationId, body: Omit<CreateExportOrderRequest, "operationId">) => {

@@ -1,0 +1,13 @@
+.crop-seasons {
+  container: crop-seasons / inline-size;
+}
+
+.crop-seasons-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container crop-seasons (width > 58rem) {
+  .crop-seasons-grid {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
+  }
+}

@@ -6,20 +6,24 @@ import {
   EnvelopeSimple,
   ShieldCheck,
 } from "@phosphor-icons/react";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 export const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
+  const formId = useId();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isReset, setIsReset] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -41,6 +45,24 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   };
 
+  const resetPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await authEndpoints.resetPassword({ email: email.trim(), otp, newPassword: password });
+      setPassword("");
+      setOtp("");
+      setIsReset(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("auth.resetPasswordError", "Không thể đặt lại mật khẩu."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const fieldClass = "w-full rounded-md border border-ink-tertiary/30 bg-surface-raised px-3 py-2 text-sm focus:border-accent-primary dark:bg-surface-overlay";
+
   return (
     <div className="min-h-screen bg-parchment-grain flex flex-col justify-center items-center p-4 sm:p-6 selection:bg-accent-primary/20 selection:text-accent-primary">
       <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
@@ -61,7 +83,16 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         </div>
 
-        {isSubmitted ? (
+        {isReset ? (
+          <div className="space-y-4">
+            <p role="status" className="text-sm text-accent-primary">
+              {t("auth.resetPasswordComplete", "Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.")}
+            </p>
+            <Link className="text-sm font-semibold text-accent-primary hover:underline" to="/sign-in">
+              {t("auth.backToSignIn", "Quay lại đăng nhập")}
+            </Link>
+          </div>
+        ) : isSubmitted ? (
           <div className="space-y-4">
             <div className="p-4 rounded-md bg-functional-balanced-bg border border-functional-balanced-border text-accent-primary text-sm space-y-2">
               <div className="flex items-center gap-2 font-bold">
@@ -92,6 +123,31 @@ export const ForgotPasswordPage: React.FC = () => {
               </p>
             </div>
 
+            <form onSubmit={resetPassword} className="space-y-3">
+              {error && <p role="alert" className="rounded-md bg-functional-rejected-bg p-3 text-xs text-accent-danger">{error}</p>}
+              <label htmlFor={`${formId}-otp`} className="block text-xs font-semibold text-ink-secondary">
+                {t("auth.resetOtpLabel", "Mã OTP gồm 6 chữ số")}
+              </label>
+              <input className={fieldClass} id={`${formId}-otp`} type="text" inputMode="numeric" autoComplete="one-time-code"
+                required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={event => setOtp(event.target.value)} />
+              <label htmlFor={`${formId}-password`} className="block text-xs font-semibold text-ink-secondary">
+                {t("auth.resetNewPasswordLabel", "Mật khẩu mới")}
+              </label>
+              <input className={fieldClass} id={`${formId}-password`} type="password" autoComplete="new-password"
+                required minLength={12} maxLength={128} aria-describedby={`${formId}-password-help`}
+                value={password} onChange={event => setPassword(event.target.value)} />
+              <p id={`${formId}-password-help`} className="text-xs text-ink-secondary">
+                {t("auth.resetPasswordRequirements", "Dùng từ 12 ký tự, gồm chữ hoa, chữ thường, chữ số và ký hiệu.")}
+              </p>
+              <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+                {t("auth.resetPasswordButton", "Đặt lại mật khẩu")}
+              </button>
+              <button type="button" disabled={isSubmitting} onClick={() => { setOtp(""); setPassword(""); setError(null); setIsSubmitted(false); }}
+                className="text-xs font-semibold text-ink-secondary hover:text-ink-primary">
+                {t("auth.resetRequestNewCode", "Yêu cầu mã mới")}
+              </button>
+            </form>
+
             <Link
               to="/sign-in"
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-surface-raised dark:bg-surface-overlay hover:bg-surface-overlay text-ink-primary font-semibold text-xs border border-ink-tertiary/20 transition-colors"
@@ -110,18 +166,20 @@ export const ForgotPasswordPage: React.FC = () => {
             </p>
 
             {error && (
-              <p className="rounded-md border border-functional-rejected-border bg-functional-rejected-bg px-3 py-2 text-xs text-accent-danger">
+              <p role="alert" className="rounded-md border border-functional-rejected-border bg-functional-rejected-bg px-3 py-2 text-xs text-accent-danger">
                 {error}
               </p>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-ink-secondary mb-1">
+              <label htmlFor={`${formId}-email`} className="block text-xs font-semibold text-ink-secondary mb-1">
                 {t("auth.emailLabel", "Địa chỉ email")}
               </label>
               <div className="relative">
                 <input
+                  id={`${formId}-email`}
                   type="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

@@ -16,6 +16,9 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { adminPaths } from "../paths";
 
 interface ThresholdValue {
   percentage: string;
@@ -46,6 +49,7 @@ function parseSettings(value: unknown): ThresholdSettings {
 }
 
 export const ReceivingThresholdsPage = () => {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<ThresholdSettings | null>(null);
   const [organizations, setOrganizations] = useState<OrganizationDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -400,6 +404,9 @@ export const ReceivingThresholdsPage = () => {
           </section>
         </>
       )}
+      <Link className="inline-flex rounded-lg border border-ink-tertiary/25 px-4 py-2 text-sm font-semibold text-accent-primary hover:bg-surface-overlay" to={adminPaths.receivingThresholdHistory}>
+        {t("receivingThreshold.history")}
+      </Link>
       <Modal
         isOpen={editing !== null}
         onClose={() => {

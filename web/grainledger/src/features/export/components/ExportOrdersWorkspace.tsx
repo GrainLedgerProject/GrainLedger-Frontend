@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/app/store/authStore";
 import { useExportAction } from "../model/exportActions";
 import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ExportActionLink as Link } from "./ExportActionLink";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,6 +13,7 @@ import {
   Scales,
   ShieldCheck,
   Truck,
+  SortAscendingIcon,
 } from "@phosphor-icons/react";
 import { exportEndpoints, type ExportOrderSummary } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
@@ -20,6 +22,7 @@ import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { Decimal } from "@/shared/utils/decimalMass";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { useExportWorkspaceData } from "../hooks/useExportWorkspaceData";
+import { ExportOrderHistory, ExportOrderMaintenance, type OrderMaintenance } from "./ExportOrderMaintenance";
 import {
   allocationPercent,
   containerStatus,
@@ -30,6 +33,7 @@ import {
 import { blendPlanRequestPath, containerPath, exportPaths } from "../paths";
 import {
   ExportEmpty,
+  ExportIconField,
   ExportSearch,
   ExportSection,
   ExportTable,
@@ -115,7 +119,8 @@ export function ExportOrdersWorkspace({
               <label htmlFor={id} className="sr-only">
                 {text("Sắp xếp đơn hàng", "Sort orders")}
               </label>
-              <select
+              <ExportIconField icon={SortAscendingIcon}>
+                <select
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 id={id}
                 value={sort}
@@ -128,6 +133,8 @@ export function ExportOrdersWorkspace({
                   {text("Mã đơn hàng", "Order code")}
                 </option>
               </select>
+              </ExportIconField>
+              
             </div>
             <p className="ml-auto text-xs text-ink-secondary">
               {rows.length} / {orders.length} {text("đơn hàng", "orders")}
@@ -217,12 +224,16 @@ function OrderAllocation({
   data: WorkspaceData;
   canWrite: boolean;
 }) {
+  const { t } = useTranslation();
   const text = useWorkflowText();
   const locale = text("vi", "en");
   const cache = useQueryClient();
   const [mass, setMass] = useState("");
+  const [maintenance, setMaintenance] = useState<OrderMaintenance | null>(null);
+  const [maintenanceSaved, setMaintenanceSaved] = useState(false);
   const id = useId();
   const order = data.detail.data?.data;
+  const etag = data.detail.data?.etag;
   const add = useExportCommand(
     (operationId, input: { mass: string; etag: string }) =>
       exportEndpoints.addContainers(
@@ -268,6 +279,11 @@ function OrderAllocation({
       {order && (
         <div className="space-y-6">
           <SelectedOrderSummary order={order} />
+          {maintenanceSaved && <p className="text-sm text-accent-primary" role="status">{t("workflows.export.saved")}</p>}
+          {canWrite && order.canEdit && etag && <div className="gl-workflow flex flex-wrap gap-2">
+            <button type="button" disabled={data.detail.isFetching || add.isPending} onClick={() => setMaintenance({ type: "order", order, etag })}>{t("workflows.export.order")}</button>
+            <button type="button" disabled={data.detail.isFetching || add.isPending} onClick={() => setMaintenance({ type: "spec", order, etag })}>{t("workflows.export.spec")}</button>
+          </div>}
           <div className="space-y-5">
             <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4">
               <div className="flex items-center justify-between gap-3 text-xs">
@@ -479,7 +495,8 @@ function OrderAllocation({
                           {massLabel(c.targetMassKg, locale)} kg
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {canWrite && order.canEdit && c.status === "PLANNED" && <button type="button" className="min-h-11 rounded-full border border-ink-tertiary/25 px-3 text-xs font-semibold text-accent-primary" onClick={() => setMaintenance({ type: "target", container: c })}>{t("workflows.export.target")}</button>}
                         {c.status === "CLOSED" ? (
                           <Link
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
@@ -523,6 +540,12 @@ function OrderAllocation({
               )
             )}
           </div>
+          <ExportOrderHistory key={order.id} orderId={order.id} />
+          {maintenance && <ExportOrderMaintenance action={maintenance} onClose={() => { setMaintenance(null); void data.refresh(); void cache.invalidateQueries({ queryKey: ["export-order-history", order.id] }); }} onSaved={async () => {
+            setMaintenance(null);
+            setMaintenanceSaved(true);
+            await Promise.all([data.refresh(), cache.invalidateQueries({ queryKey: ["export-order-history", order.id] }), cache.invalidateQueries({ queryKey: ["export-target-edit"] })]);
+          }} />}
         </div>
       )}
     </ExportSection>

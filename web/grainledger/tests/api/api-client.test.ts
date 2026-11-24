@@ -1,4 +1,5 @@
 import { configureApplicationApi } from "@/app/providers/configureApi";
+import { authEndpoints } from "@/api/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   apiFetch,
@@ -61,6 +62,22 @@ describe("API transport", () => {
       await apiFetch("/api/auth/logout", { method: "POST" }),
     ).toBeUndefined();
   });
+
+  it.each(["login", "webLogin"] as const)(
+    "shows the invalid credentials message for a 401 from %s",
+    async (endpoint) => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(new Response(null, { status: 401 }))
+        .mockResolvedValueOnce(
+          Response.json({ detail: "Unauthorized" }, { status: 401 }),
+        );
+      const credentials = { email: "user@example.com", password: "wrong-password" };
+      const expected = { status: 401, message: "Tài khoản hoặc mật khẩu không đúng" };
+
+      await expect(authEndpoints[endpoint](credentials)).rejects.toMatchObject(expected);
+      await expect(authEndpoints[endpoint](credentials)).rejects.toMatchObject(expected);
+    },
+  );
 
   it("keeps each record ETag with its response without leaking callbacks into fetch", async () => {
     vi.mocked(fetch)

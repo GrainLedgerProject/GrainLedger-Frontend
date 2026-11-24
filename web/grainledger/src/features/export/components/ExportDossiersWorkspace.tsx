@@ -10,6 +10,7 @@ import {
   LockSimple,
   Paperclip,
   ShieldCheck,
+  StackSimple,
 } from "@phosphor-icons/react";
 import { containerExecutionEndpoints } from "@/api/containerExecution";
 import type { ExportContainerDto } from "@/api/exports";
@@ -20,7 +21,7 @@ import { useAuthStore } from "@/app/store/authStore";
 import { containerPath, exportPaths } from "../paths";
 import { massLabel } from "../model/exportPresentation";
 import { saveExportFile } from "../model/saveExportFile";
-import { ExportEmpty, ExportSearch } from "./ExportWorkspaceUI";
+import { ExportEmpty, ExportIconField, ExportSearch } from "./ExportWorkspaceUI";
 
 const documentTypes: Record<string, [string, string]> = {
   PACKING_LIST: ["Phiếu đóng gói", "Packing list"],
@@ -444,29 +445,36 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                   <label htmlFor={id} className="sr-only">
                     {text("Loại chứng từ", "Document type")}
                   </label>
-                  <select
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-                    id={id}
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                  >
-                    <option value="ALL">
-                      {text("Tất cả loại chứng từ", "All document types")}
-                    </option>
-                    {Array.from(latest.keys())
-                      .sort()
-                      .map((t) => (
-                        <option key={t} value={t}>
-                          {typeLabel(t)}
-                        </option>
-                      ))}
-                  </select>
+                  <ExportIconField icon={FileText}>
+                    <select
+                      className="w-full ps-10 pe-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                      id={id}
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
+                    >
+                      <option value="ALL">
+                        {text("Tất cả loại chứng từ", "All document types")}
+                      </option>
+                      {Array.from(latest.keys())
+                        .sort()
+                        .map((t) => (
+                          <option key={t} value={t}>
+                            {typeLabel(t)}
+                          </option>
+                        ))}
+                    </select>
+                  </ExportIconField>
                 </div>
                 <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
                     checked={allVersions}
                     onChange={(e) => setAllVersions(e.target.checked)}
+                  />
+                  <StackSimple
+                    size={16}
+                    aria-hidden="true"
+                    className="pointer-events-none shrink-0 text-ink-tertiary"
                   />
                   <span>
                     {text("Hiện tất cả phiên bản", "Show all versions")}

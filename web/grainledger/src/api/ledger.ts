@@ -77,6 +77,28 @@ export interface NotificationQuery extends PageQuery {
   sortDirection?: "asc" | "desc";
 }
 
+export type ReceivingThresholdScope = "SYSTEM_DEFAULT" | "COMPANY_OVERRIDE";
+
+export interface ReceivingThresholdHistoryItem {
+  revision: string;
+  companyId: string | null;
+  companyName: string | null;
+  scope: ReceivingThresholdScope;
+  action: string;
+  oldPercentage: string | null;
+  newPercentage: string | null;
+  actorName: string | null;
+  recordedAt: string;
+  reason: string;
+}
+
+export interface OwnReceivingThreshold {
+  companyId: string;
+  percentage: string;
+  source: ReceivingThresholdScope;
+  revision: string;
+}
+
 export interface CreateCorrectionRequest {
   id: string;
   operationId: string;
@@ -235,7 +257,7 @@ export const ledgerEndpoints = {
     ),
 
   // Operations
-  getOperations: (query?: PageQuery & { status?: string; ownerId?: string; facilityId?: string }) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
+  getOperations: (query?: PageQuery & { status?: string; ownerId?: string; facilityId?: string; ids?: string; queueOnly?: boolean }) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
   recordOperation: (req: object) =>
     apiFetch<unknown>("/api/ledger/operations", {
       method: "POST",
@@ -449,10 +471,10 @@ export const ledgerEndpoints = {
     apiFetch<unknown>("/api/ledger/receiving-thresholds"),
   getReceivingThresholdCompanies: () =>
     apiFetch<unknown>("/api/ledger/receiving-thresholds/companies"),
-  getReceivingThresholdHistory: () =>
-    apiFetch<unknown>("/api/ledger/receiving-thresholds/history"),
+  getReceivingThresholdHistory: (query?: PageQuery & { scope?: ReceivingThresholdScope; companyId?: string }) =>
+    apiFetch<ApiPage<ReceivingThresholdHistoryItem>>(withApiQuery("/api/ledger/receiving-thresholds/history", query)),
   getOwnCompanyReceivingThreshold: () =>
-    apiFetch<unknown>("/api/ledger/receiving-thresholds/own-company"),
+    apiFetch<OwnReceivingThreshold>("/api/ledger/receiving-thresholds/own-company"),
   updateDefaultReceivingThreshold: (req: object) =>
     apiFetch<unknown>("/api/ledger/receiving-thresholds/default", {
       method: "PUT",

@@ -8,6 +8,7 @@ import {
   MagnifyingGlass,
   Package,
   Truck,
+  type Icon,
 } from "@phosphor-icons/react";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
@@ -243,6 +244,25 @@ export function ExportEmpty({
   );
 }
 
+export function ExportIconField({
+  icon: Icon,
+  children,
+}: {
+  icon: Icon;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <Icon
+        size={16}
+        aria-hidden="true"
+        className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+      />
+      {children}
+    </div>
+  );
+}
+
 export function ExportSearch({
   label,
   value,
@@ -260,21 +280,16 @@ export function ExportSearch({
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
-      <div className="relative">
-        <MagnifyingGlass
-          size={16}
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
-        />
+      <ExportIconField icon={MagnifyingGlass}>
         <input
           id={id}
           type="search"
-          className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg pl-10"
+          className="w-full ps-10 pe-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           value={value}
           placeholder={placeholder ?? label}
           onChange={(e) => onChange(e.target.value)}
         />
-      </div>
+      </ExportIconField>
     </div>
   );
 }

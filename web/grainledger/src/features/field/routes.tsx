@@ -7,6 +7,9 @@ const farmerRegistrationPage = lazyScreen(() =>
 const plotRegistrationPage = lazyScreen(() =>
   import("./pages/PlotRegistrationPage").then(module => ({ default: module.PlotRegistrationPage })),
 );
+const cropSeasonsPage = lazyScreen(() =>
+  import("./pages/CropSeasonsPage").then(module => ({ default: module.CropSeasonsPage })),
+);
 const pesticideDeclarationPage = lazyScreen(() =>
   import("./pages/PesticideDeclarationPage").then(module => ({ default: module.PesticideDeclarationPage })),
 );
@@ -23,6 +26,7 @@ const offlineSyncQueuePage = lazyScreen(() =>
 export const fieldRoutes = [
   screenRoute(fieldPaths.farmers, farmerRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
   screenRoute(fieldPaths.plots, plotRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
+  screenRoute(fieldPaths.seasons, cropSeasonsPage, { roles: ["MILL_ADMIN", "CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
   screenRoute(fieldPaths.declarations, pesticideDeclarationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
   screenRoute(fieldPaths.receipts, procurementReceiptPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
   screenRoute(fieldPaths.samples, fieldSampleRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),

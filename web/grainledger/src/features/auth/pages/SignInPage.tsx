@@ -30,6 +30,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { authPaths } from "../paths";
 
 export const SignInPage: React.FC = () => {
   const { t } = useTranslation();
@@ -190,7 +191,7 @@ export const SignInPage: React.FC = () => {
               <p className="text-xs text-ink-secondary">
                 {t(
                   "auth.securityRuleDesc",
-                  "Tài khoản được cấp phát theo thư mời từ Quản trị nhà máy. Hệ thống không mở đăng ký tự do để bảo đảm toàn vẹn chuỗi lưu giữ.",
+                  "Quản trị nhà máy cấp vai trò và phạm vi truy cập. Tài khoản mới xác minh email trước khi được cấp quyền.",
                 )}
               </p>
             </div>
@@ -392,19 +393,12 @@ export const SignInPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Invitation Notice (No public signup) */}
           <div className="mt-8 pt-4 border-t border-ink-tertiary/15 text-center text-xs text-ink-tertiary">
-            <span>
-              {t(
-                "auth.invitationHint",
-                "Bạn nhận được thư mời kích hoạt tài khoản?",
-              )}{" "}
-            </span>
             <Link
-              to="/invite/sample-token"
+              to={authPaths.register}
               className="text-accent-primary font-medium hover:underline inline-flex items-center gap-1"
             >
-              {t("auth.setPasswordHere", "Thiết lập mật khẩu tại đây")}
+              {t("auth.registration.start")}
             </Link>
           </div>
         </div>

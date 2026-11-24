@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuthStore } from "@/app/store/authStore";
+import { LabReportEditor } from "../components/LabReportEditor";
+import { DeleteLabReportDialog, LabReportConfirmation } from "../components/LabReportDraftActions";
+import { compliancePaths, labResultPath } from "../paths";
 import {
   labReportEndpoints,
-  type CaptureLabReportRequest,
-  type ConfirmLabReportRequest,
-  type LabResultInput,
-  type LabResultSetInput,
   type LabReportResponse,
 } from "@/api/compliance";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
@@ -61,6 +61,9 @@ function parseReports(value: unknown): {
 export const MrlComplianceCheckPage: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const canWrite = useAuthStore(state => state.user?.permissions.includes("lab.write") ?? false);
+  const canSelectEvidence = useAuthStore(state => state.user?.permissions.includes("residue.evidence.manage") ?? false);
 
   const [reports, setReports] = useState<LabReportItem[]>([]);
   const [selectedReport, setSelectedReport] = useState<LabReportItem | null>(
@@ -88,32 +91,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Create Lab Report Modal State
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createLabName, setCreateLabName] = useState(
-    "Eurofins Sắc Ký Hải Đăng",
-  );
-  const [createReportNumber, setCreateReportNumber] = useState("");
-  const [createIssuedOn, setCreateIssuedOn] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [createStatedStandard, setCreateStatedStandard] = useState(
-    "Regulation (EC) No 396/2005 - Tiêu chuẩn Châu Âu",
-  );
-  const [createReportKind, setCreateReportKind] = useState("MRL_SCREENING");
-  const [createConclusion, setCreateConclusion] = useState("COMPLIANT");
-  const [testSubstanceName, setTestSubstanceName] = useState("Tricyclazole");
-  const [testSubstanceValue, setTestSubstanceValue] = useState("0.008");
-  const [testSubstanceLoq, setTestSubstanceLoq] = useState("0.010");
-  const [submittingCreate, setSubmittingCreate] = useState(false);
-
-  // Confirm Report State inside Detail Modal
-  const [identityChecked, setIdentityChecked] = useState(true);
-  const [transcriptionChecked, setTranscriptionChecked] = useState(true);
-  const [asReceivedReportId, setAsReceivedReportId] = useState<string | null>(
-    null,
-  );
-  const [confirmingReport, setConfirmingReport] = useState(false);
+  const [editor, setEditor] = useState<{ report: LabReportItem | null } | null>(null);
+  const [deleting, setDeleting] = useState<LabReportItem | null>(null);
 
   // Fetch reports
   useEffect(() => {
@@ -234,127 +213,6 @@ export const MrlComplianceCheckPage: React.FC = () => {
     }
   };
 
-  // Create Lab Report
-  const handleCreateReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createReportNumber.trim() || !createLabName.trim()) {
-      setError("Vui lòng điền số báo cáo và tên đơn vị thử nghiệm.");
-      return;
-    }
-
-    setSubmittingCreate(true);
-    setError(null);
-    try {
-      const entityId = crypto.randomUUID();
-      const capturedAt = new Date().toISOString();
-
-      const singleResult: LabResultInput = {
-        testLabel: testSubstanceName.trim(),
-        substanceId: null,
-        originalResultText: `${testSubstanceValue} mg/kg`,
-        resultKind: "NUMERIC",
-        numericValue: testSubstanceValue.trim(),
-        unit: "mg/kg",
-        loq: testSubstanceLoq.trim(),
-        method: "LC-MS/MS ISO/IEC 17025",
-      };
-
-      const resultSet: LabResultSetInput = {
-        entityId: crypto.randomUUID(),
-        sampleId: null,
-        laboratorySampleReference: `LAB-SMP-${Math.floor(Math.random() * 90000 + 10000)}`,
-        statedSampleCode: `SMP-${new Date().getFullYear()}-001`,
-        statedSealCode: `SEAL-${Math.floor(Math.random() * 900000 + 100000)}`,
-        sectionReference: "Phụ lục chỉ tiêu dư lượng hoạt chất thuốc BVTV",
-        results: [singleResult],
-      };
-
-      const payload: CaptureLabReportRequest = {
-        deviceId: "grainledger-web",
-        clientOperationId: crypto.randomUUID(),
-        capturedAt,
-        payloadSchemaVersion: 2,
-        payload: {
-          entityId,
-          laboratoryName: createLabName.trim(),
-          reportNumber: createReportNumber.trim(),
-          issuedOn: createIssuedOn,
-          receivedAt: capturedAt,
-          reportKind: createReportKind,
-          relatedReportId: null,
-          relationshipReason: null,
-          fileName: `Bao-cao-kiem-nghiem-${createReportNumber.trim()}.pdf`,
-          contentType: "application/pdf",
-          contentBase64: null,
-          companyOnlyConfirmed: false,
-          laboratoryConclusion: createConclusion,
-          statedStandard: createStatedStandard.trim(),
-          resultSets: [resultSet],
-        },
-      };
-
-      await labReportEndpoints.createLabReport(payload);
-      setSuccessMsg(
-        `Đã tạo phiếu báo cáo kiểm nghiệm "${createReportNumber}" thành công!`,
-      );
-      setCreateReportNumber("");
-      setIsCreateOpen(false);
-      handleRefresh();
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Không thể lưu phiếu báo cáo kiểm nghiệm.",
-      );
-    } finally {
-      setSubmittingCreate(false);
-    }
-  };
-
-  // Confirm Lab Report
-  const handleConfirmReport = async (report: LabReportItem) => {
-    if (!identityChecked || !transcriptionChecked) {
-      setError("Vui lòng tích xác nhận đầy đủ tính đồng nhất mẫu và số liệu.");
-      return;
-    }
-
-    setConfirmingReport(true);
-    setError(null);
-    try {
-      const capturedAt = new Date().toISOString();
-      const payload: ConfirmLabReportRequest = {
-        deviceId: "grainledger-web",
-        clientOperationId: crypto.randomUUID(),
-        capturedAt,
-        payloadSchemaVersion: 1,
-        payload: {
-          identityChecked: true,
-          transcriptionChecked: true,
-          matches: [],
-          asReceivedConfirmed: asReceivedReportId === report.id,
-        },
-      };
-
-      const confirmed = await labReportEndpoints.confirmLabReport(
-        report.id,
-        payload,
-      );
-      setSuccessMsg(
-        `Đã xác nhận tính hợp lệ của báo cáo "${report.reportNumber}"!`,
-      );
-      setSelectedReport(confirmed);
-      handleRefresh();
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Không thể xác nhận báo cáo kiểm nghiệm.",
-      );
-    } finally {
-      setConfirmingReport(false);
-    }
-  };
-
   const getStatusBadge = (statusStr: string) => {
     const upper = statusStr?.toUpperCase() || "";
     if (["COMPLIANT", "PASS", "CONFORMING"].includes(upper)) {
@@ -422,14 +280,14 @@ export const MrlComplianceCheckPage: React.FC = () => {
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          <button
+          {canWrite && <button
             type="button"
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => setEditor({ report: null })}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>{t("compliance.mrl.newReport", "Nhập Báo Cáo Mới")}</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -820,7 +678,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
       {/* Modal: Chi tiết Báo Cáo Kiểm Nghiệm & Đối Soát MRL */}
       <Modal
-        isOpen={Boolean(selectedReport)}
+        isOpen={Boolean(selectedReport) && !editor && !deleting}
         onClose={() => setSelectedReport(null)}
         ariaLabel="Chi tiết báo cáo kiểm nghiệm"
       >
@@ -980,79 +838,16 @@ export const MrlComplianceCheckPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Confirmation Section if not confirmed yet */}
-              {!isConfirmed(selectedReport) && (
-                <div className="p-4 rounded-xl border border-accent-warning/30 bg-functional-hold-bg text-xs space-y-3">
-                  <div className="flex items-center gap-2 text-ink-primary font-bold">
-                    <Clock size={16} className="text-accent-warning" />
-                    <span>Xác nhận đối chiếu chứng thư kiểm nghiệm</span>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer text-ink-secondary">
-                      <input
-                        type="checkbox"
-                        checked={identityChecked}
-                        onChange={(e) => setIdentityChecked(e.target.checked)}
-                        className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
-                      />
-                      <span>
-                        Đã xác minh tính đồng nhất của mã niêm chì và mã barcode
-                        mẫu đối chứng.
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer text-ink-secondary">
-                      <input
-                        type="checkbox"
-                        checked={transcriptionChecked}
-                        onChange={(e) =>
-                          setTranscriptionChecked(e.target.checked)
-                        }
-                        className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
-                      />
-                      <span>
-                        Đã đối chiếu chính xác số liệu dư lượng giữa chứng thư
-                        gốc và dữ liệu ghi nhận.
-                      </span>
-                    </label>
-                    <label className="flex min-h-11 items-center gap-2 cursor-pointer text-ink-secondary">
-                      <input
-                        type="checkbox"
-                        checked={asReceivedReportId === selectedReport.id}
-                        onChange={(event) =>
-                          setAsReceivedReportId(
-                            event.target.checked ? selectedReport.id : null,
-                          )
-                        }
-                        className="rounded border-ink-tertiary/30 text-accent-primary focus:ring-accent-primary"
-                      />
-                      <span>
-                        Đã xác nhận kết quả xét nghiệm dựa trên mẫu nguyên trạng
-                        (as received).
-                      </span>
-                    </label>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={
-                      confirmingReport ||
-                      !identityChecked ||
-                      !transcriptionChecked
-                    }
-                    onClick={() => void handleConfirmReport(selectedReport)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim disabled:opacity-40 transition-colors shadow-xs"
-                  >
-                    {confirmingReport ? (
-                      <ArrowsClockwise
-                        size={14}
-                        className="motion-safe:animate-spin"
-                      />
-                    ) : (
-                      <Check size={14} weight="bold" />
-                    )}
-                    <span>Xác nhận báo cáo hợp lệ</span>
-                  </button>
+              {canWrite && !isConfirmed(selectedReport) && ["UNRESOLVED", "PENDING_REVIEW"].includes(selectedReport.status) && <>
+                <div className="gl-workflow flex flex-wrap gap-2">
+                  <button type="button" onClick={() => setEditor({ report: selectedReport })}>{t("workflows.lab.edit")}</button>
+                  <button type="button" className="!text-accent-danger" onClick={() => setDeleting(selectedReport)}>{t("workflows.lab.delete")}</button>
                 </div>
-              )}
+                {!!selectedReport.resultSets.length && <LabReportConfirmation key={selectedReport.id} report={selectedReport} onSaved={report => { setSelectedReport(report); setSuccessMsg(t("workflows.lab.confirmed")); handleRefresh(); }} />}
+              </>}
+              {canSelectEvidence && isConfirmed(selectedReport) && <Link className="font-semibold text-accent-primary underline" to={compliancePaths.residueEvidence + "?report=" + encodeURIComponent(selectedReport.id)}>
+                {t("workflows.residue.selection")}
+              </Link>}
 
               <div className="pt-3 border-t border-ink-tertiary/15 flex justify-end">
                 <button
@@ -1068,222 +863,20 @@ export const MrlComplianceCheckPage: React.FC = () => {
         )}
       </Modal>
 
-      {/* Modal: Nhập Báo Cáo Mới */}
-      <Modal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        ariaLabel="Nhập báo cáo kiểm nghiệm mới"
-      >
-        <div className="w-full max-w-xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
-          <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
-                <Plus size={18} weight="bold" />
-              </div>
-              <div>
-                <h2 className="font-display font-bold text-base text-ink-primary">
-                  Nhập Báo Cáo Kiểm Nghiệm Mới
-                </h2>
-                <p className="text-[11px] text-ink-secondary">
-                  Tiếp nhận chứng thư phân tích dư lượng từ phòng lab độc lập
-                  (ISO 17025)
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(false)}
-              disabled={submittingCreate}
-              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
-            >
-              <X size={18} />
-            </button>
-          </header>
-
-          <form onSubmit={handleCreateReport} className="p-5 space-y-4 text-xs">
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-ink-secondary font-medium mb-1">
-                    Đơn vị thử nghiệm (Laboratory) *
-                  </label>
-                  <select
-                    value={createLabName}
-                    onChange={(e) => setCreateLabName(e.target.value)}
-                    className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
-                  >
-                    <option value="Eurofins Sắc Ký Hải Đăng">
-                      Eurofins Sắc Ký Hải Đăng
-                    </option>
-                    <option value="SGS Vietnam - Cần Thơ Lab">
-                      SGS Vietnam (ISO 17025)
-                    </option>
-                    <option value="Viện Kiểm Nghiệm NIFC">
-                      Viện Kiểm Nghiệm ATTP Quốc Gia
-                    </option>
-                    <option value="Quatest 3 - TP. Hồ Chí Minh">
-                      Trung tâm Kỹ thuật Quatest 3
-                    </option>
-                    <option value="Vinacontrol TP. Cần Thơ">
-                      Vinacontrol TP. Cần Thơ
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-ink-secondary font-medium mb-1">
-                    Số hiệu báo cáo (Report No.) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: REP-2026-EU-089"
-                    value={createReportNumber}
-                    onChange={(e) => setCreateReportNumber(e.target.value)}
-                    className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-ink-secondary font-medium mb-1">
-                    Ngày cấp phiếu *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={createIssuedOn}
-                    onChange={(e) => setCreateIssuedOn(e.target.value)}
-                    className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-ink-secondary font-medium mb-1">
-                    Loại kiểm định
-                  </label>
-                  <select
-                    value={createReportKind}
-                    onChange={(e) => setCreateReportKind(e.target.value)}
-                    className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
-                  >
-                    <option value="MRL_SCREENING">
-                      Sàng lọc dư lượng thuốc BVTV (MRL)
-                    </option>
-                    <option value="HEAVY_METALS">
-                      Kim loại nặng (Cadimi, Chì, Asen)
-                    </option>
-                    <option value="FULL_PANEL">
-                      Kiểm nghiệm toàn diện xuất khẩu
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-ink-secondary font-medium mb-1">
-                  Tiêu chuẩn & Quy chuẩn đối chiếu
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Regulation (EC) No 396/2005"
-                  value={createStatedStandard}
-                  onChange={(e) => setCreateStatedStandard(e.target.value)}
-                  className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* Quick Substance Test Result Form */}
-              <div className="p-3 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 space-y-2.5">
-                <span className="font-bold text-ink-primary text-xs block">
-                  Chỉ tiêu hoạt chất kiểm nghiệm mẫu:
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
-                      Tên hoạt chất
-                    </label>
-                    <input
-                      type="text"
-                      value={testSubstanceName}
-                      onChange={(e) => setTestSubstanceName(e.target.value)}
-                      className="w-full py-1.5 px-2 rounded-lg bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
-                      Nồng độ (mg/kg)
-                    </label>
-                    <input
-                      type="text"
-                      value={testSubstanceValue}
-                      onChange={(e) => setTestSubstanceValue(e.target.value)}
-                      className="w-full py-1.5 px-2 rounded-lg bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-ink-tertiary block mb-0.5">
-                      LOQ (mg/kg)
-                    </label>
-                    <input
-                      type="text"
-                      value={testSubstanceLoq}
-                      onChange={(e) => setTestSubstanceLoq(e.target.value)}
-                      className="w-full py-1.5 px-2 rounded-lg bg-surface-base dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-ink-secondary font-medium mb-1">
-                  Đánh giá sơ bộ của phòng Lab
-                </label>
-                <select
-                  value={createConclusion}
-                  onChange={(e) => setCreateConclusion(e.target.value)}
-                  className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none transition-colors"
-                >
-                  <option value="COMPLIANT">
-                    Đạt chuẩn (Dưới ngưỡng MRL cho phép)
-                  </option>
-                  <option value="NON_COMPLIANT">
-                    Vượt ngưỡng (Cảnh báo vi phạm MRL)
-                  </option>
-                  <option value="PENDING">Cần rà soát đối chiếu thêm</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                disabled={submittingCreate}
-                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary text-xs transition-colors"
-              >
-                {t("common.cancel", "Hủy bỏ")}
-              </button>
-              <button
-                type="submit"
-                disabled={submittingCreate}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60 shadow-xs"
-              >
-                {submittingCreate ? (
-                  <ArrowsClockwise
-                    size={15}
-                    className="motion-safe:animate-spin"
-                  />
-                ) : (
-                  <Check size={15} weight="bold" />
-                )}
-                <span>Lưu báo cáo kiểm nghiệm</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </Modal>
+      {editor && <LabReportEditor key={editor.report?.id ?? "new"} report={editor.report} onClose={() => setEditor(null)} onSaved={report => {
+        setEditor(null);
+        setSelectedReport(report);
+        setSuccessMsg(t("workflows.lab.savedDraft"));
+        handleRefresh();
+        if (id && id !== report.id) navigate(labResultPath(report.id), { replace: true });
+      }} />}
+      {deleting && <DeleteLabReportDialog report={deleting} onClose={() => setDeleting(null)} onSaved={() => {
+        setDeleting(null);
+        setSelectedReport(null);
+        setSuccessMsg(t("workflows.lab.deleted"));
+        handleRefresh();
+        if (id) navigate(compliancePaths.results, { replace: true });
+      }} />}
     </div>
   );
 };

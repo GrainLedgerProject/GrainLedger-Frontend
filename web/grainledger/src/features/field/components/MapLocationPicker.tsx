@@ -23,6 +23,7 @@ export interface LatLngPoint {
 
 export interface MapLocationPickerProps {
   value?: string | [number, number]; // e.g. "10.3541, 106.0125" or [lat, lng]
+  polygon?: [number, number][][];
   onChange: (point: LatLngPoint) => void;
   className?: string;
   height?: number | string;
@@ -99,6 +100,7 @@ function parseCoordinates(input?: string | [number, number]): { lat: number; lng
 
 export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   value,
+  polygon,
   onChange,
   className = "",
   height = 280,
@@ -225,16 +227,32 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     else dragging?.enable();
   }, [disabled]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker || !polygon?.length) return;
+    marker.remove();
+    const boundary = L.polygon(
+      polygon.map((ring) => ring.map(([longitude, latitude]) => L.latLng(latitude, longitude))),
+      { color: "#2f6b3a" },
+    ).addTo(map);
+    map.fitBounds(boundary.getBounds(), { padding: [20, 20], maxZoom: 18 });
+    return () => {
+      boundary.remove();
+      if (mapRef.current === map) marker.addTo(map);
+    };
+  }, [polygon]);
+
   // Sync external value changes
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) return;
+    if (!marker || polygon) return;
     const position = marker.getLatLng();
     if (Math.abs(position.lat - currentCoord.lat) > 0.00001 || Math.abs(position.lng - currentCoord.lng) > 0.00001) {
       marker.setLatLng([currentCoord.lat, currentCoord.lng]);
       mapRef.current?.panTo([currentCoord.lat, currentCoord.lng]);
     }
-  }, [currentCoord.lat, currentCoord.lng]);
+  }, [currentCoord.lat, currentCoord.lng, polygon]);
 
   // Handle GPS location via Geolocation API
   const handleGetCurrentLocation = () => {

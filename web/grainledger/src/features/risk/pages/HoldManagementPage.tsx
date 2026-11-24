@@ -230,7 +230,7 @@ export const HoldManagementPage: React.FC = () => {
       </div>
 
       {/* Alerts */}
-      {user?.role === "CUSTOMER_EXPORT_OFFICER" && <ContainerNotices/>}
+      {(user?.role === "CUSTOMER_EXPORT_OFFICER" || user?.role === "CUSTOMER_MANAGER" || user?.role === "MILL_MANAGER") && <ContainerNotices/>}
       {error && (
         <div role="alert" className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
           <WarningCircleIcon size={18} weight="fill" className="shrink-0" />

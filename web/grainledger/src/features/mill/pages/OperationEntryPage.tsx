@@ -5,7 +5,8 @@
  * @description Record drying, milling, physical blending or merge, bagging, or transfer of an unchanged lot between locations.
  * Validates mass balance conservation and double-spending prevention.
  */
-import { ledgerEndpoints } from "@/api/ledger";
+import { ledgerEndpoints, type CorrectionOperation, type PolicyDto } from "@/api/ledger";
+import { pageItems } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
 import { useDraftStore } from "@/app/store/draftStore";
 import { HoldBanner } from "@/features/risk/components/HoldBanner";
@@ -24,14 +25,19 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import { logger } from "@/shared/utils/logger";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { millPaths } from "../paths";
 
 export interface LotOption {
   id: string;
   code: string;
   stage?: string;
   commodityName?: string;
+  commodityId?: string;
+  productIdentity?: string;
+  poolRevision?: string | number;
   locationId?: string;
   locationName?: string;
   quantityKg: string;
@@ -48,6 +54,7 @@ interface RawPosition {
   locationId?: string;
   quantityKg?: string | number;
   availableKg?: string | number;
+  poolRevision?: string | number;
 }
 
 interface RawLot {
@@ -75,11 +82,18 @@ interface LookupItem {
   id: string;
   name?: string;
   code?: string;
+  facilityId?: string;
+  kind?: string;
+  mixedBulk?: boolean;
+  ownerId?: string | null;
 }
 
 interface LookupData {
   locations?: LookupItem[];
   commodities?: LookupItem[];
+  equipment?: LookupItem[];
+  policies?: PolicyDto[];
+  compatibilities?: { facilityId: string; inputProducts: string[]; outputCommodityId: string; effectiveFrom: string }[];
 }
 
 interface CreateOperationResponse {
@@ -108,7 +122,8 @@ const DRAFT_KEY = "SC15_OPERATION_ENTRY";
 
 export const OperationEntryPage: React.FC = () => {
   const { t } = useTranslation();
-  const { setHasUnsavedDrafts } = useAuthStore();
+  const { setHasUnsavedDrafts, user } = useAuthStore();
+  const canWrite = user?.role === "MILL_OPERATOR" && user.permissions.includes("conversions.write");
   const { saveDraft, getDraft, clearDraft } = useDraftStore();
 
   const initialDraft = useMemo(() => {
@@ -151,27 +166,19 @@ export const OperationEntryPage: React.FC = () => {
     () => initialDraft?.lossReason || "",
   );
 
-  // Dynamic tolerance based on process type
-  const tolerancePercent = useMemo(() => {
-    switch (processType) {
-      case "BLENDING":
-        return 0.2;
-      case "BAGGING":
-        return 0.1;
-      case "DRYING":
-      case "MILLING":
-      default:
-        return 0.5;
-    }
-  }, [processType]);
-
   const [submissionStatus, setSubmissionStatus] = useState<
-    "IDLE" | "BALANCED_COMMITTED" | "REJECTED"
+    "IDLE" | "AWAITING_CONFIRMATION" | "BALANCED_COMMITTED" | "REJECTED"
   >("IDLE");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [committedTransactionCode, setCommittedTransactionCode] =
     useState<string>("");
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
+  const [reference, setReference] = useState<LookupData>({});
+  const [referenceTime, setReferenceTime] = useState(0);
+  const [equipmentId, setEquipmentId] = useState("");
+  const [outputLocationId, setOutputLocationId] = useState("");
+  const [blendCommodityId, setBlendCommodityId] = useState("");
+  const attempt = useRef<{ fingerprint: string; body: object; id: string; draftSaved: boolean } | null>(null);
 
   // Active chosen lot from fetched lots
   const activeLot = useMemo(() => {
@@ -181,15 +188,25 @@ export const OperationEntryPage: React.FC = () => {
       ) || lots[0]
     );
   }, [lots, selectedInputLot]);
+  const equipment = reference.equipment?.filter(item => item.facilityId === activeLot?.facilityId) ?? [];
+  const outputLocations = reference.locations?.filter(item => item.facilityId === activeLot?.facilityId &&
+    item.kind !== "ISOLATION" && (!item.ownerId || item.ownerId === activeLot?.ownerId)) ?? [];
+  const compatibleCommodities = new Set(reference.compatibilities?.filter(item => item.facilityId === activeLot?.facilityId &&
+    Date.parse(item.effectiveFrom) <= referenceTime && activeLot?.productIdentity && item.inputProducts.includes(activeLot.productIdentity))
+    .map(item => item.outputCommodityId));
+  const blendCommodities = reference.commodities?.filter(item => compatibleCommodities.has(item.id)) ?? [];
+  const policy = reference.policies?.filter(item => item.facilityId === activeLot?.facilityId &&
+    item.kind === processType && Date.parse(item.effectiveFrom) <= referenceTime)
+    .sort((a, b) => Date.parse(b.effectiveFrom) - Date.parse(a.effectiveFrom))[0];
+  const tolerancePercent = Number(policy?.tolerancePercent ?? 0);
 
   // Check if chosen lot is under HOLD
   const isInputLotOnHold = Boolean(activeLot?.isHold);
 
   // Calculate live mass balance
-  const totalOut = toDecimal(headRiceKg)
-    .plus(toDecimal(brokenRiceKg))
-    .plus(toDecimal(branKg))
-    .plus(toDecimal(huskKg));
+  const totalOut = processType === "MILLING"
+    ? toDecimal(headRiceKg).plus(toDecimal(brokenRiceKg)).plus(toDecimal(branKg)).plus(toDecimal(huskKg))
+    : toDecimal(headRiceKg);
 
   const balanceResult = checkMassBalance(
     toDecimal(inputMassKg),
@@ -207,8 +224,10 @@ export const OperationEntryPage: React.FC = () => {
     try {
       const [lotsRes, lookupsRes] = await Promise.all([
         ledgerEndpoints.getLots({ pageSize: 100 }),
-        ledgerEndpoints.getLookups().catch(() => null),
+        ledgerEndpoints.getSetup(),
       ]);
+      setReference(lookupsRes as LookupData);
+      setReferenceTime(Date.now());
 
       const items: RawLot[] = Array.isArray(lotsRes)
         ? (lotsRes as RawLot[])
@@ -256,14 +275,7 @@ export const OperationEntryPage: React.FC = () => {
                 0,
               )
               .toString();
-            availableKg = lot.positions
-              .reduce(
-                (sum: number, p: RawPosition) =>
-                  sum +
-                  (parseFloat(String(p.availableKg ?? p.quantityKg)) || 0),
-                0,
-              )
-              .toString();
+            availableKg = String(firstPos?.availableKg ?? firstPos?.quantityKg ?? "0");
           } else {
             totalKg = String(lot.quantityKg || lot.currentMassKg || "0");
             availableKg = String(lot.availableKg || lot.quantityKg || "0");
@@ -303,6 +315,9 @@ export const OperationEntryPage: React.FC = () => {
               lot.commodityName ||
               lot.productIdentity ||
               "Lúa tươi",
+            commodityId: lot.commodityId,
+            productIdentity: lot.productIdentity,
+            poolRevision: firstPos?.poolRevision,
             locationId: locId,
             locationName: locName,
             quantityKg: totalKg,
@@ -311,7 +326,7 @@ export const OperationEntryPage: React.FC = () => {
             holdReason,
             restrictions,
             ownerId: lot.ownerId,
-            facilityId: lot.facilityId || firstPos?.facilityId,
+            facilityId: firstPos?.facilityId || lot.facilityId,
           };
         });
 
@@ -375,16 +390,25 @@ export const OperationEntryPage: React.FC = () => {
 
   const handleCommitOperation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canWrite || isSubmitting) return;
 
     if (
       !activeLot?.id ||
       activeLot.id !== selectedInputLot ||
       !activeLot.locationId ||
-      !activeLot.facilityId
+      !activeLot.facilityId ||
+      !activeLot.ownerId
     ) {
       setApiErrorMessage(
         "Cần chọn lô và vị trí hợp lệ từ máy chủ trước khi ghi sổ.",
       );
+      return;
+    }
+    const outputCommodity = processType === "BLENDING" ? blendCommodityId : activeLot.commodityId;
+    if (!equipment.some(item => item.id === equipmentId) || !outputLocations.some(item => item.id === outputLocationId) ||
+      !outputCommodity || (processType === "BLENDING" && !compatibleCommodities.has(outputCommodity)) ||
+      (processType === "BAGGING" && !activeLot.productIdentity)) {
+      setApiErrorMessage(t("mill.operations.selectExecutionDetails", "Chọn thiết bị, vị trí và loại đầu ra hợp lệ."));
       return;
     }
     if (
@@ -403,7 +427,7 @@ export const OperationEntryPage: React.FC = () => {
       return;
     }
 
-    if (!balanceResult.isBalanced) {
+    if (policy && !balanceResult.isBalanced) {
       setSubmissionStatus("REJECTED");
       return;
     }
@@ -412,89 +436,65 @@ export const OperationEntryPage: React.FC = () => {
     setApiErrorMessage(null);
 
     try {
-      const operationId = crypto.randomUUID();
-      const outputProducts =
-        processType === "MILLING"
-          ? [
-              {
-                productType: "HEAD_RICE",
-                stage: "HEAD_RICE",
-                massKg: headRiceKg,
-                quantityKg: headRiceKg,
-                locationId: activeLot?.locationId,
-              },
-              {
-                productType: "BROKEN_RICE",
-                stage: "BROKEN_RICE",
-                massKg: brokenRiceKg,
-                quantityKg: brokenRiceKg,
-                locationId: activeLot?.locationId,
-              },
-              {
-                productType: "BRAN",
-                stage: "BRAN",
-                massKg: branKg,
-                quantityKg: branKg,
-                locationId: activeLot?.locationId,
-              },
-              {
-                productType: "HUSK",
-                stage: "HUSK",
-                massKg: huskKg,
-                quantityKg: huskKg,
-                locationId: activeLot?.locationId,
-              },
-            ]
-          : [
-              {
-                productType:
-                  processType === "DRYING"
-                    ? "DRIED_PADDY"
-                    : processType === "BLENDING"
-                      ? "BLENDED_RICE"
-                      : "BAGGED_RICE",
-                stage:
-                  processType === "DRYING"
-                    ? "DRIED_PADDY"
-                    : processType === "BLENDING"
-                      ? "BLENDED_RICE"
-                      : "BAGGED_RICE",
-                massKg: headRiceKg,
-                quantityKg: headRiceKg,
-                locationId: activeLot?.locationId,
-              },
-            ];
-
-      const opPayload = {
-        id: operationId,
-        facilityId: activeLot?.facilityId,
-        ownerId: activeLot?.ownerId,
+      const stages = processType === "MILLING"
+        ? [["HEAD_RICE", headRiceKg], ["BROKEN_RICE", brokenRiceKg], ["BRAN", branKg], ["HUSK", huskKg]]
+        : [[processType === "DRYING" ? "DRIED_PADDY" : processType === "BLENDING" ? "BLENDED_RICE" : "BAGGED_RICE", headRiceKg]];
+      const outputProducts = stages.filter(([, quantityKg]) => toDecimal(quantityKg).greaterThan(0))
+        .map(([stage, quantityKg]) => ({
+          stage,
+          productIdentity: processType === "BAGGING" ? activeLot.productIdentity : stage,
+          commodityId: outputCommodity,
+          locationId: outputLocationId,
+          quantityKg,
+        }));
+      if (!outputProducts.length) throw new Error(t("mill.operations.selectExecutionDetails", "Chọn thiết bị, vị trí và loại đầu ra hợp lệ."));
+      const fields = {
+        facilityId: activeLot.facilityId,
+        ownerId: activeLot.ownerId,
         kind: processType,
-        operationType: processType,
-        occurredAt: new Date().toISOString(),
+        equipmentId,
         inputs: [
           {
-            lotId: activeLot?.id || selectedInputLot,
-            locationId: activeLot?.locationId,
-            massKg: inputMassKg,
+            lotId: activeLot.id,
+            locationId: activeLot.locationId,
             quantityKg: inputMassKg,
+            ...(activeLot.poolRevision != null && { poolRevision: activeLot.poolRevision }),
           },
         ],
         outputs: outputProducts,
-        declaredLossKg: declaredLossKg,
+        declaredLossKg: declaredLossKg || "0",
         declaredLossReason: lossReason,
       };
-
-      const createRes = (await ledgerEndpoints.recordOperation(
-        opPayload,
-      )) as CreateOperationResponse | null;
-      const opId = createRes?.id || createRes?.operationId;
-      if (!opId) throw new Error("Máy chủ không trả về ID bút toán vừa tạo.");
-      const commitRes = (await ledgerEndpoints.commitOperation(
-        opId,
-        {},
-      )) as CommitOperationResponse | null;
-      const committedCode = commitRes?.code || commitRes?.id || opId;
+      const fingerprint = JSON.stringify(fields);
+      if (attempt.current?.fingerprint === fingerprint) {
+        if (!attempt.current.draftSaved) {
+          const found = await ledgerEndpoints.getOperations({ ids: attempt.current.id, pageSize: 1 });
+          attempt.current.draftSaved = pageItems<CorrectionOperation>(found).some(item => item.id === attempt.current?.id);
+        }
+      } else {
+        const id = crypto.randomUUID();
+        attempt.current = {
+          fingerprint,
+          id,
+          draftSaved: false,
+          body: { ...fields, id, occurredAt: new Date().toISOString(), outputs: outputProducts.map(output => ({ ...output, id: crypto.randomUUID() })) },
+        };
+      }
+      const current = attempt.current;
+      if (!current.draftSaved) {
+        const result = await ledgerEndpoints.recordOperation(current.body) as CreateOperationResponse | null;
+        if ((result?.id ?? result?.operationId) !== current.id) throw new Error("Máy chủ không trả về đúng ID bút toán vừa tạo.");
+        current.draftSaved = true;
+      }
+      if (!balanceResult.varianceKg.isZero()) {
+        setSubmissionStatus("AWAITING_CONFIRMATION");
+        clearDraft(DRAFT_KEY);
+        setHasUnsavedDrafts(false);
+        return;
+      }
+      const commitRes = await ledgerEndpoints.commitOperation(current.id, {}) as CommitOperationResponse | null;
+      const committedCode = commitRes?.code || commitRes?.id || current.id;
+      attempt.current = null;
 
       setCommittedTransactionCode(committedCode);
       setSubmissionStatus("BALANCED_COMMITTED");
@@ -613,6 +613,11 @@ export const OperationEntryPage: React.FC = () => {
         />
       )}
 
+      {submissionStatus === "AWAITING_CONFIRMATION" && <div role="status" className="space-y-2 rounded-xl bg-functional-stale-bg p-4">
+        <p>{t("workflows.variance.submitted")}</p>
+        <Link to={millPaths.varianceReview} className="font-semibold text-accent-primary underline">{t("workflows.variance.title")}</Link>
+      </div>}
+
       {/* Success Committed State */}
       {submissionStatus === "BALANCED_COMMITTED" && (
         <div className="p-5 rounded-2xl bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary space-y-3 shadow-xs animate-ledger-in">
@@ -678,17 +683,14 @@ export const OperationEntryPage: React.FC = () => {
                     "mill.operations.typeMilling",
                     "Xay xát gạo (Milling)",
                   ),
-                  tolerance: "0,5%",
                 },
                 {
                   type: "DRYING",
                   label: t("mill.operations.typeDrying", "Sấy khô lúa tươi"),
-                  tolerance: "0,5%",
                 },
                 {
                   type: "BLENDING",
                   label: t("mill.operations.typeBlending", "Phối trộn cơ học"),
-                  tolerance: "0,2%",
                 },
                 {
                   type: "BAGGING",
@@ -696,7 +698,6 @@ export const OperationEntryPage: React.FC = () => {
                     "mill.operations.typeBagging",
                     "Đóng bao & Xuất kho",
                   ),
-                  tolerance: "0,1%",
                 },
               ].map((p) => (
                 <button
@@ -715,10 +716,6 @@ export const OperationEntryPage: React.FC = () => {
                   }`}
                 >
                   <span className="block text-xs font-display">{p.label}</span>
-                  <span className="text-[10px] text-ink-tertiary font-mono block mt-1">
-                    {t("mill.operations.tolerancePrefix", "Dung sai:")}{" "}
-                    {p.tolerance}
-                  </span>
                 </button>
               ))}
             </div>
@@ -746,7 +743,7 @@ export const OperationEntryPage: React.FC = () => {
               </span>
               <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary">
                 {t("mill.operations.appliedTolerance", "Dung sai áp dụng:")}{" "}
-                {tolerancePercent}%
+                {policy ? `${policy.tolerancePercent}%` : "—"}
               </span>
             </h3>
 
@@ -916,6 +913,30 @@ export const OperationEntryPage: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="grid gap-1 text-xs font-semibold">
+              {t("mill.operations.equipmentLabel", "Thiết bị chế biến")}
+              <select required className="min-w-0 rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" value={equipmentId} onChange={event => setEquipmentId(event.target.value)}>
+                <option value="">{t("mill.operations.selectEquipment", "Chọn thiết bị")}</option>
+                {equipment.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-semibold">
+              {t("mill.operations.outputLocationLabel", "Vị trí lưu đầu ra")}
+              <select required className="min-w-0 rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" value={outputLocationId} onChange={event => setOutputLocationId(event.target.value)}>
+                <option value="">{t("mill.operations.selectOutputLocation", "Chọn vị trí đầu ra")}</option>
+                {outputLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
+            {processType === "BLENDING" && <label className="grid gap-1 text-xs font-semibold">
+              {t("mill.operations.outputCommodityLabel", "Loại hàng đầu ra")}
+              <select required className="min-w-0 rounded-lg border border-ink-tertiary/20 bg-surface-base p-2" value={blendCommodityId} onChange={event => setBlendCommodityId(event.target.value)}>
+                <option value="">{t("mill.operations.selectOutputCommodity", "Chọn loại hàng đầu ra")}</option>
+                {blendCommodities.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>}
           </div>
 
           {/* Section 2: Output Fractions */}
@@ -1141,11 +1162,11 @@ export const OperationEntryPage: React.FC = () => {
                   "Dung sai cho phép:",
                 )}
               </span>
-              <MassValue
+              {policy ? <MassValue
                 value={balanceResult.allowedKg}
                 decimals={3}
                 className="font-bold text-ink-primary font-mono text-sm"
-              />
+              /> : "—"}
             </div>
           </div>
 
@@ -1161,7 +1182,7 @@ export const OperationEntryPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting || loadingLots || lots.length === 0}
+              disabled={!canWrite || isSubmitting || loadingLots || lots.length === 0}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

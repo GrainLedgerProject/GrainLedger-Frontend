@@ -5,6 +5,7 @@ export const exportPaths = {
   pending: "/export/plans/pending",
   review: "/export/plans/:planId/review",
   containers: "/export/containers",
+  preparation: "/ledger/container-preparation",
   planStep: "/export/containers/:id/plan",
   loading: "/export/containers/:id/loading",
   closure: "/export/containers/:id/closure",

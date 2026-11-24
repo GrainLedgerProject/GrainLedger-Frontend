@@ -688,7 +688,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={sourceVariety}
                 onChange={(e) => setSourceVariety(e.target.value)}
                 placeholder="VD: ST25, Jasmine 85, Nàng Hoa 9"
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -702,7 +702,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={targetVariety}
                 onChange={(e) => setTargetVariety(e.target.value)}
                 placeholder="VD: ST24, OM 5451, IR50404"
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
               />
             </div>
 
@@ -713,7 +713,7 @@ export const BalancePolicyPage: React.FC = () => {
               <select
                 value={allowed ? "ALLOWED" : "PROHIBITED"}
                 onChange={(e) => setAllowed(e.target.value === "ALLOWED")}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               >
                 <option value="ALLOWED">
                   Cho phép phối trộn (Allowed Blend)
@@ -736,7 +736,7 @@ export const BalancePolicyPage: React.FC = () => {
                   max="100"
                   value={maxRatio}
                   onChange={(e) => setMaxRatio(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono"
                 />
               </div>
             )}
@@ -750,7 +750,7 @@ export const BalancePolicyPage: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="VD: Áp dụng cho các đơn hàng xuất khẩu đi thị trường Đông Nam Á..."
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
               />
             </div>
 

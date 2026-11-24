@@ -730,7 +730,7 @@ export const ReceivingTasksPage: React.FC = () => {
                     required
                     value={measuredWeight}
                     onChange={(e) => setMeasuredWeight(e.target.value)}
-                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono font-bold text-ink-primary"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono font-bold text-ink-primary"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-mono">
                     kg
@@ -756,7 +756,7 @@ export const ReceivingTasksPage: React.FC = () => {
                     required
                     value={measuredMoisture}
                     onChange={(e) => setMeasuredMoisture(e.target.value)}
-                    className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono text-indigo-500 font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono text-indigo-500 font-bold"
                   />
                   <span className="absolute right-3 top-2 text-ink-tertiary font-mono">
                     %

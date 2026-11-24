@@ -358,7 +358,7 @@ export const UserAccessManagementPage: React.FC = () => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   {(Object.keys(ROLE_DEFINITIONS) as UserRole[]).map((rKey) => (
                     <option key={rKey} value={rKey}>
@@ -378,7 +378,7 @@ export const UserAccessManagementPage: React.FC = () => {
                 <select
                   value={organizationId}
                   onChange={(e) => setOrganizationId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   <option value="">
                     {t("admin.users.noOrgSelect", "-- Chưa gán tổ chức --")}

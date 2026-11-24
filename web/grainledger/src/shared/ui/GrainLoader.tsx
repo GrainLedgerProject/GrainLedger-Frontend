@@ -6,6 +6,7 @@ export interface GrainLoaderProps {
   label?: string;
   fullPage?: boolean;
   className?: string;
+  labelClassName?: string;
 }
 
 const sizeMap = {
@@ -20,6 +21,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
   label,
   fullPage = false,
   className = "",
+  labelClassName = ""
 }) => {
   const dimension = sizeMap[size];
 
@@ -95,7 +97,7 @@ export const GrainLoader: React.FC<GrainLoaderProps> = ({
       </div>
 
       {label && (
-        <span className="text-xs font-semibold tracking-widest text-black dark:text-white">
+        <span className={`text-xs font-semibold tracking-widest ${labelClassName}`}>
           {label}
         </span>
       )}

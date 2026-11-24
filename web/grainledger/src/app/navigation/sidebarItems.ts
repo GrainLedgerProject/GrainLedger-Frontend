@@ -14,6 +14,7 @@ import {
   ArrowsClockwise,
   BookOpen,
   Buildings,
+  CalendarDots,
   CheckSquare,
   ClockCounterClockwise,
   Crosshair,
@@ -64,6 +65,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             label: t("nav.admin.customers", "Khách hàng"),
             path: adminPaths.customers,
             icon: Buildings,
+          },
+          {
+            label: t("nav.field.seasons"),
+            path: fieldPaths.seasons,
+            permission: "platform.configure",
+            icon: CalendarDots,
           },
           {
             label: t("nav.admin.access", "Tài khoản & Quyền"),
@@ -121,6 +128,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             isPrimary: true,
           },
           {
+            label: t("nav.mill.containerWork", "Công việc container"),
+            path: millPaths.executePlans,
+            icon: Factory,
+            permission: "containers.operate",
+          },
+          {
             label: t("nav.mill.corrections", "Yêu cầu sửa"),
             path: millPaths.requestCorrection,
             permission: requestCorrectionPermission,
@@ -176,6 +189,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: Factory,
           },
           {
+            label: t("nav.mill.containerWork", "Công việc container"),
+            path: millPaths.executePlans,
+            icon: Factory,
+            permission: "holds.process",
+          },
+          {
             label: t("nav.events", "Tìm sự kiện"),
             path: auditPaths.events,
             icon: MagnifyingGlass,
@@ -205,6 +224,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             label: t("nav.field.plots", "Thửa ruộng"),
             path: fieldPaths.plots,
             icon: MapPin,
+          },
+          {
+            label: t("nav.field.seasons"),
+            path: fieldPaths.seasons,
+            permission: "farms.write",
+            icon: CalendarDots,
           },
           {
             label: t("nav.field.declarations", "Khai báo thuốc BVTV"),
@@ -243,6 +268,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             path: riskPaths.traceback,
             icon: Crosshair,
             isPrimary: true,
+          },
+          {
+            label: t("nav.field.seasons"),
+            path: fieldPaths.seasons,
+            permission: "farms.read",
+            icon: CalendarDots,
           },
           {
             label: t("nav.risk.holds", "Lệnh giữ HOLD"),
@@ -351,6 +382,25 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
 
 export function getSidebarItems(role: UserRole, permissions: string[], t: TFunction, pendingOfflineCount: number) {
   const navItems = roleNavigation(role, t, pendingOfflineCount);
+  if (role === "MILL_OPERATOR") navItems.push({ label: t("workflows.transfer.title"), path: millPaths.stockTransfer, icon: Truck });
+  if ((role === "MILL_OPERATOR" && permissions.includes("conversions.write")) || (role === "MILL_MANAGER" && permissions.includes("conversions.confirm"))) navItems.push({ label: t("workflows.variance.title"), path: millPaths.varianceReview, icon: Scales });
+  if (["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "CUSTOMER_PROCUREMENT_OFFICER"].includes(role)) navItems.push({ label: t("receivingThreshold.own"), path: adminPaths.companyReceivingThreshold, icon: Scales });
+  if (role === "CUSTOMER_MANAGER" && permissions.includes("residue.evidence.manage")) navItems.push({ label: t("workflows.residue.title"), path: compliancePaths.residueEvidence, icon: Flask });
+  if (role === "CUSTOMER_EXPORT_OFFICER" || role === "CUSTOMER_MANAGER" || role === "MILL_OPERATOR" || role === "MILL_MANAGER") {
+    navItems.push({
+      label: t("nav.export.preparation", "Chuẩn bị container"),
+      path: exportPaths.preparation,
+      icon: Package,
+    });
+  }
+  if ((role === "CUSTOMER_MANAGER" || role === "MILL_ADMIN") &&
+    (permissions.includes("trace.read.tenant") || permissions.includes("trace.read.all"))) {
+    navItems.push({
+      label: t("nav.risk.containerTrace", "Truy xuất nguồn container"),
+      path: riskPaths.containerTrace,
+      icon: Crosshair,
+    });
+  }
   if (permissions.includes("residue.company-policy.manage")) {
     navItems.push({
       label: t("apiAudit.policy.title"),
