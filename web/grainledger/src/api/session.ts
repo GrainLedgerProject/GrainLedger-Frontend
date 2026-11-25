@@ -5,6 +5,7 @@ export interface ApiSession {
   ownerKey: string | null;
   accessToken: string | null;
   refreshToken: string | null;
+  cookieSession?: boolean;
 }
 
 interface ApiSessionAdapter {

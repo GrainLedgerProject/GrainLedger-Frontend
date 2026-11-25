@@ -1,5 +1,8 @@
 import { NotificationCenter } from "./NotificationCenter";
 import { useAuthStore } from "@/app/store/authStore";
+import { authApi } from "@/features/auth/api/authApi";
+import { toast } from "@/app/store/feedbackStore";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useUiStore } from "@/app/store/uiStore";
 import { ConfirmPopover } from "@/shared/ui/ConfirmPopover";
 import { NetworkStatusIndicator } from "@/app/layout/NetworkStatusIndicator";
@@ -32,7 +35,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   breadcrumbs,
 }) => {
   const { t } = useTranslation();
-  const { user, logout, hasUnsavedDrafts } = useAuthStore();
+  const text = useWorkflowText();
+  const { user, hasUnsavedDrafts } = useAuthStore();
   const {
     theme,
     toggleTheme,
@@ -46,6 +50,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -94,10 +99,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  const handleLogoutConfirm = () => {
+  const handleLogoutConfirm = async () => {
+    if (signingOut) return;
     setIsLogoutModalOpen(false);
-    logout();
-    navigate("/sign-in");
+    setSigningOut(true);
+    try {
+      await authApi.logout();
+      navigate("/sign-in", { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : text("Không thể đăng xuất.", "Could not sign out."));
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   return (

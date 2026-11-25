@@ -3,12 +3,13 @@ import { ExportActionProvider } from "../components/ExportActionProvider";
 import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { exportEndpoints } from "@/api/exports";
+import { exportEndpoints, type StockCandidate } from "@/api/exports";
 import { ledgerEndpoints } from "@/api/ledger";
 import {
   planningEndpoints,
   type BlendPlanDraftDto,
   type CreateBlendPlanDraftRequest,
+  type PreviewBlendPlanRequest,
 } from "@/api/planning";
 import { collectPages } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
@@ -17,6 +18,7 @@ import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { exportPaths, planReviewPath } from "../paths";
 import { ExportWorkspaceNav } from "../components/ExportWorkspaceUI";
+import { BlendCandidateList, BlendDiagnostics, BlendRatioEditor } from "../components/BlendInvestigation";
 import {
   ArrowLeft,
   ArrowsClockwise,
@@ -531,23 +533,39 @@ function PreviewPlan({
 }) {
   const text = useWorkflowText();
   const cache = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [includeExcluded, setIncludeExcluded] = useState(false);
+  const [includeOther, setIncludeOther] = useState(false);
+  const [candidate, setCandidate] = useState<StockCandidate | null>(null);
+  const [objective, setObjective] = useState<PreviewBlendPlanRequest["objective"]>();
+  const [moistureAttributeId, setMoistureAttribute] = useState("");
+  const [ratioDirty, setRatioDirty] = useState(false);
 
   const candidates = useQuery({
-    queryKey: ["plan-candidates", plan.id, facility],
+    queryKey: ["plan-candidates", plan.id, facility, page, includeExcluded, includeOther],
     queryFn: () =>
       exportEndpoints.getCandidates(plan.containerId, {
         facilityId: facility,
         planId: plan.id,
         pageSize: 25,
+        page: page > 1 ? page : undefined,
+        includeExcluded: includeExcluded || undefined,
+        productMatchOnly: !includeOther,
       }),
   });
 
+  const order = useQuery({
+    queryKey: ["blend-order-specification", plan.orderId],
+    queryFn: () => exportEndpoints.getOrder(plan.orderId),
+    enabled: objective === "MIN_MOISTURE",
+  });
   const preview = useMutation({
-    mutationFn: (scopeRevision: string) =>
+    mutationFn: (request: Omit<PreviewBlendPlanRequest, "facilityId">) =>
       planningEndpoints.previewPlan(plan.id, {
+        ...request,
         facilityId: facility,
-        scopeRevision,
       }),
+    onSuccess: () => setRatioDirty(false),
   });
 
   const propose = useExportCommand(
@@ -564,13 +582,53 @@ function PreviewPlan({
   );
 
   const result = preview.data;
+  const previewCurrent = Boolean(candidates.data && preview.variables?.scopeRevision === candidates.data.scopeRevision);
+  function calculate(adjustment?: PreviewBlendPlanRequest["adjustment"]) {
+    if (!candidates.data) return;
+    preview.mutate({
+      scopeRevision: candidates.data.scopeRevision,
+      objective,
+      moistureAttributeId: objective === "MIN_MOISTURE" ? moistureAttributeId : undefined,
+      adjustment,
+    });
+  }
 
   return (
-    <div className="space-y-4 pt-2">
+    <div className="gl-workflow space-y-4 pt-2">
       <Feedback
         error={candidates.error ?? preview.error ?? propose.error}
         pending={candidates.isPending || preview.isPending}
       />
+      <div className="flex flex-wrap gap-4">
+        <label className="!flex-row items-center"><input type="checkbox" checked={includeExcluded} onChange={e => {
+          setIncludeExcluded(e.target.checked); setPage(1); setCandidate(null);
+        }} />{text("Hiện cả tồn kho bị loại", "Include excluded stock")}</label>
+        <label className="!flex-row items-center"><input type="checkbox" checked={includeOther} onChange={e => {
+          setIncludeOther(e.target.checked); setPage(1); setCandidate(null);
+        }} />{text("Hiện cả sản phẩm khác", "Include other products")}</label>
+      </div>
+      {candidates.data && <BlendCandidateList data={candidates.data} facilityId={facility}
+        containerId={plan.containerId} candidate={candidate} onCandidate={setCandidate}
+        page={page} onPage={value => { setPage(value); setCandidate(null); }} />}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label>{text("Mục tiêu tối ưu", "Optimization objective")}
+          <select value={objective ?? ""} onChange={e => { setObjective((e.target.value || undefined) as typeof objective); preview.reset(); }}>
+            <option value="">{text("Mặc định", "Default")}</option>
+            <option value="MIN_LOCATIONS">{text("Ít vị trí nhất", "Minimize locations")}</option>
+            <option value="MIN_LOTS">{text("Ít lô nhất", "Minimize lots")}</option>
+            <option value="RETAIN_HEAD_RICE">{text("Giữ lại gạo nguyên", "Retain head rice")}</option>
+            <option value="MAX_RESIDUE_HEADROOM">{text("Tăng biên an toàn dư lượng", "Maximize residue headroom")}</option>
+            <option value="MIN_MOISTURE">{text("Giảm độ ẩm", "Minimize moisture")}</option>
+          </select>
+        </label>
+        {objective === "MIN_MOISTURE" && <label>{text("Chỉ tiêu độ ẩm trong đặc tả", "Moisture attribute from specification")}
+          <select value={moistureAttributeId} onChange={e => { setMoistureAttribute(e.target.value); preview.reset(); }}>
+            <option value="">—</option>
+            {order.data?.limits?.filter(row => row.unit === "%").map(row => <option key={row.attributeId} value={row.attributeId}>{row.attributeName ?? row.attributeCode ?? row.attributeId}</option>)}
+          </select>
+        </label>}
+      </div>
+      {objective === "MIN_MOISTURE" && <Feedback error={order.error} pending={order.isPending} />}
 
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay/40 border border-ink-tertiary/20">
         <div className="flex items-center gap-3">
@@ -593,6 +651,7 @@ function PreviewPlan({
             }
             onClick={() => {
               preview.reset();
+              setCandidate(null);
               void candidates.refetch();
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-secondary text-xs font-medium"
@@ -605,8 +664,9 @@ function PreviewPlan({
 
           {candidates.data && (
             <button
-              disabled={preview.isPending || propose.isPending}
-              onClick={() => preview.mutate(candidates.data.scopeRevision)}
+              type="button"
+              disabled={preview.isPending || propose.isPending || (objective === "MIN_MOISTURE" && !moistureAttributeId)}
+              onClick={() => calculate()}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50"
             >
               <Calculator size={15} weight="bold" />
@@ -758,6 +818,11 @@ function PreviewPlan({
               </div>
             )}
 
+          <BlendDiagnostics result={result} />
+          {previewCurrent && result.previewReference && <BlendRatioEditor key={result.previewReference} result={result}
+            disabled={preview.isPending || propose.isPending} onDirty={setRatioDirty}
+            onAssess={firstQuantityKg => calculate({ firstQuantityKg, previewReference: result.previewReference! })} />}
+
           {/* Submit Proposal CTA */}
           {result.canPropose && result.previewReference && (
             <div className="pt-3 border-t border-ink-tertiary/15 flex justify-end">
@@ -765,7 +830,7 @@ function PreviewPlan({
                 disabled={
                   propose.isPending ||
                   preview.isPending ||
-                  preview.variables !== candidates.data?.scopeRevision
+                  !previewCurrent || ratioDirty
                 }
                 onClick={() => propose.submit(result.previewReference!)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-md shadow-accent-primary/20 transition-all disabled:opacity-50"

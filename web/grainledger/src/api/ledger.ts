@@ -48,16 +48,49 @@ export interface PolicyDto {
   evidenceId: string;
 }
 
+export interface LedgerReference {
+  id: string;
+  name: string;
+}
+
+export interface FacilityAssignment {
+  userId: string;
+  facilityId: string;
+  version: string;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+interface CompatibilityPolicy {
+  id: string;
+  facilityId: string;
+  inputProducts: string[];
+  outputCommodityId: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
+interface MixedBulkPolicy {
+  id: string;
+  locationId: string;
+  ownerId: string;
+  commodityId: string;
+  stage: string;
+  productIdentity: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
 export interface SetupApiResponse {
   facilities?: FacilityDto[];
   locations?: LocationDto[];
   equipment?: EquipmentDto[];
   policies?: PolicyDto[];
-  commodities?: unknown[];
-  assignments?: unknown[];
-  owners?: unknown[];
-  compatibilities?: unknown[];
-  mixedBulkPolicies?: unknown[];
+  commodities?: LedgerReference[];
+  assignments?: FacilityAssignment[];
+  owners?: LedgerReference[];
+  compatibilities?: CompatibilityPolicy[];
+  mixedBulkPolicies?: MixedBulkPolicy[];
 }
 
 export interface LedgerNotification {
@@ -99,6 +132,85 @@ export interface OwnReceivingThreshold {
   revision: string;
 }
 
+export type ReceivingStatus = "PENDING_ARRIVAL" | "AWAITING_MANAGER_REVIEW" |
+  "REMEASUREMENT_REQUESTED" | "RECEIVED_MATCHED" | "RECEIVED_WITHIN_TOLERANCE" |
+  "RECEIVED_SHORTAGE_APPROVED" | "BLOCKED_UNRESOLVED";
+export type ReceivingReviewAction = "APPROVE_SHORTAGE" | "REQUEST_REMEASUREMENT" | "KEEP_BLOCKED";
+export type ReceivingUnit = "KG" | "G" | "T";
+
+interface ReceivingThreshold {
+  percentage: string;
+  revision: string;
+  source: ReceivingThresholdScope;
+}
+
+interface ReceivingMeasurementLine {
+  procurementItemId: string;
+  measuredValue: string;
+  measuredUnit: ReceivingUnit;
+}
+
+export interface ReceivingTask {
+  id: string;
+  code: string;
+  ownerCompanyId: string;
+  ownerCompanyName: string;
+  facilityId: string;
+  facilityName: string;
+  receivingLocationName: string;
+  status: ReceivingStatus;
+  receivedAt: string;
+  expectedTotalKg: string;
+  actualTotalKg: string | null;
+  usableStockKg: string;
+  receivingVersion: number;
+  latestMeasurementSetId: string | null;
+  effectiveThreshold: ReceivingThreshold | null;
+  items: {
+    id: string;
+    lineNo: number;
+    lotCode: string;
+    riceVariety: string;
+    expectedKg: string;
+    actualKg: string | null;
+  }[];
+  measurementSets: {
+    id: string;
+    recordedAt: string;
+    capturedAt: string;
+    observations: string;
+    threshold: ReceivingThreshold | null;
+    items: (ReceivingMeasurementLine & { actualKg: string })[];
+  }[];
+  reviews: { id: string; measurementSetId: string; action: ReceivingReviewAction; reason: string; evidenceId: string; recordedAt: string }[];
+}
+
+export interface ReceivingQuery extends PageQuery {
+  facilityId: string;
+  search?: string;
+  ownerId?: string;
+  status?: ReceivingStatus;
+  sortBy?: "receivedAt" | "status" | "owner";
+  sortDirection?: "asc" | "desc";
+}
+
+export interface ReceivingMeasurementRequest {
+  operationId: string;
+  expectedReceivingVersion: number;
+  capturedAt: string;
+  observations: string;
+  items: ReceivingMeasurementLine[];
+}
+
+export interface ReceivingReviewRequest {
+  operationId: string;
+  expectedReceivingVersion: number;
+  measurementSetId: string;
+  action: ReceivingReviewAction;
+  reason: string;
+  evidenceId: string;
+}
+
 export interface CreateCorrectionRequest {
   id: string;
   operationId: string;
@@ -129,10 +241,15 @@ export interface CorrectionOperation {
   equipmentId: string;
   occurredAt: string;
   declaredLossKg: string;
+  declaredLossReason?: string;
+  createdBy?: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
   varianceKg?: string;
+  allowedVarianceKg?: string | null;
   confirmedVersion?: string | null;
   boundCorrectionId?: string | null;
-  inputs: { lotId: string; locationId: string; quantityKg: string; poolRevision?: string }[];
+  inputs: { lotId: string; locationId: string; quantityKg: string; poolRevision?: number | string }[];
   outputs: { id: string; code?: string; commodityId: string; stage: string; productIdentity?: string; locationId: string; quantityKg: string; originalLotId?: string }[];
 }
 
@@ -373,19 +490,20 @@ export const ledgerEndpoints = {
   },
 
   // Receiving tasks & reviews
-  getReceivingTasks: () => apiFetch<unknown>("/api/ledger/receiving-tasks"),
+  getReceivingTasks: (query: ReceivingQuery) =>
+    apiFetch<ApiPage<ReceivingTask>>(withApiQuery("/api/ledger/receiving-tasks", query)),
   getReceiving: (id: string) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
-  recordReceivingMeasurement: (id: string, req: object) =>
-    apiFetch<unknown>(
+    apiFetch<ReceivingTask>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
+  recordReceivingMeasurement: (id: string, req: ReceivingMeasurementRequest) =>
+    apiFetch<ReceivingTask>(
       `/api/ledger/receiving/${encodeURIComponent(id)}/measurements`,
       {
         method: "POST",
         body: JSON.stringify(req),
       },
     ),
-  reviewReceiving: (id: string, req: object) =>
-    apiFetch<unknown>(
+  reviewReceiving: (id: string, req: ReceivingReviewRequest) =>
+    apiFetch<ReceivingTask>(
       `/api/ledger/receiving/${encodeURIComponent(id)}/reviews`,
       {
         method: "POST",
@@ -394,17 +512,17 @@ export const ledgerEndpoints = {
     ),
 
   // Policies & Compatibilities
-  createPolicy: (req: object) =>
+  createPolicy: (req: PolicyDto) =>
     apiFetch<unknown>("/api/ledger/policies", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  createCompatibility: (req: object) =>
+  createCompatibility: (req: CompatibilityPolicy) =>
     apiFetch<unknown>("/api/ledger/compatibilities", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  createMixedBulkPolicy: (req: object) =>
+  createMixedBulkPolicy: (req: MixedBulkPolicy & { identityScopeConfirmed: true }) =>
     apiFetch<unknown>("/api/ledger/mixed-bulk-policies", {
       method: "POST",
       body: JSON.stringify(req),
@@ -446,20 +564,20 @@ export const ledgerEndpoints = {
     PageSize?: number | string;
   }) => apiFetch<unknown>(withApiQuery("/api/ledger/trace/starts", query)),
   getResidueEvaluations: (lotId: string) =>
-    apiFetch<unknown>(
+    apiFetch<{ items: ResidueEvaluationSummary[] }>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`,
     ),
   createResidueEvaluation: (lotId: string, req: ResidueEvaluationRequest) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`,
       { method: "POST", body: JSON.stringify(req) },
     ),
   getResidueEvaluation: (lotId: string, evaluationId: string) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations/${encodeURIComponent(evaluationId)}`,
     ),
   getResiduePreview: (lotId: string, query?: { substanceIds?: string }) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       withApiQuery(
         `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-preview`,
         query,
@@ -530,4 +648,27 @@ export interface LotTraceRequest {
 export interface ResidueEvaluationRequest {
   id: string;
   substanceIds: Array<string>;
+}
+
+export interface ResidueEvaluationSummary {
+  id: string;
+  snapshotAt: string;
+  persistedAt: string;
+  engineVersion: string;
+}
+
+export interface ResidueEvaluation {
+  id?: string;
+  snapshotAt: string;
+  engineVersion: string;
+  results: {
+    substanceId: string;
+    status: string;
+    lower: string | null;
+    upper: string | null;
+    unit: string | null;
+    reasons: string[];
+    provenance: { kind: string; sourceLotId: string; reportId?: string; resultId?: string; groupVersionId?: string }[];
+    rules: { id: string; version: number; kind: string; evidenceReference: string }[];
+  }[];
 }

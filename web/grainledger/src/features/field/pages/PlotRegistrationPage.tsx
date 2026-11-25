@@ -1,13 +1,19 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { pageItems } from "@/api/query";
+import { collectPages, pageItems } from "@/api/query";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints, type PlotGeometry, type RegisterPlotRequest } from "@/api/procurement";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback } from "@/shared/ui/Workflow";
+import { useAuthStore } from "@/app/store/authStore";
+import { selectSessionOwner } from "@/app/store/sessionOwner";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { DuplicateWarning } from "../components/DuplicateWarning";
+import { captureWasRejected, loadPendingCapture, submitPendingCapture } from "../offline/pendingCapture";
+import { fieldPaths } from "../paths";
 import { MapLocationPicker } from "@/features/field/components/MapLocationPicker";
 import {
   MapPin,
@@ -75,10 +81,21 @@ function parseToGeoJsonPoint(coordStr: string): {
   throw new Error("Tọa độ thửa ruộng không hợp lệ.");
 }
 
+function nearbyPlotRequest(coordinates: string, id?: string) {
+  try {
+    return { geometry: parseToGeoJsonPoint(coordinates), excludeId: id ?? null };
+  } catch {
+    return null;
+  }
+}
+
 export const PlotRegistrationPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const text = useWorkflowText();
+  const owner = useAuthStore(selectSessionOwner);
+  const storageKey = owner ? `grainledger:plot:${owner}` : "";
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string>("");
+  const [selectedFarmerId, setSelectedFarmerId] = useState(() => new URLSearchParams(window.location.search).get("farmerId") ?? "");
   const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -92,7 +109,8 @@ export const PlotRegistrationPage: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<Error | null>(null);
-  const registration = useRef<{ key: string; request: RegisterPlotRequest } | null>(null);
+  const [registration, setRegistration] = useState<RegisterPlotRequest | null>(null);
+  const retrying = !editingPlot && Boolean(registration);
 
   // Modal State for Viewing Plot Map
   const [viewingMapPlot, setViewingMapPlot] = useState<PlotRecord | null>(null);
@@ -135,10 +153,12 @@ export const PlotRegistrationPage: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingPlot(null);
     setFormError(null);
+    const pending = storageKey ? loadPendingCapture<RegisterPlotRequest>(storageKey) ?? registration : registration;
+    setRegistration(pending);
     setFormData({
-      farmerId: farmers[0]?.id || "",
-      areaHa: 0,
-      coordinates: "",
+      farmerId: pending?.payload?.farmerId ?? (selectedFarmerId || farmers[0]?.id || ""),
+      areaHa: Number(pending?.payload?.areaHa ?? 0),
+      coordinates: pending?.payload?.geometry ? formatDisplayCoord(pending.payload.geometry as PlotGeometry) : "",
     });
     setIsModalOpen(true);
   };
@@ -201,21 +221,16 @@ export const PlotRegistrationPage: React.FC = () => {
         );
       } else {
         const payload = { farmerId: formData.farmerId, code: null, areaHa: formData.areaHa, geometry: geometryObj };
-        const key = JSON.stringify(payload);
-        if (registration.current?.key !== key) {
-          registration.current = {
-            key,
-            request: {
-              deviceId: "grainledger-web",
-              clientOperationId: crypto.randomUUID(),
-              capturedAt: new Date().toISOString(),
-              payloadSchemaVersion: 2,
-              payload: { entityId: crypto.randomUUID(), ...payload },
-            },
-          };
-        }
-        const result = await procurementEndpoints.createPlot(registration.current.request);
-        registration.current = null;
+        const request = registration ?? {
+          deviceId: "grainledger-web",
+          clientOperationId: crypto.randomUUID(),
+          capturedAt: new Date().toISOString(),
+          payloadSchemaVersion: 2,
+          payload: { entityId: crypto.randomUUID(), ...payload },
+        };
+        setRegistration(request);
+        const result = await (storageKey ? submitPendingCapture(storageKey, request, procurementEndpoints.createPlot) : procurementEndpoints.createPlot(request));
+        setRegistration(null);
         setSuccessMsg(
           t(
             "field.plot.createdSuccess",
@@ -230,6 +245,7 @@ export const PlotRegistrationPage: React.FC = () => {
       setIsModalOpen(false);
       await loadData();
     } catch (err: unknown) {
+      if (!editingPlot && captureWasRejected(err)) setRegistration(null);
       setFormError(err instanceof Error ? err : new Error(t("field.plot.errAction", "Thao tác không thành công.")));
     } finally {
       setSubmitting(false);
@@ -349,7 +365,7 @@ export const PlotRegistrationPage: React.FC = () => {
               )}
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); }}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+              className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
             />
             <MagnifyingGlass
               size={16}
@@ -572,7 +588,7 @@ export const PlotRegistrationPage: React.FC = () => {
                 </label>
                 <select
                   required
-                  disabled={Boolean(editingPlot)}
+                  disabled={Boolean(editingPlot) || retrying || submitting}
                   value={formData.farmerId}
                   onChange={(e) =>
                     setFormData({ ...formData, farmerId: e.target.value })
@@ -605,6 +621,7 @@ export const PlotRegistrationPage: React.FC = () => {
                   min="0.01"
                   required
                   value={formData.areaHa}
+                  disabled={retrying || submitting}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -636,7 +653,7 @@ export const PlotRegistrationPage: React.FC = () => {
               <MapLocationPicker
                 value={formData.coordinates}
                 polygon={editingPlot?.geometry?.type === "Polygon" ? editingPlot.geometry.coordinates : undefined}
-                disabled={editingPlot?.geometry?.type === "Polygon"}
+                disabled={editingPlot?.geometry?.type === "Polygon" || retrying || submitting}
                 onChange={(point) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -654,6 +671,9 @@ export const PlotRegistrationPage: React.FC = () => {
               </span>
             </div>
 
+            <DuplicateWarning request={isModalOpen && !retrying && !submitting
+              ? nearbyPlotRequest(formData.coordinates, editingPlot?.id) : null} />
+            {retrying && !submitting && <p role="status">{text("Lưu lại để gửi đúng yêu cầu đang chờ.", "Save again to retry the pending request.")}</p>}
             <Feedback error={formError} />
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
@@ -713,6 +733,7 @@ export const PlotRegistrationPage: React.FC = () => {
                 disabled={true}
                 height={320}
               />
+              <PlotRelatedRecords plotId={viewingMapPlot.id} />
 
               <div className="grid grid-cols-2 gap-3 text-xs bg-surface-raised dark:bg-surface-overlay p-3 rounded-lg border border-ink-tertiary/15">
                 <div>
@@ -757,4 +778,25 @@ export const PlotRegistrationPage: React.FC = () => {
     </div>
   );
 };
+
+function PlotRelatedRecords({ plotId }: { plotId: string }) {
+  const text = useWorkflowText();
+  const allowed = useAuthStore(state => state.user?.permissions.some(p => p === "farms.read" || p === "farms.write"));
+  const links = useQuery({
+    queryKey: ["field-plot-related-seasons", plotId],
+    queryFn: () => collectPages(paging => procurementEndpoints.getPlotSeasons({ ...paging, plotId })),
+    enabled: Boolean(allowed),
+  });
+  if (!allowed) return null;
+  return <section className="space-y-2">
+    <h4 className="font-semibold">{text("Mùa vụ và khai báo phun thuốc", "Plot seasons and spray declarations")}</h4>
+    <Feedback error={links.error} pending={links.isPending} />
+    {links.data?.length === 0 && <p>{text("Chưa có liên kết mùa vụ.", "No plot seasons recorded.")}</p>}
+    <ul className="space-y-1">{links.data?.map(row => <li key={row.id}>
+      <a className="text-accent-primary underline" href={`${fieldPaths.seasons}?seasonId=${encodeURIComponent(row.seasonId)}`}>{row.seasonName}</a>
+      {" · "}{row.riceVariety}{" · "}
+      <a className="text-accent-primary underline" href={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(row.id)}`}>{text("Lịch sử phun", "Spray history")}</a>
+    </li>)}</ul>
+  </section>;
+}
 export default PlotRegistrationPage;

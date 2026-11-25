@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { receiptPath } from "../paths";
 import {
   procurementEndpoints,
   type RegisterProcurementRequest,
   type ProcurementReceivingOption,
 } from "@/api/procurement";
 import { ApiError } from "@/api/client";
+import { useAuthStore } from "@/app/store/authStore";
 import {
   getQueuedProcurementCount,
   getQueuedProcurements,
@@ -67,6 +69,7 @@ interface ProcurementReceiptItem {
 export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const canCapture = useAuthStore(state => state.user?.permissions.includes("purchases.write"));
   const isOnline = useUiStore((state) => state.isOnline);
   const procurementSyncMode = useUiStore((state) => state.procurementSyncMode);
   const setPendingOfflineCount = useUiStore(
@@ -444,6 +447,7 @@ export const ProcurementReceiptPage: React.FC = () => {
   );
 
   const handleOpenCreate = () => {
+    if (!canCapture) return;
     const selectedFarmer = farmers[0];
     const farmerId = selectedFarmer?.id || "";
 
@@ -675,14 +679,14 @@ export const ProcurementReceiptPage: React.FC = () => {
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          <button
+          {canCapture && <button
             type="button"
             onClick={handleOpenCreate}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
           >
             <Plus size={16} weight="bold" />
             <span>{t("field.receipt.createBtn", "Lập Phiếu Thu Mua mới")}</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -737,6 +741,10 @@ export const ProcurementReceiptPage: React.FC = () => {
       {/* Filter bar */}
       <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="relative w-full sm:w-80">
+          <MagnifyingGlass
+            size={18}
+            className="absolute top-3.5 left-3 text-ink-tertiary"
+          />
           <input
             type="text"
             placeholder={t(
@@ -745,11 +753,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-          />
-          <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-2.5 text-ink-tertiary"
+            className="w-full pl-9 pr-3 py-3 text-sm rounded-full bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           />
         </div>
 
@@ -824,11 +828,8 @@ export const ProcurementReceiptPage: React.FC = () => {
               <tbody className="divide-y divide-ink-tertiary/10">
                 {filteredReceipts.map((r) => {
                   const firstItem = r.items?.[0];
-                  const displayWeight =
-                    firstItem?.measuredValue ||
-                    (r.totalNetMassKg ? `${r.totalNetMassKg}` : null) ||
-                    "5.000";
-                  const displayMoisture = firstItem?.moisturePercent || "24.5";
+                  const displayWeight = r.totalNetMassKg ?? r.totalQuantityKg;
+                  const displayMoisture = r.items?.length === 1 ? firstItem?.moisturePercent : null;
 
                   return (
                     <tr
@@ -836,7 +837,8 @@ export const ProcurementReceiptPage: React.FC = () => {
                       className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
                     >
                       <td className="py-3 px-4 font-mono font-bold text-accent-primary">
-                        {r.code || `RC-${r.id.slice(0, 8)}`}
+                        {r.isOfflinePending ? (r.code || r.id) :
+                          <Link className="underline underline-offset-2" to={receiptPath(r.id)}>{r.code || r.id}</Link>}
                       </td>
                       <td className="py-3 px-4 text-ink-secondary">
                         <span className="inline-flex items-center gap-1 font-mono">
@@ -859,12 +861,12 @@ export const ProcurementReceiptPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-ink-primary">
-                        {displayWeight} kg
+                        {displayWeight == null ? "—" : `${displayWeight} kg`}
                       </td>
                       <td className="py-3 px-4 font-mono">
                         <span className="inline-flex items-center gap-1 text-accent-info font-semibold">
                           <Drop size={13} />
-                          <span>{displayMoisture}%</span>
+                          <span>{displayMoisture == null ? "—" : `${displayMoisture}%`}</span>
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -891,11 +893,8 @@ export const ProcurementReceiptPage: React.FC = () => {
                           />
                         ) : (
                           <StatusBadge
-                            status="BALANCED"
-                            label={t(
-                              "field.receipt.sourceLotCreated",
-                              "Đã lập Lô nguồn",
-                            )}
+                            status={r.status?.startsWith("RECEIVED_") ? "BALANCED" : "PENDING"}
+                            label={r.status || "—"}
                           />
                         )}
                       </td>

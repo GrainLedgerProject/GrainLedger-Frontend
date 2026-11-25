@@ -7,6 +7,8 @@ import { ExportTable } from "@/features/export/components/ExportWorkspaceUI";
 import { Feedback, Panel, Workflow } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { riskPaths } from "../paths";
+import { ActualLoading, ContainerLotFlow } from "../components/ActualLoading";
+import { ResidueBounds } from "../components/ResidueBounds";
 
 const uuidPattern = "[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}";
 const containerIdPattern = new RegExp(`^${uuidPattern}$`);
@@ -64,6 +66,11 @@ export function ContainerTracePage() {
                   </tr>
                 ))}
               </ExportTable>
+              {!!record.graph?.lots.length && <ContainerLotFlow key={containerId} names={lots} edges={record.graph.edges}
+                loading={record.graph.loadingEdges ?? []} />}
+              {!!record.graph?.loadingEdges?.length && <ActualLoading edges={record.graph.loadingEdges} names={lots} />}
+              {record.graph?.loadingEdges?.length ? <LoadedLotResidue key={containerId} lots={lots}
+                lotIds={[...new Set(record.graph.loadingEdges.map(edge => edge.lotId))]} /> : null}
               {record.graph?.edges.length ? <details className="space-y-3">
                 <summary>{text("Liên kết lịch sử giữa các lô", "Historical lot relationships")}</summary>
                 <ExportTable caption={text("Quan hệ nguồn gốc", "Ancestry relationships")} columns={[text("Lô đầu vào", "Input lot"), text("Lô đầu ra", "Output lot"), text("Khối lượng đầu vào (kg)", "Input mass (kg)")]}>
@@ -80,4 +87,19 @@ export function ContainerTracePage() {
       )}
     </Workflow>
   );
+}
+
+function LoadedLotResidue({ lots, lotIds }: { lots: Map<string, string>; lotIds: string[] }) {
+  const text = useWorkflowText();
+  const allowed = useAuthStore(s => s.user?.permissions.includes("residue.evaluate"));
+  const [id, setId] = useState(lotIds[0]);
+  if (!allowed) return null;
+  return <div className="space-y-2">
+    <label>{text("Đánh giá dư lượng của lô đã xếp", "Evaluate residue bounds for a loaded lot")}
+      <select value={id} onChange={e => setId(e.target.value)}>
+        {lotIds.map(lotId => <option key={lotId} value={lotId}>{lots.get(lotId) ?? lotId}</option>)}
+      </select>
+    </label>
+    <ResidueBounds lotId={id} />
+  </div>;
 }

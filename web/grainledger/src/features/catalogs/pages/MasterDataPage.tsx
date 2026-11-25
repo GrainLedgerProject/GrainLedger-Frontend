@@ -46,7 +46,7 @@ interface CatalogItem {
 }
 
 const modalField =
-  "w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
+  "w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
 const modalButton =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-ink-tertiary/20 bg-surface-base px-4 py-2.5 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary disabled:opacity-50";
 
@@ -538,7 +538,7 @@ const MasterDataWorkspace: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+            className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
           />
           <MagnifyingGlass
             size={16}

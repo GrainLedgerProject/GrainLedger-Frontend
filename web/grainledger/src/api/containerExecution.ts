@@ -203,7 +203,22 @@ export interface ContainerTrace {
   graph?: {
     lots: { id: string; code: string; producedKg: string }[];
     edges: { inputLotId: string; outputLotId: string; inputConsumedKg: string; outputProducedKg: string; kind?: string }[];
+    loadingEdges?: LoadingEdge[];
   };
+}
+export interface LoadingEdge {
+  lotId: string;
+  containerId: string;
+  quantityKg: string;
+  lines: {
+    lineId: string;
+    loadId: string;
+    locationId: string;
+    proposalId: string;
+    loadedAt: string;
+    quantityKg: string;
+    sourceContributions?: { sourceLotId: string; quantityKg: string }[];
+  }[];
 }
 export interface ContainerHistoryEvent { id: string; kind: string; recorded_at: string }
 export interface ContainerNotice { id: string; holdId: string; containerId: string; code: string; message: string; createdAt: string; readAt: string | null }

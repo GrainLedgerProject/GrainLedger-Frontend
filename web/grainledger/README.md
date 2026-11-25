@@ -18,6 +18,8 @@ npm run dev
 
 Khi triển khai với backend riêng, đặt `VITE_API_BASE_URL=https://api.example.com` trước khi chạy `npm run build`; backend cần cho phép CORS và cookie từ origin frontend. Nếu để rỗng khi triển khai, web server cần chuyển tiếp các đường dẫn backend trên vì proxy Vite chỉ hoạt động khi phát triển.
 
+Đăng nhập Google dùng cookie phiên của backend trên origin frontend. Khi bật Google OAuth, proxy của origin frontend cần chuyển tiếp `/api` và `/signin-google` tới cùng một backend, giữ host và scheme công khai. Đăng ký URL callback `https://<origin-frontend>/signin-google` trong cấu hình OAuth của Google.
+
 Khởi động lại dev server sau khi sửa `.env`. Các biến `VITE_*` được đưa vào mã trình duyệt khi build, vì vậy không đặt thông tin bí mật trong các biến này. `.env` và các file môi trường riêng được Git bỏ qua; `.env.example` được lưu trong repository.
 
 ## Đồng bộ API

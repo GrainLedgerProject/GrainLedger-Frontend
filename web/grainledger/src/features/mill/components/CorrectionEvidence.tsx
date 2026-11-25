@@ -4,7 +4,7 @@ import { ledgerEndpoints, type CorrectionOperation } from "@/api/ledger";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
-export function CorrectionEvidence({ original, value, onChange }: { original: CorrectionOperation; value: string; onChange: (value: string) => void }) {
+export function CorrectionEvidence({ original, value, onChange }: { original: Pick<CorrectionOperation, "ownerId" | "facilityId">; value: string; onChange: (value: string) => void }) {
   const text = useWorkflowText();
   const [file, setFile] = useState<File | null>(null);
   const stored = useRef<{ file: File; id: string } | null>(null);
@@ -19,11 +19,11 @@ export function CorrectionEvidence({ original, value, onChange }: { original: Co
       reader.readAsDataURL(file);
     });
     await ledgerEndpoints.uploadEvidence({ id, ownerId: original.ownerId, facilityId: original.facilityId, fileName: file.name, contentType: file.type || "application/octet-stream", contentBase64 });
-    onChange(id);
+    return id;
   } });
   return <fieldset className="space-y-2"><legend>{text("Chứng cứ bất biến", "Immutable evidence")}</legend>
     <label>{text("Tệp biên bản / phiếu cân", "Review document / weighing record")}<input type="file" disabled={upload.isPending} onChange={e => { setFile(e.target.files?.[0] ?? null); onChange(""); upload.reset(); }}/></label>
-    <button type="button" disabled={!file || upload.isPending || Boolean(value)} onClick={() => upload.mutate()}>{text("Tải chứng cứ lên", "Upload evidence")}</button>
+    <button type="button" disabled={!file || upload.isPending || Boolean(value)} onClick={() => upload.mutate(undefined, { onSuccess: onChange })}>{text("Tải chứng cứ lên", "Upload evidence")}</button>
     <Feedback error={upload.error} pending={upload.isPending}/>
     {value && <><p role="status">{text("Đã lưu chứng cứ", "Evidence stored")} · {file?.name}</p><CorrectionEvidenceDownload id={value} fileName={file?.name}/></>}
   </fieldset>;

@@ -8,10 +8,12 @@ import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { authApi } from "@/features/auth/api/authApi";
+import { authEndpoints } from "@/api/auth";
 import {
   signInSchema,
   type SignInFormValues,
 } from "@/features/auth/model/authSchemas";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { ROLE_DEFINITIONS } from "@/shared/types/roles";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,7 +36,8 @@ import { authPaths } from "../paths";
 
 export const SignInPage: React.FC = () => {
   const { t } = useTranslation();
-  const { isAuthenticated, user, accessToken, loginSuccess } = useAuthStore();
+  const text = useWorkflowText();
+  const { isAuthenticated, isLoading: restoringSession, user, loginSuccess } = useAuthStore();
   const { theme, toggleTheme, language, setLanguage } = useUiStore();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -44,7 +47,12 @@ export const SignInPage: React.FC = () => {
   const location = useLocation();
 
   const searchParams = new URLSearchParams(location.search);
-  const returnUrl = searchParams.get("returnUrl");
+  const target = searchParams.get("returnUrl") || "";
+  const returnUrl = target.startsWith("/") && !target.startsWith("//") && !target.includes("\\") &&
+    !target.startsWith("/sign-in") && [...target].every(char => char >= " " && char.charCodeAt(0) !== 127)
+    ? target : "";
+  const googleFailed = searchParams.has("authError") || searchParams.get("google") === "complete";
+  const googleReturnUrl = `/sign-in?google=complete&returnUrl=${encodeURIComponent(returnUrl)}`;
 
   const {
     register,
@@ -61,14 +69,12 @@ export const SignInPage: React.FC = () => {
 
   // Auto-redirect to dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user && accessToken) {
-      const isSelfRedirect = !returnUrl || returnUrl.startsWith("/sign-in");
-      const targetPath = isSelfRedirect ? "/home" : returnUrl;
-      navigate(targetPath, { replace: true });
+    if (isAuthenticated && !restoringSession) {
+      navigate(returnUrl || (user?.organizationId ? ROLE_DEFINITIONS[user.role].defaultPath : "/home"), { replace: true });
     }
-  }, [isAuthenticated, user, accessToken, returnUrl, navigate]);
+  }, [isAuthenticated, restoringSession, returnUrl, navigate, user]);
 
-  if (isAuthenticated && user && accessToken) {
+  if (isAuthenticated || restoringSession) {
     return (
       <div className="min-h-screen bg-parchment-grain flex flex-col justify-center items-center">
         <GrainLoader
@@ -107,12 +113,6 @@ export const SignInPage: React.FC = () => {
           // Browser PasswordCredential API not available or declined
         }
       }
-      // Determine redirect destination
-      const isSelfRedirect = !returnUrl || returnUrl.startsWith("/sign-in");
-      const targetPath = isSelfRedirect
-        ? ROLE_DEFINITIONS[user.role]?.defaultPath || "/home"
-        : returnUrl;
-      navigate(targetPath, { replace: true });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setAuthError(err.message);
@@ -258,14 +258,14 @@ export const SignInPage: React.FC = () => {
           </div>
 
           {/* Form Level Error Message */}
-          {authError && (
+          {(authError || googleFailed) && (
             <div
               className="mb-5 p-3 rounded-md bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex justify-start items-center gap-2.5 animate-ledger-shake"
               role="alert"
             >
               <WarningCircle size={18} weight="fill" className="shrink-0" />
               <div>
-                <span className="leading-none text-center">{authError}</span>
+                <span className="leading-none text-center">{authError || text("Không thể xác thực phiên Google. Vui lòng thử lại.", "Could not verify your Google session. Please try again.")}</span>
               </div>
             </div>
           )}
@@ -392,6 +392,9 @@ export const SignInPage: React.FC = () => {
               </button>
             </div>
           </form>
+          <a href={authEndpoints.getGoogleAuthUrl(googleReturnUrl)} className="mt-3 flex items-center justify-center gap-2 rounded-md border border-ink-tertiary/30 p-2.5 text-sm font-semibold hover:border-accent-primary">
+            {text("Tiếp tục với Google", "Continue with Google")}
+          </a>
 
           <div className="mt-8 pt-4 border-t border-ink-tertiary/15 text-center text-xs text-ink-tertiary">
             <Link

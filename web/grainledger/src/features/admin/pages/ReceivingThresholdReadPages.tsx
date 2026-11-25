@@ -1,27 +1,49 @@
 import { useState } from "react";
+import { Scales } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { adminEndpoints } from "@/api/admin";
 import { ledgerEndpoints, type ReceivingThresholdScope } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
+import { RecordFeedback, RecordRefresh, RecordWorkspace } from "@/shared/ui/RecordWorkspace";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback, Panel, Workflow } from "@/shared/ui/Workflow";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { adminPaths } from "../paths";
 
 export function OwnReceivingThresholdPage() {
   const { t } = useTranslation();
+  const text = useWorkflowText();
   const user = useAuthStore(state => state.user);
   const query = useQuery({ queryKey: ["own-receiving-threshold", user?.id, user?.organizationId], queryFn: ledgerEndpoints.getOwnCompanyReceivingThreshold });
-  return <Workflow title={t("receivingThreshold.own")} description={t("receivingThreshold.applies")}>
-    <Panel title={user?.organizationName || t("receivingThreshold.own")}>
-      <Feedback error={query.error} pending={query.isPending} />
-      {query.data && <dl className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3"><dt>{t("receivingThreshold.effective")}</dt><dd className="font-display text-4xl font-bold text-accent-primary tabular-nums">{query.data.percentage}%</dd></div>
-        <div><dt className="text-ink-secondary">{t("receivingThreshold.source")}</dt><dd>{t(`receivingThreshold.scope.${query.data.source}`)}</dd></div>
-        <div><dt className="text-ink-secondary">{t("receivingThreshold.revision")}</dt><dd className="break-all font-mono text-sm">{query.data.revision}</dd></div>
+  return <RecordWorkspace section={text("Chính sách tiếp nhận nguyên liệu", "Material receiving policy")}
+    title={t("receivingThreshold.own")} description={t("receivingThreshold.applies")}
+    actions={<RecordRefresh pending={query.isFetching} onRefresh={() => { void query.refetch(); }} />}>
+    <section aria-labelledby="company-threshold-title" className="record-card rounded-xl">
+      <header className="record-card-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="record-icon-tile"><Scales aria-hidden="true" size={22} weight="bold" /></span>
+          <div className="min-w-0 break-words">
+            <h2 id="company-threshold-title" className="record-card-title">{t("receivingThreshold.effective")}</h2>
+            {user?.organizationName && <p className="mt-0.5 text-xs text-ink-secondary">{user.organizationName}</p>}
+          </div>
+        </div>
+        {query.data && <StatusBadge status="ACTIVE" label={t(`receivingThreshold.scope.${query.data.source}`)} />}
+      </header>
+      <RecordFeedback error={query.error} pending={query.isPending} label={text("Đang tải ngưỡng tiếp nhận…", "Loading the receiving threshold…")} />
+      {query.data && <dl className="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
+        <div>
+          <dt className="text-xs text-ink-secondary">{text("Tỷ lệ hao hụt cho phép", "Allowed loss percentage")}</dt>
+          <dd className="mt-1 font-mono text-3xl font-bold tabular-nums text-accent-primary [overflow-wrap:anywhere]">{query.data.percentage}%</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs text-ink-secondary">{t("receivingThreshold.revision")}</dt>
+          <dd className="mt-1 break-all font-mono text-sm">{query.data.revision}</dd>
+        </div>
       </dl>}
-    </Panel>
-  </Workflow>;
+    </section>
+  </RecordWorkspace>;
 }
 
 export function ReceivingThresholdHistoryPage() {

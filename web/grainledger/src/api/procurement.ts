@@ -27,6 +27,27 @@ export interface PlotSeasonReference extends PlotSeason, ReferenceVersion {
   seasonName: string;
 }
 
+export interface SprayDeclarationSummary {
+  id: string;
+  plotSeasonId: string;
+  plotCode: string | null;
+  seasonName: string | null;
+  appliedOn: string;
+  recordedAt: string;
+  itemCount: number;
+}
+
+export interface SprayDeclarationDetail {
+  id: string;
+  plotSeasonId: string;
+  appliedOn: string;
+  informationSource: string;
+  evidenceRef: string | null;
+  capturedAt: string;
+  recordedAt: string;
+  items: (SprayItemInput & { id: string })[];
+}
+
 export interface PlotListItem extends Omit<PlotResponse, "geometry">, ReferenceVersion {}
 
 interface ReferenceQuery extends PageQuery {
@@ -111,6 +132,28 @@ export interface ProcurementListResponse {
   hasMore: boolean;
 }
 
+export interface SourceLotDetail {
+  id: string;
+  lotId: string;
+  lotCode: string;
+  stage: string;
+  procurementId: string;
+  procurementCode: string;
+  plotSeasonId: string;
+  riceVariety: string;
+  plotCode: string | null;
+  farmerName: string | null;
+  seasonName: string | null;
+  initialNetMassKg: string;
+  moisturePercent: string;
+  receivingStatus: string;
+  usableStockKg: string;
+  currentStock: { currentStockLotId: string; currentStockLotCode: string; locationId: string; onHandKg: string; availableKg: string }[];
+  lineage: { lotId: string; lotCode: string; quantityKg: string }[];
+  sampleIds: string[];
+  confirmedLabReportIds: string[];
+}
+
 /**
  * Reference data types returned by GET /api/procurement-reference-data
  */
@@ -155,7 +198,7 @@ export const procurementEndpoints = {
     );
   },
   getSourceLot: (id: string) =>
-    apiFetch<unknown>(`/api/source-lots/${encodeURIComponent(id)}`),
+    apiFetch<SourceLotDetail>(`/api/source-lots/${encodeURIComponent(id)}`),
 
   // Farmers
   getFarmers: (params?: Record<string, string | number>) => {
@@ -170,7 +213,7 @@ export const procurementEndpoints = {
       body: JSON.stringify(req),
     }),
   checkFarmerDuplicate: (req: FarmerDuplicateRequest) =>
-    apiFetch<unknown>("/api/farmers/duplicate-check", {
+    apiFetch<{ items: { id: string; code: string; name: string; reasons: string[] }[]; hasMore: boolean }>("/api/farmers/duplicate-check", {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -200,7 +243,7 @@ export const procurementEndpoints = {
       body: JSON.stringify(req),
     }),
   checkPlotDuplicate: (req: PlotDuplicateRequest) =>
-    apiFetch<unknown>("/api/plots/duplicate-check", {
+    apiFetch<{ items: { id: string; code: string; distanceMeters: number; reasons: string[] }[]; hasMore: boolean }>("/api/plots/duplicate-check", {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -218,7 +261,7 @@ export const procurementEndpoints = {
     apiFetch<PlotResponse & { version: number; canEdit: boolean }>(`/api/plots/${encodeURIComponent(id)}`),
 
   // Crop Seasons
-  getCropSeasons: (params?: ReferenceQuery & { companyId?: string }) =>
+  getCropSeasons: (params?: ReferenceQuery & { companyId?: string; sortBy?: "name" | "startsOn"; sortDirection?: "asc" | "desc" }) =>
     apiFetch<ApiPage<CropSeasonReference>>(withApiQuery("/api/crop-seasons", params)),
   getCropSeason: (id: string) =>
     apiFetch<CropSeasonReference>(`/api/crop-seasons/${encodeURIComponent(id)}`),
@@ -260,9 +303,10 @@ export const procurementEndpoints = {
     }),
 
   // Spray Declarations
-  getSprayDeclarations: () => apiFetch<unknown>("/api/spray-declarations"),
+  getSprayDeclarations: (query?: PageQuery & { plotSeasonId?: string }) =>
+    apiFetch<Omit<ApiPage<SprayDeclarationSummary>, "totalCount">>(withApiQuery("/api/spray-declarations", query)),
   getSprayDeclaration: (id: string) =>
-    apiFetch<unknown>(`/api/spray-declarations/${encodeURIComponent(id)}`),
+    apiFetch<SprayDeclarationDetail>(`/api/spray-declarations/${encodeURIComponent(id)}`),
   recordSprayDeclaration: (req: RecordSprayDeclarationRequest) =>
     apiFetch<unknown>("/api/spray-declarations", {
       method: "POST",

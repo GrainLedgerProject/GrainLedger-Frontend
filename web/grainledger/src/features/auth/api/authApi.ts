@@ -1,4 +1,5 @@
 import { authEndpoints } from '@/api/auth';
+import { useAuthStore } from '@/app/store/authStore';
 import { profileEndpoints } from '@/api/profile';
 import type { UserProfile } from '@/shared/types/session';
 import { toUserProfile } from './sessionUser';
@@ -36,12 +37,11 @@ export const authApi = {
   /**
    * Log out session
    */
-  logout: async (): Promise<void> => {
-    try {
-      await authEndpoints.logout();
-    } catch {
-      // ignore
-    }
+  logout: async (allDevices = false): Promise<void> => {
+    const { sessionVersion } = useAuthStore.getState();
+    await (allDevices ? authEndpoints.logoutAll() : authEndpoints.logout());
+    const current = useAuthStore.getState();
+    if (current.sessionVersion === sessionVersion) current.logout();
   },
 
   /**

@@ -121,7 +121,7 @@ interface DraftData {
 const DRAFT_KEY = "SC15_OPERATION_ENTRY";
 
 export const OperationEntryPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { setHasUnsavedDrafts, user } = useAuthStore();
   const canWrite = user?.role === "MILL_OPERATOR" && user.permissions.includes("conversions.write");
   const { saveDraft, getDraft, clearDraft } = useDraftStore();
@@ -516,6 +516,12 @@ export const OperationEntryPage: React.FC = () => {
   };
 
   return (
+    <>
+    {canWrite && <div className="mb-4">
+      <Link to={millPaths.operationDrafts} className="font-semibold text-accent-primary underline">
+        {i18n.language.startsWith("en") ? "Multi-lot operations and drafts" : "Công đoạn nhiều lô và bản nháp"}
+      </Link>
+    </div>}
     <div className="space-y-6 pb-12">
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
@@ -1208,5 +1214,6 @@ export const OperationEntryPage: React.FC = () => {
         </div>
       </form>
     </div>
+    </>
   );
 };

@@ -1,6 +1,7 @@
 export const millPaths = {
   receiving: "/mill/receiving",
   operation: "/mill/operations/new",
+  operationDrafts: "/mill/operations/drafts",
   varianceReview: "/mill/operations/variance",
   stockTransfer: "/stock/transfer",
   requestCorrection: "/mill/corrections/new",

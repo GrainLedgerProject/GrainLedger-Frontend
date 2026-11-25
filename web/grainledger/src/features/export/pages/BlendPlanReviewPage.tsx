@@ -578,7 +578,7 @@ export function BlendPlanReviewContent({
               <label className="block space-y-2">
                 <span>{text("Lý do", "Reason")}</span>
                 <textarea
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                  className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                   required
                   maxLength={2000}
                   rows={3}

@@ -51,6 +51,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: devPort,
       proxy: {
+        "/api/auth/google": {
+          target: proxyTarget,
+          changeOrigin: false,
+        },
         "/api": {
           target: proxyTarget,
           changeOrigin: true,
@@ -63,7 +67,7 @@ export default defineConfig(({ mode }) => {
         },
         "/signin-google": {
           target: proxyTarget,
-          changeOrigin: true,
+          changeOrigin: false,
           secure: false,
         },
       },

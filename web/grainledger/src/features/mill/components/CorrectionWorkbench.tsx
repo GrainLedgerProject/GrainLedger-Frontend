@@ -7,6 +7,7 @@ import { useAuthStore } from "@/app/store/authStore";
 import { Modal } from "@/shared/ui/Modal";
 import { Feedback, Panel } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { toDecimal } from "@/shared/utils/decimalMass";
 import { type CorrectionRecord } from "../model/correction";
 import { CorrectionStatusBadge } from "./CorrectionStatusBadge";
 import { CorrectionEvidence, CorrectionEvidenceDownload } from "./CorrectionEvidence";
@@ -67,7 +68,8 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
   const needsConfirmation = r?.varianceKg !== undefined && Number(r.varianceKg) !== 0 && r.confirmedVersion !== r.version;
   const eligible = r?.status === "DRAFT" && r.ownerId === original.data?.ownerId && r.facilityId === original.data?.facilityId && (!r.boundCorrectionId || r.boundCorrectionId === correction.id);
   const reviewing = mutation.isPending || physical.isFetching || replacement.isFetching || original.isFetching;
-  const ready = canReview && open && Boolean(reason.trim() && evidenceId && positions?.length && verified && eligible && r?.version && reviewedVersion === r.version) && !reviewing;
+  const positionsValid = !!positions?.length && positions.every(row => /^[0-9]{1,14}(\.[0-9]{1,6})?$/.test(row.quantityKg) && toDecimal(row.quantityKg).gt(0));
+  const ready = canReview && open && Boolean(reason.trim() && evidenceId && positionsValid && verified && eligible && r?.version && reviewedVersion === r.version) && !reviewing;
   function submit(action: ReviewCommand["action"]) {
     if (busy.current || !open) return;
     if (action === "reconcile" && (!ready || needsConfirmation)) return;
@@ -99,14 +101,25 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
         <Panel title={text("Duyệt đối soát", "Reconcile correction")}>
           <button type="button" disabled={physical.isFetching} onClick={() => void loadPositions()}>{text("Tải vị trí tồn kho thực tế hiện tại", "Load current physical output positions")}</button>
           <Feedback pending={physical.isFetching}/>
-          {positions && <><PositionsTable positions={positions}/>{positions.length === 0 && <p role="alert">{text("Không có tồn đầu ra để đối soát.", "No output stock to reconcile.")}</p>}</>}
+          {positions && <>
+            {positions.map((row, i) => <fieldset key={`${row.lotId}:${row.locationId}`} className="rounded-lg border border-ink-tertiary/20 p-3">
+              <legend>{original.data?.outputs.find(output => output.id === row.lotId)?.code ?? row.lotId} · <span>{row.locationId}</span></legend>
+              <label>{text("Khối lượng thực tế đã kiểm tra (kg)", "Verified physical quantity (kg)")}
+                <input inputMode="decimal" pattern="[0-9]{1,14}([.][0-9]{1,6})?" required value={row.quantityKg} onChange={e => {
+                  setPositions(current => current?.map((position, index) => index === i ? { ...position, quantityKg: e.target.value } : position) ?? null);
+                  setVerified(false);
+                }} />
+              </label>
+            </fieldset>)}
+            {positions.length === 0 && <p role="alert">{text("Không có tồn đầu ra để đối soát.", "No output stock to reconcile.")}</p>}
+          </>}
           <label>{text("Bản nháp thay thế", "Replacement draft")}<select value={replacementId} onChange={e => { setReplacementId(e.target.value); setVerified(false); }}><option value=""/>
             {drafts.data?.filter(d => !d.boundCorrectionId || d.boundCorrectionId === correction.id).map(d => <option key={d.id} value={d.id}>{d.kind} · {d.outputs.map(o => o.code ?? o.stage).join(", ")} · {d.id}</option>)}
           </select></label>
           {drafts.data?.length === 0 && <p>{text("Nhân viên vận hành cần tạo bản nháp thay thế cùng chủ sở hữu và cơ sở.", "An operator must prepare a replacement draft with the same owner and facility.")}</p>}
           {r && <><OperationSummary operation={r}/><p className="break-all">{text("Phiên bản đang xem", "Reviewed version")}: {r.version}</p></>}
           {needsConfirmation && <p role="status">{text("Công đoạn thay thế có chênh lệch khác 0. Quản lý cần xác nhận đúng phiên bản và chứng cứ trước khi bàn giao chốt.", "The replacement has nonzero variance. A manager must confirm this version and evidence before commit handoff.")}</p>}
-          <label className="!flex-row items-start"><input type="checkbox" checked={verified && reviewedVersion === r?.version} disabled={!positions?.length || !eligible || reviewing} onChange={e => { setVerified(e.target.checked); setReviewedVersion(r?.version ?? ""); }}/>{text("Tôi đã kiểm tra mọi vị trí thực tế, chứng cứ và đúng phiên bản công đoạn thay thế trên.", "I verified all actual positions, evidence and the replacement version shown above.")}</label>
+          <label className="!flex-row items-start"><input type="checkbox" checked={verified && reviewedVersion === r?.version} disabled={!positionsValid || !eligible || reviewing} onChange={e => { setVerified(e.target.checked); setReviewedVersion(r?.version ?? ""); }}/>{text("Tôi đã kiểm tra mọi vị trí thực tế, chứng cứ và đúng phiên bản công đoạn thay thế trên.", "I verified all actual positions, evidence and the replacement version shown above.")}</label>
           {needsConfirmation && canConfirm && <button type="button" disabled={!ready} onClick={() => submit("confirm")}>{text("Xác nhận chênh lệch phiên bản thay thế", "Confirm replacement version variance")}</button>}
           <button type="button" disabled={!ready || needsConfirmation} onClick={() => submit("reconcile")}>{text("Duyệt đối soát", "Record reconciliation")}</button>
         </Panel>

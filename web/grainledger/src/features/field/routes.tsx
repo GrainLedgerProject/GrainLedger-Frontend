@@ -27,8 +27,10 @@ export const fieldRoutes = [
   screenRoute(fieldPaths.farmers, farmerRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
   screenRoute(fieldPaths.plots, plotRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
   screenRoute(fieldPaths.seasons, cropSeasonsPage, { roles: ["MILL_ADMIN", "CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
-  screenRoute(fieldPaths.declarations, pesticideDeclarationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
-  screenRoute(fieldPaths.receipts, procurementReceiptPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
-  screenRoute(fieldPaths.samples, fieldSampleRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
+  screenRoute(fieldPaths.declarations, pesticideDeclarationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
+  screenRoute(fieldPaths.receipts, procurementReceiptPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER", "MILL_ADMIN"] }),
+  screenRoute(fieldPaths.receipt, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.ProcurementDetailPage }))), { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
+  screenRoute(fieldPaths.sourceLot, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.SourceLotDetailPage }))), { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
+  screenRoute(fieldPaths.samples, fieldSampleRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
   screenRoute(fieldPaths.sync, offlineSyncQueuePage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "MILL_ADMIN"] }),
 ];

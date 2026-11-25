@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
+import { LabResidueReview } from "../components/LabResidueReview";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -123,6 +124,8 @@ function PublicationEditor({ mode, companyId, userId, initialReport, existing }:
         {options.map(item => <option key={item.id} value={item.id}>{item.reportNumber} · {item.laboratoryName}</option>)}
       </select></label>
       {report.data && <Link to={labResultPath(report.data.id)}>{t("workflows.residue.viewReport")}</Link>}
+      {report.data?.status === "CONFIRMED" && report.data.companyId === companyId &&
+        <LabResidueReview key={report.data.id} report={report.data} companyId={companyId} />}
       <div className="flex flex-wrap gap-2"><button type="button" disabled={page === 1 || reports.isFetching} onClick={() => setPage(page - 1)}>{t("field.seasons.prev")}</button><button type="button" disabled={!reports.data?.hasMore || reports.isFetching} onClick={() => setPage(page + 1)}>{t("field.seasons.next")}</button></div>
     </div>}
     <Feedback error={catalogError} pending={mode === "group" ? substances.isPending : reports.isFetching || report.isFetching || candidates.isFetching} />

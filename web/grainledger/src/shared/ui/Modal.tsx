@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 export interface ModalProps {
@@ -6,6 +6,7 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   ariaLabel?: string;
+  ariaLabelledBy?: string;
   className?: string;
   closeOnBackdrop?: boolean;
   closedBy?: "any" | "closerequest" | "none";
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   ariaLabel = "Hộp thoại",
+  ariaLabelledBy,
   className = "",
   closeOnBackdrop = true,
   closedBy = "closerequest",
@@ -29,12 +31,18 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog || !isOpen) return;
+    const doc = dialog.ownerDocument;
+    const previousFocus = doc.activeElement;
     dialog.showModal();
     return () => {
       if (dialog.open) dialog.close();
+      // Closing via React can remove the dialog before the browser restores focus.
+      if (doc.activeElement === doc.body && previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus({ preventScroll: true });
+      }
     };
   }, [isOpen]);
 
@@ -43,7 +51,8 @@ export const Modal: React.FC<ModalProps> = ({
     <dialog
       ref={dialogRef}
       closedby={closedBy}
-      aria-label={ariaLabel}
+      aria-label={ariaLabelledBy ? undefined : ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={`grain-modal app-workspace ${className}`}
       onCancel={(event) => {
         event.preventDefault();

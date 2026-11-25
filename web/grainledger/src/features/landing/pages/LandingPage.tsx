@@ -7,6 +7,7 @@
  * and high-performance code-split sections.
  */
 import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 import {
   Navbar,
@@ -20,6 +21,10 @@ import {
 } from "../components";
 
 export const LandingPage: React.FC = () => {
+  const { search } = useLocation();
+  if (new URLSearchParams(search).has("authError")) {
+    return <Navigate to={`/sign-in${search}`} replace />;
+  }
   return (
     <div className="min-h-screen bg-surface-base dark:bg-canvas-dark text-ink-primary dark:text-canvas-light font-sans selection:bg-accent-primary/20 selection:text-accent-primary transition-colors duration-300">
       {/* 1. Sticky Apple Liquid Glass Navbar */}

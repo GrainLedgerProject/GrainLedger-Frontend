@@ -6,6 +6,8 @@ import { useAuthStore } from "@/app/store/authStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { ResidueProfileEditor } from "../components/ResidueProfileEditor";
 import {
   ArrowRight,
   ArrowsClockwise,
@@ -28,12 +30,13 @@ const panel =
 const button =
   "p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors";
 const field =
-  "w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
+  "w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
 const alert =
   "flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger";
 
 export function ResidueProfilesPage() {
   const { t, i18n } = useTranslation();
+  const text = useWorkflowText();
   const user = useAuthStore((state) => state.user);
   const cache = useQueryClient();
   const [search, setSearch] = useState("");
@@ -43,6 +46,7 @@ export function ResidueProfilesPage() {
   const [retiring, setRetiring] = useState(false);
   const [reason, setReason] = useState("");
   const [notice, setNotice] = useState("");
+  const [editor, setEditor] = useState<{ source: ResidueProfileVersion | null } | null>(null);
   const scope = [
     user?.id,
     user?.organizationId,
@@ -67,6 +71,9 @@ export function ResidueProfilesPage() {
     retry: false,
   });
   const selected = detail.data;
+  const mayPublish = user?.permissions.includes("residue.policy.manage") ||
+    Boolean(user?.organizationId && user.permissions.includes("residue.company-policy.manage"));
+  const publicationCompanyId = user?.permissions.includes("residue.policy.manage") ? null : user?.organizationId ?? null;
   const mayRetire =
     selected &&
     !selected.retirement &&
@@ -185,6 +192,9 @@ export function ResidueProfilesPage() {
             )}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {mayPublish && <button type="button" className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white"
+          onClick={() => setEditor({ source: null })}>{text("Tạo hồ sơ", "New profile")}</button>}
         <button
           type="button"
           className={`${button} shrink-0 self-start bg-surface-base sm:self-auto rounded-full`}
@@ -199,6 +209,7 @@ export function ResidueProfilesPage() {
             }
           />
         </button>
+        </div>
       </header>
       {notice && (
         <div
@@ -846,7 +857,11 @@ export function ResidueProfilesPage() {
                   </div>
                 )}
                 {mayRetire && !retiring && (
-                  <div className="flex justify-end border-t border-ink-tertiary/15 pt-4">
+                  <div className="flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
+                    {!profiles.data?.items.some(item => item.code === selected.code &&
+                      (item.companyId ?? null) === (selected.companyId ?? null) && Number(item.versionNo) > Number(selected.versionNo)) &&
+                      <button type="button" className={button} disabled={detail.isFetching}
+                        onClick={() => setEditor({ source: selected })}>{text("Tạo phiên bản kế tiếp", "Create next version")}</button>}
                     <button
                       type="button"
                       className={`${button} border-accent-danger/30 text-accent-danger hover:bg-accent-danger/5`}
@@ -930,6 +945,14 @@ export function ResidueProfilesPage() {
           </div>
         </div>
       </Modal>
+      {editor && <ResidueProfileEditor source={editor.source}
+        companyId={editor.source ? editor.source.companyId ?? null : publicationCompanyId}
+        onClose={() => setEditor(null)} onSaved={record => {
+          cache.setQueryData(["residue-profile", ...scope, record.id], record);
+          setEditor(null);
+          setSelectedId(record.id);
+          void cache.invalidateQueries({ queryKey: listKey });
+        }} />}
     </div>
   );
 }

@@ -21,6 +21,7 @@ const stockOverviewPage = lazyScreen(() =>
 export const millRoutes = [
   screenRoute(millPaths.receiving, receivingTasksPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
   screenRoute(millPaths.operation, operationEntryPage, { roles: ["MILL_OPERATOR", "MILL_MANAGER", "MILL_ADMIN"] }),
+  screenRoute(millPaths.operationDrafts, lazyScreen(() => import("./pages/OperationDraftsPage").then(m => ({ default: m.OperationDraftsPage }))), { roles: ["MILL_OPERATOR"], permission: "conversions.write" }),
   screenRoute(millPaths.varianceReview, lazyScreen(() => import("./pages/VarianceReviewPage").then(module => ({ default: module.VarianceReviewPage }))), { roles: ["MILL_OPERATOR", "MILL_MANAGER"] }),
   screenRoute(millPaths.stockTransfer, lazyScreen(() => import("./pages/StockTransferPage").then(module => ({ default: module.StockTransferPage }))), { roles: ["MILL_OPERATOR"] }),
   screenRoute(millPaths.requestCorrection, correctionRequestPage, { roles: ["MILL_OPERATOR"], permission: requestCorrectionPermission }),

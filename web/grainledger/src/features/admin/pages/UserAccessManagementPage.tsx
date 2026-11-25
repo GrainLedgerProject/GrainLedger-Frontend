@@ -1,5 +1,6 @@
 import {
   adminEndpoints,
+  type AdminRoleDto,
   type AdminUserDto,
   type OrganizationDto,
 } from "@/api/admin";
@@ -7,7 +8,8 @@ import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { RoleChip } from "@/shared/ui/RoleChip";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
-import { ROLE_DEFINITIONS, type UserRole } from "@/shared/types/roles";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { ROLE_DEFINITIONS, normalizeUserRole } from "@/shared/types/roles";
 import {
   ArrowsClockwise,
   Buildings,
@@ -24,8 +26,10 @@ import { useTranslation } from "react-i18next";
 
 export const UserAccessManagementPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const text = useWorkflowText();
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationDto[]>([]);
+  const [roles, setRoles] = useState<AdminRoleDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +37,14 @@ export const UserAccessManagementPage: React.FC = () => {
 
   // Edit Access Modal
   const [selectedUser, setSelectedUser] = useState<AdminUserDto | null>(null);
-  const [role, setRole] = useState<string>("MILL_OPERATOR");
+  const [role, setRole] = useState("");
   const [organizationId, setOrganizationId] = useState<string>("");
   const [isActive, setIsActive] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [reloadCount, setReloadCount] = useState(0);
+  const organizationKind = organizations.find(org => org.id === organizationId)?.kind;
+  const availableRoles = roles.filter(entry => entry.organizationKind === organizationKind);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -48,11 +54,12 @@ export const UserAccessManagementPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    Promise.all([adminEndpoints.getUsers(), adminEndpoints.getOrganizations()])
-      .then(([usersRes, orgsRes]) => {
+    Promise.all([adminEndpoints.getUsers(), adminEndpoints.getOrganizations(), adminEndpoints.getRoles()])
+      .then(([usersRes, orgsRes, rolesRes]) => {
         if (!active) return;
         setUsers(Array.isArray(usersRes) ? usersRes : []);
         setOrganizations(Array.isArray(orgsRes) ? orgsRes : []);
+        setRoles(rolesRes);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -77,14 +84,14 @@ export const UserAccessManagementPage: React.FC = () => {
 
   const handleOpenEdit = (user: AdminUserDto) => {
     setSelectedUser(user);
-    setRole(user.role || "MILL_OPERATOR");
-    setOrganizationId(user.organizationId || organizations[0]?.id || "");
+    setRole(user.role || "");
+    setOrganizationId(user.organizationId || "");
     setIsActive(user.isActive);
   };
 
   const handleSaveAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser) return;
+    if (!selectedUser || (organizationId && !availableRoles.some(entry => entry.name === role))) return;
 
     setSubmitting(true);
     setError(null);
@@ -95,7 +102,7 @@ export const UserAccessManagementPage: React.FC = () => {
           "Thiếu phiên bản quyền truy cập. Hãy tải lại danh sách người dùng.",
         );
       await adminEndpoints.updateUserAccess(selectedUser.id, etag, {
-        role,
+        role: role || null,
         organizationId: organizationId || null,
         isActive,
       });
@@ -278,7 +285,7 @@ export const UserAccessManagementPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       {u.role ? (
-                        <RoleChip role={u.role as UserRole} showCode />
+                        <RoleChip role={normalizeUserRole(u.role)} showCode />
                       ) : (
                         <span className="text-ink-tertiary italic">
                           {t("admin.users.noRole", "Chưa cấp vai trò")}
@@ -352,32 +359,40 @@ export const UserAccessManagementPage: React.FC = () => {
 
             <form onSubmit={handleSaveAccess} className="p-5 space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
+                <label htmlFor="access-role" className="block font-semibold text-ink-secondary mb-1">
                   {t("admin.users.roleLabel", "Vai trò nghiệp vụ (Role) *")}
                 </label>
                 <select
+                  id="access-role"
+                  name="role"
+                  required={Boolean(organizationId)}
+                  disabled={!organizationId}
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
-                  {(Object.keys(ROLE_DEFINITIONS) as UserRole[]).map((rKey) => (
-                    <option key={rKey} value={rKey}>
-                      [{ROLE_DEFINITIONS[rKey].code}]{" "}
-                      {i18n.language.startsWith("en")
-                        ? ROLE_DEFINITIONS[rKey].labelEn
-                        : ROLE_DEFINITIONS[rKey].labelVi}
-                    </option>
-                  ))}
+                  <option value="" disabled={Boolean(organizationId)}>{text("Chọn vai trò", "Choose a role")}</option>
+                  {availableRoles.map(entry => {
+                    const definition = ROLE_DEFINITIONS[normalizeUserRole(entry.name)];
+                    return <option key={entry.name} value={entry.name}>
+                      {i18n.language.startsWith("en") ? definition.labelEn : definition.labelVi}
+                    </option>;
+                  })}
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
+                <label htmlFor="access-org" className="block font-semibold text-ink-secondary mb-1">
                   {t("admin.users.orgLabel", "Thuộc Doanh nghiệp / Tổ chức *")}
                 </label>
                 <select
+                  id="access-org"
+                  name="organizationId"
                   value={organizationId}
-                  onChange={(e) => setOrganizationId(e.target.value)}
+                  onChange={(e) => {
+                    setOrganizationId(e.target.value);
+                    setRole("");
+                  }}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   <option value="">

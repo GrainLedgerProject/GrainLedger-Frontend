@@ -28,7 +28,8 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
   const key = ["operation-variance", userId];
   const queue = useQuery({ queryKey: [...key, "queue", page, confirm], queryFn: async () => {
     const data = await ledgerEndpoints.getOperations({ page, pageSize: 20, status: "DRAFT", queueOnly: confirm || undefined });
-    return { items: pageItems<CorrectionOperation>(data).filter(row => !row.boundCorrectionId), hasMore: !Array.isArray(data) && Boolean((data as ApiPage<CorrectionOperation>).hasMore) };
+    return { items: pageItems<CorrectionOperation>(data).filter(row => !row.boundCorrectionId && !row.outputs.some(output => output.originalLotId)),
+      hasMore: !Array.isArray(data) && Boolean((data as ApiPage<CorrectionOperation>).hasMore) };
   } });
   const detail = useQuery({ queryKey: [...key, "detail", id], queryFn: async () => await ledgerEndpoints.getOperation(id) as CorrectionOperation, enabled: Boolean(id) });
   const lookup = useQuery({ queryKey: [...key, "lookup"], queryFn: async () => await ledgerEndpoints.getLookups() as SetupApiResponse });

@@ -6,8 +6,16 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ledgerEndpoints } from "@/api/ledger";
+import type { LoadingEdge } from "@/api/containerExecution";
+import { useAuthStore } from "@/app/store/authStore";
+import { labResultPath } from "@/features/compliance/paths";
+import { receiptPath, sourceLotPath } from "@/features/field/paths";
+import { ActualLoading } from "../components/ActualLoading";
+import { ResidueBounds } from "../components/ResidueBounds";
+import { TraceLabStart } from "../components/TraceLabStart";
+import { riskPaths } from "../paths";
 import { Feedback, Panel } from "@/shared/ui/Workflow";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
@@ -36,6 +44,11 @@ interface TraceResult {
   asOf: string;
   sourceContributionsVisible?: boolean;
   positivePathCoverage?: string;
+  root?: { id: string };
+  labOrigin?: { reportId: string; resultId: string; lotId: string };
+  loadingEdges?: LoadingEdge[];
+  actualContainers?: { containerId: string; code: string; linkedLoadedKg: string; status: string; held: boolean; restricted?: boolean }[];
+  corrections?: { id: string; status: string; originalOperationId: string; replacementOperationId: string | null }[];
   lots: {
     id: string;
     code: string;
@@ -67,9 +80,17 @@ interface TraceResult {
   sources: {
     lotId: string;
     provenance: {
+      sourceRecordId?: string;
+      procurementId?: string;
+      procurementItemId?: string;
       procurementCode: string;
       plotId: string;
       farmerId: string;
+      seasonId?: string;
+      plotSeasonId?: string;
+      expectedKg?: string;
+      originalValue?: string;
+      originalUnit?: string;
       riceVariety: string;
       currentReferenceLabels?: {
         farmerName?: string;
@@ -81,6 +102,10 @@ interface TraceResult {
 }
 export function TraceabilityPage() {
   const text = useWorkflowText();
+  const user = useAuthStore(s => s.user);
+  const canReadLab = user?.permissions.some(p => p === "lab.read" || p === "lab.write");
+  const canOpenReceipt = user?.role === "CUSTOMER_MANAGER";
+  const [choosingLab, setChoosingLab] = useState(false);
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState("all");
@@ -405,6 +430,15 @@ export function TraceabilityPage() {
           className="min-w-0 scroll-mt-20 rounded-2xl"
         >
           <Panel title={text("Kết quả truy vết", "Trace result")}>
+            {canReadLab && <div className="gl-workflow space-y-2">
+              <button type="button" aria-expanded={choosingLab} onClick={() => setChoosingLab(open => !open)}>
+                {text("Chọn kết quả phòng xét nghiệm", "Select a lab result")}
+              </button>
+              {choosingLab && <TraceLabStart onSelect={(reportId, resultId) => {
+                setParams({ reportId, resultId, view }, { preventScrollReset: true });
+                setChoosingLab(false);
+              }} />}
+            </div>}
             <div className="grid grid-cols-2 gap-3">
               <select
                 aria-label={text("Hướng truy vết", "Trace direction")}
@@ -433,6 +467,25 @@ export function TraceabilityPage() {
                 <Feedback pending={trace.isFetching} error={trace.error} />
                 {r && (
                   <>
+                    {r.labOrigin && <p className="text-sm">
+                      <Link className="text-accent-primary underline" to={labResultPath(r.labOrigin.reportId)}>{text("Kết quả lab khởi đầu", "Starting lab report")}</Link>
+                      {" · "}{r.labOrigin.resultId}
+                    </p>}
+                    {(r.root?.id || lot) && <ResidueBounds lotId={r.root?.id || lot} />}
+                    {!!r.actualContainers?.length && <section className="space-y-2">
+                      <h3 className="font-semibold">{text("Container đã thực xếp", "Actual container targets")}</h3>
+                      <ul className="space-y-1">{r.actualContainers.map(container => <li key={container.containerId}>
+                        <Link className="text-accent-primary underline" to={`${riskPaths.containerTrace}?container=${encodeURIComponent(container.containerId)}`}>{container.code}</Link>
+                        {" · "}{container.linkedLoadedKg} kg · {container.status}{container.held || container.restricted ? " · HOLD" : ""}
+                      </li>)}</ul>
+                    </section>}
+                    {!!r.loadingEdges?.length && <ActualLoading names={names} edges={r.loadingEdges} />}
+                    {!!r.corrections?.length && <details>
+                      <summary>{text("Tham chiếu điều chỉnh sổ cái", "Ledger correction references")}</summary>
+                      <ul>{r.corrections.map(row => <li key={row.id} className="break-all text-xs">
+                        {row.status} · {row.originalOperationId} → {row.replacementOperationId ?? "—"}
+                      </li>)}</ul>
+                    </details>}
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <span
                         className={`rounded-full px-2.5 py-1 font-semibold ${r.complete ? "bg-functional-balanced-bg text-accent-primary" : "bg-functional-stale-bg text-accent-warning"}`}
@@ -653,6 +706,15 @@ export function TraceabilityPage() {
                               <p className="break-all font-mono font-semibold">
                                 {names.get(lotId) ?? lotId}
                               </p>
+                              {provenance && <details className="mt-2">
+                                <summary>{text("Chi tiết nguồn gốc", "Provenance details")}</summary>
+                                <p className="break-all">{text("Thu mua", "Procurement")} · {canOpenReceipt && provenance.procurementId
+                                  ? <Link className="text-accent-primary underline" to={receiptPath(provenance.procurementId)}>{provenance.procurementCode}</Link>
+                                  : provenance.procurementCode} · {provenance.procurementItemId}</p>
+                                <p className="break-all">{text("Nông hộ / thửa / mùa vụ", "Farmer / plot / season")} · {provenance.farmerId} · {provenance.plotId} · {provenance.seasonId}</p>
+                                <p>{provenance.riceVariety} · {provenance.originalValue} {provenance.originalUnit} · {provenance.expectedKg} kg</p>
+                                {canOpenReceipt && provenance.sourceRecordId && <Link className="text-accent-primary underline" to={sourceLotPath(provenance.sourceRecordId)}>{text("Mở lô nguồn và mẫu", "Open source lot and samples")}</Link>}
+                              </details>}
                               <p className="break-words text-xs text-ink-secondary">
                                 {provenance
                                   ? [

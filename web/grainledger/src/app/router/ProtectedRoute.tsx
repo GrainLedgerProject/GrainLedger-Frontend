@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/app/store/authStore";
 import { RoleChip } from "@/shared/ui/RoleChip";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import type { UserRole } from "@/shared/types/roles";
 import { ArrowLeft, ShieldWarning } from "@phosphor-icons/react";
 import React, { type ReactNode } from "react";
@@ -16,13 +17,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles,
   requiredPermission,
 }) => {
-  const { isAuthenticated, user, accessToken } = useAuthStore();
+  const { isAuthenticated, user, accessToken, cookieSession, isLoading } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // If not authenticated, or no user profile, or no accessToken, redirect to sign-in with returnUrl
-  // In offline mode: ONLY allow access into protected routes (/home, etc.) if a valid accessToken value exists!
-  if (!isAuthenticated || !user || !accessToken) {
+  if (isLoading) return <GrainLoader size="md" />;
+  if (!isAuthenticated || !user || (!accessToken && !cookieSession)) {
     if (location.pathname.startsWith("/sign-in")) {
       return null;
     }

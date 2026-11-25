@@ -74,7 +74,7 @@ export const residueEndpoints = {
     reportId: string,
     request: ResidueReportReviewRequest,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueReportReview>(
       `/api/lab-reports/${encodeURIComponent(reportId)}/residue-review/preview`,
       { method: "POST", body: JSON.stringify(request) },
     ),
@@ -82,7 +82,7 @@ export const residueEndpoints = {
     reportId: string,
     request: ResidueReportReviewRequest,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueReportReview>(
       `/api/lab-reports/${encodeURIComponent(reportId)}/residue-review/confirm`,
       { method: "POST", body: JSON.stringify(request) },
     ),
@@ -193,6 +193,23 @@ export interface ResidueReportReviewRow {
   supersedesId?: null | string;
   note?: null | string;
   previewFingerprint?: null | string;
+}
+
+export interface ResidueReportReview {
+  reportId: string;
+  effectiveFrom: string;
+  rows: {
+    input: ResidueReportReviewRow;
+    label: string;
+    rawUncertainty: string | null;
+    profile: ResidueProfileVersion | null;
+    setting: ResiduePolicySettingVersion | null;
+    assessment: { lower: string | null; upper: string | null; unit: string } | null;
+    reasons: string[];
+    conflictingResults: { resultId: string; label: string }[];
+    existingSelections: { selectionId: string; label: string }[];
+    published: boolean;
+  }[];
 }
 
 export interface ResidueReportSelection {

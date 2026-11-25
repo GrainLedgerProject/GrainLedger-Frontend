@@ -23,7 +23,7 @@ export const complianceRoutes = [
   screenRoute(compliancePaths.newSample, createElement(labSampleRegistrationPage, { defaultTab: "CREATE" }), { roles: ["CUSTOMER_MANAGER"] }),
   screenRoute(compliancePaths.results, mrlComplianceCheckPage, { roles: ["CUSTOMER_MANAGER"] }),
   screenRoute(compliancePaths.result, mrlComplianceCheckPage, { roles: ["CUSTOMER_MANAGER"] }),
-  screenRoute(compliancePaths.safetyMargin, safetyMarginPolicyPage, { roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"] }),
+  screenRoute(compliancePaths.safetyMargin, safetyMarginPolicyPage, { roles: ["CUSTOMER_MANAGER"] }),
   screenRoute(compliancePaths.profiles, residueProfilesPage),
   screenRoute(compliancePaths.residueEvidence, lazyScreen(() => import("./pages/ResidueEvidencePage").then(module => ({ default: module.ResidueEvidencePage }))), { roles: ["CUSTOMER_MANAGER"], permission: "residue.evidence.manage" }),
   screenRoute(compliancePaths.companyPolicies, companyResiduePoliciesPage),

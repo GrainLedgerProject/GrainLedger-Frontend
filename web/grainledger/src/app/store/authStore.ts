@@ -15,6 +15,7 @@ interface AuthState {
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
+  cookieSession: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
   hasUnsavedDrafts: boolean;
@@ -24,6 +25,7 @@ interface AuthState {
   setTokens: (access: string | null, refresh: string | null, rememberMe?: boolean) => void;
   setHasUnsavedDrafts: (hasDrafts: boolean) => void;
   loginSuccess: (user: UserProfile, tokens: { access: string; refresh: string }, rememberMe?: boolean) => void;
+  restoreBrowserSession: (user: UserProfile) => void;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
@@ -71,6 +73,9 @@ if (!initialUser && initialAccessCookie && isJwtValidFormat(initialAccessCookie)
 
 const resolvedAccess = initialAccessCookie || null;
 const resolvedRefresh = initialRefreshCookie || null;
+const restoreOnLoad = Boolean(getCookie(COOKIE_KEYS.USER_SESSION)) ||
+  (typeof window !== "undefined" && window.location.pathname === "/sign-in" &&
+    new URLSearchParams(window.location.search).get("google") === "complete");
 
 // Only authenticate if user profile exists AND a valid accessToken value is present
 const isSessionAuthenticated = Boolean(
@@ -84,8 +89,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: initialUser,
   accessToken: resolvedAccess,
   refreshToken: resolvedRefresh,
+  cookieSession: false,
   isAuthenticated: isSessionAuthenticated,
-  isLoading: false,
+  isLoading: restoreOnLoad,
   hasUnsavedDrafts: false,
 
   setUser: (user) => {
@@ -96,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set((state) => ({
       user,
-      isAuthenticated: Boolean(user && state.accessToken && isJwtValidFormat(state.accessToken)),
+      isAuthenticated: Boolean(user && (state.cookieSession || (state.accessToken && isJwtValidFormat(state.accessToken)))),
     }));
   },
 
@@ -133,6 +139,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const refreshDays = 30;
 
     // Store exclusively in Cookies
+    deleteCookie(COOKIE_KEYS.USER_SESSION);
     setCookie(COOKIE_KEYS.USER, JSON.stringify(user), accessDays);
     setCookie(COOKIE_KEYS.ACCESS_TOKEN, access, accessDays);
     setCookie(COOKIE_KEYS.REFRESH_TOKEN, refresh, refreshDays);
@@ -143,6 +150,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: Boolean(user && access && isJwtValidFormat(access)),
       accessToken: access,
       refreshToken: refresh,
+      cookieSession: false,
+      isLoading: false,
+    }));
+  },
+
+  restoreBrowserSession: (user) => {
+    clearAuthCookies();
+    setCookie(COOKIE_KEYS.USER_SESSION, "1", 1);
+    set(state => ({
+      sessionVersion: state.sessionVersion + 1,
+      user,
+      accessToken: null,
+      refreshToken: null,
+      cookieSession: true,
+      isAuthenticated: true,
       isLoading: false,
     }));
   },
@@ -172,7 +194,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      cookieSession: false,
       isAuthenticated: false,
+      isLoading: false,
       hasUnsavedDrafts: false,
     }));
   },

@@ -1,5 +1,10 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState, useCallback, useId, useRef } from "react";
+import React, { useEffect, useState, useCallback, useId } from "react";
+import { selectSessionOwner } from "@/app/store/sessionOwner";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { DuplicateWarning } from "../components/DuplicateWarning";
+import { captureWasRejected, loadPendingCapture, submitPendingCapture } from "../offline/pendingCapture";
+import { fieldPaths } from "../paths";
 import { useTranslation } from "react-i18next";
 import { procurementEndpoints, type RegisterFarmerRequest } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
@@ -41,6 +46,9 @@ interface FarmerRecord {
 export const FarmerRegistrationPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const text = useWorkflowText();
+  const owner = selectSessionOwner({ user });
+  const storageKey = owner ? `grainledger:farmer:${owner}` : "";
   const isOnline = useUiStore((state) => state.isOnline);
   const [farmers, setFarmers] = useState<FarmerRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +66,7 @@ export const FarmerRegistrationPage: React.FC = () => {
   });
   const [formError, setFormError] = useState<Error | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const pendingRegistration = useRef<RegisterFarmerRequest | null>(null);
+  const [pendingRegistration, setPendingRegistration] = useState<RegisterFarmerRequest | null>(null);
 
   // Manual reload / refresh handler used by user actions (reload button, submit, delete)
   const loadFarmers = useCallback(async () => {
@@ -154,10 +162,9 @@ export const FarmerRegistrationPage: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingFarmer(null);
     setFormError(null);
-    setFormData({
-      name: "",
-      contact: "",
-    });
+    const pending = storageKey ? loadPendingCapture<RegisterFarmerRequest>(storageKey) ?? pendingRegistration : pendingRegistration;
+    setPendingRegistration(pending);
+    setFormData({ name: pending?.payload?.name ?? "", contact: pending?.payload?.contact ?? "" });
     setIsModalOpen(true);
   };
 
@@ -207,19 +214,16 @@ export const FarmerRegistrationPage: React.FC = () => {
           ),
         );
       } else {
-        const pending = pendingRegistration.current;
-        const request = pending?.payload?.name === name && pending.payload.contact === contact
-          ? pending
-          : {
+        const request = pendingRegistration ?? {
               deviceId: "grainledger-web",
               clientOperationId: crypto.randomUUID(),
               capturedAt: new Date().toISOString(),
               payloadSchemaVersion: 2,
               payload: { entityId: crypto.randomUUID(), code: null, name, contact },
             };
-        pendingRegistration.current = request;
-        const farmer = await procurementEndpoints.createFarmer(request);
-        pendingRegistration.current = null;
+        setPendingRegistration(request);
+        const farmer = await (storageKey ? submitPendingCapture(storageKey, request, procurementEndpoints.createFarmer) : procurementEndpoints.createFarmer(request));
+        setPendingRegistration(null);
         setSuccessMsg(
           t(
             "field.farmer.registeredSuccess",
@@ -235,6 +239,7 @@ export const FarmerRegistrationPage: React.FC = () => {
       setIsModalOpen(false);
       await loadFarmers();
     } catch (err: unknown) {
+      if (!editingFarmer && captureWasRejected(err)) setPendingRegistration(null);
       setFormError(err instanceof Error ? err : new Error(t("field.farmer.errAction", "Thao tác không thành công.")));
     } finally {
       setSubmitting(false);
@@ -467,11 +472,11 @@ export const FarmerRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <span className="inline-flex items-center gap-1 font-mono text-xs">
                         <MapPin size={13} className="text-accent-primary" />
-                        <span>
-                          {t("field.farmer.plotsUnit", "{{count}} thửa", {
-                            count: farmer.totalPlots ?? 1,
-                          })}
-                        </span>
+                        <a className="underline underline-offset-2"
+                          href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}>
+                          {farmer.totalPlots == null ? text("Xem thửa ruộng", "View plots") :
+                            t("field.farmer.plotsUnit", "{{count}} thửa", { count: farmer.totalPlots })}
+                        </a>
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -559,6 +564,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                 type="text"
                 required
                 value={formData.name}
+                disabled={submitting || (!editingFarmer && Boolean(pendingRegistration))}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
@@ -578,6 +584,7 @@ export const FarmerRegistrationPage: React.FC = () => {
                 id={`${formId}-contact`}
                 type="text"
                 value={formData.contact}
+                disabled={submitting || (!editingFarmer && Boolean(pendingRegistration))}
                 onChange={(e) =>
                   setFormData({ ...formData, contact: e.target.value })
                 }
@@ -586,6 +593,9 @@ export const FarmerRegistrationPage: React.FC = () => {
               />
             </div>
 
+            <DuplicateWarning request={isModalOpen && isOnline && !submitting && (editingFarmer || !pendingRegistration) && formData.name.trim().length >= 2
+              ? { name: formData.name.trim(), contact: formData.contact.trim() || null, excludeId: editingFarmer?.id ?? null } : null} />
+            {!editingFarmer && pendingRegistration && !submitting && <p role="status">{text("Lưu lại để gửi đúng yêu cầu đang chờ.", "Save again to retry the pending request.")}</p>}
             <Feedback error={formError} />
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button

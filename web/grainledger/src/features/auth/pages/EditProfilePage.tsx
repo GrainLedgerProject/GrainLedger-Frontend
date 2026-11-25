@@ -1,4 +1,9 @@
 import { useAuthStore } from "@/app/store/authStore";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { confirmAction } from "@/app/store/feedbackStore";
+import { Feedback } from "@/shared/ui/Workflow";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { RoleChip } from "@/shared/ui/RoleChip";
@@ -26,6 +31,21 @@ import { useTranslation } from "react-i18next";
 
 export const EditProfilePage: React.FC = () => {
   const { t } = useTranslation();
+  const text = useWorkflowText();
+  const navigate = useNavigate();
+  const signOutAll = useMutation({
+    mutationFn: () => authApi.logout(true),
+    onSuccess: () => navigate("/sign-in", { replace: true }),
+  });
+  const handleSignOutAll = async () => {
+    if (signOutAll.isPending) return;
+    if (await confirmAction({
+      title: text("Đăng xuất trên mọi thiết bị?", "Sign out on all devices?"),
+      description: text("Tất cả phiên đăng nhập của bạn sẽ bị thu hồi.", "All your active sessions will be revoked."),
+      confirmLabel: text("Đăng xuất mọi thiết bị", "Sign out on all devices"),
+      variant: "danger",
+    })) signOutAll.mutate();
+  };
   const { user, updateProfile } = useAuthStore();
   const { language, setLanguage } = useUiStore();
 
@@ -299,6 +319,14 @@ export const EditProfilePage: React.FC = () => {
             </button>
           </div>
         </form>
+        <section className="space-y-3 border-t border-ink-tertiary/20 pt-4">
+          <h2 className="font-semibold">{text("Phiên đăng nhập", "Sessions")}</h2>
+          <Feedback error={signOutAll.error} pending={signOutAll.isPending} />
+          <button type="button" disabled={signOutAll.isPending} onClick={() => void handleSignOutAll()}
+            className="rounded-md border border-accent-danger/40 px-4 py-2 text-sm font-semibold text-accent-danger disabled:opacity-60">
+            {text("Đăng xuất trên mọi thiết bị", "Sign out on all devices")}
+          </button>
+        </section>
       </div>
     </SettingsLayout>
   );

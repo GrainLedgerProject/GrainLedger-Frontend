@@ -14,6 +14,7 @@ export function configureApplicationApi() {
         ownerKey: selectSessionOwner(state),
         accessToken: state.accessToken || getCookie(COOKIE_KEYS.ACCESS_TOKEN),
         refreshToken: state.refreshToken || getCookie(COOKIE_KEYS.REFRESH_TOKEN),
+        cookieSession: state.cookieSession,
       };
     },
     apply(tokens) {

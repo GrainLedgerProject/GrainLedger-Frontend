@@ -11,6 +11,7 @@ import { getApiUrl } from "./config";
 
 export interface ApiFetchOptions extends RequestInit {
   responseType?: "json" | "blob" | "text";
+  browserSession?: boolean;
   onResponse?: (response: Response) => void;
 }
 
@@ -57,6 +58,21 @@ function assertSameSession(start: ApiSession) {
 }
 
 let activeRefresh: { session: ApiSession; result: Promise<string | null> } | undefined;
+let activeCsrf: { session: ApiSession; result: Promise<string> } | undefined;
+
+function requestCsrf(session: ApiSession) {
+  if (activeCsrf && sameSession(activeCsrf.session, session)) return activeCsrf.result;
+  const result = apiFetch<{ token: string }>("/api/auth/csrf", { browserSession: true })
+    .then(data => {
+      if (!data?.token) throw new ApiError(502, "Không thể lấy mã xác thực phiên.");
+      return data.token;
+    })
+    .finally(() => {
+      if (activeCsrf?.result === result) activeCsrf = undefined;
+    });
+  activeCsrf = { session, result };
+  return result;
+}
 
 async function rotateToken(start: ApiSession): Promise<string | null> {
   let res: Response;
@@ -109,11 +125,11 @@ export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { responseType = "json", onResponse, ...requestOptions } = options;
+  const { responseType = "json", onResponse, browserSession, ...requestOptions } = options;
   const isLoginEndpoint =
     endpoint === "/api/auth/login" || endpoint === "/api/auth/web-login";
   const isAuthEndpoint =
-    isLoginEndpoint ||
+    isLoginEndpoint || browserSession ||
     endpoint.includes("/api/auth/refresh") ||
     endpoint.includes("/api/auth/register") ||
     endpoint.includes("/api/auth/verify-email") ||
@@ -122,13 +138,14 @@ export async function apiFetch<T>(
     endpoint.includes("/api/auth/reset-password");
 
   const session = apiSession.read();
-  let { accessToken } = session;
+  const useCookie = browserSession || session.cookieSession;
+  let accessToken = useCookie ? null : session.accessToken;
   const { refreshToken } = session;
 
   // Proactive Token Refresh:
   // If access token is expired (or missing) but a valid real refresh token exists, refresh before sending
   if (
-    !isAuthEndpoint &&
+    !isAuthEndpoint && !useCookie &&
     refreshToken &&
     !refreshToken.startsWith("mock-") &&
     isJwtExpired(accessToken)
@@ -154,6 +171,11 @@ export async function apiFetch<T>(
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  const method = (requestOptions.method ?? "GET").toUpperCase();
+  if (session.cookieSession && !["GET", "HEAD", "OPTIONS"].includes(method) && !headers.has("X-CSRF-TOKEN")) {
+    headers.set("X-CSRF-TOKEN", await requestCsrf(session));
+    assertSameSession(session);
+  }
 
   // Include cookies automatically in cross-origin / same-origin API requests
   const fetchOptions: RequestInit = {
@@ -162,7 +184,7 @@ export async function apiFetch<T>(
     headers,
   };
 
-  const url = getApiUrl(endpoint);
+  const url = useCookie ? endpoint : getApiUrl(endpoint);
 
   let response: Response;
   try {

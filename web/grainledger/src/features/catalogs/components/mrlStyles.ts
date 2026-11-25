@@ -1,7 +1,7 @@
 export const panel =
   "rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs";
 export const field =
-  "w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
+  "w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
 export const iconButton =
   "p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50";
 export const button =

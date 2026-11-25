@@ -78,7 +78,7 @@ export const exportEndpoints = {
     lotId: string,
     query: CandidateLineageQuery,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<CandidateLineage>(
       withApiQuery(
         `/api/export-containers/${encodeURIComponent(id)}/candidates/${encodeURIComponent(lotId)}/lineage`,
         query,
@@ -211,6 +211,33 @@ export interface BlendPlanningContext {
   allowedTargetProducts: string[];
   missingDependencies: { code: string; description: string }[];
 }
-export interface CandidatePage extends ApiPage<{ lotId: string; lotCode: string; locationId: string; locationName: string; availableKg: string }> {
+export interface StockCandidate {
+  lotId: string;
+  lotCode: string;
+  locationId: string;
+  locationName: string;
+  availableKg: string;
+  stockKind: string;
+  productIdentity: string;
+  productCompatibility: string;
+  inventoryEligible: boolean;
+  candidateRevision: string;
+  restrictions: string[];
+  reasons: string[];
+}
+
+export interface CandidateLineage {
+  positionAttributionStatus: string;
+  composition: { ledgerSourceLotId: string; captureSourceLotId: string | null; lotAttributedKg: string }[];
+  lineage: {
+    complete: boolean;
+    nodes: { lotId: string; lotCode?: string; code?: string; stage?: string }[];
+    edges: { inputLotId: string; outputLotId: string; inputConsumedKg?: string; quantityKg?: string }[];
+    operations: { id: string; kind: string; occurredAt: string }[];
+    reasons: string[];
+  };
+}
+
+export interface CandidatePage extends ApiPage<StockCandidate> {
   scopeRevision: string;
 }

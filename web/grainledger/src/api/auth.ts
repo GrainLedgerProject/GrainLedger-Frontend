@@ -50,16 +50,14 @@ export const authEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  getSession: () => apiFetch<SessionUserDto>("/api/auth/session"),
+  getSession: (browserSession = false) => apiFetch<SessionUserDto>("/api/auth/session", { browserSession }),
 
   getCsrf: () => apiFetch<{ token: string }>("/api/auth/csrf"),
 
   getGoogleAuthUrl: (returnUrl?: string) =>
-    getApiUrl(
-      returnUrl
-        ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
-        : "/api/auth/google",
-    ),
+    returnUrl
+      ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
+      : "/api/auth/google",
 
   loginGoogle: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : "";

@@ -1,6 +1,6 @@
 import { useDeferredValue, useId, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { CalendarDots, MagnifyingGlass, Warning } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "@/api/client";
 import {
@@ -9,7 +9,7 @@ import {
   type PlotSeasonReference,
   type RegisterPlotSeasonRequest,
 } from "@/api/procurement";
-import { Modal } from "@/shared/ui/Modal";
+import { RecordDialog } from "@/shared/ui/RecordWorkspace";
 import { Feedback } from "@/shared/ui/Workflow";
 
 export type SeasonAction =
@@ -103,15 +103,12 @@ export function SeasonEditor({ action, userId, queryScope, onSaved, onClose }: {
     mutation.mutate(body);
   }
 
-  return <Modal isOpen onClose={() => { if (!mutation.isPending) onClose(); }} ariaLabel={title} closeOnBackdrop={false}>
-    <div className="gl-workflow w-[calc(100vw-2rem)] max-w-lg space-y-4 rounded-2xl bg-surface-base p-4 text-ink-primary dark:bg-surface-raised sm:p-6">
-      <header className="border-b border-ink-tertiary/15 pb-3">
-        <h2 id={`${id}-title`} className="font-display text-xl font-semibold">{title}</h2>
-        {linkForm && <p className="mt-1 text-sm text-ink-secondary [overflow-wrap:anywhere]">{season?.name}</p>}
-      </header>
+  return <RecordDialog title={title} titleId={`${id}-title`} subtitle={linkForm ? season?.name : undefined}
+    icon={removing ? <Warning size={22} className="text-accent-danger" /> : <CalendarDots size={22} />}
+    onClose={onClose} busy={mutation.isPending}>
       <form method="post" aria-labelledby={`${id}-title`} onSubmit={submit} className="space-y-4">
         {removing ? <p className="text-sm [overflow-wrap:anywhere]">{t(`field.seasons.confirm.${action.type}`, { name: link?.plotCode ?? season?.name })}</p>
-          : <fieldset disabled={blocked} className="space-y-4">
+          : <fieldset disabled={blocked} className="min-w-0 space-y-4">
             <legend className="sr-only">{title}</legend>
             {linkForm ? <>
               <PlotPicker userId={userId} initial={link && { id: link.plotId, code: link.plotCode }} />
@@ -137,15 +134,14 @@ export function SeasonEditor({ action, userId, queryScope, onSaved, onClose }: {
             </>}
           </fieldset>}
         {message ? <Feedback error={new Error(message)} /> : <Feedback error={mutation.error} pending={mutation.isPending} />}
-        <footer className="flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
-          <button type="button" disabled={mutation.isPending} onClick={onClose}>{t(blocked && !mutation.isPending ? "field.seasons.close" : "field.seasons.cancel")}</button>
+        <footer className="record-form-footer">
+          <button type="button" className="record-button" disabled={mutation.isPending} onClick={onClose}>{t(blocked && !mutation.isPending ? "field.seasons.close" : "field.seasons.cancel")}</button>
           {canRetryLink
-            ? <button type="button" className="!border-accent-primary !bg-accent-primary !text-white" onClick={() => { if (pendingLink.current) mutation.mutate(pendingLink.current); }}>{t("field.seasons.retry")}</button>
-            : <button type="submit" disabled={blocked} className={removing ? "!border-accent-danger !bg-accent-danger" : ""}>{t(removing ? `field.seasons.${action.type}` : "field.seasons.save")}</button>}
+            ? <button type="button" className="record-button record-primary" onClick={() => { if (pendingLink.current) mutation.mutate(pendingLink.current); }}>{t("field.seasons.retry")}</button>
+            : <button type="submit" disabled={blocked} className={`record-button ${removing ? "border-accent-danger bg-accent-danger text-white hover:bg-accent-danger/90 dark:hover:bg-accent-danger/90" : "record-primary"}`}>{t(removing ? `field.seasons.${action.type}` : "field.seasons.save")}</button>}
         </footer>
       </form>
-    </div>
-  </Modal>;
+  </RecordDialog>;
 }
 
 function PlotPicker({ userId, initial }: { userId: string; initial?: { id: string; code: string } }) {
@@ -161,13 +157,13 @@ function PlotPicker({ userId, initial }: { userId: string; initial?: { id: strin
   });
   const options = Array.isArray(plots.data) ? plots.data : plots.data?.items ?? [];
   const hasMore = !Array.isArray(plots.data) && plots.data?.hasMore;
-  return <div className="space-y-2">
+  return <div className="record-filter space-y-2">
     <label htmlFor={`${id}-search`}>{t("field.seasons.searchPlots")}</label>
     <div className="relative">
       <MagnifyingGlass aria-hidden="true" size={18} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
       <input id={`${id}-search`} type="search" name="plotSearch" value={search} maxLength={100} onChange={event => { setSearch(event.target.value); setPage(1); }} onKeyDown={event => {
         if (event.key === "Enter" && !event.nativeEvent.isComposing) event.preventDefault();
-      }} className="!ps-10" />
+      }} />
     </div>
     <label htmlFor={`${id}-plot`}>{t("field.seasons.plot")}</label>
     <select id={`${id}-plot`} required name="plotId" value={selected?.id ?? ""} onChange={event => setSelected(options.find(plot => plot.id === event.target.value))}>
@@ -178,8 +174,8 @@ function PlotPicker({ userId, initial }: { userId: string; initial?: { id: strin
     <Feedback pending={plots.isPending} error={plots.error} />
     {plots.data && options.length === 0 && <p className="text-sm text-ink-secondary">{t("field.seasons.noPlotsFound")}</p>}
     {(page > 1 || hasMore) && <div className="flex flex-wrap gap-2">
-      <button type="button" disabled={page === 1 || plots.isFetching || term !== search.trim()} onClick={() => setPage(page - 1)}>{t("field.seasons.prev")}</button>
-      <button type="button" disabled={!hasMore || plots.isFetching || term !== search.trim()} onClick={() => setPage(page + 1)}>{t("field.seasons.next")}</button>
+      <button type="button" className="record-button" disabled={page === 1 || plots.isFetching || term !== search.trim()} onClick={() => setPage(page - 1)}>{t("field.seasons.prev")}</button>
+      <button type="button" className="record-button" disabled={!hasMore || plots.isFetching || term !== search.trim()} onClick={() => setPage(page + 1)}>{t("field.seasons.next")}</button>
     </div>}
   </div>;
 }

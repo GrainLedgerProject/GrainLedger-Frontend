@@ -291,12 +291,11 @@ export function useMrlWorkspace(scope: string, canManage: boolean) {
     });
   };
 
-  const importVersion = (event: FormEvent) => {
-    event.preventDefault();
+  const importVersion = (spreadsheet?: unknown) => {
     void run(async () => {
       let parsed: unknown;
       try {
-        parsed = JSON.parse(rawJson);
+        parsed = spreadsheet ?? JSON.parse(rawJson);
       } catch (cause) {
         throw new Error(t("apiAudit.mrl.invalidJson"), { cause });
       }
@@ -309,7 +308,8 @@ export function useMrlWorkspace(scope: string, canManage: boolean) {
               .map((issue) => issue.path.join("."))
               .join(", "),
         );
-      await catalogsEndpoints.importMrlVersion(result.data);
+      const created = await catalogsEndpoints.importMrlVersion(result.data);
+      setSelectedId(created.id);
       setImporting(false);
       setRawJson("");
       await refresh();
@@ -419,6 +419,9 @@ export function useMrlWorkspace(scope: string, canManage: boolean) {
       notice,
       busy,
       importVersion,
+      markets: data?.markets ?? [],
+      commodities: data?.commodities.filter(item => !item.isArchived) ?? [],
+      substances: data?.substances ?? [],
     },
   };
 }
