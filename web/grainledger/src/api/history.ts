@@ -1,3 +1,34 @@
+/** History returns ledger event kinds and custody command kinds.
+ * Source: InitialSchema.sql (ledger_read_before_mixed_bulk and ledger_read_before_equipment_retirement),
+ * with container loading and traceability events defined in ContainerWorkflow.sql.
+ */
+export const ledgerHistoryKinds = [
+  'RECEIPT',
+  'ARRIVAL',
+  'TRANSFER',
+  'TRANSFER_TO_MIXED',
+  'POOL_INGRESS',
+  'POOL_WITHDRAW',
+  'CLEARANCE',
+  'DRYING',
+  'MILLING',
+  'MERGE',
+  'BLENDING',
+  'BAGGING',
+  'PROCESSING',
+  'PROCESSING_OUTPUT',
+  'HOLD',
+  'HOLD_RESPONSE',
+  'VARIANCE_CONFIRMATION',
+  'CORRECTION_REQUEST',
+  'PHYSICAL_RECONCILIATION',
+  'RECONCILIATION_INVALIDATED',
+  'CORRECTION_CANCEL_VERIFIED_ORIGINAL',
+  'PROCESSING_COMPENSATION',
+  'CONTAINER_LOADING',
+  'TRACEBACK',
+] as const;
+
 /** Confirmed against backend LedgerEndpoints.cs and InitialSchema.sql, ledger_read_before_mixed_bulk.
  * The supplied OpenAPI document omits these query and response definitions.
  */

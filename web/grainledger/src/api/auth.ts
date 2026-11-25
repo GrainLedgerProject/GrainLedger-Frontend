@@ -50,16 +50,14 @@ export const authEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  getSession: () => apiFetch<SessionUserDto>("/api/auth/session"),
+  getSession: (browserSession = false) => apiFetch<SessionUserDto>("/api/auth/session", { browserSession }),
 
   getCsrf: () => apiFetch<{ token: string }>("/api/auth/csrf"),
 
   getGoogleAuthUrl: (returnUrl?: string) =>
-    getApiUrl(
-      returnUrl
-        ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
-        : "/api/auth/google",
-    ),
+    returnUrl
+      ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
+      : "/api/auth/google",
 
   loginGoogle: (returnUrl?: string) => {
     const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : "";
@@ -92,7 +90,7 @@ export interface IssuedTokens {
   accessToken: string;
   refreshToken: string;
   tokenType: string;
-  expiresIn: number | string;
+  expiresIn: number;
   user: SessionUserDto;
 }
 
@@ -110,7 +108,7 @@ export interface RegisterRequest {
 export interface RegistrationPendingDto {
   registrationId: string;
   email: string;
-  expiresIn: number | string;
+  expiresIn: number;
 }
 
 export interface ResendVerificationRequest {

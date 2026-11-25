@@ -3,6 +3,119 @@ import { apiFetch } from "./client";
 
 import { parseLedgerHistoryResponse, type LedgerHistoryQuery } from "./history";
 
+export interface FacilityDto {
+  id: string;
+  name: string;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  createdBy?: string;
+}
+
+export interface LocationDto {
+  id: string;
+  facilityId: string;
+  name: string;
+  kind: "STORE" | "ISOLATION" | string;
+  cleared: boolean;
+  mixedBulk: boolean;
+  ownerId: string | null;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  createdBy?: string;
+  poolRevision?: string | null;
+  currentPoolLotId?: string | null;
+}
+
+export interface EquipmentDto {
+  id: string;
+  facilityId: string;
+  name: string;
+  version: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canRetire?: boolean;
+  createdBy?: string;
+}
+
+export interface PolicyDto {
+  id: string;
+  facilityId: string;
+  kind: "DRYING" | "MILLING" | "MERGE" | "BLENDING" | "BAGGING" | string;
+  tolerancePercent: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
+export interface LedgerReference {
+  id: string;
+  name: string;
+}
+
+export interface FacilityAssignment {
+  userId: string;
+  facilityId: string;
+  version: string;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+interface CompatibilityPolicy {
+  id: string;
+  facilityId: string;
+  inputProducts: string[];
+  outputCommodityId: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
+interface MixedBulkPolicy {
+  id: string;
+  locationId: string;
+  ownerId: string;
+  commodityId: string;
+  stage: string;
+  productIdentity: string;
+  effectiveFrom: string;
+  evidenceId: string;
+}
+
+export interface BusinessHistoryDto {
+  id: string;
+  category: string;
+  eventType: string;
+  subjectId: string;
+  reference: string;
+  actorId: string | null;
+  actorName: string | null;
+  recordedAt: string;
+  context: unknown;
+  evidenceId: string | null;
+}
+
+export interface BusinessHistoryQuery {
+  category?: string;
+  eventType?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  page?: number | string;
+  pageSize?: number | string;
+}
+
+export interface SetupApiResponse {
+  facilities?: FacilityDto[];
+  locations?: LocationDto[];
+  equipment?: EquipmentDto[];
+  policies?: PolicyDto[];
+  commodities?: LedgerReference[];
+  assignments?: FacilityAssignment[];
+  owners?: LedgerReference[];
+  compatibilities?: CompatibilityPolicy[];
+  mixedBulkPolicies?: MixedBulkPolicy[];
+}
+
 export interface LedgerNotification {
   id: string;
   holdId: string | null;
@@ -18,6 +131,149 @@ export interface NotificationQuery extends PageQuery {
   status?: "READ" | "UNREAD";
   sortBy?: "createdAt" | "readAt";
   sortDirection?: "asc" | "desc";
+}
+
+export type ReceivingThresholdScope = "SYSTEM_DEFAULT" | "COMPANY_OVERRIDE";
+
+export interface ReceivingThresholdHistoryItem {
+  revision: string;
+  companyId: string | null;
+  companyName: string | null;
+  scope: ReceivingThresholdScope;
+  action: string;
+  oldPercentage: string | null;
+  newPercentage: string | null;
+  actorName: string | null;
+  recordedAt: string;
+  reason: string;
+}
+
+export interface OwnReceivingThreshold {
+  companyId: string;
+  percentage: string;
+  source: ReceivingThresholdScope;
+  revision: string;
+}
+
+export type ReceivingStatus = "PENDING_ARRIVAL" | "AWAITING_MANAGER_REVIEW" |
+  "REMEASUREMENT_REQUESTED" | "RECEIVED_MATCHED" | "RECEIVED_WITHIN_TOLERANCE" |
+  "RECEIVED_SHORTAGE_APPROVED" | "BLOCKED_UNRESOLVED";
+export type ReceivingReviewAction = "APPROVE_SHORTAGE" | "REQUEST_REMEASUREMENT" | "KEEP_BLOCKED";
+export type ReceivingUnit = "KG" | "G" | "T";
+
+interface ReceivingThreshold {
+  percentage: string;
+  revision: string;
+  source: ReceivingThresholdScope;
+}
+
+interface ReceivingMeasurementLine {
+  procurementItemId: string;
+  measuredValue: string;
+  measuredUnit: ReceivingUnit;
+}
+
+export interface ReceivingTask {
+  id: string;
+  code: string;
+  ownerCompanyId: string;
+  ownerCompanyName: string;
+  facilityId: string;
+  facilityName: string;
+  receivingLocationName: string;
+  status: ReceivingStatus;
+  receivedAt: string;
+  expectedTotalKg: string;
+  actualTotalKg: string | null;
+  usableStockKg: string;
+  receivingVersion: number;
+  latestMeasurementSetId: string | null;
+  effectiveThreshold: ReceivingThreshold | null;
+  items: {
+    id: string;
+    lineNo: number;
+    lotCode: string;
+    riceVariety: string;
+    expectedKg: string;
+    actualKg: string | null;
+  }[];
+  measurementSets: {
+    id: string;
+    recordedAt: string;
+    capturedAt: string;
+    observations: string;
+    threshold: ReceivingThreshold | null;
+    items: (ReceivingMeasurementLine & { actualKg: string })[];
+  }[];
+  reviews: { id: string; measurementSetId: string; action: ReceivingReviewAction; reason: string; evidenceId: string; recordedAt: string }[];
+}
+
+export interface ReceivingQuery extends PageQuery {
+  facilityId: string;
+  search?: string;
+  ownerId?: string;
+  status?: ReceivingStatus;
+  sortBy?: "receivedAt" | "status" | "owner";
+  sortDirection?: "asc" | "desc";
+}
+
+export interface ReceivingMeasurementRequest {
+  operationId: string;
+  expectedReceivingVersion: number;
+  capturedAt: string;
+  observations: string;
+  items: ReceivingMeasurementLine[];
+}
+
+export interface ReceivingReviewRequest {
+  operationId: string;
+  expectedReceivingVersion: number;
+  measurementSetId: string;
+  action: ReceivingReviewAction;
+  reason: string;
+  evidenceId: string;
+}
+
+export interface CreateCorrectionRequest {
+  id: string;
+  operationId: string;
+  reason: string;
+}
+
+export interface PhysicalPosition {
+  lotId: string;
+  locationId: string;
+  quantityKg: string;
+}
+
+export interface ReconcileCorrectionRequest {
+  evidenceId: string;
+  reason: string;
+  reconciliation: PhysicalPosition[];
+  replacementOperationId: string;
+  replacementVersion: string;
+}
+
+export interface CorrectionOperation {
+  id: string;
+  version: string;
+  status: string;
+  kind: string;
+  ownerId: string;
+  facilityId: string;
+  equipmentId: string;
+  occurredAt: string;
+  declaredLossKg: string;
+  declaredLossReason?: string;
+  createdBy?: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  varianceKg?: string;
+  allowedVarianceKg?: string | null;
+  confirmedVersion?: string | null;
+  boundCorrectionId?: string | null;
+  inputs: { lotId: string; locationId: string; quantityKg: string; poolRevision?: number | string }[];
+  outputs: { id: string; code?: string; commodityId: string; stage: string; productIdentity?: string; locationId: string; quantityKg: string; originalLotId?: string }[];
 }
 
 export interface RecordOperationRequest {
@@ -39,7 +295,7 @@ export interface HoldRequest {
 }
 
 export const ledgerEndpoints = {
-  getSetup: () => apiFetch<unknown>("/api/ledger/setup"),
+  getSetup: () => apiFetch<SetupApiResponse>("/api/ledger/setup"),
   getLookups: () => apiFetch<unknown>("/api/ledger/lookups"),
   getLots: (params?: Record<string, string | number | undefined>) => {
     if (!params) return apiFetch<unknown>("/api/ledger/lots");
@@ -141,7 +397,7 @@ export const ledgerEndpoints = {
     ),
 
   // Operations
-  getOperations: () => apiFetch<unknown>("/api/ledger/operations"),
+  getOperations: (query?: PageQuery & { status?: string; ownerId?: string; facilityId?: string; ids?: string; queueOnly?: boolean }) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
   recordOperation: (req: object) =>
     apiFetch<unknown>("/api/ledger/operations", {
       method: "POST",
@@ -177,19 +433,9 @@ export const ledgerEndpoints = {
     ),
 
   // Quarantine Holds
-  getHolds: () => apiFetch<unknown>("/api/ledger/holds"),
-  issueHold: (req: object) =>
-    apiFetch<unknown>("/api/ledger/holds", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
+  getHolds: (query?: PageQuery) => apiFetch<unknown>(withApiQuery("/api/ledger/holds", query)),
   createHold: (req: object) =>
     apiFetch<unknown>("/api/ledger/holds", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-  respondHold: (id: string, req: object) =>
-    apiFetch<unknown>(`/api/ledger/holds/${encodeURIComponent(id)}/respond`, {
       method: "POST",
       body: JSON.stringify(req),
     }),
@@ -200,13 +446,13 @@ export const ledgerEndpoints = {
     }),
 
   // Corrections & Reconciliations
-  getCorrections: () => apiFetch<unknown>("/api/ledger/corrections"),
-  createCorrection: (req: object) =>
-    apiFetch<unknown>("/api/ledger/corrections", {
+  getCorrections: (query?: PageQuery) => apiFetch<unknown>(withApiQuery("/api/ledger/corrections", query)),
+  createCorrection: (req: CreateCorrectionRequest) =>
+    apiFetch<{ id: string }>("/api/ledger/corrections", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  reconcileCorrection: (id: string, req: object) =>
+  reconcileCorrection: (id: string, req: ReconcileCorrectionRequest) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/reconcile`,
       {
@@ -214,7 +460,7 @@ export const ledgerEndpoints = {
         body: JSON.stringify(req),
       },
     ),
-  commitCorrection: (id: string, req: object) =>
+  commitCorrection: (id: string, req: { replacementOperationId: string }) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/commit`,
       {
@@ -222,7 +468,7 @@ export const ledgerEndpoints = {
         body: JSON.stringify(req),
       },
     ),
-  cancelCorrection: (id: string, req: object) =>
+  cancelCorrection: (id: string, req: { evidenceId: string; reason: string }) =>
     apiFetch<unknown>(
       `/api/ledger/corrections/${encodeURIComponent(id)}/cancel`,
       {
@@ -265,37 +511,30 @@ export const ledgerEndpoints = {
       ),
     );
   },
+  getBusinessHistory: (
+    query: BusinessHistoryQuery = {},
+    options: { signal?: AbortSignal } = {},
+  ) =>
+    apiFetch<ApiPage<BusinessHistoryDto>>(
+      withApiQuery("/api/ledger/business-history", query),
+      options,
+    ),
 
   // Receiving tasks & reviews
-  getReceivingTasks: () => apiFetch<unknown>("/api/ledger/receiving-tasks"),
+  getReceivingTasks: (query: ReceivingQuery) =>
+    apiFetch<ApiPage<ReceivingTask>>(withApiQuery("/api/ledger/receiving-tasks", query)),
   getReceiving: (id: string) =>
-    apiFetch<unknown>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
-  postReceivingMeasurements: (id: string, req: object) =>
-    apiFetch<unknown>(
+    apiFetch<ReceivingTask>(`/api/ledger/receiving/${encodeURIComponent(id)}`),
+  recordReceivingMeasurement: (id: string, req: ReceivingMeasurementRequest) =>
+    apiFetch<ReceivingTask>(
       `/api/ledger/receiving/${encodeURIComponent(id)}/measurements`,
       {
         method: "POST",
         body: JSON.stringify(req),
       },
     ),
-  recordReceivingMeasurement: (id: string, req: object) =>
-    apiFetch<unknown>(
-      `/api/ledger/receiving/${encodeURIComponent(id)}/measurements`,
-      {
-        method: "POST",
-        body: JSON.stringify(req),
-      },
-    ),
-  postReceivingReviews: (id: string, req: object) =>
-    apiFetch<unknown>(
-      `/api/ledger/receiving/${encodeURIComponent(id)}/reviews`,
-      {
-        method: "POST",
-        body: JSON.stringify(req),
-      },
-    ),
-  reviewReceiving: (id: string, req: object) =>
-    apiFetch<unknown>(
+  reviewReceiving: (id: string, req: ReceivingReviewRequest) =>
+    apiFetch<ReceivingTask>(
       `/api/ledger/receiving/${encodeURIComponent(id)}/reviews`,
       {
         method: "POST",
@@ -304,17 +543,17 @@ export const ledgerEndpoints = {
     ),
 
   // Policies & Compatibilities
-  createPolicy: (req: object) =>
+  createPolicy: (req: PolicyDto) =>
     apiFetch<unknown>("/api/ledger/policies", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  createCompatibility: (req: object) =>
+  createCompatibility: (req: CompatibilityPolicy) =>
     apiFetch<unknown>("/api/ledger/compatibilities", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  createMixedBulkPolicy: (req: object) =>
+  createMixedBulkPolicy: (req: MixedBulkPolicy & { identityScopeConfirmed: true }) =>
     apiFetch<unknown>("/api/ledger/mixed-bulk-policies", {
       method: "POST",
       body: JSON.stringify(req),
@@ -334,7 +573,7 @@ export const ledgerEndpoints = {
       body: JSON.stringify(req),
     }),
   getEvidence: (id: string) =>
-    apiFetch<unknown>(`/api/ledger/evidence/${encodeURIComponent(id)}`),
+    apiFetch<Blob>(`/api/ledger/evidence/${encodeURIComponent(id)}`, { responseType: "blob" }),
 
   // Traceability and residue evaluation
   traceLot: (req: LotTraceRequest) =>
@@ -356,20 +595,20 @@ export const ledgerEndpoints = {
     PageSize?: number | string;
   }) => apiFetch<unknown>(withApiQuery("/api/ledger/trace/starts", query)),
   getResidueEvaluations: (lotId: string) =>
-    apiFetch<unknown>(
+    apiFetch<{ items: ResidueEvaluationSummary[] }>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`,
     ),
   createResidueEvaluation: (lotId: string, req: ResidueEvaluationRequest) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations`,
       { method: "POST", body: JSON.stringify(req) },
     ),
   getResidueEvaluation: (lotId: string, evaluationId: string) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-evaluations/${encodeURIComponent(evaluationId)}`,
     ),
   getResiduePreview: (lotId: string, query?: { substanceIds?: string }) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueEvaluation>(
       withApiQuery(
         `/api/ledger/lots/${encodeURIComponent(lotId)}/residue-preview`,
         query,
@@ -381,10 +620,10 @@ export const ledgerEndpoints = {
     apiFetch<unknown>("/api/ledger/receiving-thresholds"),
   getReceivingThresholdCompanies: () =>
     apiFetch<unknown>("/api/ledger/receiving-thresholds/companies"),
-  getReceivingThresholdHistory: () =>
-    apiFetch<unknown>("/api/ledger/receiving-thresholds/history"),
+  getReceivingThresholdHistory: (query?: PageQuery & { scope?: ReceivingThresholdScope; companyId?: string }) =>
+    apiFetch<ApiPage<ReceivingThresholdHistoryItem>>(withApiQuery("/api/ledger/receiving-thresholds/history", query)),
   getOwnCompanyReceivingThreshold: () =>
-    apiFetch<unknown>("/api/ledger/receiving-thresholds/own-company"),
+    apiFetch<OwnReceivingThreshold>("/api/ledger/receiving-thresholds/own-company"),
   updateDefaultReceivingThreshold: (req: object) =>
     apiFetch<unknown>("/api/ledger/receiving-thresholds/default", {
       method: "PUT",
@@ -440,4 +679,27 @@ export interface LotTraceRequest {
 export interface ResidueEvaluationRequest {
   id: string;
   substanceIds: Array<string>;
+}
+
+export interface ResidueEvaluationSummary {
+  id: string;
+  snapshotAt: string;
+  persistedAt: string;
+  engineVersion: string;
+}
+
+export interface ResidueEvaluation {
+  id?: string;
+  snapshotAt: string;
+  engineVersion: string;
+  results: {
+    substanceId: string;
+    status: string;
+    lower: string | null;
+    upper: string | null;
+    unit: string | null;
+    reasons: string[];
+    provenance: { kind: string; sourceLotId: string; reportId?: string; resultId?: string; groupVersionId?: string }[];
+    rules: { id: string; version: number; kind: string; evidenceReference: string }[];
+  }[];
 }

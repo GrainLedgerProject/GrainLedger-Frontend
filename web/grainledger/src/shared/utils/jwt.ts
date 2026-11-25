@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/app/store/authStore";
+import type { UserProfile } from "@/shared/types/session";
 import { normalizeUserRole } from "@/shared/types/roles";
 
 /**
@@ -88,6 +88,7 @@ export function extractUserProfileFromJwt(token: string | null): UserProfile | n
     email,
     displayName,
     role,
+    hasAssignedRole: true,
     organizationId,
     organizationName,
     isActive: true,

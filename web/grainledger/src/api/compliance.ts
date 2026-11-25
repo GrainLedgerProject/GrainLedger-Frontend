@@ -1,32 +1,50 @@
 import { apiFetch } from "./client";
+import { withApiQuery } from "./query";
 
 export const sampleEndpoints = {
   getSamples: (params?: Record<string, string | number>) => {
     const qs = params
       ? "?" + new URLSearchParams(params as Record<string, string>).toString()
       : "";
-    return apiFetch<unknown>(`/api/samples${qs}`);
+    return apiFetch<SamplePage<SampleRecord>>(`/api/samples${qs}`);
   },
   getSample: (id: string) =>
-    apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}`),
+    apiFetch<SampleRecord>(`/api/samples/${encodeURIComponent(id)}`),
   createSample: (req: CaptureSampleRequest) =>
-    apiFetch<unknown>("/api/samples", {
+    apiFetch<SampleRecord>("/api/samples", {
       method: "POST",
       body: JSON.stringify(req),
     }),
-  captureSample: (req: CaptureSampleRequest) =>
-    apiFetch<unknown>("/api/samples", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-  getSampleHandovers: (id: string) =>
-    apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}/handovers`),
+  getSampleHandovers: (id: string, query?: { page?: number; pageSize?: number }) =>
+    apiFetch<SamplePage<SampleHandoverRecord>>(withApiQuery(`/api/samples/${encodeURIComponent(id)}/handovers`, query)),
   recordSampleHandover: (id: string, req: RecordSampleHandoverRequest) =>
-    apiFetch<unknown>(`/api/samples/${encodeURIComponent(id)}/handovers`, {
+    apiFetch<SampleHandoverRecord>(`/api/samples/${encodeURIComponent(id)}/handovers`, {
       method: "POST",
       body: JSON.stringify(req),
     }),
 };
+
+export interface SamplePage<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface SampleRecord {
+  id: string;
+  sourceLotId: string;
+  code: string;
+  sealCode: string;
+  collectedAt: string;
+  materialDescription: string | null;
+  handoverCount: number;
+}
+
+export interface SampleHandoverRecord extends Omit<SampleHandoverInput, "entityId"> {
+  id: string;
+  sampleId: string;
+}
 
 export const labReportEndpoints = {
   getLabReports: (params?: Record<string, string | number>) => {
@@ -38,11 +56,6 @@ export const labReportEndpoints = {
   getLabReport: (id: string) =>
     apiFetch<LabReportResponse>(`/api/lab-reports/${encodeURIComponent(id)}`),
   createLabReport: (req: CaptureLabReportRequest) =>
-    apiFetch<LabReportResponse>("/api/lab-reports", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-  captureLabReport: (req: CaptureLabReportRequest) =>
     apiFetch<LabReportResponse>("/api/lab-reports", {
       method: "POST",
       body: JSON.stringify(req),

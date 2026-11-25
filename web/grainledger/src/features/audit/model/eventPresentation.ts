@@ -1,20 +1,4 @@
-const eventNames: Record<string, [string, string]> = {
-  RECEIPT: ['Tiếp nhận lúa', 'Paddy received'],
-  PROCUREMENT_COMMITTED: ['Ghi nhận thu mua', 'Procurement recorded'],
-  DRYING: ['Sấy lúa', 'Paddy drying'], MILLING: ['Xay xát', 'Rice milling'],
-  MERGE: ['Gộp lô hàng', 'Lots merged'], BLENDING: ['Phối trộn', 'Blending'],
-  BAGGING: ['Đóng bao', 'Bagging'], HOLD: ['Tạm giữ lô hàng', 'Lot placed on hold'],
-  HOLD_RESPONSE: ['Phản hồi lệnh tạm giữ', 'Hold response'],
-  VARIANCE_CONFIRMATION: ['Xác nhận chênh lệch', 'Variance confirmed'],
-  CORRECTION_REQUEST: ['Yêu cầu điều chỉnh', 'Correction requested'],
-  CORRECTION: ['Ghi nhận điều chỉnh', 'Correction recorded'],
-  CORRECTION_CANCEL_VERIFIED_ORIGINAL: ['Hủy yêu cầu điều chỉnh', 'Correction cancelled'],
-  PHYSICAL_RECONCILIATION: ['Đối soát thực tế', 'Physical reconciliation'],
-  RECONCILIATION_INVALIDATED: ['Hủy kết quả đối soát', 'Reconciliation invalidated'],
-  CLEARANCE: ['Giải phóng vị trí lưu trữ', 'Storage location cleared'],
-  POOL_INGRESS: ['Nhập vào khối lưu trữ', 'Bulk stock received'],
-  POOL_WITHDRAW: ['Xuất khỏi khối lưu trữ', 'Bulk stock withdrawn'],
-};
+import i18n from '@/app/i18n';
 
 const fieldNames: Record<string, [string, string]> = {
   declaredLossKg: ['Hao hụt khai báo', 'Declared loss'], varianceKg: ['Chênh lệch khối lượng', 'Mass variance'],
@@ -65,7 +49,9 @@ const valueNames: Record<string, [string, string]> = {
 
 const choose = (pair: [string, string], locale: string) => pair[locale.startsWith('en') ? 1 : 0];
 export const readableKey = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/^./, c => c.toUpperCase());
-export const eventLabel = (kind: string, locale: string) => eventNames[kind] ? choose(eventNames[kind], locale) : readableKey(kind);
+const eventTypeKey = (kind: string) => `audit.events.types.${kind}`;
+export const eventLabel = (kind: string, locale: string) =>
+  i18n.t(eventTypeKey(kind), { lng: locale, defaultValue: readableKey(kind) });
 export const detailLabel = (key: string, locale: string) => fieldNames[key] ? choose(fieldNames[key], locale) : readableKey(key);
 
 /** Format decimal text without converting ledger quantities to floating-point numbers. */
@@ -88,8 +74,8 @@ export function detailValue(key: string, value: unknown, locale: string): string
   if (/(?:At|From|On)$/.test(key) && /^\d{4}-\d{2}-\d{2}(?:T|$)/.test(text) && Number.isFinite(Date.parse(text))) {
     return new Date(text).toLocaleString(locale.startsWith('en') ? 'en-US' : 'vi-VN');
   }
-  const pair = valueNames[text] ?? eventNames[text];
-  return pair ? choose(pair, locale) : text;
+  if (Object.hasOwn(valueNames, text)) return choose(valueNames[text], locale);
+  return i18n.exists(eventTypeKey(text), { lng: locale }) ? eventLabel(text, locale) : text;
 }
 
 export function structuredDetails(value: unknown): unknown {

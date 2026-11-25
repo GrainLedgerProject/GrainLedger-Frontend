@@ -1,10 +1,14 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
+import React, { useId, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { collectPages } from "@/api/query";
+import { ApiError } from "@/api/client";
+import { useAuthStore } from "@/app/store/authStore";
 import { useTranslation } from "react-i18next";
 import { catalogsEndpoints } from "@/api/catalogs";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { Modal } from "@/components/Modal";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { Modal } from "@/shared/ui/Modal";
 import {
   Database,
   Plus,
@@ -37,15 +41,34 @@ interface CatalogItem {
   name: string;
   quantityKind?: string;
   unit?: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
+const modalField =
+  "w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg";
+const modalButton =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-ink-tertiary/20 bg-surface-base px-4 py-2.5 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary disabled:opacity-50";
+
 export const MasterDataPage: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  return (
+    <MasterDataWorkspace
+      key={[
+        user?.id,
+        user?.organizationId,
+        user?.permissions.toSorted().join("|"),
+      ].join(":")}
+    />
+  );
+};
+
+const MasterDataWorkspace: React.FC = () => {
   const { t } = useTranslation();
+  const formId = useId();
   const [activeTab, setActiveTab] = useState<CatalogTab>("COMMODITIES");
-  const [items, setItems] = useState<CatalogItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal State
@@ -56,85 +79,112 @@ export const MasterDataPage: React.FC = () => {
     name: "",
     extra: "",
   });
+  const [editingEtag, setEditingEtag] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      let res: unknown;
+  const user = useAuthStore((state) => state.user);
+  const list = useQuery({
+    queryKey: [
+      "master-data",
+      user?.id,
+      user?.organizationId,
+      activeTab,
+      searchQuery,
+    ],
+    retry: false,
+    queryFn: (): Promise<CatalogItem[]> => {
+      const q = searchQuery || undefined;
       switch (activeTab) {
         case "COMMODITIES":
-          res = await catalogsEndpoints.getCommodities({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getCommodities({ ...query, q }),
+          );
         case "UNITS":
-          res = await catalogsEndpoints.getMeasurementUnits({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getMeasurementUnits({ ...query, q }),
+          );
         case "SUBSTANCES":
-          res = await catalogsEndpoints.getActiveSubstances({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getActiveSubstances({ ...query, q }),
+          );
         case "MARKETS":
-          res = await catalogsEndpoints.getMarkets({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getMarkets({ ...query, q }),
+          );
         case "VARIETIES":
-          res = await catalogsEndpoints.getRiceVarieties({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getRiceVarieties({ ...query, q }),
+          );
         case "ATTRIBUTES":
-          res = await catalogsEndpoints.getQualityAttributes({
-            q: searchQuery || undefined,
-          });
-          break;
+          return collectPages((query) =>
+            catalogsEndpoints.getQualityAttributes({ ...query, q }),
+          );
       }
-      const data = Array.isArray(res)
-        ? res
-        : res &&
-            typeof res === "object" &&
-            "items" in res &&
-            Array.isArray(res.items)
-          ? res.items
-          : [];
-      setItems(data as CatalogItem[]);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t("catalogs.master.errorLoad", "Không thể tải danh mục từ máy chủ."),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+  const items = list.data ?? [];
+  const loading = list.isPending || list.isFetching;
+  const error = actionError || list.error?.message;
+  const loadData = async () => {
+    setError(null);
+    await list.refetch();
   };
-
-  useEffect(() => {
-    void loadData();
-  }, [activeTab, searchQuery]);
 
   const handleOpenCreate = () => {
     setEditingItem(null);
+    setEditingEtag(null);
+    setError(null);
+    setSuccessMsg(null);
     setFormData({ code: "", name: "", extra: "" });
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (item: CatalogItem) => {
-    setEditingItem(item);
-    setFormData({
-      code: item.code || "",
-      name: item.name || "",
-      extra: item.quantityKind || item.unit || "",
-    });
-    setIsModalOpen(true);
+  const closeModal = () => {
+    if (submitting) return;
+    setIsModalOpen(false);
+    setError(null);
+  };
+
+  const readItem = (id: string) => {
+    switch (activeTab) {
+      case "COMMODITIES":
+        return catalogsEndpoints.getCommodity(id);
+      case "UNITS":
+        return catalogsEndpoints.getMeasurementUnit(id);
+      case "SUBSTANCES":
+        return catalogsEndpoints.getActiveSubstance(id);
+      case "MARKETS":
+        return catalogsEndpoints.getMarket(id);
+      case "VARIETIES":
+        return catalogsEndpoints.getRiceVariety(id);
+      case "ATTRIBUTES":
+        return catalogsEndpoints.getQualityAttribute(id);
+    }
+  };
+
+  const handleOpenEdit = async (item: CatalogItem) => {
+    setSubmitting(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const resource = await readItem(item.id);
+      if (!resource.etag) throw new Error(t("apiAudit.missingEtag"));
+      const current: CatalogItem = resource.data;
+      setEditingItem(current);
+      setEditingEtag(resource.etag);
+      setFormData({
+        code: current.code || "",
+        name: current.name,
+        extra: current.quantityKind || current.unit || "",
+      });
+      setIsModalOpen(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : t("catalogs.master.errorLoad"),
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,41 +194,66 @@ export const MasterDataPage: React.FC = () => {
 
     try {
       if (editingItem) {
+        if (!editingEtag) throw new Error(t("apiAudit.missingEtag"));
         // Update
         switch (activeTab) {
           case "COMMODITIES":
-            await catalogsEndpoints.updateCommodity(editingItem.id, {
-              name: formData.name,
-            });
+            await catalogsEndpoints.updateCommodity(
+              editingItem.id,
+              {
+                name: formData.name,
+              },
+              editingEtag,
+            );
             break;
           case "UNITS":
-            await catalogsEndpoints.updateMeasurementUnit(editingItem.id, {
-              code: formData.code,
-              name: formData.name,
-              quantityKind: formData.extra || "MASS",
-            });
+            await catalogsEndpoints.updateMeasurementUnit(
+              editingItem.id,
+              {
+                code: formData.code,
+                name: formData.name,
+                quantityKind: formData.extra || "MASS",
+              },
+              editingEtag,
+            );
             break;
           case "SUBSTANCES":
-            await catalogsEndpoints.updateActiveSubstance(editingItem.id, {
-              name: formData.name,
-            });
+            await catalogsEndpoints.updateActiveSubstance(
+              editingItem.id,
+              {
+                name: formData.name,
+              },
+              editingEtag,
+            );
             break;
           case "MARKETS":
-            await catalogsEndpoints.updateMarket(editingItem.id, {
-              name: formData.name,
-            });
+            await catalogsEndpoints.updateMarket(
+              editingItem.id,
+              {
+                name: formData.name,
+              },
+              editingEtag,
+            );
             break;
           case "VARIETIES":
-            await catalogsEndpoints.updateRiceVariety(editingItem.id, {
-              name: formData.name,
-            });
+            await catalogsEndpoints.updateRiceVariety(
+              editingItem.id,
+              {
+                name: formData.name,
+              },
+              editingEtag,
+            );
             break;
           case "ATTRIBUTES":
-            await catalogsEndpoints.updateQualityAttribute(editingItem.id, {
-              code: formData.code,
-              name: formData.name,
-              unit: formData.extra || "%",
-            });
+            await catalogsEndpoints.updateQualityAttribute(
+              editingItem.id,
+              {
+                code: formData.code,
+                name: formData.name,
+                unit: formData.extra || "%",
+              },
+              editingEtag,
+            );
             break;
         }
         setSuccessMsg(
@@ -238,7 +313,10 @@ export const MasterDataPage: React.FC = () => {
       setIsModalOpen(false);
       await loadData();
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (err instanceof ApiError && err.status === 412) {
+        setEditingEtag(null);
+        setError(t("apiAudit.conflict"));
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError(
@@ -263,6 +341,19 @@ export const MasterDataPage: React.FC = () => {
       );
       return;
     }
+    setError(null);
+    setSuccessMsg(null);
+    let etag: string;
+    try {
+      const resource = await readItem(item.id);
+      if (!resource.etag) throw new Error(t("apiAudit.missingEtag"));
+      etag = resource.etag;
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : t("catalogs.master.errorLoad"),
+      );
+      return;
+    }
     const confirmed = await confirmAction({
       title: t("catalogs.master.confirmDeleteTitle", "Xác nhận xóa danh mục"),
       description: t(
@@ -279,11 +370,11 @@ export const MasterDataPage: React.FC = () => {
 
     try {
       if (activeTab === "COMMODITIES")
-        await catalogsEndpoints.deleteCommodity(item.id);
+        await catalogsEndpoints.deleteCommodity(item.id, etag);
       if (activeTab === "UNITS")
-        await catalogsEndpoints.deleteMeasurementUnit(item.id);
+        await catalogsEndpoints.deleteMeasurementUnit(item.id, etag);
       if (activeTab === "SUBSTANCES")
-        await catalogsEndpoints.deleteActiveSubstance(item.id);
+        await catalogsEndpoints.deleteActiveSubstance(item.id, etag);
       setSuccessMsg(
         t("catalogs.master.successDelete", 'Đã xoá mục "{{name}}"', {
           name: item.name,
@@ -298,6 +389,22 @@ export const MasterDataPage: React.FC = () => {
       }
     }
   };
+
+  const catalogContext = {
+    COMMODITIES: { Icon: Tag, label: t("catalogs.master.tabCommodities") },
+    UNITS: { Icon: Scales, label: t("catalogs.master.tabUnits") },
+    SUBSTANCES: { Icon: Flask, label: t("catalogs.master.tabSubstances") },
+    MARKETS: { Icon: Globe, label: t("catalogs.master.tabMarkets") },
+    VARIETIES: { Icon: Plant, label: t("catalogs.master.tabVarieties") },
+    ATTRIBUTES: {
+      Icon: Certificate,
+      label: t("catalogs.master.tabAttributes"),
+    },
+  }[activeTab];
+  const CatalogIcon = catalogContext.Icon;
+  const modalTitle = editingItem
+    ? t("catalogs.master.modalTitleEdit")
+    : t("catalogs.master.modalTitleNew");
 
   return (
     <div className="space-y-6">
@@ -421,8 +528,13 @@ export const MasterDataPage: React.FC = () => {
       </div>
 
       {/* Search Toolbar */}
-      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="flex justify-between p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="relative w-full sm:w-80">
+          <MagnifyingGlass
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+          />
           <input
             type="text"
             placeholder={t(
@@ -431,11 +543,7 @@ export const MasterDataPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-          />
-          <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-2.5 text-ink-tertiary"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
           />
         </div>
 
@@ -521,7 +629,8 @@ export const MasterDataPage: React.FC = () => {
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         type="button"
-                        onClick={() => handleOpenEdit(item)}
+                        onClick={() => void handleOpenEdit(item)}
+                        disabled={submitting || item.canEdit === false}
                         className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
                         title={t("catalogs.master.btnEdit", "Chỉnh sửa")}
                       >
@@ -532,7 +641,8 @@ export const MasterDataPage: React.FC = () => {
                       ) && (
                         <button
                           type="button"
-                          onClick={() => handleDelete(item)}
+                          onClick={() => void handleDelete(item)}
+                          disabled={submitting || item.canDelete === false}
                           className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
                           title={t("catalogs.master.btnDelete", "Xoá")}
                         >
@@ -551,113 +661,162 @@ export const MasterDataPage: React.FC = () => {
       {/* Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        ariaLabel={
-          editingItem
-            ? t("catalogs.master.modalTitleEdit", "Cập nhật bản ghi danh mục")
-            : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")
-        }
+        onClose={closeModal}
+        ariaLabel={modalTitle}
+        className="w-[40rem]"
+        closeOnBackdrop={!submitting}
       >
-        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
-          <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-            <h3 className="font-display font-bold text-base text-ink-primary">
-              {editingItem
-                ? t(
-                    "catalogs.master.modalTitleEdit",
-                    "Cập nhật bản ghi danh mục",
-                  )
-                : t("catalogs.master.modalTitleNew", "Thêm mới vào danh mục")}
-            </h3>
+        <div className="overflow-hidden rounded-2xl border border-ink-tertiary/20 bg-surface-base shadow-xs dark:bg-surface-raised">
+          <header className="flex items-center justify-between gap-3 border-b border-ink-tertiary/15 bg-surface-raised p-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+                <CatalogIcon size={20} weight="bold" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-ink-secondary">
+                  {catalogContext.label}
+                </p>
+                <h3 className="break-words font-display text-lg font-bold text-ink-primary">
+                  {modalTitle}
+                </h3>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+              onClick={closeModal}
+              disabled={submitting}
+              aria-label={t("common.close")}
+              className="rounded-full border border-ink-tertiary/20 bg-surface-base p-2.5 text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary disabled:opacity-50"
             >
-              <X size={18} />
+              <X size={18} aria-hidden="true" />
             </button>
-          </div>
+          </header>
 
-          <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                {t("catalogs.master.lblCode", "Mã Code định danh *")}
-              </label>
-              <input
-                type="text"
-                required
-                disabled={Boolean(editingItem)}
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                placeholder={t(
-                  "catalogs.master.placeholderCode",
-                  "VD: PADDY_OM5451, KG, TCZ",
+          <form onSubmit={handleSubmit} aria-busy={submitting}>
+            <div className="space-y-5 p-4 sm:p-6">
+              {actionError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger"
+                >
+                  <WarningCircle
+                    size={18}
+                    weight="fill"
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                  <div>
+                    <p>{actionError}</p>
+                    {editingItem && !editingEtag && (
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        className="mt-2 inline-flex min-h-9 items-center gap-2 font-semibold underline disabled:opacity-50"
+                        onClick={() => void handleOpenEdit(editingItem)}
+                      >
+                        <ArrowsClockwise size={16} aria-hidden="true" />
+                        {t("common.reload")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              <fieldset
+                disabled={submitting}
+                className="grid gap-4 sm:grid-cols-2"
+              >
+                <div>
+                  <label
+                    htmlFor={`${formId}-code`}
+                    className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+                  >
+                    {t("catalogs.master.lblCode")}
+                  </label>
+                  <input
+                    id={`${formId}-code`}
+                    type="text"
+                    autoFocus={!editingItem}
+                    required
+                    disabled={Boolean(editingItem) || submitting}
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
+                    placeholder={t("catalogs.master.placeholderCode")}
+                    className={`${modalField} font-mono uppercase`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor={`${formId}-name`}
+                    className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+                  >
+                    {t("catalogs.master.lblName")}
+                  </label>
+                  <input
+                    id={`${formId}-name`}
+                    type="text"
+                    autoFocus={Boolean(editingItem)}
+                    required
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder={t("catalogs.master.placeholderName")}
+                    className={modalField}
+                  />
+                </div>
+                {(activeTab === "UNITS" || activeTab === "ATTRIBUTES") && (
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor={`${formId}-extra`}
+                      className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+                    >
+                      {t("catalogs.master.lblExtra")}
+                    </label>
+                    <input
+                      id={`${formId}-extra`}
+                      type="text"
+                      value={formData.extra}
+                      onChange={(e) =>
+                        setFormData({ ...formData, extra: e.target.value })
+                      }
+                      placeholder={t("catalogs.master.placeholderExtra")}
+                      className={`${modalField} font-mono`}
+                    />
+                  </div>
                 )}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono uppercase"
-              />
+              </fieldset>
             </div>
 
-            <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                {t("catalogs.master.lblName", "Tên hiển thị đầy đủ *")}
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder={t(
-                  "catalogs.master.placeholderName",
-                  "VD: Lúa tươi OM5451, Kilogram, Tricyclazole",
-                )}
-                className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
-              />
-            </div>
-
-            {(activeTab === "UNITS" || activeTab === "ATTRIBUTES") && (
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "catalogs.master.lblExtra",
-                    "Loại đại lượng / Ký hiệu đo lường",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  value={formData.extra}
-                  onChange={(e) =>
-                    setFormData({ ...formData, extra: e.target.value })
-                  }
-                  placeholder={t(
-                    "catalogs.master.placeholderExtra",
-                    "VD: MASS, AREA, %",
-                  )}
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
-                />
-              </div>
-            )}
-
-            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
+            <footer className="flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 p-4 sm:px-6">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
+                onClick={closeModal}
+                disabled={submitting}
+                className={modalButton}
               >
                 {t("catalogs.master.btnCancel", "Huỷ")}
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
+                disabled={submitting || (Boolean(editingItem) && !editingEtag)}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent-primary px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-accent-primary-dim disabled:opacity-50"
               >
+                {submitting ? (
+                  <ArrowsClockwise
+                    size={16}
+                    aria-hidden="true"
+                    className="motion-safe:animate-spin"
+                  />
+                ) : (
+                  <CheckCircle size={16} aria-hidden="true" />
+                )}
                 {submitting
                   ? t("catalogs.master.saving", "Đang lưu...")
                   : t("catalogs.master.btnSave", "Lưu bản ghi")}
               </button>
-            </div>
+            </footer>
           </form>
         </div>
       </Modal>

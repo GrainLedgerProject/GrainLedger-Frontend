@@ -1,55 +1,112 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ledgerEndpoints } from "@/api/ledger";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useSearchParams } from "react-router-dom";
 import {
-  LockSimpleIcon,
   ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  WarningCircleIcon,
-  XIcon,
   CalendarIcon,
+  CheckCircleIcon,
+  DownloadSimpleIcon,
+  LockSimpleIcon,
+  ShieldWarningIcon,
+  UploadSimpleIcon,
+  WarningCircleIcon,
 } from "@phosphor-icons/react";
+import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
+import { useAuthStore } from "@/app/store/authStore";
+import { ContainerCommandFeedback } from "@/features/export/components/ContainerCommandFeedback";
+import { ContainerNotices } from "@/features/export/components/ContainerNotices";
+import { saveExportFile } from "@/features/export/model/saveExportFile";
+import { millPaths } from "@/features/mill/paths";
+import { useCommand } from "@/shared/hooks/useCommand";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { Feedback } from "@/shared/ui/Workflow";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import {
+  PlaceHoldModal,
+  type HoldSelectableLot,
+} from "../components/PlaceHoldModal";
 
 interface HoldOrder {
   id: string;
-  holdCode?: string;
-  lotCode?: string;
-  reasonCode: string;
-  notes?: string;
-  issuedAt: string;
-  status: "ACTIVE_HOLD" | "QUARANTINED" | "UNDER_RETEST";
-  lotQuantityKg?: string;
-  ownerName?: string;
+  lotId: string;
+  lotCode: string;
+  reason: string;
+  status: string;
+  ownerId: string;
+  ownerName: string;
+  response: string | null;
+  createdAt: string;
+  evidenceId: string | null;
+}
+
+interface LotPositionInfo {
+  id: string;
+  code: string;
+  ownerId: string;
+  positions: {
+    facilityId: string;
+    locationId: string;
+    quantityKg: string;
+    availableKg: string;
+  }[];
+}
+
+async function readAllHolds(): Promise<HoldOrder[]> {
+  const records: HoldOrder[] = [];
+  for (let page = 1; ; page++) {
+    const response = await ledgerEndpoints.getHolds({ page, pageSize: 100 });
+    if (Array.isArray(response)) return [...records, ...response];
+    const result = response as { items: HoldOrder[]; hasMore?: boolean };
+    if (!Array.isArray(result?.items))
+      throw new Error("Invalid HOLD list response");
+    records.push(...result.items);
+    if (!result.hasMore) return records;
+    if (!result.items.length) throw new Error("Invalid HOLD pagination");
+  }
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export const HoldManagementPage: React.FC = () => {
   const { t } = useTranslation();
+  const text = useWorkflowText();
+  const [params] = useSearchParams();
+  const user = useAuthStore((s) => s.user);
+  const canIssue =
+    user?.role === "CUSTOMER_MANAGER" &&
+    user.permissions.includes("holds.manage");
+  const canRespond =
+    user?.role === "MILL_MANAGER" && user.permissions.includes("holds.process");
+
   const [holds, setHolds] = useState<HoldOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Issue Hold Modal
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [targetLotCode, setTargetLotCode] = useState("LOT-2026-S1");
-  const [reasonCode, setReasonCode] = useState("MRL_TRICYCLAZOLE_EXCEEDED");
-  const [notes, setNotes] = useState(
-    "Kết quả thử nghiệm phòng lab LOQ vượt ngưỡng 0.010 mg/kg của thị trường EU.",
-  );
-  const [submitting, setSubmitting] = useState(false);
+  const [activeHold, setActiveHold] = useState<HoldOrder | null>(null);
 
-  // Manual reload / refresh handler used by user actions (reload button, after submit)
+  const requestedLotId = params.get("lotId") ?? "";
+
   const loadHolds = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await ledgerEndpoints.getHolds().catch(() => []);
-      const items = Array.isArray(res)
-        ? res
-        : (res as { items?: HoldOrder[] })?.items || [];
-      setHolds(items as HoldOrder[]);
+      const rows = await readAllHolds();
+      setHolds(rows);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -61,25 +118,13 @@ export const HoldManagementPage: React.FC = () => {
     }
   }, [t]);
 
-  // Keyboard ESC listener
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isModalOpen) setIsModalOpen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isModalOpen]);
   useEffect(() => {
     let active = true;
-
     async function initHolds() {
       try {
-        const res = await ledgerEndpoints.getHolds().catch(() => []);
+        const items = await readAllHolds();
         if (!active) return;
-        const items = Array.isArray(res)
-          ? res
-          : (res as { items?: HoldOrder[] })?.items || [];
-        setHolds(items as HoldOrder[]);
+        setHolds(items);
       } catch (err: unknown) {
         if (!active) return;
         if (err instanceof Error) {
@@ -90,88 +135,40 @@ export const HoldManagementPage: React.FC = () => {
           );
         }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
-
     void initHolds();
-
     return () => {
       active = false;
     };
   }, [t]);
 
-  const handleIssueHold = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
+  const requestedLot = useQuery({
+    queryKey: ["hold-prefill-lot", requestedLotId],
+    queryFn: () =>
+      ledgerEndpoints.getLot(requestedLotId) as Promise<HoldSelectableLot>,
+    enabled: Boolean(requestedLotId && canIssue),
+    retry: false,
+  });
 
+  const filteredHolds = useMemo(() => {
+    if (statusFilter === "ALL") return holds;
+    return holds.filter((h) => h.status === statusFilter);
+  }, [holds, statusFilter]);
+
+  async function downloadHoldEvidence(evidenceId: string) {
     try {
-      await ledgerEndpoints.createHold({
-        operationId: crypto.randomUUID(),
-        lotId: crypto.randomUUID(),
-        lotCode: targetLotCode,
-        reason: notes,
-        reasonCode,
-        notes,
-        issuedAt: new Date().toISOString(),
-      });
-
-      setSuccessMsg(
-        t(
-          "risk.hold.issuedSuccess",
-          "Đã ban hành Lệnh HOLD phong toả khẩn cấp cho lô {{lot}}",
-          {
-            lot: targetLotCode,
-          },
-        ),
+      const blob = await ledgerEndpoints.getEvidence(evidenceId);
+      saveExportFile(blob, `hold-evidence-${evidenceId}.bin`);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : text("Không thể tải tệp chứng cứ.", "Could not download evidence."),
       );
-      setIsModalOpen(false);
-      await loadHolds();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("risk.hold.errCreate", "Không thể ban hành lệnh HOLD."));
-      }
-    } finally {
-      setSubmitting(false);
     }
-  };
-
-  const handleRespondHold = async (hold: HoldOrder, responseKind: string) => {
-    try {
-      await ledgerEndpoints.respondToHold(hold.id, {
-        operationId: crypto.randomUUID(),
-        status:
-          responseKind === "RELEASE" ? "RELEASE_REQUESTED" : "ACKNOWLEDGED",
-        response: `Xác nhận tiếp nhận xử lý và chuyển kho cách ly vật lý (${responseKind})`,
-        responseKind,
-        respondedAt: new Date().toISOString(),
-        notes: `Ghi nhận chuyển kho cách ly vật lý theo quy định`,
-      });
-      setSuccessMsg(
-        t(
-          "risk.hold.updatedSuccess",
-          "Đã cập nhật xử lý lệnh HOLD cho lô {{lot}}",
-          {
-            lot: hold.lotCode || hold.id,
-          },
-        ),
-      );
-      await loadHolds();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t("risk.hold.errRespond", "Không thể cập nhật phản hồi HOLD."),
-        );
-      }
-    }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -182,7 +179,7 @@ export const HoldManagementPage: React.FC = () => {
             data-ui-detail="secondary"
             className="text-xs font-mono font-bold text-accent-danger uppercase tracking-wider block"
           >
-            {t("risk.hold.badge", "QUẢN LÝ PHONG TỎA & CẢNH BÁO RỦI RO")}
+            {t("risk.hold.badge", "QUẢN LÝ PHONG TOẢ & CẢNH BÁO RỦI RO")}
           </span>
           <h2 className="text-2xl font-display font-bold text-ink-primary">
             {t("risk.hold.title", "Lệnh Giữ Phong Toả An Toàn (HOLD Orders)")}
@@ -195,59 +192,67 @@ export const HoldManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label={text("Lọc trạng thái HOLD", "Filter HOLD status")}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-control w-auto border-ink-tertiary/20 bg-surface-base font-semibold"
+          >
+            <option value="ALL">
+              {text("Tất cả trạng thái", "All statuses")}
+            </option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+            <option value="ISOLATED">ISOLATED</option>
+            <option value="RESPONDED">RESPONDED</option>
+            <option value="RELEASED">RELEASED</option>
+          </select>
           <button
             type="button"
-            onClick={loadHolds}
+            onClick={() => void loadHolds()}
             className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
             <ArrowsClockwiseIcon size={16} />
           </button>
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:opacity-90 transition-all shadow-xs"
-          >
-            <LockSimpleIcon size={16} weight="bold" />
-            <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
-          </button>
+          {canIssue && (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-danger text-white font-semibold text-xs hover:opacity-90 transition-all shadow-xs"
+            >
+              <LockSimpleIcon size={16} weight="bold" />
+              <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Alerts */}
+      {(user?.role === "CUSTOMER_EXPORT_OFFICER" ||
+        user?.role === "CUSTOMER_MANAGER" ||
+        user?.role === "MILL_MANAGER") && <ContainerNotices />}
+
       {error && (
-        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
+        <div
+          role="alert"
+          className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2"
+        >
           <WarningCircleIcon size={18} weight="fill" className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
+
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2">
+        <div
+          role="status"
+          className="p-3.5 rounded-lg bg-functional-balanced-bg border border-functional-balanced-border/40 text-accent-primary text-xs flex items-center gap-2"
+        >
           <CheckCircleIcon size={18} weight="fill" className="shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
-
-      {/* Warning Policy Box */}
-      {/* <div className="p-4 rounded-xl bg-functional-hold-bg dark:bg-functional-hold-bg/20 border border-functional-hold-border/40 flex items-start gap-3">
-        <ShieldWarningIcon
-          size={22}
-          className="text-accent-danger shrink-0 mt-0.5"
-          weight="fill"
-        />
-        <div className="text-xs space-y-1">
-          <h4 className="font-bold text-accent-danger">
-            {t("risk.hold.policyTitle", "Phong toả và Cô lập Dứt khoát")}
-          </h4>
-          <p className="text-ink-secondary leading-relaxed">
-            {t(
-              "risk.hold.policyDesc",
-              "Khi phát lệnh HOLD, lô hàng hoặc container bị khóa lập tức ở tầng sổ cái và không thể đưa vào bất kỳ phương án phối trộn hay xuất xưởng nào. Lệnh chỉ kết thúc khi có kết quả xét nghiệm lại đạt chuẩn hoặc lập phiếu chuyển phân loại thành phẩm.",
-            )}
-          </p>
-        </div>
-      </div> */}
 
       {/* Table */}
       <div className="rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised overflow-hidden shadow-xs">
@@ -256,12 +261,12 @@ export const HoldManagementPage: React.FC = () => {
             <GrainLoader
               label={t(
                 "risk.hold.loading",
-                "Đang đối soát danh sách phong toả...",
+                "Đang đồng bộ danh sách lệnh HOLD...",
               )}
             />
           </div>
-        ) : holds.length === 0 ? (
-          <div className="py-16 text-center space-y-2">
+        ) : error ? null : filteredHolds.length === 0 ? (
+          <div className="py-16 px-4 text-center space-y-2">
             <CheckCircleIcon
               size={40}
               className="mx-auto text-accent-primary opacity-60"
@@ -269,13 +274,13 @@ export const HoldManagementPage: React.FC = () => {
             <p className="text-sm font-semibold text-ink-primary">
               {t(
                 "risk.hold.emptyTitle",
-                "Không có lô hàng nào bị phong toả HOLD",
+                "Không tìm thấy lệnh HOLD lô trong phạm vi hiện tại",
               )}
             </p>
-            <p className="text-xs text-ink-secondary max-w-sm mx-auto">
+            <p className="text-xs text-ink-secondary max-w-md mx-auto">
               {t(
                 "risk.hold.emptyDesc",
-                "Toàn bộ tồn kho hiện tại đều an toàn và đạt tiêu chuẩn MRL theo các thị trường xuất khẩu.",
+                "Trạng thái an toàn và đạt chuẩn MRL phụ thuộc vào kết quả đánh giá tương ứng của từng lô hoặc container.",
               )}
             </p>
           </div>
@@ -294,7 +299,7 @@ export const HoldManagementPage: React.FC = () => {
                     {t("risk.hold.thIssuedAt", "Thời điểm ban hành")}
                   </th>
                   <th className="py-3 px-4">
-                    {t("risk.hold.thNotes", "Ghi chú bằng chứng")}
+                    {t("risk.hold.thOwner", "Chủ sở hữu")}
                   </th>
                   <th className="py-3 px-4">
                     {t("risk.hold.thStatus", "Trạng thái")}
@@ -305,7 +310,7 @@ export const HoldManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-tertiary/10">
-                {holds.map((h) => (
+                {filteredHolds.map((h) => (
                   <tr
                     key={h.id}
                     className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
@@ -313,50 +318,78 @@ export const HoldManagementPage: React.FC = () => {
                     <td className="py-3 px-4 font-mono font-bold text-accent-danger">
                       <span className="inline-flex items-center gap-1.5">
                         <LockSimpleIcon size={14} weight="fill" />
-                        <span>{h.lotCode || `LOT-${h.id.slice(0, 8)}`}</span>
+                        <span>{h.lotCode}</span>
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-semibold text-ink-primary">
-                      {h.reasonCode}
+                    <td className="py-3 px-4 text-ink-primary space-y-1 max-w-sm">
+                      <p className="font-semibold">{h.reason}</p>
+                      {h.response && (
+                        <p className="text-[11px] text-ink-secondary">
+                          {text("Phản hồi nhà máy", "Mill response")}:{" "}
+                          {h.response}
+                        </p>
+                      )}
+                      {h.evidenceId && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void downloadHoldEvidence(h.evidenceId!)
+                          }
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-primary hover:underline"
+                        >
+                          <DownloadSimpleIcon size={12} />
+                          <span>
+                            {text("Tải chứng cứ", "Download evidence")} (
+                            {h.evidenceId.slice(0, 8)})
+                          </span>
+                        </button>
+                      )}
                     </td>
-                    <td className="py-3 px-4 font-mono text-ink-secondary">
+                    <td className="py-3 px-4 font-mono text-ink-secondary whitespace-nowrap">
                       <span className="inline-flex items-center gap-1">
                         <CalendarIcon size={13} />
                         <span>
-                          {new Date(h.issuedAt).toLocaleDateString("vi-VN")}
+                          {new Date(h.createdAt).toLocaleDateString("vi-VN")}
                         </span>
                       </span>
                     </td>
                     <td className="py-3 px-4 text-ink-secondary max-w-xs truncate">
-                      {h.notes ||
-                        t(
-                          "risk.hold.defaultNotes",
-                          "Vượt ngưỡng an toàn phòng thí nghiệm",
-                        )}
+                      {h.ownerName}
                     </td>
                     <td className="py-3 px-4">
                       <StatusBadge
-                        status="HOLD"
-                        label={t("risk.hold.statusActive", "ĐANG PHONG TOẢ")}
+                        status={
+                          h.status === "ISOLATED" || h.status === "RELEASED"
+                            ? "COMPLIANT"
+                            : h.status === "ACTIVE"
+                              ? "HOLD"
+                              : "PENDING"
+                        }
+                        label={h.status}
+                        size="sm"
                       />
                     </td>
-                    <td className="py-3 px-4 text-right space-x-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleRespondHold(h, "TRANSFER_QUARANTINE")
-                        }
-                        className="px-2.5 py-1 rounded bg-accent-warning text-ink-inverse font-semibold text-xs hover:opacity-90"
-                        title={t(
-                          "risk.hold.btnTransferQuarantine",
-                          "Xác nhận chuyển kho cách ly vật lý",
-                        )}
-                      >
-                        {t(
-                          "risk.hold.btnTransferQuarantine",
-                          "Chuyển kho cách ly",
-                        )}
-                      </button>
+                    <td className="py-3 px-4 text-right">
+                      {canRespond && (
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <Link
+                            to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(h.lotId)}&holdId=${encodeURIComponent(h.id)}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-functional-stale-border bg-functional-stale-bg text-ink-primary font-semibold text-xs hover:opacity-90"
+                          >
+                            {t(
+                              "risk.hold.btnTransferQuarantine",
+                              "Chuyển kho cách ly",
+                            )}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setActiveHold(h)}
+                            className="px-2.5 py-1 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:opacity-90"
+                          >
+                            {text("Xử lý & phản hồi", "Respond HOLD")}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -366,138 +399,362 @@ export const HoldManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="hold-modal-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
+      {/* Issue HOLD Modal (uses real searchable lotId & file evidence) */}
+      <PlaceHoldModal
+        isOpen={isModalOpen && canIssue}
+        onClose={() => setIsModalOpen(false)}
+        initialLot={requestedLot.data ?? null}
+        onSuccess={async () => {
+          setSuccessMsg(
+            text(
+              "Đã ban hành lệnh HOLD lên sổ cái thành công.",
+              "Issued HOLD order to ledger successfully.",
+            ),
+          );
+          await loadHolds();
+        }}
+      />
+
+      {/* Respond / Isolate HOLD Modal */}
+      {activeHold && canRespond && (
+        <RespondHoldModal
+          hold={activeHold}
+          onClose={() => setActiveHold(null)}
+          onSaved={async () => {
+            setSuccessMsg(
+              t(
+                "risk.hold.updatedSuccess",
+                "Đã cập nhật xử lý lệnh HOLD cho lô {{lot}}",
+                {
+                  lot: activeHold.lotCode,
+                },
+              ),
+            );
+            setActiveHold(null);
+            await loadHolds();
           }}
-          className="!m-0 fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
-        >
-          <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in focus:rounded-lg">
-            <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
-              <h2
-                id="hold-modal-title"
-                className="font-display font-bold text-base text-accent-danger flex items-center gap-2"
-              >
-                <LockSimpleIcon size={18} weight="fill" />
-                <span>
-                  {t("risk.hold.modalTitle", "Ban hành Lệnh HOLD Khẩn Cấp")}
-                </span>
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
-              >
-                <XIcon size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleIssueHold} className="p-5 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "risk.hold.lotCodeLabel",
-                    "Mã Lô hàng hoặc Container cần phong toả *",
-                  )}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={targetLotCode}
-                  onChange={(e) => setTargetLotCode(e.target.value)}
-                  placeholder="VD: LOT-2026-S1, CONT-20FT-001"
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-danger focus:outline-none font-mono font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "risk.hold.reasonCodeLabel",
-                    "Mã Lý do phong toả (Reason Code) *",
-                  )}
-                </label>
-                <select
-                  value={reasonCode}
-                  onChange={(e) => setReasonCode(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-danger focus:outline-none"
-                >
-                  <option value="MRL_TRICYCLAZOLE_EXCEEDED">
-                    {t(
-                      "risk.hold.reasonMrlTricyclazole",
-                      "Vượt ngưỡng MRL Tricyclazole (EU LOQ 0.010)",
-                    )}
-                  </option>
-                  <option value="MRL_HEXACONAZOLE_EXCEEDED">
-                    {t(
-                      "risk.hold.reasonMrlHexaconazole",
-                      "Vượt ngưỡng MRL Hexaconazole",
-                    )}
-                  </option>
-                  <option value="MOISTURE_EXCESSIVE">
-                    {t(
-                      "risk.hold.reasonMoistureExcessive",
-                      "Độ ẩm vượt quá tiêu chuẩn bảo quản (>15%)",
-                    )}
-                  </option>
-                  <option value="BROKEN_PERCENT_MISMATCH">
-                    {t(
-                      "risk.hold.reasonBrokenMismatch",
-                      "Tỷ lệ hạt tấm không đồng nhất",
-                    )}
-                  </option>
-                  <option value="CONTAMINATION_SUSPECTED">
-                    {t(
-                      "risk.hold.reasonContamination",
-                      "Nghi ngờ nhiễm bẩn cơ học hoặc sâu mọt",
-                    )}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "risk.hold.notesLabel",
-                    "Ghi chú chi tiết & Căn cứ phiếu thử nghiệm *",
-                  )}
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-danger focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary"
-                >
-                  {t("common.cancel", "Huỷ")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-accent-danger text-white font-semibold hover:opacity-90 transition-colors disabled:opacity-60"
-                >
-                  {submitting
-                    ? t("risk.hold.submitting", "Đang phát lệnh...")
-                    : t("risk.hold.btnSubmit", "Ban hành Lệnh HOLD")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        />
       )}
     </div>
   );
 };
+
+function RespondHoldModal({
+  hold,
+  onClose,
+  onSaved,
+}: {
+  hold: HoldOrder;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const text = useWorkflowText();
+  const uid = useId();
+  const user = useAuthStore((s) => s.user);
+  const [status, setStatus] = useState<
+    "ACKNOWLEDGED" | "ISOLATED" | "RESPONDED"
+  >("ACKNOWLEDGED");
+  const [responseText, setResponseText] = useState("");
+  const [evidenceId, setEvidenceId] = useState(hold.evidenceId ?? "");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const lotDetail = useQuery({
+    queryKey: ["respond-hold-lot", hold.lotId],
+    queryFn: () =>
+      ledgerEndpoints.getLot(hold.lotId) as Promise<LotPositionInfo>,
+  });
+
+  const lookups = useQuery({
+    queryKey: ["respond-hold-lookups"],
+    queryFn: () => ledgerEndpoints.getLookups() as Promise<SetupApiResponse>,
+  });
+
+  const command = useCommand<{
+    status: "ACKNOWLEDGED" | "ISOLATED" | "RESPONDED";
+    response: string;
+    evidenceId: string;
+  }>(
+    (id, input) =>
+      ledgerEndpoints.respondToHold(hold.id, {
+        id,
+        ...input,
+      }),
+    onSaved,
+    { persistKey: `hold-respond:${hold.id}` },
+  );
+
+  const locationsMap = useMemo(
+    () => new Map((lookups.data?.locations ?? []).map((l) => [l.id, l])),
+    [lookups.data?.locations],
+  );
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLocalError(null);
+    if (!responseText.trim()) return;
+
+    try {
+      let resolvedEvidenceId = evidenceId.trim();
+      if (evidenceFile) {
+        setUploading(true);
+        const ownerId = hold.ownerId || user?.organizationId || "";
+        const facilityId =
+          lotDetail.data?.positions?.[0]?.facilityId ||
+          lookups.data?.facilities?.[0]?.id ||
+          "";
+        if (!ownerId || !facilityId) {
+          throw new Error(
+            text(
+              "Không xác định được cơ sở/chủ sở hữu để tải tệp chứng cứ.",
+              "Could not determine owner/facility to upload evidence.",
+            ),
+          );
+        }
+        const newEvidenceId = crypto.randomUUID();
+        const contentBase64 = await readFileAsBase64(evidenceFile);
+        await ledgerEndpoints.uploadEvidence({
+          id: newEvidenceId,
+          ownerId,
+          facilityId,
+          fileName: evidenceFile.name,
+          contentType: evidenceFile.type || "application/octet-stream",
+          contentBase64,
+        });
+        resolvedEvidenceId = newEvidenceId;
+        setEvidenceId(newEvidenceId);
+      }
+
+      if (!resolvedEvidenceId) {
+        throw new Error(
+          text(
+            "Vui lòng tải tệp chứng cứ hoặc nhập mã chứng cứ UUID.",
+            "Please upload an evidence file or provide an evidence UUID.",
+          ),
+        );
+      }
+      if (
+        !/^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(
+          resolvedEvidenceId,
+        )
+      ) {
+        throw new Error(
+          text(
+            "Mã chứng cứ phải là UUID hợp lệ.",
+            "Evidence ID must be a valid UUID.",
+          ),
+        );
+      }
+
+      command.submit({
+        status,
+        response: responseText.trim(),
+        evidenceId: resolvedEvidenceId,
+      });
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={!uploading && !command.isPending}
+      ariaLabel={text("Xử lý lệnh HOLD tại nhà máy", "Respond to lot HOLD")}
+    >
+      <div className="w-[calc(100vw-2rem)] max-w-xl rounded-2xl border border-ink-tertiary/20 bg-surface-base p-6 text-ink-primary shadow-xl dark:bg-surface-raised space-y-4">
+        <div className="flex items-start gap-3 border-b border-ink-tertiary/15 pb-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-warning/15 text-accent-warning">
+            <ShieldWarningIcon size={22} weight="fill" />
+          </span>
+          <div className="space-y-0.5">
+            <h3 className="font-display text-lg font-bold">
+              {text("Xử lý lệnh HOLD tại nhà máy", "Process HOLD order")} ·{" "}
+              <span className="font-mono text-accent-danger">
+                {hold.lotCode}
+              </span>
+            </h3>
+            <p className="text-xs text-ink-secondary">{hold.reason}</p>
+          </div>
+        </div>
+
+        {/* Lot stock positions & ISOLATION guidance */}
+        <div className="rounded-xl border border-ink-tertiary/20 bg-surface-raised/50 p-3 text-xs space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-ink-secondary">
+              {text("Vị trí tồn kho của lô", "Affected lot stock positions")}
+            </span>
+            <Link
+              to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(hold.lotId)}&holdId=${encodeURIComponent(hold.id)}`}
+              className="font-semibold text-accent-primary hover:underline"
+            >
+              {text(
+                "Mở phiếu chuyển kho cách ly (ISOLATION) →",
+                "Open ISOLATION transfer →",
+              )}
+            </Link>
+          </div>
+          {lotDetail.isPending ? (
+            <p className="text-ink-secondary">
+              {text("Đang tải vị trí tồn...", "Loading positions...")}
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {(lotDetail.data?.positions ?? []).map((pos) => {
+                const loc = locationsMap.get(pos.locationId);
+                const isolated = loc?.kind === "ISOLATION";
+                return (
+                  <li
+                    key={pos.locationId}
+                    className="flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <span>
+                      {loc?.name ?? pos.locationId}{" "}
+                      <span className="text-[11px] font-semibold">
+                        ({isolated ? "ISOLATION" : (loc?.kind ?? "WAREHOUSE")})
+                      </span>
+                    </span>
+                    <span className="font-mono">
+                      {pos.quantityKg} kg ({text("khả dụng", "avail")}:{" "}
+                      {pos.availableKg} kg)
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          className="space-y-4 text-xs"
+        >
+          <label htmlFor={`${uid}-status`} className="block space-y-1">
+            <span className="font-semibold text-ink-secondary">
+              {text("Trạng thái xử lý", "Response status")} *
+            </span>
+            <select
+              id={`${uid}-status`}
+              value={status}
+              onChange={(e) =>
+                setStatus(
+                  e.target.value as "ACKNOWLEDGED" | "ISOLATED" | "RESPONDED",
+                )
+              }
+              className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 focus:border-accent-primary focus:outline-none"
+            >
+              <option value="ACKNOWLEDGED">
+                ACKNOWLEDGED — {text("Đã tiếp nhận xử lý", "Acknowledged")}
+              </option>
+              <option value="ISOLATED">
+                ISOLATED —{" "}
+                {text(
+                  "Đã chuyển toàn bộ lô vào kho ISOLATION",
+                  "Confirmed moved to ISOLATION",
+                )}
+              </option>
+              <option value="RESPONDED">
+                RESPONDED —{" "}
+                {text("Ghi nhận báo cáo phản hồi", "Recorded full response")}
+              </option>
+            </select>
+          </label>
+
+          <label htmlFor={`${uid}-response`} className="block space-y-1">
+            <span className="font-semibold text-ink-secondary">
+              {text("Nội dung phản hồi / biên bản xử lý", "Response notes")} *
+            </span>
+            <textarea
+              id={`${uid}-response`}
+              required
+              rows={3}
+              maxLength={1000}
+              value={responseText}
+              onChange={(e) => setResponseText(e.target.value)}
+              placeholder={text(
+                "Mô tả thao tác cách ly vật lý, niêm phong hoặc kiểm tra bổ sung...",
+                "Describe physical isolation, sealing, or verification actions...",
+              )}
+              className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 focus:border-accent-primary focus:outline-none"
+            />
+          </label>
+
+          <div className="rounded-xl border border-dashed border-ink-tertiary/30 bg-surface-raised/40 p-3 space-y-2">
+            <p className="font-semibold text-ink-secondary flex items-center gap-1.5">
+              <UploadSimpleIcon size={15} className="text-accent-primary" />
+              <span>
+                {text("Tài liệu chứng cứ xử lý HOLD", "HOLD response evidence")}
+              </span>
+            </p>
+            <input
+              type="file"
+              aria-label={text(
+                "Tệp chứng cứ xử lý HOLD",
+                "HOLD response evidence file",
+              )}
+              onChange={(e) => setEvidenceFile(e.target.files?.[0] ?? null)}
+              className="w-full text-[11px]"
+            />
+            <label htmlFor={`${uid}-evid`} className="block space-y-1">
+              <span className="text-[11px] text-ink-secondary">
+                {text(
+                  "Mã chứng cứ UUID (tự điền khi tải tệp)",
+                  "Evidence UUID (auto-filled on upload)",
+                )}
+              </span>
+              <input
+                id={`${uid}-evid`}
+                type="text"
+                value={evidenceId}
+                onChange={(e) => setEvidenceId(e.target.value)}
+                placeholder="00000000-0000-0000-0000-000000000000"
+                className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-base px-2.5 py-1.5 font-mono text-[11px]"
+              />
+            </label>
+          </div>
+
+          {localError && <Feedback error={new Error(localError)} />}
+          <ContainerCommandFeedback
+            error={command.error}
+            uncertain={command.uncertain}
+            retry={command.retry}
+            success={command.isSuccess}
+            isPending={command.isPending}
+            restoredPending={command.restoredPending}
+            discardPending={command.discardPending}
+          />
+
+          <div className="flex justify-end gap-2 border-t border-ink-tertiary/15 pt-3">
+            <button
+              type="button"
+              disabled={uploading || command.isPending}
+              onClick={onClose}
+              className="rounded-xl border border-ink-tertiary/25 px-4 py-2 font-semibold text-ink-secondary hover:bg-surface-raised"
+            >
+              {text("Đóng", "Close")}
+            </button>
+            <button
+              type="submit"
+              disabled={
+                uploading ||
+                command.isPending ||
+                command.uncertain ||
+                !responseText.trim() ||
+                (!evidenceFile && !evidenceId.trim())
+              }
+              className="rounded-xl bg-accent-primary px-4 py-2 font-semibold text-white hover:bg-accent-primary/90 disabled:opacity-50"
+            >
+              {uploading || command.isPending
+                ? text("Đang lưu...", "Saving...")
+                : text("Ghi nhận phản hồi HOLD", "Submit HOLD response")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+  );
+}

@@ -11,7 +11,7 @@ export const planningEndpoints = {
       ),
     ),
   createDraft: (id: string, body: CreateBlendPlanDraftRequest) =>
-    apiFetch<unknown>(
+    apiFetch<BlendPlanDraftDto>(
       `/api/export-containers/${encodeURIComponent(id)}/blend-plans/drafts`,
       { method: "POST", body: JSON.stringify(body) },
     ),
@@ -25,7 +25,7 @@ export const planningEndpoints = {
       { method: "POST", body: JSON.stringify(body) },
     ),
   previewPlan: (id: string, body: PreviewBlendPlanRequest) =>
-    apiFetch<unknown>(`/api/blend-plans/${encodeURIComponent(id)}/preview`, {
+    apiFetch<BlendPreview>(`/api/blend-plans/${encodeURIComponent(id)}/preview`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -67,7 +67,7 @@ export const planningEndpoints = {
     commodityId: string;
     at?: string;
   }) =>
-    apiFetch<unknown>(
+    apiFetch<AssessmentPolicy>(
       withApiQuery("/api/blend-assessment-policies/applicable", query),
     ),
   publishAssessmentPolicy: (body: PublishBlendAssessmentPolicyRequest) =>
@@ -89,8 +89,8 @@ export const planningEndpoints = {
     apiFetch<unknown>(
       withApiQuery("/api/ledger/planning-yield-rules/applicable", query),
     ),
-  createQualityObservation: (body: object) =>
-    apiFetch<unknown>("/api/ledger/planning-quality-observations", {
+  createQualityObservation: (body: PlanningQualityObservationRequest) =>
+    apiFetch<PlanningQualityObservation>("/api/ledger/planning-quality-observations", {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -100,10 +100,35 @@ export const planningEndpoints = {
     lotIds: Array<string>;
     at?: string;
   }) =>
-    apiFetch<unknown>(
+    apiFetch<PlanningQualityObservation[]>(
       withApiQuery("/api/ledger/planning-quality-observations", query),
     ),
 };
+
+export interface AssessmentPolicy extends PublishBlendAssessmentPolicyRequest {
+  versionNo: number;
+}
+
+export interface PlanningQualityObservation {
+  id: string;
+  attributeId: string;
+  versionNo: number;
+  measuredValue: string;
+  unit: string;
+  evidenceId: string;
+}
+
+export interface PlanningQualityObservationRequest extends PlanningQualityObservation {
+  lotId: string;
+  ownerId: string;
+  facilityId: string;
+  measuredAt: string;
+  reportReference: string;
+  reviewedBy: string;
+  reviewAuthority: string;
+  reviewedAt: string;
+  subjectConfirmed: true;
+}
 
 export interface ApproveBlendPlanRequest {
   operationId: string;
@@ -142,6 +167,9 @@ export interface PreviewBlendPlanRequest {
   facilityId: string;
   scopeRevision: string;
   maxIterations?: number | string;
+  objective?: "MIN_LOCATIONS" | "RETAIN_HEAD_RICE" | "MIN_LOTS" | "MIN_MOISTURE" | "MAX_RESIDUE_HEADROOM";
+  moistureAttributeId?: string;
+  adjustment?: { previewReference: string; firstQuantityKg: string };
 }
 
 export interface ProposeBlendPlanRequest {
@@ -242,4 +270,24 @@ export interface BlendPlanDecision {
       }
     >;
   };
+}
+
+export interface BlendPreview {
+  outcome: string;
+  reasons: string[];
+  assessmentStatus: string;
+  previewReference: string | null;
+  expiresAt?: string | null;
+  canPropose: boolean;
+  selection: { selectedMassKg: string; allocations: { lotId: string; lotCode: string; locationId: string; quantityKg: string }[] } | null;
+  assessmentFindings: { code: string; status: string; actual: string | null; limit: string | null; unit: string | null }[];
+  iterations?: number;
+  predictedOutputKg?: string | null;
+  ratioRange?: { minimumKg: string; maximumKg: string } | null;
+  optimization?: { method: string; objective: string | null; positionsUsed: number | null; lotsUsed?: number; headRiceUsedKg?: string; weightedMoisture?: string; optimal: boolean } | null;
+  calculationSteps?: { method: string; attempts: { mode: string; candidateCount: number; inputKg: number; status: string;
+    variables: number; constraints: number; elapsedMs: number; objective: number | null; bestBound: number | null; nodes: number | null; assessmentStatus: string | null }[] } | null;
+  substanceNames?: Record<string, string>;
+  residueHeadroom?: { substanceId: string; ratio: number } | null;
+  inputResidueExclusions?: { lotId: string; lotCode: string; substanceId: string; code: string; upper: string | null; mrl: string | null; unit: string | null }[];
 }

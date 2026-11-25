@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { CheckCircle, LockSimple, WarningCircle } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 

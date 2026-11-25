@@ -2,14 +2,19 @@ import { apiFetch } from "./client";
 
 /** Endpoints for reviewed residue rules, policy settings and evidence selection. */
 export const residueEndpoints = {
-  getSourceGroups: () => apiFetch<unknown>("/api/residue-source-groups"),
+  getSourceGroups: () =>
+    apiFetch<{ items: ResidueSourceGroupVersion[] }>(
+      "/api/residue-source-groups",
+    ),
   createSourceGroup: (body: ResidueSourceGroupVersion) =>
-    apiFetch<unknown>("/api/residue-source-groups", {
+    apiFetch<ResidueSourceGroupVersion>("/api/residue-source-groups", {
       method: "POST",
       body: JSON.stringify(body),
     }),
   getSourceGroup: (id: string) =>
-    apiFetch<unknown>(`/api/residue-source-groups/${encodeURIComponent(id)}`),
+    apiFetch<ResidueSourceGroupVersion>(
+      `/api/residue-source-groups/${encodeURIComponent(id)}`,
+    ),
   getRules: () =>
     apiFetch<{ items: ResidueProfileVersion[] }>("/api/residue-rules"),
   createRule: (body: ResidueProfileVersion) =>
@@ -26,32 +31,42 @@ export const residueEndpoints = {
       `/api/residue-rules/${encodeURIComponent(id)}/retire`,
       { method: "POST", body: JSON.stringify(body) },
     ),
-  getPolicySettings: () => apiFetch<unknown>("/api/residue-policy-settings"),
+  getPolicySettings: () =>
+    apiFetch<{ items: ResiduePolicySettingVersion[] }>(
+      "/api/residue-policy-settings",
+    ),
   createPolicySetting: (request: ResiduePolicySettingVersion) =>
-    apiFetch<unknown>("/api/residue-policy-settings", {
+    apiFetch<ResiduePolicySettingVersion>("/api/residue-policy-settings", {
       method: "POST",
       body: JSON.stringify(request),
     }),
   getPolicySetting: (id: string) =>
-    apiFetch<unknown>(`/api/residue-policy-settings/${encodeURIComponent(id)}`),
+    apiFetch<ResiduePolicySettingVersion>(
+      `/api/residue-policy-settings/${encodeURIComponent(id)}`,
+    ),
   batchPolicySettings: (request: ResiduePolicySettingBatch) =>
-    apiFetch<unknown>("/api/residue-policy-settings/batch", {
-      method: "POST",
-      body: JSON.stringify(request),
-    }),
+    apiFetch<{ items: ResiduePolicySettingVersion[] }>(
+      "/api/residue-policy-settings/batch",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+    ),
   getReportSelections: () =>
-    apiFetch<unknown>("/api/residue-report-selections"),
+    apiFetch<{ items: ResidueReportSelection[] }>(
+      "/api/residue-report-selections",
+    ),
   createReportSelection: (request: ResidueReportSelection) =>
-    apiFetch<unknown>("/api/residue-report-selections", {
+    apiFetch<ResidueReportSelection>("/api/residue-report-selections", {
       method: "POST",
       body: JSON.stringify(request),
     }),
   getReportSelection: (id: string) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueReportSelection>(
       `/api/residue-report-selections/${encodeURIComponent(id)}`,
     ),
   previewReportSelection: (request: ResidueReportSelection) =>
-    apiFetch<unknown>("/api/residue-report-selections/preview", {
+    apiFetch<{ lower: string | null; upper: string | null; unit: string | null; reasons: string[] }>("/api/residue-report-selections/preview", {
       method: "POST",
       body: JSON.stringify(request),
     }),
@@ -59,7 +74,7 @@ export const residueEndpoints = {
     reportId: string,
     request: ResidueReportReviewRequest,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueReportReview>(
       `/api/lab-reports/${encodeURIComponent(reportId)}/residue-review/preview`,
       { method: "POST", body: JSON.stringify(request) },
     ),
@@ -67,7 +82,7 @@ export const residueEndpoints = {
     reportId: string,
     request: ResidueReportReviewRequest,
   ) =>
-    apiFetch<unknown>(
+    apiFetch<ResidueReportReview>(
       `/api/lab-reports/${encodeURIComponent(reportId)}/residue-review/confirm`,
       { method: "POST", body: JSON.stringify(request) },
     ),
@@ -90,8 +105,8 @@ export interface ResiduePolicySettingVersion {
   id: string;
   companyId: string;
   ruleCode: string;
-  versionNo: number | string;
-  mode: string;
+  versionNo: number;
+  mode: "SYSTEM_DEFAULT" | "COMPANY_OVERRIDE";
   effectiveFrom: string;
   effectiveTo: null | string;
   supersedesId: null | string;
@@ -178,6 +193,23 @@ export interface ResidueReportReviewRow {
   supersedesId?: null | string;
   note?: null | string;
   previewFingerprint?: null | string;
+}
+
+export interface ResidueReportReview {
+  reportId: string;
+  effectiveFrom: string;
+  rows: {
+    input: ResidueReportReviewRow;
+    label: string;
+    rawUncertainty: string | null;
+    profile: ResidueProfileVersion | null;
+    setting: ResiduePolicySettingVersion | null;
+    assessment: { lower: string | null; upper: string | null; unit: string } | null;
+    reasons: string[];
+    conflictingResults: { resultId: string; label: string }[];
+    existingSelections: { selectionId: string; label: string }[];
+    published: boolean;
+  }[];
 }
 
 export interface ResidueReportSelection {

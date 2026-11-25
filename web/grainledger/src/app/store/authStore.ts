@@ -1,4 +1,5 @@
-import type { UserRole } from '@/shared/types/roles';
+import type { UserProfile } from '@/shared/types/session';
+export type { UserProfile } from '@/shared/types/session';
 import {
   clearAuthCookies,
   COOKIE_KEYS,
@@ -7,26 +8,15 @@ import {
   setCookie,
 } from '@/shared/utils/cookies';
 import { extractUserProfileFromJwt, isJwtValidFormat } from '@/shared/utils/jwt';
+import { configurePendingCommandScope } from '@/shared/hooks/pendingCommandStore';
 import { create } from 'zustand';
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  displayName: string;
-  phoneNumber?: string;
-  role: UserRole;
-  organizationId?: string;
-  organizationName?: string;
-  organizationColor?: string;
-  assignedFacilities?: string[];
-  isActive: boolean;
-  permissions: string[];
-}
-
 interface AuthState {
+  sessionVersion: number;
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
+  cookieSession: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
   hasUnsavedDrafts: boolean;
@@ -36,6 +26,7 @@ interface AuthState {
   setTokens: (access: string | null, refresh: string | null, rememberMe?: boolean) => void;
   setHasUnsavedDrafts: (hasDrafts: boolean) => void;
   loginSuccess: (user: UserProfile, tokens: { access: string; refresh: string }, rememberMe?: boolean) => void;
+  restoreBrowserSession: (user: UserProfile) => void;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
@@ -83,6 +74,9 @@ if (!initialUser && initialAccessCookie && isJwtValidFormat(initialAccessCookie)
 
 const resolvedAccess = initialAccessCookie || null;
 const resolvedRefresh = initialRefreshCookie || null;
+const restoreOnLoad = Boolean(getCookie(COOKIE_KEYS.USER_SESSION)) ||
+  (typeof window !== "undefined" && window.location.pathname === "/sign-in" &&
+    new URLSearchParams(window.location.search).get("google") === "complete");
 
 // Only authenticate if user profile exists AND a valid accessToken value is present
 const isSessionAuthenticated = Boolean(
@@ -92,11 +86,13 @@ const isSessionAuthenticated = Boolean(
 );
 
 export const useAuthStore = create<AuthState>((set) => ({
+  sessionVersion: 0,
   user: initialUser,
   accessToken: resolvedAccess,
   refreshToken: resolvedRefresh,
+  cookieSession: false,
   isAuthenticated: isSessionAuthenticated,
-  isLoading: false,
+  isLoading: restoreOnLoad,
   hasUnsavedDrafts: false,
 
   setUser: (user) => {
@@ -107,7 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set((state) => ({
       user,
-      isAuthenticated: Boolean(user && state.accessToken && isJwtValidFormat(state.accessToken)),
+      isAuthenticated: Boolean(user && (state.cookieSession || (state.accessToken && isJwtValidFormat(state.accessToken)))),
     }));
   },
 
@@ -144,17 +140,34 @@ export const useAuthStore = create<AuthState>((set) => ({
     const refreshDays = 30;
 
     // Store exclusively in Cookies
+    deleteCookie(COOKIE_KEYS.USER_SESSION);
     setCookie(COOKIE_KEYS.USER, JSON.stringify(user), accessDays);
     setCookie(COOKIE_KEYS.ACCESS_TOKEN, access, accessDays);
     setCookie(COOKIE_KEYS.REFRESH_TOKEN, refresh, refreshDays);
 
-    set({
+    set((state) => ({
+      sessionVersion: state.sessionVersion + 1,
       user,
       isAuthenticated: Boolean(user && access && isJwtValidFormat(access)),
       accessToken: access,
       refreshToken: refresh,
+      cookieSession: false,
       isLoading: false,
-    });
+    }));
+  },
+
+  restoreBrowserSession: (user) => {
+    clearAuthCookies();
+    setCookie(COOKIE_KEYS.USER_SESSION, "1", 1);
+    set(state => ({
+      sessionVersion: state.sessionVersion + 1,
+      user,
+      accessToken: null,
+      refreshToken: null,
+      cookieSession: true,
+      isAuthenticated: true,
+      isLoading: false,
+    }));
   },
 
   logout: () => {
@@ -177,13 +190,16 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
 
-    set({
+    set((state) => ({
+      sessionVersion: state.sessionVersion + 1,
       user: null,
       accessToken: null,
       refreshToken: null,
+      cookieSession: false,
       isAuthenticated: false,
+      isLoading: false,
       hasUnsavedDrafts: false,
-    });
+    }));
   },
 
   updateProfile: (updates) => {
@@ -195,3 +211,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 }));
+
+configurePendingCommandScope(
+  () => {
+    const user = useAuthStore.getState().user;
+    return user ? `${user.organizationId ?? 'none'}:${user.id}` : null;
+  },
+  (onChange) => useAuthStore.subscribe(onChange),
+);

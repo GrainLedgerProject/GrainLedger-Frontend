@@ -1,4 +1,4 @@
-﻿import {
+import {
   ArrowsClockwise,
   ArrowUpRight,
   CalendarBlank,
@@ -8,13 +8,10 @@
   Leaf,
   MapPin,
   ShieldCheck,
-  WifiHigh,
-  WifiSlash,
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useUiStore } from "@/app/store/uiStore";
-import { ROLE_DEFINITIONS } from "@/shared/types/roles";
 import { useDashboard } from "../model/useDashboard";
 import {
   sourceCopy,
@@ -50,6 +47,7 @@ export function RoleHomePage() {
   const {
     user,
     role,
+    pendingAccess,
     config,
     data,
     states,
@@ -66,6 +64,78 @@ export function RoleHomePage() {
   const connectionChecked = useUiStore((state) => state.hasInitialChecked);
   const pending = useUiStore((state) => state.pendingOfflineCount);
   const now = new Date();
+  const date = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(now);
+
+  if (pendingAccess) {
+    return (
+      <div className="mx-auto max-w-screen-2xl space-y-6 pb-4">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-ink-secondary">
+            <CalendarBlank size={15} aria-hidden="true" />
+            <time dateTime={now.toISOString()} className="capitalize">
+              {date}
+            </time>
+          </div>
+        </header>
+        <section
+          className={`${panel} relative overflow-hidden bg-gradient-to-br from-functional-hold-bg via-surface-base to-surface-base p-6 sm:p-8`}
+          aria-labelledby="pending-access-title"
+        >
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-functional-hold-border bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-warning">
+              <Clock size={15} aria-hidden="true" />
+              {text(
+                ["TRẠNG THÁI CHỜ PHÂN QUYỀN", "PENDING ACCESS ASSIGNMENT"],
+                locale,
+              )}
+            </div>
+            <h1
+              id="pending-access-title"
+              className="font-display text-2xl font-bold tracking-tight text-ink-primary sm:text-3xl"
+            >
+              {text(
+                [
+                  "Tài khoản đang chờ quản trị viên cấp quyền",
+                  "Account pending administrator activation",
+                ],
+                locale,
+              )}
+            </h1>
+            <p className="text-sm leading-6 text-ink-secondary">
+              {text(
+                [
+                  "Tài khoản của bạn đã xác thực thành công nhưng chưa được gán doanh nghiệp và vai trò nghiệp vụ. Sau khi quản trị viên kích hoạt quyền truy cập, toàn bộ màn hình và dữ liệu theo phạm vi sẽ hiển thị tại đây.",
+                  "Your account is verified, but an administrator has not assigned your organization and operational role yet. Once activated, your authorized workspace and data will unlock automatically.",
+                ],
+                locale,
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                to="/settings/profile"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-primary px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-accent-primary-dim"
+              >
+                {text(["Thông tin cá nhân", "Personal profile"], locale)}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+              <Link
+                to="/settings/security"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink-tertiary/25 bg-surface-base px-4 py-2.5 text-xs font-semibold text-ink-primary transition-colors hover:bg-surface-raised"
+              >
+                {text(["Bảo mật tài khoản", "Account security"], locale)}
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   const metrics = getMetrics(role, data, locale, pending, now);
   const bars = getChart(role, data, locale, now);
   const priorities = getPriorities(role, data, locale, pending, now);
@@ -86,13 +156,6 @@ export function RoleHomePage() {
     errors.length > 0 ||
     fetching ||
     sources.length < config.sources.length;
-  const meta = ROLE_DEFINITIONS[role];
-  const date = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Ho_Chi_Minh",
-  }).format(now);
   function unavailable(source: Source): string | undefined {
     if (!sources.includes(source))
       return text(
@@ -122,13 +185,13 @@ export function RoleHomePage() {
   return (
     <div className="mx-auto max-w-screen-2xl space-y-6 pb-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div data-ui-detail="secondary" className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
+        {/* <div data-ui-detail="secondary" className="flex flex-wrap items-center gap-2 text-xs text-ink-tertiary">
           <span className="font-semibold text-accent-primary">
             {text(["BÀN ĐIỀU HÀNH", "WORKSPACE OVERVIEW"], locale)}
           </span>
           <span aria-hidden="true">/</span>
           <span>{meta[locale === "vi" ? "labelVi" : "labelEn"]}</span>
-        </div>
+        </div> */}
         <div className="flex items-center gap-2 text-xs text-ink-secondary">
           <CalendarBlank size={15} aria-hidden="true" />
           <time dateTime={now.toISOString()} className="capitalize">
@@ -148,11 +211,17 @@ export function RoleHomePage() {
         />
         <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
-            <div data-ui-detail="secondary" className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary">
+            <div
+              data-ui-detail="secondary"
+              className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-primary/15 bg-surface-base/80 px-3 py-1.5 text-xs font-semibold text-accent-primary"
+            >
               <Leaf size={15} weight="duotone" aria-hidden="true" />
               {text(config.focus, locale)}
             </div>
-            <p data-ui-detail="secondary" className="mb-1 text-sm text-ink-secondary">
+            <p
+              data-ui-detail="secondary"
+              className="mb-1 text-sm text-ink-secondary"
+            >
               {text(["Xin chào", "Welcome"], locale)},{" "}
               <span className="font-semibold text-ink-primary">
                 {user?.displayName || text(["bạn", "there"], locale)}
@@ -164,7 +233,10 @@ export function RoleHomePage() {
             >
               {text(config.title, locale)}
             </h1>
-            <p data-ui-detail="secondary" className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary">
+            <p
+              data-ui-detail="secondary"
+              className="mt-3 max-w-xl text-sm leading-6 text-ink-secondary"
+            >
               {text(config.description, locale)}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-tertiary">
@@ -195,23 +267,6 @@ export function RoleHomePage() {
                 <ArrowUpRight size={18} aria-hidden="true" />
               </Link>
             )}
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs ${connected ? "text-accent-primary" : "text-ink-tertiary"}`}
-            >
-              {connected ? (
-                <WifiHigh size={15} aria-hidden="true" />
-              ) : (
-                <WifiSlash size={15} aria-hidden="true" />
-              )}
-              {text(
-                !connectionChecked
-                  ? ["Đang kiểm tra kết nối", "Checking connection"]
-                  : connected
-                    ? ["Đã kết nối hệ thống", "System connected"]
-                    : ["Chưa kết nối hệ thống", "System not connected"],
-                locale,
-              )}
-            </span>
           </div>
         </div>
       </section>
@@ -238,7 +293,7 @@ export function RoleHomePage() {
                 onChange={(event) =>
                   dashboard.setSelectedFacility(event.target.value)
                 }
-                className="min-h-11 max-w-full rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-xs text-ink-primary sm:max-w-xs"
+                className="filter-control w-auto max-w-full border-ink-tertiary/20 font-semibold sm:max-w-xs"
               >
                 <option value="" disabled>
                   {text(["Chọn cơ sở vận hành", "Select a facility"], locale)}

@@ -1,27 +1,17 @@
 import { router } from "@/app/router/routes";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SessionQueryProvider } from "@/app/providers/SessionQueryProvider";
 import { RouterProvider } from "react-router-dom";
-import { FeedbackHost } from "./components/FeedbackHost/FeedbackHost";
-import { useProcurementSync } from "./pwa/useProcurementSync";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000,
-    },
-  },
-});
+import { FeedbackHost } from "@/app/layout/FeedbackHost";
+import { useProcurementSync } from "@/features/field/offline/useProcurementSync";
 
 export function App() {
   useProcurementSync();
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <SessionQueryProvider>
       <RouterProvider router={router} />
       <FeedbackHost />
-    </QueryClientProvider>
+    </SessionQueryProvider>
   );
 }
 

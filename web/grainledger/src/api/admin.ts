@@ -19,7 +19,7 @@ export interface AdminUserDto {
 }
 
 export const adminEndpoints = {
-  getRoles: () => apiFetch<unknown>("/api/admin/roles"),
+  getRoles: () => apiFetch<AdminRoleDto[]>("/api/admin/roles"),
 
   getOrganizations: () =>
     apiFetch<OrganizationDto[]>("/api/admin/organizations"),
@@ -50,6 +50,11 @@ export interface CreateOrganizationRequest {
 }
 
 export type OrganizationKind = "Mill" | "Customer";
+
+export interface AdminRoleDto {
+  name: string;
+  organizationKind: OrganizationKind;
+}
 
 export interface UpdateAccessRequest {
   role: null | string;

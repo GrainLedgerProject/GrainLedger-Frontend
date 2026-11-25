@@ -4,16 +4,33 @@ import type { IssuedTokens } from "./auth";
  * Shared authentication, token refresh and error handling.
  * Base URL: configured by VITE_API_BASE_URL (same-origin by default).
  */
-import { useAuthStore } from "@/app/store/authStore";
-import { useUiStore } from "@/app/store/uiStore";
-import { normalizeUserRole } from "@/shared/types/roles";
-import { COOKIE_KEYS, getCookie } from "@/shared/utils/cookies";
+import { apiSession, type ApiSession } from "./session";
 import { isJwtExpired } from "@/shared/utils/jwt";
 import { logger } from "@/shared/utils/logger";
 import { getApiUrl } from "./config";
 
 export interface ApiFetchOptions extends RequestInit {
   responseType?: "json" | "blob" | "text";
+  browserSession?: boolean;
+  onResponse?: (response: Response) => void;
+}
+
+export interface ApiResource<T> {
+  data: T;
+  etag: string | null;
+}
+
+/** Keep concurrency metadata local to the record being edited, never in a shared cache. */
+export async function apiFetchResource<T>(
+  endpoint: string,
+): Promise<ApiResource<T>> {
+  let etag: string | null = null;
+  const data = await apiFetch<T>(endpoint, {
+    onResponse: (response) => {
+      etag = response.headers.get("ETag");
+    },
+  });
+  return { data, etag };
 }
 
 export class ApiError extends Error {
@@ -30,93 +47,77 @@ export class ApiError extends Error {
 
 export { isJwtExpired };
 
-/** Single-flight mutex for token refresh so concurrent requests share the exact same refresh cycle */
-let refreshPromise: Promise<string | null> | null = null;
+function sameSession(start: ApiSession, current: ApiSession) {
+  return start.version === current.version && (!start.ownerKey || start.ownerKey === current.ownerKey);
+}
 
-/**
- * Executes a token refresh cycle against POST /api/auth/refresh.
- * Rotates the single-use refresh token, updates cookies and Zustand store.
- */
-export async function requestTokenRefresh(): Promise<string | null> {
-  // If a refresh is already in flight, reuse the ongoing promise
-  if (refreshPromise) {
-    return refreshPromise;
+function assertSameSession(start: ApiSession) {
+  if (!sameSession(start, apiSession.read())) {
+    throw new ApiError(401, "Phiên đăng nhập đã thay đổi. Vui lòng thực hiện lại thao tác.");
+  }
+}
+
+let activeRefresh: { session: ApiSession; result: Promise<string | null> } | undefined;
+let activeCsrf: { session: ApiSession; result: Promise<string> } | undefined;
+
+function requestCsrf(session: ApiSession) {
+  if (activeCsrf && sameSession(activeCsrf.session, session)) return activeCsrf.result;
+  const result = apiFetch<{ token: string }>("/api/auth/csrf", { browserSession: true })
+    .then(data => {
+      if (!data?.token) throw new ApiError(502, "Không thể lấy mã xác thực phiên.");
+      return data.token;
+    })
+    .finally(() => {
+      if (activeCsrf?.result === result) activeCsrf = undefined;
+    });
+  activeCsrf = { session, result };
+  return result;
+}
+
+async function rotateToken(start: ApiSession): Promise<string | null> {
+  let res: Response;
+  try {
+    res = await fetch(getApiUrl("/api/auth/refresh"), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ refreshToken: start.refreshToken }),
+    });
+  } catch {
+    assertSameSession(start);
+    apiSession.setConnected(false);
+    throw new ApiError(0, "Không thể kết nối đến máy chủ.");
   }
 
-  const {
-    refreshToken: stateRefreshToken,
-    setTokens,
-    setUser,
-    logout,
-  } = useAuthStore.getState();
-  const refreshToken =
-    stateRefreshToken || getCookie(COOKIE_KEYS.REFRESH_TOKEN);
-
-  if (!refreshToken || refreshToken.startsWith("mock-")) {
+  const tokens = res.ok ? await res.json().catch(() => null) as IssuedTokens | null : null;
+  const current = apiSession.read();
+  if (!sameSession(start, current)) return null;
+  if (start.refreshToken !== current.refreshToken) return current.accessToken;
+  if (res.status >= 500) {
+    if (res.status >= 502 && res.status <= 504) apiSession.setConnected(false);
+    throw new ApiError(res.status, `Lỗi máy chủ (${res.status})`);
+  }
+  if (!tokens?.accessToken || !tokens.refreshToken) {
+    apiSession.expire();
     return null;
   }
 
-  refreshPromise = (async () => {
-    try {
-      logger.info("Performing single-flight refresh token rotation...");
-      const res = await fetch(getApiUrl("/api/auth/refresh"), {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
+  apiSession.apply(tokens);
+  return tokens.accessToken;
+}
 
-      if (!res.ok) {
-        logger.warn(
-          `Token refresh endpoint responded with status ${res.status}`,
-        );
-        logout();
-        return null;
-      }
+/** Share rotations of the same single-use credential across concurrent requests. */
+export function requestTokenRefresh(): Promise<string | null> {
+  const session = apiSession.read();
+  if (!session.refreshToken || session.refreshToken.startsWith("mock-")) return Promise.resolve(null);
+  if (activeRefresh && sameSession(activeRefresh.session, session) &&
+      activeRefresh.session.refreshToken === session.refreshToken) return activeRefresh.result;
 
-      const data = (await res.json()) as IssuedTokens;
-      const newAccessToken = data.accessToken;
-      const newRefreshToken = data.refreshToken;
-
-      if (!newAccessToken) {
-        logger.warn("Refresh response did not return a valid accessToken");
-        logout();
-        return null;
-      }
-
-      // Persist fresh tokens into cookies and Zustand store
-      setTokens(newAccessToken, newRefreshToken);
-
-      const userDto = data.user;
-      if (userDto) {
-        setUser({
-          id: userDto.id,
-          email: userDto.email,
-          displayName: userDto.displayName,
-          phoneNumber: userDto.phoneNumber || undefined,
-          role: normalizeUserRole(userDto.role),
-          organizationId: userDto.organizationId || undefined,
-          organizationName: userDto.organizationName || undefined,
-          isActive: userDto.isActive,
-          permissions: userDto.permissions,
-        });
-      }
-
-      logger.info("Token refresh successfully completed and cookies updated.");
-      return newAccessToken;
-    } catch (err) {
-      logger.error("Unexpected error during token refresh execution:", err);
-      logout();
-      return null;
-    } finally {
-      refreshPromise = null;
-    }
-  })();
-
-  return refreshPromise;
+  const result = rotateToken(session).finally(() => {
+    if (activeRefresh?.result === result) activeRefresh = undefined;
+  });
+  activeRefresh = { session, result };
+  return result;
 }
 
 /** Base fetch wrapper with Bearer token injection, CSRF and refresh handling */
@@ -124,10 +125,11 @@ export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { responseType = "json", ...requestOptions } = options;
+  const { responseType = "json", onResponse, browserSession, ...requestOptions } = options;
+  const isLoginEndpoint =
+    endpoint === "/api/auth/login" || endpoint === "/api/auth/web-login";
   const isAuthEndpoint =
-    endpoint.includes("/api/auth/login") ||
-    endpoint.includes("/api/auth/web-login") ||
+    isLoginEndpoint || browserSession ||
     endpoint.includes("/api/auth/refresh") ||
     endpoint.includes("/api/auth/register") ||
     endpoint.includes("/api/auth/verify-email") ||
@@ -135,16 +137,15 @@ export async function apiFetch<T>(
     endpoint.includes("/api/auth/forgot-password") ||
     endpoint.includes("/api/auth/reset-password");
 
-  let accessToken =
-    useAuthStore.getState().accessToken || getCookie(COOKIE_KEYS.ACCESS_TOKEN);
-  const refreshToken =
-    useAuthStore.getState().refreshToken ||
-    getCookie(COOKIE_KEYS.REFRESH_TOKEN);
+  const session = apiSession.read();
+  const useCookie = browserSession || session.cookieSession;
+  let accessToken = useCookie ? null : session.accessToken;
+  const { refreshToken } = session;
 
   // Proactive Token Refresh:
   // If access token is expired (or missing) but a valid real refresh token exists, refresh before sending
   if (
-    !isAuthEndpoint &&
+    !isAuthEndpoint && !useCookie &&
     refreshToken &&
     !refreshToken.startsWith("mock-") &&
     isJwtExpired(accessToken)
@@ -153,9 +154,9 @@ export async function apiFetch<T>(
       `Access token expired or missing for ${endpoint}, proactively refreshing...`,
     );
     const refreshedToken = await requestTokenRefresh();
-    if (refreshedToken) {
-      accessToken = refreshedToken;
-    }
+    if (!refreshedToken) throw new ApiError(401, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    assertSameSession(session);
+    accessToken = refreshedToken;
   }
 
   const headers = new Headers(options.headers || {});
@@ -170,6 +171,11 @@ export async function apiFetch<T>(
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  const method = (requestOptions.method ?? "GET").toUpperCase();
+  if (session.cookieSession && !["GET", "HEAD", "OPTIONS"].includes(method) && !headers.has("X-CSRF-TOKEN")) {
+    headers.set("X-CSRF-TOKEN", await requestCsrf(session));
+    assertSameSession(session);
+  }
 
   // Include cookies automatically in cross-origin / same-origin API requests
   const fetchOptions: RequestInit = {
@@ -178,28 +184,26 @@ export async function apiFetch<T>(
     headers,
   };
 
-  const url = getApiUrl(endpoint);
+  const url = useCookie ? endpoint : getApiUrl(endpoint);
 
   let response: Response;
   try {
     response = await fetch(url, fetchOptions);
   } catch (netErr) {
     if (options.signal?.aborted) throw netErr;
+    if (!isAuthEndpoint) assertSameSession(session);
     logger.warn(`Network error on ${url}:`, netErr);
-    useUiStore.getState().setOnline(false);
-    useUiStore.getState().setBackendConnected(false);
-    throw new ApiError(0, "Không thể kết nối đến máy chủ backend.");
+    apiSession.setConnected(false);
+    throw new ApiError(0, "Không thể kết nối đến máy chủ.");
   }
+
+  if (!isAuthEndpoint) assertSameSession(session);
 
   // Update backend connection status based on HTTP response
   if (response.status >= 502 && response.status <= 504) {
-    useUiStore.getState().setOnline(false);
-    useUiStore.getState().setBackendConnected(false);
-  } else if (
-    !useUiStore.getState().isBackendConnected &&
-    response.status < 500
-  ) {
-    useUiStore.getState().setBackendConnected(true);
+    apiSession.setConnected(false);
+  } else if (response.status < 500) {
+    apiSession.setConnected(true);
   }
 
   // Reactive Token Refresh:
@@ -212,7 +216,11 @@ export async function apiFetch<T>(
       logger.info(
         `Endpoint ${url} returned 401, triggering single-flight token refresh...`,
       );
-      const newAccessToken = await requestTokenRefresh();
+      const current = apiSession.read();
+      const newAccessToken = current.accessToken && current.accessToken !== accessToken
+        ? current.accessToken
+        : await requestTokenRefresh();
+      assertSameSession(session);
 
       if (newAccessToken) {
         // Retry original request with fresh access token and credentials
@@ -232,7 +240,6 @@ export async function apiFetch<T>(
           );
         }
       } else {
-        useAuthStore.getState().logout();
         throw new ApiError(
           401,
           "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
@@ -247,40 +254,41 @@ export async function apiFetch<T>(
         "Phiên cục bộ chưa kết nối máy chủ backend. Chuyển sang dữ liệu mô phỏng.",
       );
     } else {
-      useAuthStore.getState().logout();
+      apiSession.expire();
       throw new ApiError(401, "Yêu cầu đăng nhập để tiếp tục.");
     }
   }
+
+  if (!isAuthEndpoint) assertSameSession(session);
+  if (response.ok) onResponse?.(response);
 
   // Handle successful empty response (204 No Content)
   if (response.status === 204 || response.status === 205) {
     return undefined as T;
   }
 
-  if (response.ok && responseType === "blob")
-    return (await response.blob()) as T;
-  if (response.ok && responseType === "text")
-    return (await response.text()) as T;
-
-  // Parse JSON response or problem details
   const contentType = response.headers.get("content-type") || "";
-  const isJson =
-    contentType.includes("application/json") ||
-    contentType.includes("application/problem+json");
-  if (response.ok && !isJson) {
-    if (
-      /application\/(pdf|octet-stream)|^(image|audio|video)\//.test(contentType)
-    ) {
-      return (await response.blob()) as T;
-    }
-    return ((await response.text()) || undefined) as T;
+  const isJson = contentType.includes("application/json") || contentType.includes("application/problem+json");
+  let data: unknown;
+  if (response.ok && responseType === "blob") {
+    data = await response.blob();
+  } else if (response.ok && responseType === "text") {
+    data = await response.text();
+  } else if (isJson) {
+    data = await response.json().catch(() => null);
+  } else if (response.ok && /application\/(pdf|octet-stream)|^(image|audio|video)\//.test(contentType)) {
+    data = await response.blob();
+  } else if (response.ok) {
+    data = (await response.text()) || undefined;
   }
-  const data = isJson ? await response.json().catch(() => null) : null;
+  if (!isAuthEndpoint) assertSameSession(session);
 
   if (!response.ok) {
     const problem = data as ProblemDetails;
     const msg =
-      problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
+      isLoginEndpoint && response.status === 401
+        ? "Tài khoản hoặc mật khẩu không đúng"
+        : problem?.detail || problem?.title || `Lỗi máy chủ (${response.status})`;
     throw new ApiError(response.status, msg, problem);
   }
 
@@ -288,6 +296,8 @@ export async function apiFetch<T>(
 }
 
 export interface ProblemDetails {
+  code?: string;
+  errors?: Record<string, string[]>;
   type?: null | string;
   title?: null | string;
   status?: null | number | string;

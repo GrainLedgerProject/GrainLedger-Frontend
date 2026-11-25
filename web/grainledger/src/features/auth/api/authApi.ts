@@ -1,7 +1,8 @@
 import { authEndpoints } from '@/api/auth';
+import { useAuthStore } from '@/app/store/authStore';
 import { profileEndpoints } from '@/api/profile';
-import type { UserProfile } from '@/app/store/authStore';
-import { normalizeUserRole } from '@/shared/types/roles';
+import type { UserProfile } from '@/shared/types/session';
+import { toUserProfile } from './sessionUser';
 
 export const authApi = {
   /**
@@ -25,17 +26,7 @@ export const authApi = {
     }
 
     return {
-      user: {
-        id: tokens.user.id,
-        email: tokens.user.email,
-        displayName: tokens.user.displayName,
-        phoneNumber: tokens.user.phoneNumber || undefined,
-        role: normalizeUserRole(tokens.user.role),
-        organizationId: tokens.user.organizationId || undefined,
-        organizationName: tokens.user.organizationName || undefined,
-        isActive: tokens.user.isActive,
-        permissions: tokens.user.permissions || [],
-      },
+      user: toUserProfile(tokens.user),
       tokens: {
         access,
         refresh,
@@ -46,12 +37,11 @@ export const authApi = {
   /**
    * Log out session
    */
-  logout: async (): Promise<void> => {
-    try {
-      await authEndpoints.logout();
-    } catch {
-      // ignore
-    }
+  logout: async (allDevices = false): Promise<void> => {
+    const { sessionVersion } = useAuthStore.getState();
+    await (allDevices ? authEndpoints.logoutAll() : authEndpoints.logout());
+    const current = useAuthStore.getState();
+    if (current.sessionVersion === sessionVersion) current.logout();
   },
 
   /**

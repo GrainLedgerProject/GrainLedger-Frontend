@@ -1,11 +1,28 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { collectPages, pageItems } from "@/api/query";
 import { useTranslation } from "react-i18next";
-import { procurementEndpoints } from "@/api/procurement";
-import { GrainLoader } from "@/components/GrainLoader/GrainLoader";
-import { Modal } from "@/components/Modal";
-import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
-import { MapLocationPicker } from "@/components/MapLocationPicker/MapLocationPicker";
+import {
+  procurementEndpoints,
+  type PlotGeometry,
+  type RegisterPlotRequest,
+} from "@/api/procurement";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { Modal } from "@/shared/ui/Modal";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { Feedback } from "@/shared/ui/Workflow";
+import { useAuthStore } from "@/app/store/authStore";
+import { selectSessionOwner } from "@/app/store/sessionOwner";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
+import { DuplicateWarning } from "../components/DuplicateWarning";
+import {
+  captureWasRejected,
+  loadPendingCapture,
+  submitPendingCapture,
+} from "../offline/pendingCapture";
+import { fieldPaths } from "../paths";
+import { MapLocationPicker } from "@/features/field/components/MapLocationPicker";
 import {
   MapPin,
   MagnifyingGlass,
@@ -27,8 +44,9 @@ interface PlotRecord {
   farmerId: string;
   farmerName?: string;
   areaHa: number;
-  geometry?: { coordinates?: unknown };
+  geometry?: PlotGeometry;
   version?: number;
+  canEdit?: boolean;
   variety?: string;
 }
 
@@ -41,19 +59,10 @@ interface FarmerOption {
 /**
  * Format coordinates for user display (Latitude, Longitude)
  */
-function formatDisplayCoord(geometry?: { coordinates?: unknown }): string {
-  if (!geometry?.coordinates) return "";
-  const coords = geometry.coordinates;
-  if (Array.isArray(coords) && coords.length >= 2) {
-    const p0 = Number(coords[0]);
-    const p1 = Number(coords[1]);
-    // GeoJSON standard RFC 7946 is [longitude, latitude]
-    if (p0 > 50 && p1 < 30) {
-      return `${p1.toFixed(6)}, ${p0.toFixed(6)}`;
-    }
-    return `${p0.toFixed(6)}, ${p1.toFixed(6)}`;
-  }
-  return "";
+function formatDisplayCoord(geometry?: PlotGeometry): string {
+  if (geometry?.type !== "Point") return "";
+  const [longitude, latitude] = geometry.coordinates;
+  return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
 }
 
 /**
@@ -80,34 +89,50 @@ function parseToGeoJsonPoint(coordStr: string): {
   throw new Error("Tọa độ thửa ruộng không hợp lệ.");
 }
 
+function nearbyPlotRequest(coordinates: string, id?: string) {
+  try {
+    return {
+      geometry: parseToGeoJsonPoint(coordinates),
+      excludeId: id ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const PlotRegistrationPage: React.FC = () => {
-  const { t } = useTranslation();
-  const [plots, setPlots] = useState<PlotRecord[]>([]);
-  const [farmers, setFarmers] = useState<FarmerOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t, i18n } = useTranslation();
+  const text = useWorkflowText();
+  const owner = useAuthStore(selectSessionOwner);
+  const storageKey = owner ? `grainledger:plot:${owner}` : "";
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [selectedFarmerId, setSelectedFarmerId] = useState(
+    () => new URLSearchParams(window.location.search).get("farmerId") ?? "",
+  );
+  const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal State for Create/Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState<PlotRecord | null>(null);
   const [formData, setFormData] = useState({
-    code: "",
     farmerId: "",
     areaHa: 1.5,
     coordinates: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<Error | null>(null);
+  const [registration, setRegistration] = useState<RegisterPlotRequest | null>(
+    null,
+  );
+  const retrying = !editingPlot && Boolean(registration);
 
   // Modal State for Viewing Plot Map
   const [viewingMapPlot, setViewingMapPlot] = useState<PlotRecord | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const plotsQuery = useQuery({
+    queryKey: ["field-plots", searchQuery, selectedFarmerId, i18n.language],
+    queryFn: async () => {
       const plotParams: Record<string, string | number> = { pageSize: 50 };
       if (searchQuery) plotParams.search = searchQuery;
       if (selectedFarmerId) plotParams.farmerId = selectedFarmerId;
@@ -117,59 +142,58 @@ export const PlotRegistrationPage: React.FC = () => {
         procurementEndpoints.getFarmers({ pageSize: 100 }),
       ]);
 
-      const plotItems = Array.isArray(plotsRes)
-        ? plotsRes
-        : (plotsRes as any)?.items || [];
-      const farmerItems = Array.isArray(farmersRes)
-        ? farmersRes
-        : (farmersRes as any)?.items || [];
+      const plotItems = pageItems<PlotRecord>(plotsRes);
+      const farmerItems = pageItems<FarmerOption>(farmersRes);
 
       // Map farmer names to plots
-      const farmerMap = new Map(farmerItems.map((f: any) => [f.id, f.name]));
-      const enrichedPlots = plotItems.map((p: any) => ({
+      const farmerMap = new Map(farmerItems.map((f) => [f.id, f.name]));
+      const enrichedPlots = plotItems.map((p) => ({
         ...p,
         farmerName:
           farmerMap.get(p.farmerId) ||
           t("field.plot.unknownFarmer", "Nông hộ chưa rõ"),
       }));
-
-      setPlots(enrichedPlots);
-      setFarmers(farmerItems);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(
-          t(
-            "field.plot.errLoad",
-            "Không thể tải danh sách thửa ruộng từ máy chủ.",
-          ),
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+      return { plots: enrichedPlots, farmers: farmerItems };
+    },
+  });
+  const { plots = [], farmers = [] } = plotsQuery.data ?? {};
+  const loading = plotsQuery.isFetching;
+  const error = actionError ?? plotsQuery.error?.message;
+  const loadData = () => {
+    setError(null);
+    return plotsQuery.refetch();
   };
-
-  useEffect(() => {
-    void loadData();
-  }, [searchQuery, selectedFarmerId]);
+  const plotDetail = useMutation({
+    mutationFn: async (plot: PlotRecord) => ({
+      ...plot,
+      ...(await procurementEndpoints.getPlot(plot.id)),
+    }),
+    onError: (cause) => setError(cause.message),
+  });
 
   const handleOpenCreate = () => {
     setEditingPlot(null);
+    setFormError(null);
+    const pending = storageKey
+      ? (loadPendingCapture<RegisterPlotRequest>(storageKey) ?? registration)
+      : registration;
+    setRegistration(pending);
     setFormData({
-      code: "",
-      farmerId: farmers[0]?.id || "",
-      areaHa: 0,
-      coordinates: "",
+      farmerId:
+        pending?.payload?.farmerId ??
+        (selectedFarmerId || farmers[0]?.id || ""),
+      areaHa: Number(pending?.payload?.areaHa ?? 0),
+      coordinates: pending?.payload?.geometry
+        ? formatDisplayCoord(pending.payload.geometry as PlotGeometry)
+        : "",
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (plot: PlotRecord) => {
     setEditingPlot(plot);
+    setFormError(null);
     setFormData({
-      code: plot.code || "",
       farmerId: plot.farmerId || "",
       areaHa: plot.areaHa || 1.0,
       coordinates: formatDisplayCoord(plot.geometry),
@@ -177,62 +201,92 @@ export const PlotRegistrationPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const openDetail = (plot: PlotRecord, edit: boolean) => {
+    setError(null);
+    plotDetail.mutate(plot, {
+      onSuccess: (detail) => {
+        if (edit && detail.canEdit !== false) handleOpenEdit(detail);
+        else setViewingMapPlot(detail);
+      },
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!formData.farmerId) {
-      setError(
-        t(
-          "field.plot.errSelectFarmer",
-          "Vui lòng chọn Nông hộ sở hữu thửa ruộng.",
+      setFormError(
+        new Error(
+          t(
+            "field.plot.errSelectFarmer",
+            "Vui lòng chọn Nông hộ sở hữu thửa ruộng.",
+          ),
         ),
       );
       return;
     }
 
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     setSuccessMsg(null);
 
     try {
-      const geometryObj = parseToGeoJsonPoint(formData.coordinates);
+      const savedGeometry = editingPlot?.geometry;
+      const geometryObj =
+        savedGeometry &&
+        formData.coordinates === formatDisplayCoord(savedGeometry)
+          ? savedGeometry
+          : parseToGeoJsonPoint(formData.coordinates);
 
       if (editingPlot) {
-        // Update
+        if (!editingPlot.version)
+          throw new Error(
+            t(
+              "field.plot.reloadBeforeEditing",
+              "Mở lại chi tiết thửa ruộng trước khi lưu.",
+            ),
+          );
         await procurementEndpoints.updatePlot(editingPlot.id, {
-          farmerId: formData.farmerId,
-          code: formData.code.trim(),
+          farmerId: editingPlot.farmerId,
+          code: null,
           areaHa: Number(formData.areaHa),
           geometry: geometryObj,
-          expectedVersion: editingPlot.version || 1,
+          expectedVersion: editingPlot.version,
         });
         setSuccessMsg(
           t("field.plot.updatedSuccess", "Đã cập nhật thửa ruộng {{code}}", {
-            code: formData.code,
+            code: editingPlot.code,
           }),
         );
       } else {
-        // Create
-        const entityId = crypto.randomUUID();
-        const clientOperationId = crypto.randomUUID();
-        await procurementEndpoints.createPlot({
+        const payload = {
+          farmerId: formData.farmerId,
+          code: null,
+          areaHa: formData.areaHa,
+          geometry: geometryObj,
+        };
+        const request = registration ?? {
           deviceId: "grainledger-web",
-          clientOperationId,
+          clientOperationId: crypto.randomUUID(),
           capturedAt: new Date().toISOString(),
           payloadSchemaVersion: 2,
-          payload: {
-            entityId,
-            farmerId: formData.farmerId,
-            code: formData.code.trim(),
-            areaHa: Number(formData.areaHa),
-            geometry: geometryObj,
-          },
-        });
+          payload: { entityId: crypto.randomUUID(), ...payload },
+        };
+        setRegistration(request);
+        const result = await (storageKey
+          ? submitPendingCapture(
+              storageKey,
+              request,
+              procurementEndpoints.createPlot,
+            )
+          : procurementEndpoints.createPlot(request));
+        setRegistration(null);
         setSuccessMsg(
           t(
             "field.plot.createdSuccess",
             "Đã đăng ký thành công thửa ruộng {{code}}",
             {
-              code: formData.code,
+              code: result.code,
             },
           ),
         );
@@ -241,11 +295,12 @@ export const PlotRegistrationPage: React.FC = () => {
       setIsModalOpen(false);
       await loadData();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("field.plot.errAction", "Thao tác không thành công."));
-      }
+      if (!editingPlot && captureWasRejected(err)) setRegistration(null);
+      setFormError(
+        err instanceof Error
+          ? err
+          : new Error(t("field.plot.errAction", "Thao tác không thành công.")),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -318,7 +373,7 @@ export const PlotRegistrationPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadData}
+            onClick={() => void loadData()}
             className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
             title={t("common.refresh", "Tải lại dữ liệu")}
           >
@@ -353,9 +408,14 @@ export const PlotRegistrationPage: React.FC = () => {
       )}
 
       {/* Controls & Filter Bar */}
-      <div className="p-4 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
           <div className="relative w-full sm:w-64">
+            <MagnifyingGlass
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+            />
             <input
               type="text"
               placeholder={t(
@@ -363,29 +423,30 @@ export const PlotRegistrationPage: React.FC = () => {
                 "Tìm theo mã thửa đất...",
               )}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-            />
-            <MagnifyingGlass
-              size={16}
-              className="absolute left-3 top-2.5 text-ink-tertiary"
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
+              className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
             />
           </div>
-
-          <select
-            value={selectedFarmerId}
-            onChange={(e) => setSelectedFarmerId(e.target.value)}
-            className="px-3 py-2 text-xs rounded-lg bg-surface-base dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-semibold text-ink-primary focus:rounded-lg"
-          >
-            <option value="">
-              {t("field.plot.allFarmers", "Tất cả Nông hộ")}
-            </option>
-            {farmers.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.code})
+          <div className="min-w-0 flex-1 basis-40 sm:flex-none">
+            <select
+              value={selectedFarmerId}
+              onChange={(e) => {
+                setSelectedFarmerId(e.target.value);
+              }}
+              className="filter-control border-ink-tertiary/20 bg-surface-base font-semibold dark:bg-surface-base"
+            >
+              <option value="">
+                {t("field.plot.allFarmers", "Tất cả Nông hộ")}
               </option>
-            ))}
-          </select>
+              {farmers.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name} ({f.code})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-ink-secondary">
@@ -474,7 +535,8 @@ export const PlotRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4 font-mono text-xs">
                       <button
                         type="button"
-                        onClick={() => setViewingMapPlot(plot)}
+                        onClick={() => openDetail(plot, false)}
+                        disabled={plotDetail.isPending}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-raised hover:bg-surface-overlay text-ink-primary hover:text-accent-primary border border-ink-tertiary/20 transition-all group cursor-pointer"
                         title={t(
                           "field.plot.clickToViewMap",
@@ -487,7 +549,7 @@ export const PlotRegistrationPage: React.FC = () => {
                           weight="fill"
                         />
                         <span className="font-mono text-xs truncate max-w-[150px]">
-                          {formatDisplayCoord(plot.geometry)}
+                          {t("field.plot.viewMap", "Xem trên bản đồ")}
                         </span>
                         <Eye
                           size={13}
@@ -504,7 +566,8 @@ export const PlotRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         type="button"
-                        onClick={() => setViewingMapPlot(plot)}
+                        onClick={() => openDetail(plot, false)}
+                        disabled={plotDetail.isPending}
                         className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-accent-primary transition-colors cursor-pointer"
                         title={t("field.plot.viewMap", "Xem trên bản đồ")}
                       >
@@ -512,7 +575,10 @@ export const PlotRegistrationPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleOpenEdit(plot)}
+                        onClick={() => openDetail(plot, true)}
+                        disabled={
+                          plotDetail.isPending || plot.canEdit === false
+                        }
                         className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
                         title={t("field.plot.editPlot", "Chỉnh sửa thửa ruộng")}
                       >
@@ -548,9 +614,6 @@ export const PlotRegistrationPage: React.FC = () => {
         <div className="w-full max-w-xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
           <div className="p-4 border-b border-ink-tertiary/15 flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-mono text-accent-primary font-bold uppercase tracking-wider block">
-                {editingPlot ? "CHỈNH SỬA THỬA RUỘNG" : "ĐĂNG KÝ MỚI"}
-              </span>
               <h3 className="font-display font-bold text-base text-ink-primary">
                 {editingPlot
                   ? t(
@@ -575,19 +638,16 @@ export const PlotRegistrationPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t("field.plot.plotCodeLabel", "Mã Thửa ruộng *")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  placeholder="VD: PLOT-CAIBE-01"
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
-                />
+                <p className="mb-1 font-semibold text-ink-secondary">
+                  {t("field.plot.plotCodeLabel", "Mã thửa ruộng")}
+                </p>
+                <p>
+                  {editingPlot?.code ??
+                    t(
+                      "field.plot.codeAssigned",
+                      "Hệ thống cấp mã sau khi đăng ký.",
+                    )}
+                </p>
               </div>
 
               <div>
@@ -596,15 +656,24 @@ export const PlotRegistrationPage: React.FC = () => {
                 </label>
                 <select
                   required
+                  disabled={Boolean(editingPlot) || retrying || submitting}
                   value={formData.farmerId}
                   onChange={(e) =>
                     setFormData({ ...formData, farmerId: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
                   <option value="">
                     {t("field.plot.selectFarmerOption", "-- Chọn Nông hộ --")}
                   </option>
+                  {editingPlot &&
+                    !farmers.some(
+                      (farmer) => farmer.id === editingPlot.farmerId,
+                    ) && (
+                      <option value={editingPlot.farmerId}>
+                        {editingPlot.farmerName || editingPlot.farmerId}
+                      </option>
+                    )}
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name} ({f.code})
@@ -625,13 +694,14 @@ export const PlotRegistrationPage: React.FC = () => {
                   min="0.01"
                   required
                   value={formData.areaHa}
+                  disabled={retrying || submitting}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       areaHa: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-full bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-full font-mono"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono"
                 />
                 <span className="absolute right-3 top-2 text-ink-tertiary">
                   ha
@@ -655,6 +725,16 @@ export const PlotRegistrationPage: React.FC = () => {
 
               <MapLocationPicker
                 value={formData.coordinates}
+                polygon={
+                  editingPlot?.geometry?.type === "Polygon"
+                    ? editingPlot.geometry.coordinates
+                    : undefined
+                }
+                disabled={
+                  editingPlot?.geometry?.type === "Polygon" ||
+                  retrying ||
+                  submitting
+                }
                 onChange={(point) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -672,6 +752,22 @@ export const PlotRegistrationPage: React.FC = () => {
               </span>
             </div>
 
+            <DuplicateWarning
+              request={
+                isModalOpen && !retrying && !submitting
+                  ? nearbyPlotRequest(formData.coordinates, editingPlot?.id)
+                  : null
+              }
+            />
+            {retrying && !submitting && (
+              <p role="status">
+                {text(
+                  "Lưu lại để gửi đúng yêu cầu đang chờ.",
+                  "Save again to retry the pending request.",
+                )}
+              </p>
+            )}
+            <Feedback error={formError} />
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -725,10 +821,16 @@ export const PlotRegistrationPage: React.FC = () => {
             <div className="p-4 space-y-3">
               <MapLocationPicker
                 value={formatDisplayCoord(viewingMapPlot.geometry)}
+                polygon={
+                  viewingMapPlot.geometry?.type === "Polygon"
+                    ? viewingMapPlot.geometry.coordinates
+                    : undefined
+                }
                 onChange={() => {}}
                 disabled={true}
                 height={320}
               />
+              <PlotRelatedRecords plotId={viewingMapPlot.id} />
 
               <div className="grid grid-cols-2 gap-3 text-xs bg-surface-raised dark:bg-surface-overlay p-3 rounded-lg border border-ink-tertiary/15">
                 <div>
@@ -744,7 +846,9 @@ export const PlotRegistrationPage: React.FC = () => {
                     Toạ độ GPS (Vĩ độ, Kinh độ):
                   </span>
                   <span className="font-mono font-bold text-accent-primary text-sm">
-                    {formatDisplayCoord(viewingMapPlot.geometry)}
+                    {viewingMapPlot.geometry?.type === "Polygon"
+                      ? t("field.plot.polygonBoundary", "Ranh giới đa giác")
+                      : formatDisplayCoord(viewingMapPlot.geometry)}
                   </span>
                 </div>
               </div>
@@ -752,6 +856,7 @@ export const PlotRegistrationPage: React.FC = () => {
               <div className="flex justify-end pt-2">
                 <button
                   type="button"
+                  disabled={viewingMapPlot.canEdit === false}
                   onClick={() => {
                     const plotToEdit = viewingMapPlot;
                     setViewingMapPlot(null);
@@ -770,4 +875,57 @@ export const PlotRegistrationPage: React.FC = () => {
     </div>
   );
 };
+
+function PlotRelatedRecords({ plotId }: { plotId: string }) {
+  const text = useWorkflowText();
+  const allowed = useAuthStore((state) =>
+    state.user?.permissions.some(
+      (p) => p === "farms.read" || p === "farms.write",
+    ),
+  );
+  const links = useQuery({
+    queryKey: ["field-plot-related-seasons", plotId],
+    queryFn: () =>
+      collectPages((paging) =>
+        procurementEndpoints.getPlotSeasons({ ...paging, plotId }),
+      ),
+    enabled: Boolean(allowed),
+  });
+  if (!allowed) return null;
+  return (
+    <section className="space-y-2">
+      <h4 className="font-semibold">
+        {text(
+          "Mùa vụ và khai báo phun thuốc",
+          "Plot seasons and spray declarations",
+        )}
+      </h4>
+      <Feedback error={links.error} pending={links.isPending} />
+      {links.data?.length === 0 && (
+        <p>{text("Chưa có liên kết mùa vụ.", "No plot seasons recorded.")}</p>
+      )}
+      <ul className="space-y-1">
+        {links.data?.map((row) => (
+          <li key={row.id}>
+            <a
+              className="text-accent-primary underline"
+              href={`${fieldPaths.seasons}?seasonId=${encodeURIComponent(row.seasonId)}`}
+            >
+              {row.seasonName}
+            </a>
+            {" · "}
+            {row.riceVariety}
+            {" · "}
+            <a
+              className="text-accent-primary underline"
+              href={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(row.id)}`}
+            >
+              {text("Lịch sử phun", "Spray history")}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 export default PlotRegistrationPage;

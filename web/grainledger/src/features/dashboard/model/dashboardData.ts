@@ -1,3 +1,11 @@
+import { landingPaths } from "@/features/landing/paths";
+import { auditPaths } from "@/features/audit/paths";
+import { adminPaths } from "@/features/admin/paths";
+import { fieldPaths } from "@/features/field/paths";
+import { millPaths, stockSearchPath } from "@/features/mill/paths";
+import { compliancePaths, labResultPath } from "@/features/compliance/paths";
+import { exportPaths } from "@/features/export/paths";
+import { riskPaths } from "@/features/risk/paths";
 import { Decimal, formatMass } from "@/shared/utils/decimalMass";
 import {
   normalizeUserRole,
@@ -480,7 +488,7 @@ export function getChart(
       }
     }
     return [...grouped].map(([label, value]) => ({
-      label: label.slice(8) + "/" + label.slice(5, 7),
+      label: label.slice(8) + landingPaths.landing + label.slice(5, 7),
       value: value.toString(),
       mass: true,
       tone: "primary",
@@ -566,7 +574,7 @@ export function getPriorities(
         status: str(row, "status"),
         path:
           source === "labs"
-            ? `${path}/${encodeURIComponent(str(row, "id"))}`
+            ? labResultPath(str(row, "id"))
             : path,
         tone,
       });
@@ -580,7 +588,7 @@ export function getPriorities(
         "Kiểm tra vai trò và trạng thái tài khoản",
         "Review account role and access status",
       ],
-      "/admin/access",
+      adminPaths.access,
       "warning",
     );
   if (role === "MILL_MANAGER" || role === "MILL_OPERATOR") {
@@ -596,7 +604,7 @@ export function getPriorities(
       role === "MILL_OPERATOR"
         ? ["Chờ ghi nhận cân đến", "Awaiting arrival measurement"]
         : ["Cần đối soát tiếp nhận", "Receiving review required"],
-      "/mill/receiving",
+      millPaths.receiving,
       "warning",
     );
     if (role === "MILL_MANAGER")
@@ -605,7 +613,7 @@ export function getPriorities(
         (row) => row.status === "REQUESTED",
         "reason",
         ["Yêu cầu sửa đổi chờ đối soát", "Correction awaiting reconciliation"],
-        "/mill/reconciliations",
+        millPaths.reconciliations,
         "info",
       );
     else
@@ -614,7 +622,7 @@ export function getPriorities(
         (row) => row.status === "DRAFT",
         "kind",
         ["Công đoạn chưa ghi sổ", "Operation not yet committed"],
-        "/mill/operations/new",
+        millPaths.operation,
         "info",
       );
   }
@@ -630,7 +638,7 @@ export function getPriorities(
         locale,
       ),
       value: String(pending),
-      path: "/field/sync",
+      path: fieldPaths.sync,
       tone: "warning",
     });
   if (role === "CUSTOMER_MANAGER") {
@@ -639,7 +647,7 @@ export function getPriorities(
       pendingLab,
       "reportNumber",
       ["Chứng thư cần đối chiếu", "Report awaiting confirmation"],
-      "/compliance/lab-results",
+      compliancePaths.results,
       "warning",
     );
     push(
@@ -647,7 +655,7 @@ export function getPriorities(
       activeHold,
       "lotCode",
       ["Lô hàng đang chịu lệnh HOLD", "Lot under an open hold"],
-      "/risk/holds",
+      riskPaths.holds,
       "danger",
     );
   }
@@ -657,7 +665,7 @@ export function getPriorities(
       (row) => ["current", "soon"].includes(shippingBucket(row, now)),
       "code",
       ["Cửa sổ xuất hàng đang đến gần", "Shipping window is approaching"],
-      "/export/orders",
+      exportPaths.orders,
       "warning",
     );
   if (role === "AUTHORIZED_STOCK_VIEWER")
@@ -680,7 +688,7 @@ export function getPriorities(
           )
           .join(" · "),
         value: "",
-        path: `/stock?search=${encodeURIComponent(str(row, "code"))}`,
+        path: stockSearchPath(str(row, "code")),
         tone: "warning",
       });
   return result.slice(0, 5);
@@ -720,7 +728,7 @@ export function getList(
               ]
             : text(["Chưa phân vai trò", "Unassigned"], locale),
           status: row.isActive ? "ACTIVE" : "INACTIVE",
-          path: "/admin/access",
+          path: adminPaths.access,
           tone: row.isActive ? "primary" : "warning",
         };
       if (role === "MILL_MANAGER" || role === "MILL_OPERATOR")
@@ -731,7 +739,7 @@ export function getList(
           value: "",
           date: str(row, "occurredAt"),
           status,
-          path: "/events",
+          path: auditPaths.events,
           tone: status === "DRAFT" ? "warning" : "primary",
         };
       if (role === "CUSTOMER_PROCUREMENT_OFFICER")
@@ -742,7 +750,7 @@ export function getList(
           value: `${formatMass(str(row, "totalNetMassKg"), 3, locale)} kg`,
           status,
           date: str(row, "receivedAt"),
-          path: "/field/receipts/new",
+          path: fieldPaths.receipts,
           tone: "primary",
         };
       if (role === "CUSTOMER_MANAGER")
@@ -753,7 +761,7 @@ export function getList(
           value: str(row, "assessmentStatus"),
           status,
           date: str(row, "issuedOn"),
-          path: `/compliance/lab-results/${encodeURIComponent(id)}`,
+          path: labResultPath(id),
           tone: pendingLab(row) ? "warning" : "primary",
         };
       if (role === "CUSTOMER_EXPORT_OFFICER")
@@ -762,7 +770,7 @@ export function getList(
           title: str(row, "code"),
           detail: `${str(row, "shippingFrom")} → ${str(row, "shippingTo")}`,
           value: `${formatMass(str(row, "requiredMassKg"), 3, locale)} kg`,
-          path: "/export/orders",
+          path: exportPaths.orders,
           tone: "info",
         };
       return {
@@ -771,7 +779,7 @@ export function getList(
         detail: statusLabel(str(row, "stage"), locale),
         value: `${formatMass(stockMass([row], "availableKg"), 3, locale)} kg`,
         status: restricted(row) ? "RESTRICTED" : "AVAILABLE",
-        path: `/stock?search=${encodeURIComponent(str(row, "code"))}`,
+        path: stockSearchPath(str(row, "code")),
         tone: restricted(row) ? "warning" : "primary",
       };
     });
