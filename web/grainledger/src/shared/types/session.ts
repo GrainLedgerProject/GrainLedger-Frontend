@@ -6,6 +6,7 @@ export interface UserProfile {
   displayName: string;
   phoneNumber?: string;
   role: UserRole;
+  hasAssignedRole?: boolean;
   organizationId?: string;
   organizationName?: string;
   organizationColor?: string;

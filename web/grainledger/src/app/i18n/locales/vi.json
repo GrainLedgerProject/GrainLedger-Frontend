@@ -279,6 +279,7 @@
     },
     "stock": {
       "overview": "Tồn kho theo vị trí",
+      "ledger": "Tồn kho sổ cái",
       "lots": "Chi tiết lô lúa/gạo"
     },
     "manager": {

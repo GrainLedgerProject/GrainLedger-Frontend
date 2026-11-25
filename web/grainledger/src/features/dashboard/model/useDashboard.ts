@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/app/store/authStore";
+import { isPendingUserAccess } from "@/features/auth/api/sessionUser";
 import {
   loadDashboardFacilities,
   loadDashboardSource,
@@ -12,14 +13,17 @@ export function useDashboard() {
   const user = useAuthStore((state) => state.user);
   const cache = useQueryClient();
   const [selectedFacility, setSelectedFacility] = useState("");
+  const pendingAccess = isPendingUserAccess(user);
   const role = user?.role ?? "AUTHORIZED_STOCK_VIEWER";
   const config = dashboardConfig[role];
   const permissions = user?.permissions ?? [];
-  const needsFacility = role === "MILL_MANAGER" || role === "MILL_OPERATOR";
+  const needsFacility =
+    !pendingAccess && (role === "MILL_MANAGER" || role === "MILL_OPERATOR");
   const scope = [
     user?.id ?? "",
     user?.organizationId ?? "",
     role,
+    pendingAccess ? "pending" : "active",
     [...permissions].sort().join("|"),
   ];
   const key = ["dashboard", ...scope];
@@ -27,7 +31,10 @@ export function useDashboard() {
     queryKey: [...key, "facilities"],
     queryFn: ({ signal }) => loadDashboardFacilities(signal),
     enabled: Boolean(
-      user && needsFacility && permissions.includes("platform.read"),
+      user &&
+        !pendingAccess &&
+        needsFacility &&
+        permissions.includes("platform.read"),
     ),
     staleTime: 30_000,
     retry: false,
@@ -39,9 +46,11 @@ export function useDashboard() {
   )
     ? selectedFacility
     : facilities.data?.[0]?.id;
-  const sources = config.sources.filter((source) =>
-    canReadSource(source, role, permissions),
-  );
+  const sources = pendingAccess
+    ? []
+    : config.sources.filter((source) =>
+        canReadSource(source, role, permissions),
+      );
   const queries = useQueries({
     queries: sources.map((source) => ({
       queryKey: [...key, source, needsFacility ? (facilityId ?? "") : "all"],
@@ -51,7 +60,7 @@ export function useDashboard() {
           needsFacility ? facilityId : undefined,
           signal,
         ),
-      enabled: Boolean(user && (!needsFacility || facilityId)),
+      enabled: Boolean(user && !pendingAccess && (!needsFacility || facilityId)),
       staleTime: 30_000,
       retry: false,
       refetchOnWindowFocus: true,
@@ -80,6 +89,7 @@ export function useDashboard() {
   return {
     user,
     role,
+    pendingAccess,
     config,
     data,
     states,

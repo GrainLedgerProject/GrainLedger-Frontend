@@ -43,7 +43,7 @@ import { riskPaths } from "../paths";
 const pageSize = 25;
 const uuidRegex = /^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/;
 const filterField =
-  "w-full min-w-0 rounded-lg border border-ink-tertiary/20 bg-surface-raised py-2 text-xs text-ink-primary transition-colors focus:border-accent-primary focus:outline-none dark:bg-surface-overlay";
+  "filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay";
 const tableClass =
   "overflow-x-auto rounded-2xl border border-ink-tertiary/20 bg-surface-base shadow-xs dark:bg-surface-raised";
 const tableHeader =
@@ -238,8 +238,8 @@ export function TraceabilityPage() {
   const view = params.get("view") === "history" ? "history" : "current";
 
   const setup = useQuery({
-    queryKey: ["trace-setup"],
-    queryFn: () => ledgerEndpoints.getSetup() as Promise<SetupApiResponse>,
+    queryKey: ["trace-lookups"],
+    queryFn: () => ledgerEndpoints.getLookups() as Promise<SetupApiResponse>,
   });
 
   const labReportDetail = useQuery({
@@ -489,7 +489,7 @@ export function TraceabilityPage() {
                 <MagnifyingGlass
                   size={16}
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+                  className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
                 />
                 <input
                   type="text"
@@ -500,7 +500,7 @@ export function TraceabilityPage() {
                   )}
                   value={search}
                   onChange={(e) => updateSearch(e.target.value)}
-                  className={`pl-9 pr-8 placeholder:text-ink-tertiary ${filterField}`}
+                  className={`pe-9 ps-10 placeholder:text-ink-tertiary ${filterField}`}
                 />
                 {search && (
                   <button
@@ -516,7 +516,7 @@ export function TraceabilityPage() {
 
               <select
                 aria-label={text("Loại lô", "Lot scope")}
-                className={`${filterField} pl-3`}
+                className={filterField}
                 value={mode}
                 onChange={(e) => {
                   setMode(e.target.value);
@@ -534,7 +534,7 @@ export function TraceabilityPage() {
 
               <select
                 aria-label={text("Cơ sở", "Facility")}
-                className={`${filterField} pl-3`}
+                className={filterField}
                 value={facilityId}
                 onChange={(e) => {
                   const nextFac = e.target.value;
@@ -555,7 +555,7 @@ export function TraceabilityPage() {
 
               <select
                 aria-label={text("Silo / Vị trí kho", "Silo / Location")}
-                className={`${filterField} pl-3 sm:col-span-2`}
+                className={`${filterField} sm:col-span-2`}
                 value={locationId}
                 onChange={(e) => {
                   setLocationId(e.target.value);

@@ -13,11 +13,15 @@ export function MrlVersionsPage() {
     user?.organizationId,
     user?.permissions.toSorted().join("|"),
   ].join(":");
+  const canManage = Boolean(user?.permissions.includes("platform.configure"));
+  const canRead =
+    canManage || Boolean(user?.permissions.includes("mrl.read"));
   return (
     <MrlWorkspace
       key={scope}
       scope={scope}
-      canManage={Boolean(user?.permissions.includes("platform.configure"))}
+      canManage={canManage}
+      canRead={canRead}
     />
   );
 }
@@ -25,11 +29,13 @@ export function MrlVersionsPage() {
 function MrlWorkspace({
   scope,
   canManage,
+  canRead,
 }: {
   scope: string;
   canManage: boolean;
+  canRead: boolean;
 }) {
-  const workspace = useMrlWorkspace(scope, canManage);
+  const workspace = useMrlWorkspace(scope, canManage, canRead);
   return (
     <div className="space-y-6 pb-8">
       <MrlVersionList {...workspace.list} />

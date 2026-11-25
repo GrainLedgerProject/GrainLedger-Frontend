@@ -6,6 +6,10 @@ const eventHistoryPage = lazyScreen(() =>
 );
 
 export const auditRoutes = [
-  screenRoute(auditPaths.events, eventHistoryPage),
-  screenRoute(auditPaths.event, eventHistoryPage),
+  screenRoute(auditPaths.events, eventHistoryPage, {
+    anyPermissions: ["history.read", "identity.manage"],
+  }),
+  screenRoute(auditPaths.event, eventHistoryPage, {
+    anyPermissions: ["history.read", "identity.manage"],
+  }),
 ];

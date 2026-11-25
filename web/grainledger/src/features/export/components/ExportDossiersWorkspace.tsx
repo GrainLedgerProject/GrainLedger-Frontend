@@ -517,7 +517,7 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                   </label>
                   <ExportIconField icon={FileText}>
                     <select
-                      className="w-full ps-10 pe-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                      className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                       id={id}
                       value={type}
                       onChange={(e) => setType(e.target.value)}

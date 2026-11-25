@@ -1,4 +1,4 @@
-﻿import { useId } from "react";
+import { useId } from "react";
 import { ClipboardText } from "@phosphor-icons/react";
 import type { ExportOrderSummary } from "@/api/exports";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
@@ -27,7 +27,7 @@ export function ExportOrderSelector({
 
       <ExportIconField icon={ClipboardText}>
         <select
-          className="w-full ps-10 pe-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+          className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
           id={id}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}

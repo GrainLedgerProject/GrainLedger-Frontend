@@ -22,7 +22,6 @@ import {
 } from "@/api/containerExecution";
 import { exportEndpoints } from "@/api/exports";
 import { ledgerEndpoints } from "@/api/ledger";
-import { procurementEndpoints } from "@/api/procurement";
 import { configureApiSession } from "@/api/session";
 import { EventHistoryPage } from "@/features/audit/pages/EventHistoryPage";
 import { MrlComplianceCheckPage } from "@/features/compliance/pages/MrlComplianceCheckPage";
@@ -343,8 +342,8 @@ describe("Tracing & Container HOLD checklist", () => {
     };
     vi.spyOn(containerExecutionEndpoints, "getDossier").mockResolvedValue(dossier);
     vi.spyOn(containerExecutionEndpoints, "getWorkflow").mockResolvedValue(workflow);
-    const addDoc = vi
-      .spyOn(containerExecutionEndpoints, "addDocument")
+    const genPackingList = vi
+      .spyOn(containerExecutionEndpoints, "generatePackingList")
       .mockResolvedValue(workflow);
 
     mount(
@@ -364,14 +363,17 @@ describe("Tracing & Container HOLD checklist", () => {
         name: /Sinh Packing List từ hồ sơ niêm phong/,
       }),
     );
-    await waitFor(() => expect(addDoc).toHaveBeenCalledTimes(1));
-    expect(addDoc.mock.calls[0][1].documentType).toBe("PACKING_LIST");
-    expect(addDoc.mock.calls[0][1].reason).toContain("[SYSTEM_GENERATED]");
+    await waitFor(() => expect(genPackingList).toHaveBeenCalledTimes(1));
+    expect(genPackingList).toHaveBeenCalledWith("c-closed", {
+      operationId: expect.any(String),
+      version: 5,
+    });
   });
 
   it("enforces trace permissions, renders flowchart, plot summary, source evidence, and HOLD actions", async () => {
     signIn("CUSTOMER_EXPORT_OFFICER", ["trace.read.tenant"]);
-    vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
+    const getSetup = vi.spyOn(ledgerEndpoints, "getSetup");
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
       facilities: [{ id: "fac-1", name: "Nhà máy 1" }],
       locations: [{ id: "loc-1", facilityId: "fac-1", name: "Silo A", kind: "SILO" }],
     });
@@ -502,11 +504,13 @@ describe("Tracing & Container HOLD checklist", () => {
     expect(
       screen.getByRole("button", { name: /Truy xuôi từ kết quả/ }),
     ).toBeTruthy();
+    expect(getSetup).not.toHaveBeenCalled();
   });
 
   it("renders plot-level aggregation and ancestry tables on ContainerTracePage", async () => {
     signIn("CUSTOMER_MANAGER", ["trace.read.all", "holds.manage"]);
-    vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
+    const getSetup = vi.spyOn(ledgerEndpoints, "getSetup");
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
       facilities: [{ id: "fac-1", name: "Nhà máy 1" }],
       locations: [],
     });
@@ -564,6 +568,7 @@ describe("Tracing & Container HOLD checklist", () => {
     expect(screen.getByText("60%")).toBeTruthy();
     expect(screen.getByText(/Danh sách lô tổ tiên lịch sử/)).toBeTruthy();
     expect(screen.getByText(/Liên kết vật tư lịch sử giữa các lô/)).toBeTruthy();
+    expect(getSetup).not.toHaveBeenCalled();
   });
 
   it("shows Trace forward button on confirmed lab reports in MrlComplianceCheckPage", async () => {
@@ -771,27 +776,28 @@ describe("Tracing & Container HOLD checklist", () => {
       totalCount: 1,
       hasMore: false,
     });
-    vi.spyOn(procurementEndpoints, "getProcurements").mockResolvedValue(page([]));
-    vi.spyOn(sampleEndpoints, "getSamples").mockResolvedValue(page([]));
-    vi.spyOn(labReportEndpoints, "getLabReports").mockResolvedValue(page([]));
-    vi.spyOn(ledgerEndpoints, "getOperations").mockResolvedValue(page([]));
-    vi.spyOn(ledgerEndpoints, "getCorrections").mockResolvedValue(page([]));
-    vi.spyOn(ledgerEndpoints, "getHolds").mockResolvedValue(
-      page([
-        {
-          id: "h-1",
-          lotId: "l-1",
-          lotCode: "HOLD-REF-88",
-          reason: "Audit check",
-          status: "ACTIVE",
-          createdAt: "2026-11-21T00:00:00Z",
-          ownerName: "Manager",
-        },
-      ]),
-    );
-    vi.spyOn(exportEndpoints, "getOrders").mockResolvedValue(page([]));
-    vi.spyOn(containerExecutionEndpoints, "getWorkItems").mockResolvedValue({ items: [] });
-    vi.spyOn(containerExecutionEndpoints, "getNotifications").mockResolvedValue({ items: [] });
+    const getBusinessHistory = vi
+      .spyOn(ledgerEndpoints, "getBusinessHistory")
+      .mockResolvedValue({
+        items: [
+          {
+            id: "h-1",
+            category: "HOLD",
+            eventType: "HOLD_PLACED",
+            subjectId: "l-1",
+            reference: "HOLD-REF-88",
+            actorId: "user-1",
+            actorName: "Manager",
+            recordedAt: "2026-11-21T00:00:00Z",
+            context: { reason: "Audit check" },
+            evidenceId: null,
+          },
+        ],
+        page: 1,
+        pageSize: 25,
+        totalCount: 1,
+        hasMore: false,
+      });
 
     mount(<EventHistoryPage />);
     await screen.findByText(/Trace ID: trace-evt-1/);
@@ -800,17 +806,29 @@ describe("Tracing & Container HOLD checklist", () => {
     expect((await screen.findAllByText("HOLD-REF-88")).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Nhóm nghiệp vụ"), {
-      target: { value: "QUALITY_HOLD" },
+      target: { value: "HOLD" },
     });
     fireEvent.change(screen.getByLabelText("Mã tham chiếu"), {
       target: { value: "HOLD-REF-88" },
     });
+    await waitFor(() =>
+      expect(getBusinessHistory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: "HOLD",
+          search: "HOLD-REF-88",
+          page: 1,
+          pageSize: 25,
+        }),
+        expect.anything(),
+      ),
+    );
     expect((await screen.findAllByText("HOLD-REF-88")).length).toBeGreaterThan(0);
   });
 
   it("renders GrainLoader instead of plain loading text during bidirectional trace", async () => {
     signIn("CUSTOMER_MANAGER", ["trace.read.all"]);
-    vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
+    const getSetup = vi.spyOn(ledgerEndpoints, "getSetup");
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
       facilities: [{ id: "fac-1", name: "Nhà máy 1" }],
       locations: [],
     });
@@ -823,5 +841,6 @@ describe("Tracing & Container HOLD checklist", () => {
       await screen.findByText("Đang truy vết dòng di chuyển hai chiều..."),
     ).toBeTruthy();
     expect(screen.queryByText("Đang tải…")).toBeNull();
+    expect(getSetup).not.toHaveBeenCalled();
   });
 });

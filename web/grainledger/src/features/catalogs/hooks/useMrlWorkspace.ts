@@ -8,7 +8,11 @@ import { confirmAction } from "@/app/store/feedbackStore";
 import { mrlDecimal, mrlImportSchema } from "../model/mrlImport";
 import { localNow } from "../model/mrlDate";
 
-export function useMrlWorkspace(scope: string, canManage: boolean) {
+export function useMrlWorkspace(
+  scope: string,
+  canManage: boolean,
+  canRead = canManage,
+) {
   const { t, i18n } = useTranslation();
   const cache = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -43,6 +47,7 @@ export function useMrlWorkspace(scope: string, canManage: boolean) {
   const detailKey = ["mrl-detail", scope, selectedId];
   const catalogs = useQuery({
     queryKey: listKey,
+    enabled: canRead,
     retry: false,
     queryFn: async () => {
       const [versions, markets, commodities, substances] = await Promise.all([
@@ -56,7 +61,7 @@ export function useMrlWorkspace(scope: string, canManage: boolean) {
   });
   const detail = useQuery({
     queryKey: detailKey,
-    enabled: Boolean(selectedId),
+    enabled: Boolean(canRead && selectedId),
     retry: false,
     staleTime: 0,
     refetchOnWindowFocus: false,

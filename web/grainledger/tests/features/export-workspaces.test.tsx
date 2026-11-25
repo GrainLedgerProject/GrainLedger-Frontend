@@ -564,9 +564,14 @@ describe("Export workspaces", () => {
     fireEvent.click(within(dispatch).getByRole("button", { name: "Quay lại thao tác trước" }));
     expect(await screen.findByRole("dialog", { name: "Chi tiết đơn hàng" })).toBeTruthy();
   });
-  it("lets a read-only admin clear an archive search and track containers in place", async () => {
+  it("lets a read-only export viewer clear an archive search and track containers in place while blocking MILL_ADMIN", async () => {
     const user = useAuthStore.getState().user!;
     useAuthStore.setState({ user: { ...user, role: "MILL_ADMIN", permissions: ["export-orders.read"] } });
+    mount("/export/dossiers?order=order");
+    expect(screen.getByText("Không có quyền truy cập màn hình này")).toBeTruthy();
+    cleanup();
+
+    useAuthStore.setState({ user: { ...user, role: "CUSTOMER_EXPORT_OFFICER", permissions: ["export-orders.read"] } });
     mount("/export/dossiers?order=order");
     const search = await screen.findByLabelText("Tìm mã container");
     fireEvent.change(search, { target: { value: "missing" } });
@@ -731,28 +736,36 @@ describe("Export workspaces", () => {
     );
     expect(screen.queryByText("Chưa có phương án.")).toBeNull();
   });
-  it.each(["CUSTOMER_EXPORT_OFFICER", "MILL_ADMIN"] as const)(
-    "honors a direct proposal link and keeps %s read only even with a manager grant",
-    async (role) => {
-      const user = useAuthStore.getState().user!;
-      useAuthStore.setState({
-        user: {
-          ...user,
-          role,
-          permissions: [...user.permissions, "blend.approve"],
-        },
-      });
-      mount("/export/plans/plan-42/review");
-      await screen.findByText("RICE-LOT-1");
-      await screen.findByText("Chờ quyết định");
-      expect(planningEndpoints.getBlendPlan).toHaveBeenCalledWith("plan-42");
-      expect(planningEndpoints.getDecision).toHaveBeenCalledWith("plan-42");
-      expect(exportEndpoints.getOrders).not.toHaveBeenCalled();
-      expect(
-        screen.queryByRole("button", { name: /Phê duyệt|Từ chối|Thu hồi/ }),
-      ).toBeNull();
-    },
-  );
+  it("honors a direct proposal link and keeps CUSTOMER_EXPORT_OFFICER read only even with a manager grant while blocking MILL_ADMIN", async () => {
+    const user = useAuthStore.getState().user!;
+    useAuthStore.setState({
+      user: {
+        ...user,
+        role: "MILL_ADMIN",
+        permissions: [...user.permissions, "blend.approve"],
+      },
+    });
+    mount("/export/plans/plan-42/review");
+    expect(screen.getByText("Không có quyền truy cập màn hình này")).toBeTruthy();
+    cleanup();
+
+    useAuthStore.setState({
+      user: {
+        ...user,
+        role: "CUSTOMER_EXPORT_OFFICER",
+        permissions: [...user.permissions, "blend.approve"],
+      },
+    });
+    mount("/export/plans/plan-42/review");
+    await screen.findByText("RICE-LOT-1");
+    await screen.findByText("Chờ quyết định");
+    expect(planningEndpoints.getBlendPlan).toHaveBeenCalledWith("plan-42");
+    expect(planningEndpoints.getDecision).toHaveBeenCalledWith("plan-42");
+    expect(exportEndpoints.getOrders).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: /Phê duyệt|Từ chối|Thu hồi/ }),
+    ).toBeNull();
+  });
   it("confirms manager decisions and keeps the exact proposal, version and operation ID when retrying", async () => {
     manager();
     const send = vi

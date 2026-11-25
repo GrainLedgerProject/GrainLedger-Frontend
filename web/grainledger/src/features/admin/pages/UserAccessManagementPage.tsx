@@ -196,6 +196,11 @@ export const UserAccessManagementPage: React.FC = () => {
       {/* Filter Toolbar */}
       <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="relative w-full sm:w-80">
+          <MagnifyingGlass
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+          />
           <input
             type="text"
             placeholder={t(
@@ -204,11 +209,7 @@ export const UserAccessManagementPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-          />
-          <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-2.5 text-ink-tertiary"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
           />
         </div>
 

@@ -59,10 +59,10 @@ export function ContainerTracePage() {
   const allowed = user?.permissions.some(
     (p) => p === "trace.read.tenant" || p === "trace.read.all",
   );
-  const canPlaceHold =
-    (user?.role === "CUSTOMER_MANAGER" &&
-      user.permissions.includes("holds.manage")) ||
-    Boolean(user?.permissions.includes("containers.write"));
+  const canPlaceHold = Boolean(
+    user?.role === "CUSTOMER_MANAGER" &&
+      user.permissions.includes("holds.manage"),
+  );
 
   const [input, setInput] = useState(containerId);
   const [viewMode, setViewMode] = useState<"table" | "flowchart">("table");
@@ -75,8 +75,8 @@ export function ContainerTracePage() {
   const [holdModalOpen, setHoldModalOpen] = useState(false);
 
   const setup = useQuery({
-    queryKey: ["trace-container-setup"],
-    queryFn: () => ledgerEndpoints.getSetup() as Promise<SetupApiResponse>,
+    queryKey: ["trace-container-lookups"],
+    queryFn: () => ledgerEndpoints.getLookups() as Promise<SetupApiResponse>,
     enabled: Boolean(allowed),
   });
 
@@ -405,7 +405,7 @@ export function ContainerTracePage() {
                     <MagnifyingGlass
                       size={16}
                       aria-hidden="true"
-                      className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-tertiary"
+                      className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
                     />
                     <input
                       required
@@ -413,7 +413,7 @@ export function ContainerTracePage() {
                       value={input}
                       placeholder="11111111-1111-4111-8111-111111111111"
                       onChange={(event) => setInput(event.target.value)}
-                      className="pl-10 pr-9 font-mono text-sm placeholder:text-ink-tertiary"
+                      className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 font-mono placeholder:text-ink-tertiary dark:bg-surface-overlay"
                     />
                     {input && (
                       <button

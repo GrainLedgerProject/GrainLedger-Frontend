@@ -89,7 +89,7 @@ export function ExportPlansWorkspace({
               {text("Container", "Container")}
             </label>
             <select
-              className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
               id={id}
               value={selected?.id ?? ""}
               onChange={(e) => {
@@ -211,7 +211,7 @@ export function ExportPlansWorkspace({
               {text("Lọc phiên bản", "Filter versions")}
             </label>
             <select
-              className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
               id={`${id}-state`}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}

@@ -1,4 +1,4 @@
-﻿import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Decimal from "decimal.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ledgerEndpoints, type ReceivingQuery, type ReceivingReviewAction, type ReceivingStatus,
@@ -74,7 +74,7 @@ export function ReceivingTasksPage() {
       {status && <p role="status">{status}</p>}
       <Panel title={text("Hàng đợi tiếp nhận", "Receiving queue")}>
         <Feedback error={lookups.error} pending={lookups.isPending} />
-        <search className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <search className="record-filter grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label>{text("Cơ sở được phân công", "Assigned facility")}
             <select value={facilityId} onChange={e => filter({ facilityId: e.target.value, ownerId: undefined })}>
               <option value="">{text("Chọn cơ sở", "Choose a facility")}</option>

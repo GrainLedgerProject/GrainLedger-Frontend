@@ -88,6 +88,7 @@ export function extractUserProfileFromJwt(token: string | null): UserProfile | n
     email,
     displayName,
     role,
+    hasAssignedRole: true,
     organizationId,
     organizationName,
     isActive: true,

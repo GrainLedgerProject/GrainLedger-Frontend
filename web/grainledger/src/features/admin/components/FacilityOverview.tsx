@@ -172,15 +172,16 @@ export function FacilityOverview(props: FacilityConfigModel["overview"]) {
 
         <div className="relative min-w-[240px]">
           <MagnifyingGlass
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm tên Silo, kho hoặc thiết bị..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs focus:border-accent-primary focus:outline-none placeholder:text-ink-tertiary focus:rounded-full"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 placeholder:text-ink-tertiary"
           />
         </div>
       </div>

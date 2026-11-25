@@ -197,7 +197,7 @@ export const HoldManagementPage: React.FC = () => {
             aria-label={text("Lọc trạng thái HOLD", "Filter HOLD status")}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-xs text-ink-primary"
+            className="filter-control w-auto border-ink-tertiary/20 bg-surface-base font-semibold"
           >
             <option value="ALL">
               {text("Tất cả trạng thái", "All statuses")}

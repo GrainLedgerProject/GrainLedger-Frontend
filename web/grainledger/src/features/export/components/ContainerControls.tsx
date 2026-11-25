@@ -1,7 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { DownloadSimple, UploadSimple } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  DownloadSimple,
+  Package,
+  ShieldCheck,
+  ShieldWarning,
+  Truck,
+  UploadSimple,
+  WarningCircle,
+  XCircle,
+} from "@phosphor-icons/react";
 import {
   containerExecutionEndpoints,
   type ContainerHandoffCommitRequest,
@@ -15,7 +25,8 @@ import { confirmAction } from "@/app/store/feedbackStore";
 import { useAuthStore } from "@/app/store/authStore";
 import { saveExportFile } from "@/features/export/model/saveExportFile";
 import { millPaths } from "@/features/mill/paths";
-import { Feedback, Panel } from "@/shared/ui/Workflow";
+import { StatusBadge, type StatusType } from "@/shared/ui/StatusBadge";
+import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useContainerCommand } from "../hooks/useContainerCommand";
 import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
@@ -37,6 +48,20 @@ function readFileAsBase64(file: File): Promise<string> {
     };
     reader.readAsDataURL(file);
   });
+}
+
+function handoffStateBadge(state: string): StatusType {
+  switch (state) {
+    case "APPROVED":
+    case "COMMITTED":
+      return "COMPLIANT";
+    case "REJECTED":
+      return "REJECTED";
+    case "DRAFT":
+      return "PENDING";
+    default:
+      return "IN_PROGRESS";
+  }
 }
 
 export function ContainerControls({
@@ -75,29 +100,67 @@ export function ContainerControls({
     { persistKey: `container:${workflow.containerId}:controls` },
   );
   const blocked = command.isPending || command.uncertain;
+  const hasHolds = Boolean(workflow.holds?.length);
 
   return (
-    <Panel title={text("Bàn giao, duyệt phạm vi và HOLD", "Handoffs, scope reviews and HOLD")}>
-      <ContainerControlForms
-        key={workflow.version}
-        workflow={workflow}
-        facilityId={facilityId}
-        canOperate={canOperate}
-        canRespond={canRespond}
-        canReview={canReview}
-        blocked={blocked}
-        submit={command.submit}
-      />
-      <ContainerCommandFeedback
-        error={command.error}
-        uncertain={command.uncertain}
-        retry={command.retry}
-        success={command.isSuccess}
-        isPending={command.isPending}
-        restoredPending={command.restoredPending}
-        discardPending={command.discardPending}
-      />
-    </Panel>
+    <section className="record-card">
+      <div className="record-card-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="record-icon-tile" aria-hidden="true">
+            <Truck size={20} weight="bold" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-base font-bold text-ink-primary">
+              {text("Bàn giao, duyệt phạm vi và HOLD", "Handoffs, scope reviews and HOLD")}
+            </h2>
+            <p className="mt-0.5 text-xs text-ink-secondary">
+              {text(
+                "Quản lý bàn giao tồn kho giữa vị trí, duyệt phạm vi còn lại và phản hồi lệnh phong tỏa HOLD.",
+                "Manage stock handoffs between locations, remaining scope approvals, and HOLD responses.",
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {hasHolds && (
+            <StatusBadge
+              status="HOLD"
+              size="sm"
+              label={`${workflow.holds!.length} HOLD`}
+            />
+          )}
+          {workflow.status && (
+            <StatusBadge
+              status={workflow.status === "CLOSED" ? "CLOSED" : "ACTIVE"}
+              size="sm"
+              label={workflow.status}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-5 p-4 sm:p-6">
+        <ContainerControlForms
+          key={workflow.version}
+          workflow={workflow}
+          facilityId={facilityId}
+          canOperate={canOperate}
+          canRespond={canRespond}
+          canReview={canReview}
+          blocked={blocked}
+          submit={command.submit}
+        />
+        <ContainerCommandFeedback
+          error={command.error}
+          uncertain={command.uncertain}
+          retry={command.retry}
+          success={command.isSuccess}
+          isPending={command.isPending}
+          restoredPending={command.restoredPending}
+          discardPending={command.discardPending}
+        />
+      </div>
+    </section>
   );
 }
 
@@ -265,19 +328,35 @@ function ContainerControlForms({
   }
 
   const affectedLotId = positions[0]?.lotId ?? workflow.proposals?.[0]?.context.outputs?.[0]?.lotId;
+  const loadError = lookups.error ?? uploadError ?? downloadEvidence.error;
 
   return (
-    <>
-      <Feedback error={lookups.error ?? uploadError ?? downloadEvidence.error} />
+    <div className="space-y-5">
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger"
+        >
+          <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1 [&>div]:bg-transparent [&>div]:p-0">
+            <Feedback error={loadError} />
+          </div>
+        </div>
+      )}
+
       {canReview && available && Boolean(workflow.proposals?.length) && (
         <form
+          className="record-form space-y-4 rounded-xl border border-ink-tertiary/15 bg-surface-raised/40 p-4 dark:bg-surface-overlay/25"
           onSubmit={(event) => {
             event.preventDefault();
             review("APPROVED");
           }}
         >
-          <fieldset disabled={blocked} className="grid gap-3 sm:grid-cols-2">
-            <legend>{text("Duyệt phạm vi còn lại", "Review remaining scope")}</legend>
+          <fieldset disabled={blocked} className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-2 flex items-center gap-2 font-display text-sm font-bold text-ink-primary">
+              <ShieldCheck size={16} className="text-accent-primary" aria-hidden="true" />
+              <span>{text("Duyệt phạm vi còn lại", "Review remaining scope")}</span>
+            </legend>
             <label>
               {text("Đề xuất", "Proposal")}
               <select
@@ -311,38 +390,50 @@ function ContainerControlForms({
                 </option>
               </select>
             </label>
-            <label>
+            <label className="sm:col-span-2">
               {text("Lý do duyệt phạm vi", "Scope review reason")}
               <textarea
                 required
+                rows={2}
                 maxLength={1000}
                 value={scopeReason}
                 onChange={(event) => setScopeReason(event.target.value)}
               />
             </label>
-            <div className="flex flex-wrap items-end gap-2">
-              <button
-                type="submit"
-                disabled={!proposalId || !scopeReason.trim()}
-              >
-                {text("Duyệt phạm vi", "Approve scope")}
-              </button>
-              <button
-                type="button"
-                disabled={!proposalId || !scopeReason.trim()}
-                onClick={() => review("REJECTED")}
-              >
-                {text("Từ chối phạm vi", "Reject scope")}
-              </button>
-            </div>
           </fieldset>
+
+          <div className="record-form-footer">
+            <button
+              type="button"
+              disabled={blocked || !proposalId || !scopeReason.trim()}
+              onClick={() => review("REJECTED")}
+              className="record-button rounded-full border-functional-rejected-border bg-functional-rejected-bg text-accent-danger hover:opacity-90"
+            >
+              <XCircle size={15} weight="bold" aria-hidden="true" />
+              <span>{text("Từ chối phạm vi", "Reject scope")}</span>
+            </button>
+            <button
+              type="submit"
+              disabled={blocked || !proposalId || !scopeReason.trim()}
+              className="record-button record-primary rounded-full px-5"
+            >
+              <CheckCircle size={15} weight="bold" aria-hidden="true" />
+              <span>{text("Duyệt phạm vi", "Approve scope")}</span>
+            </button>
+          </div>
         </form>
       )}
 
       {canOperate && available && Boolean(positions.length) && (
-        <form onSubmit={draft}>
-          <fieldset disabled={blocked} className="grid gap-3 sm:grid-cols-2">
-            <legend>{text("Nháp bàn giao từ đầu ra đã sản xuất", "Draft handoff from produced outputs")}</legend>
+        <form
+          onSubmit={draft}
+          className="record-form space-y-4 rounded-xl border border-ink-tertiary/15 bg-surface-raised/40 p-4 dark:bg-surface-overlay/25"
+        >
+          <fieldset disabled={blocked} className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-2 flex items-center gap-2 font-display text-sm font-bold text-ink-primary">
+              <Package size={16} className="text-accent-primary" aria-hidden="true" />
+              <span>{text("Nháp bàn giao từ đầu ra đã sản xuất", "Draft handoff from produced outputs")}</span>
+            </legend>
             <label>
               {text("Lô và vị trí nguồn", "Source lot and location")}
               <select
@@ -407,6 +498,7 @@ function ContainerControlForms({
                 required
                 value={quantity}
                 onChange={(event) => setQuantity(event.target.value)}
+                className="font-mono font-semibold"
               />
             </label>
             <label>
@@ -444,6 +536,7 @@ function ContainerControlForms({
                     required
                     value={outputKg}
                     onChange={(event) => setOutputKg(event.target.value)}
+                    className="font-mono font-semibold"
                   />
                 </label>
                 <label>
@@ -453,92 +546,115 @@ function ContainerControlForms({
                     required
                     value={loss}
                     onChange={(event) => setLoss(event.target.value)}
+                    className="font-mono font-semibold"
                   />
                 </label>
               </>
             )}
-            <button type="submit" className="self-end">
+          </fieldset>
+
+          <div className="record-form-footer">
+            <button type="submit" disabled={blocked} className="record-button record-primary rounded-full px-5">
               {text("Lưu nháp bàn giao", "Save handoff draft")}
             </button>
-          </fieldset>
+          </div>
         </form>
       )}
 
       {available &&
         canReview &&
         workflow.handoffs.some((handoff) => handoff.state === "DRAFT") && (
-          <label>
-            {text("Lý do duyệt bàn giao", "Handoff approval reason")}
-            <textarea
-              maxLength={1000}
-              value={handoffReason}
-              onChange={(event) => setHandoffReason(event.target.value)}
-              disabled={blocked}
-            />
-          </label>
+          <div className="record-form rounded-xl border border-ink-tertiary/15 bg-surface-raised/40 p-4 dark:bg-surface-overlay/25">
+            <label>
+              {text("Lý do duyệt bàn giao", "Handoff approval reason")}
+              <textarea
+                rows={2}
+                maxLength={1000}
+                value={handoffReason}
+                onChange={(event) => setHandoffReason(event.target.value)}
+                disabled={blocked}
+              />
+            </label>
+          </div>
         )}
 
-      <ul className="space-y-2">
-        {workflow.handoffs.map((handoff) => (
-          <li
-            key={handoff.id}
-            className="flex flex-wrap items-center gap-2 rounded-xl border border-ink-tertiary/20 p-3 text-xs"
-          >
-            <span>
-              {handoff.kind} · {handoff.state}
-              {handoff.content && ` · ${handoff.content.quantityKg} kg`}
-            </span>
-            {available && canReview && handoff.state === "DRAFT" && (
-              <button
-                type="button"
-                disabled={blocked || !handoffReason.trim()}
-                onClick={() =>
-                  submit({
-                    action: "approve",
-                    body: {
-                      version: workflow.version,
-                      handoffId: handoff.id,
-                      handoffVersion: handoff.version,
-                      reason: handoffReason.trim(),
-                    },
-                  })
-                }
+      {workflow.handoffs.length > 0 && (
+        <div className="space-y-2.5">
+          <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ink-secondary">
+            {text("Danh sách phiếu bàn giao", "Handoff drafts & records")} ({workflow.handoffs.length})
+          </h3>
+          <ul className="space-y-2">
+            {workflow.handoffs.map((handoff) => (
+              <li
+                key={handoff.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-tertiary/20 bg-surface-raised/35 p-3.5 text-xs dark:bg-surface-overlay/25"
               >
-                {text("Duyệt bàn giao", "Approve handoff")}
-              </button>
-            )}
-            {available && canOperate && handoff.state === "APPROVED" && (
-              <button
-                type="button"
-                disabled={blocked}
-                onClick={() => void commit(handoff.id, handoff.version)}
-              >
-                {text("Chốt bàn giao", "Commit handoff")}
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono font-bold text-ink-primary">{handoff.kind}</span>
+                  <StatusBadge status={handoffStateBadge(handoff.state)} size="sm" label={handoff.state} />
+                  {handoff.content && (
+                    <span className="font-mono text-ink-secondary">
+                      · {handoff.content.quantityKg} kg
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {available && canReview && handoff.state === "DRAFT" && (
+                    <button
+                      type="button"
+                      disabled={blocked || !handoffReason.trim()}
+                      onClick={() =>
+                        submit({
+                          action: "approve",
+                          body: {
+                            version: workflow.version,
+                            handoffId: handoff.id,
+                            handoffVersion: handoff.version,
+                            reason: handoffReason.trim(),
+                          },
+                        })
+                      }
+                      className="record-button record-primary min-h-9 rounded-full px-4"
+                    >
+                      {text("Duyệt bàn giao", "Approve handoff")}
+                    </button>
+                  )}
+                  {available && canOperate && handoff.state === "APPROVED" && (
+                    <button
+                      type="button"
+                      disabled={blocked}
+                      onClick={() => void commit(handoff.id, handoff.version)}
+                      className="record-button record-primary min-h-9 rounded-full px-4"
+                    >
+                      {text("Chốt bàn giao", "Commit handoff")}
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* HOLD Responses History */}
       {Boolean(workflow.holdResponses?.length) && (
-        <section className="space-y-2 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-3.5 text-xs">
-          <h3 className="font-semibold text-ink-primary">
+        <section className="space-y-2.5 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-4 text-xs dark:bg-surface-overlay/25">
+          <h3 className="font-display text-sm font-bold text-ink-primary">
             {text("Lịch sử phản hồi & xử lý HOLD container", "Container HOLD response history")}
           </h3>
           <ul className="divide-y divide-ink-tertiary/15">
             {workflow.holdResponses!.map((entry) => (
               <li
                 key={entry.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
               >
                 <div className="space-y-0.5">
                   <p className="font-semibold text-ink-primary">
                     {entry.action} · {entry.reason}
                   </p>
                   <p className="font-mono text-[11px] text-ink-secondary">
-                    HOLD: {entry.holdId} ·{" "}
-                    {new Date(entry.recordedAt).toLocaleString()}
+                    HOLD: {entry.holdId} · {new Date(entry.recordedAt).toLocaleString()}
                   </p>
                 </div>
                 {entry.evidenceId && (
@@ -546,9 +662,9 @@ function ContainerControlForms({
                     type="button"
                     disabled={downloadEvidence.isPending}
                     onClick={() => downloadEvidence.mutate(entry.evidenceId)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-ink-tertiary/20 bg-surface-base px-2.5 py-1 text-[11px] font-semibold text-accent-primary hover:bg-surface-raised"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-primary transition-colors hover:bg-surface-raised dark:bg-surface-raised dark:hover:bg-surface-overlay"
                   >
-                    <DownloadSimple size={13} />
+                    <DownloadSimple size={14} aria-hidden="true" />
                     <span>{text("Tải chứng cứ", "Download evidence")}</span>
                   </button>
                 )}
@@ -560,7 +676,7 @@ function ContainerControlForms({
 
       {canRespond && Boolean(workflow.holds?.length) && (
         <form
-          className="space-y-3 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg/20 p-4 text-xs"
+          className="record-form space-y-4 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg/20 p-4 text-xs"
           onSubmit={(event) => {
             event.preventDefault();
             if (holdId && effectiveFacilityId && evidenceId.trim() && holdReason.trim()) {
@@ -579,22 +695,23 @@ function ContainerControlForms({
           }}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-bold text-accent-danger">
-              {text("Phản hồi HOLD", "Respond to HOLD")}
+            <span className="flex items-center gap-1.5 font-display text-sm font-bold text-accent-danger">
+              <ShieldWarning size={17} weight="bold" aria-hidden="true" />
+              <span>{text("Phản hồi HOLD", "Respond to HOLD")}</span>
             </span>
             <Link
               to={`${millPaths.stockTransfer}?${new URLSearchParams({
                 ...(holdId ? { holdId } : {}),
                 ...(affectedLotId ? { lotId: affectedLotId } : {}),
               })}`}
-              className="font-semibold text-accent-primary hover:underline"
+              className="inline-flex items-center gap-1 rounded-full border border-accent-primary/30 bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-primary transition-colors hover:bg-surface-raised dark:bg-surface-raised"
             >
-              {text("Chuyển kho cách ly (ISOLATION) lô bị HOLD →", "Transfer HOLD lot to ISOLATION →")}
+              <span>{text("Chuyển kho cách ly (ISOLATION) lô bị HOLD →", "Transfer HOLD lot to ISOLATION →")}</span>
             </Link>
           </div>
           <fieldset
             disabled={blocked || uploadingEvidence}
-            className="grid gap-3 sm:grid-cols-2"
+            className="grid gap-4 sm:grid-cols-2"
           >
             <legend className="sr-only">{text("Phản hồi HOLD", "Respond to HOLD")}</legend>
             <label>
@@ -635,7 +752,7 @@ function ContainerControlForms({
 
             <label className="sm:col-span-2">
               <span className="flex items-center gap-1.5">
-                <UploadSimple size={14} className="text-accent-primary" />
+                <UploadSimple size={14} className="text-accent-primary" aria-hidden="true" />
                 {text(
                   "Tải tệp chứng cứ từ máy (tự tạo mã bằng chứng)",
                   "Upload evidence file (auto-fills evidence ID)",
@@ -644,6 +761,7 @@ function ContainerControlForms({
               <input
                 type="file"
                 onChange={(e) => void handleEvidenceUpload(e.target.files?.[0] ?? null)}
+                className="p-2 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-accent-primary"
               />
             </label>
 
@@ -654,25 +772,34 @@ function ContainerControlForms({
                 pattern="[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}"
                 value={evidenceId}
                 onChange={(event) => setEvidenceId(event.target.value)}
+                className="font-mono"
               />
             </label>
             <label>
               {text("Lý do phản hồi", "Response reason")}
               <textarea
                 required
+                rows={2}
                 maxLength={1000}
                 value={holdReason}
                 onChange={(event) => setHoldReason(event.target.value)}
               />
             </label>
-            <button type="submit" disabled={!effectiveFacilityId || uploadingEvidence}>
+          </fieldset>
+
+          <div className="record-form-footer">
+            <button
+              type="submit"
+              disabled={blocked || !effectiveFacilityId || uploadingEvidence}
+              className="record-button record-primary rounded-full px-5"
+            >
               {uploadingEvidence
                 ? text("Đang tải chứng cứ...", "Uploading evidence...")
                 : text("Ghi phản hồi", "Save response")}
             </button>
-          </fieldset>
+          </div>
         </form>
       )}
-    </>
+    </div>
   );
 }

@@ -244,9 +244,9 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
           <div className="space-y-3 p-4">
             <div className="relative">
               <MagnifyingGlass
-                size={15}
+                size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-tertiary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
               />
               <input
                 type="search"
@@ -254,7 +254,7 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label={text("Tìm bản nháp chênh lệch", "Search variance drafts")}
                 placeholder={text("Tìm mã lô, công đoạn, cơ sở...", "Search lot code, kind, facility...")}
-                className="min-h-10 w-full rounded-full border border-ink-tertiary/20 bg-surface-raised py-1.5 pr-9 pl-9 text-xs text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none dark:bg-surface-overlay"
+                className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
               />
               {searchQuery && (
                 <button

@@ -242,9 +242,9 @@ export function ResidueEvidencePage() {
 
               <div className="relative w-full sm:w-64">
                 <MagnifyingGlass
-                  size={15}
+                  size={16}
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-tertiary"
+                  className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
                 />
                 <input
                   type="search"
@@ -252,7 +252,7 @@ export function ResidueEvidencePage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label={text("Tìm kiếm chứng cứ đã công bố", "Search published evidence")}
                   placeholder={text("Tìm theo mã, người duyệt...", "Search code, reviewer...")}
-                  className="min-h-10 w-full rounded-full border border-ink-tertiary/20 bg-surface-raised py-1.5 pr-9 pl-9 text-xs text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none dark:bg-surface-overlay"
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
                 />
                 {searchQuery && (
                   <button

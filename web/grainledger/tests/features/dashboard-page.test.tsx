@@ -171,4 +171,32 @@ describe("Role dashboards", () => {
     expect(within(accounts).getByText("—")).toBeTruthy();
     expect(within(accounts).queryByText("0")).toBeNull();
   });
+
+  it("renders pending administrator assignment screen without calling stock APIs when role is null", () => {
+    useAuthStore.setState({
+      user: {
+        id: "user-pending",
+        email: "pending@example.test",
+        displayName: "Người dùng mới",
+        role: "AUTHORIZED_STOCK_VIEWER",
+        hasAssignedRole: false,
+        isActive: false,
+        permissions: [],
+      },
+    });
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={cache}>
+          <RoleHomePage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Tài khoản đang chờ quản trị viên cấp quyền",
+      }),
+    ).toBeTruthy();
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
 });

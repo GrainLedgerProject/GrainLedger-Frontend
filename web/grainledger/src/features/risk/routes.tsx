@@ -8,8 +8,19 @@ const holdManagementPage = lazyScreen(() =>
 );
 
 export const riskRoutes = [
-  screenRoute(riskPaths.traceback, traceabilityPage, { roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "MILL_ADMIN"] }),
-  screenRoute(riskPaths.containerTrace, containerTracePage, { roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"] }),
-  screenRoute(riskPaths.newHold, holdManagementPage, { roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"] }),
-  screenRoute(riskPaths.holds, holdManagementPage, { roles: ["MILL_MANAGER", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "MILL_ADMIN"] }),
+  screenRoute(riskPaths.traceback, traceabilityPage, {
+    roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["trace.read.tenant", "trace.read.all"],
+  }),
+  screenRoute(riskPaths.containerTrace, containerTracePage, {
+    roles: ["CUSTOMER_MANAGER", "MILL_ADMIN"],
+    anyPermissions: ["trace.read.tenant", "trace.read.all"],
+  }),
+  screenRoute(riskPaths.newHold, holdManagementPage, {
+    roles: ["CUSTOMER_MANAGER"],
+    permission: "holds.manage",
+  }),
+  screenRoute(riskPaths.holds, holdManagementPage, {
+    roles: ["MILL_MANAGER", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+  }),
 ];

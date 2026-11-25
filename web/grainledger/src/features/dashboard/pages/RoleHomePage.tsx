@@ -47,6 +47,7 @@ export function RoleHomePage() {
   const {
     user,
     role,
+    pendingAccess,
     config,
     data,
     states,
@@ -63,6 +64,78 @@ export function RoleHomePage() {
   const connectionChecked = useUiStore((state) => state.hasInitialChecked);
   const pending = useUiStore((state) => state.pendingOfflineCount);
   const now = new Date();
+  const date = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(now);
+
+  if (pendingAccess) {
+    return (
+      <div className="mx-auto max-w-screen-2xl space-y-6 pb-4">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-ink-secondary">
+            <CalendarBlank size={15} aria-hidden="true" />
+            <time dateTime={now.toISOString()} className="capitalize">
+              {date}
+            </time>
+          </div>
+        </header>
+        <section
+          className={`${panel} relative overflow-hidden bg-gradient-to-br from-functional-hold-bg via-surface-base to-surface-base p-6 sm:p-8`}
+          aria-labelledby="pending-access-title"
+        >
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-functional-hold-border bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-warning">
+              <Clock size={15} aria-hidden="true" />
+              {text(
+                ["TRẠNG THÁI CHỜ PHÂN QUYỀN", "PENDING ACCESS ASSIGNMENT"],
+                locale,
+              )}
+            </div>
+            <h1
+              id="pending-access-title"
+              className="font-display text-2xl font-bold tracking-tight text-ink-primary sm:text-3xl"
+            >
+              {text(
+                [
+                  "Tài khoản đang chờ quản trị viên cấp quyền",
+                  "Account pending administrator activation",
+                ],
+                locale,
+              )}
+            </h1>
+            <p className="text-sm leading-6 text-ink-secondary">
+              {text(
+                [
+                  "Tài khoản của bạn đã xác thực thành công nhưng chưa được gán doanh nghiệp và vai trò nghiệp vụ. Sau khi quản trị viên kích hoạt quyền truy cập, toàn bộ màn hình và dữ liệu theo phạm vi sẽ hiển thị tại đây.",
+                  "Your account is verified, but an administrator has not assigned your organization and operational role yet. Once activated, your authorized workspace and data will unlock automatically.",
+                ],
+                locale,
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                to="/settings/profile"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-primary px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-accent-primary-dim"
+              >
+                {text(["Thông tin cá nhân", "Personal profile"], locale)}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+              <Link
+                to="/settings/security"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink-tertiary/25 bg-surface-base px-4 py-2.5 text-xs font-semibold text-ink-primary transition-colors hover:bg-surface-raised"
+              >
+                {text(["Bảo mật tài khoản", "Account security"], locale)}
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   const metrics = getMetrics(role, data, locale, pending, now);
   const bars = getChart(role, data, locale, now);
   const priorities = getPriorities(role, data, locale, pending, now);
@@ -83,12 +156,6 @@ export function RoleHomePage() {
     errors.length > 0 ||
     fetching ||
     sources.length < config.sources.length;
-  const date = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Ho_Chi_Minh",
-  }).format(now);
   function unavailable(source: Source): string | undefined {
     if (!sources.includes(source))
       return text(
@@ -226,7 +293,7 @@ export function RoleHomePage() {
                 onChange={(event) =>
                   dashboard.setSelectedFacility(event.target.value)
                 }
-                className="min-h-11 max-w-full rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-xs text-ink-primary sm:max-w-xs"
+                className="filter-control w-auto max-w-full border-ink-tertiary/20 font-semibold sm:max-w-xs"
               >
                 <option value="" disabled>
                   {text(["Chọn cơ sở vận hành", "Select a facility"], locale)}

@@ -468,6 +468,11 @@ export const containerExecutionEndpoints = {
     post<ContainerWorkflowDetail>(`${path(id)}/workflow/hold-responses`, body),
   addDocument: (id: string, body: ContainerDocumentRequest) =>
     post<ContainerWorkflowDetail>(`${path(id)}/workflow/documents`, body),
+  generatePackingList: (id: string, body: ContainerVersionRequest) =>
+    post<ContainerWorkflowDetail>(
+      `${path(id)}/workflow/documents/packing-list`,
+      body,
+    ),
   downloadDocument: (id: string, documentId: string) =>
     apiFetch<Blob>(
       `${path(id)}/workflow/documents/${encodeURIComponent(documentId)}/file`,

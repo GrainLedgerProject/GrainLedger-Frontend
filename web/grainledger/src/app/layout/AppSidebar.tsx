@@ -1,8 +1,10 @@
 import { dashboardPaths } from "@/features/dashboard/paths";
 import { getSidebarItems } from "@/app/navigation/sidebarItems";
+import { isPendingUserAccess } from "@/features/auth/api/sessionUser";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { RoleChip } from "@/shared/ui/RoleChip";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import type { UserRole } from "@/shared/types/roles";
 import { CaretDoubleLeft, X } from "@phosphor-icons/react";
 import React, { useEffect } from "react";
@@ -11,6 +13,7 @@ import { Link, useLocation } from "react-router-dom";
 
 export const AppSidebar: React.FC = () => {
   const { t } = useTranslation();
+  const text = useWorkflowText();
   const user = useAuthStore((state) => state.user);
   const {
     isSidebarCollapsed,
@@ -21,7 +24,8 @@ export const AppSidebar: React.FC = () => {
   } = useUiStore();
   const location = useLocation();
 
-  const role: UserRole = user?.role || "MILL_OPERATOR";
+  const role: UserRole = user?.role || "AUTHORIZED_STOCK_VIEWER";
+  const pendingAccess = isPendingUserAccess(user);
 
   useEffect(() => {
     if (!isMobileSidebarOpen) return;
@@ -32,7 +36,13 @@ export const AppSidebar: React.FC = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isMobileSidebarOpen, setMobileSidebarOpen]);
 
-  const navItems = getSidebarItems(role, user?.permissions ?? [], t, pendingOfflineCount);
+  const navItems = getSidebarItems(
+    role,
+    user?.permissions ?? [],
+    t,
+    pendingOfflineCount,
+    { pendingAccess },
+  );
 
   return (
     <>
@@ -200,12 +210,18 @@ export const AppSidebar: React.FC = () => {
             }`}
           >
             <div className="px-1 py-1">
-              <RoleChip
-                role={role}
-                size="sm"
-                showCode
-                className="w-full justify-center whitespace-nowrap"
-              />
+              {pendingAccess ? (
+                <span className="inline-flex w-full items-center justify-center rounded-full border border-functional-hold-border bg-functional-hold-bg px-3 py-1 text-xs font-semibold text-accent-warning">
+                  {text("Chờ phân quyền", "Pending access")}
+                </span>
+              ) : (
+                <RoleChip
+                  role={role}
+                  size="sm"
+                  showCode
+                  className="w-full justify-center whitespace-nowrap"
+                />
+              )}
             </div>
           </div>
 

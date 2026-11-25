@@ -1,15 +1,15 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useIsFetching, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDots, LinkSimpleBreak, MagnifyingGlass, MapPin, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { CalendarDots, LinkSimpleBreak, MagnifyingGlass, MapPin, PencilSimple, Plus, SprayBottle, Trash } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { adminEndpoints } from "@/api/admin";
-import { procurementEndpoints as procurement } from "@/api/procurement";
+import { procurementEndpoints as procurement, type PlotSeasonReference } from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
 import { RecordEmpty, RecordFeedback, RecordPagination, RecordRefresh, RecordSuccess, RecordTable, RecordWorkspace } from "@/shared/ui/RecordWorkspace";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { SeasonEditor, type SeasonAction } from "../components/SeasonEditor";
-import { fieldPaths } from "../paths";
+import { SprayHistoryModal } from "../components/SprayHistoryModal";
 
 const pageSize = 15;
 
@@ -94,6 +94,7 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
   const [linkPage, setLinkPage] = useState(1);
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get("seasonId") ?? "");
   const [status, setStatus] = useState("");
+  const [sprayHistoryLink, setSprayHistoryLink] = useState<PlotSeasonReference | null>(null);
   const detailPanel = useRef<HTMLElement>(null);
   const [list, detail, links] = useQueries({
     queries: [
@@ -195,18 +196,24 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
               <thead><tr>
                 <th scope="col">{t("field.seasons.plot")}</th>
                 <th scope="col">{t("field.seasons.variety")}</th>
-                {canLink && <th scope="col" className="text-end">{t("field.seasons.actions")}</th>}
+                <th scope="col" className="text-end">{t("field.seasons.actions")}</th>
               </tr></thead>
               <tbody>{links.data.items.map(link => <tr key={link.id}>
                 <th scope="row" className="font-mono font-bold text-accent-primary [overflow-wrap:anywhere]">{link.plotCode}</th>
                 <td className="[overflow-wrap:anywhere]">{link.riceVariety}</td>
-                {canLink && <td><div className="flex flex-wrap items-center justify-end gap-1">
-                  <a className="record-link inline-flex min-h-11 items-center rounded-lg px-2 hover:bg-surface-raised dark:hover:bg-surface-overlay"
-                    href={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(link.id)}`}>{text("Lịch sử phun", "Spray history")}</a>
-                  {link.canEdit && <button type="button" title={t("field.seasons.edit")} aria-label={t("field.seasons.editPlotLabel", { name: link.plotCode })} className="record-row-action" onClick={() => setAction({ type: "editLink", season, link })}><PencilSimple aria-hidden="true" size={16} /></button>}
-                  {link.canDelete && <button type="button" title={t("field.seasons.unlink")} aria-label={t("field.seasons.unlinkPlotLabel", { name: link.plotCode })} className="record-row-action text-accent-danger hover:bg-accent-danger/10 hover:text-accent-danger dark:hover:bg-accent-danger/10" onClick={() => setAction({ type: "deleteLink", link })}><LinkSimpleBreak aria-hidden="true" size={16} /></button>}
-                  {!link.canEdit && !link.canDelete && <span className="text-xs text-ink-secondary">{t("field.seasons.readOnly")}</span>}
-                </div></td>}
+                <td><div className="flex flex-wrap items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    className="record-link inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 hover:bg-surface-raised dark:hover:bg-surface-overlay"
+                    onClick={() => setSprayHistoryLink(link)}
+                  >
+                    <SprayBottle aria-hidden="true" size={16} />
+                    <span>{text("Lịch sử phun", "Spray history")}</span>
+                  </button>
+                  {canLink && link.canEdit && <button type="button" title={t("field.seasons.edit")} aria-label={t("field.seasons.editPlotLabel", { name: link.plotCode })} className="record-row-action" onClick={() => setAction({ type: "editLink", season, link })}><PencilSimple aria-hidden="true" size={16} /></button>}
+                  {canLink && link.canDelete && <button type="button" title={t("field.seasons.unlink")} aria-label={t("field.seasons.unlinkPlotLabel", { name: link.plotCode })} className="record-row-action text-accent-danger hover:bg-accent-danger/10 hover:text-accent-danger dark:hover:bg-accent-danger/10" onClick={() => setAction({ type: "deleteLink", link })}><LinkSimpleBreak aria-hidden="true" size={16} /></button>}
+                  {canLink && !link.canEdit && !link.canDelete && <span className="text-xs text-ink-secondary">{t("field.seasons.readOnly")}</span>}
+                </div></td>
               </tr>)}</tbody>
             </RecordTable> : <RecordEmpty icon={<MapPin size={40} />}>{t("field.seasons.emptyPlots")}</RecordEmpty>}
             <RecordPagination page={linkPage} hasMore={links.data.hasMore} count={links.data.totalCount} onPage={setLinkPage} label={t("field.seasons.plots")} />
@@ -225,5 +232,12 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
       setStatus(t(`field.seasons.saved.${action.type}`));
       setAction(null);
     }} />}
+    {sprayHistoryLink && (
+      <SprayHistoryModal
+        link={sprayHistoryLink}
+        seasonName={season?.name}
+        onClose={() => setSprayHistoryLink(null)}
+      />
+    )}
   </div>;
 }

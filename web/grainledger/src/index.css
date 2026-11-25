@@ -519,16 +519,21 @@ textarea:focus {
     @apply flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 pt-4;
   }
 
-  .record-filter :where(input[type=search], select) {
-    @apply min-h-11 min-w-0 w-full rounded-lg border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-base text-ink-primary;
+  .record-filter :where(input[type=search], input[type=text], select) {
+    @apply min-h-11 min-w-0 w-full rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-base text-ink-primary focus-visible:rounded-full;
   }
 
-  .record-filter :where(input[type=search]) {
-    @apply rounded-full ps-10 focus-visible:rounded-full;
+  .record-filter :where(input[type=search], input[type=text]) {
+    @apply ps-10;
+  }
+
+  .filter-control {
+    @apply min-h-11 min-w-0 w-full rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-2 text-base text-ink-primary transition-colors focus:border-accent-primary focus:outline-none focus-visible:rounded-full;
   }
 
   @media (pointer: fine) {
-    .record-filter :where(input[type=search], select) {
+    .record-filter :where(input[type=search], input[type=text], select),
+    .filter-control {
       @apply text-sm;
     }
   }

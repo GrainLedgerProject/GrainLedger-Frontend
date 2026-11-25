@@ -81,6 +81,29 @@ interface MixedBulkPolicy {
   evidenceId: string;
 }
 
+export interface BusinessHistoryDto {
+  id: string;
+  category: string;
+  eventType: string;
+  subjectId: string;
+  reference: string;
+  actorId: string | null;
+  actorName: string | null;
+  recordedAt: string;
+  context: unknown;
+  evidenceId: string | null;
+}
+
+export interface BusinessHistoryQuery {
+  category?: string;
+  eventType?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  page?: number | string;
+  pageSize?: number | string;
+}
+
 export interface SetupApiResponse {
   facilities?: FacilityDto[];
   locations?: LocationDto[];
@@ -488,6 +511,14 @@ export const ledgerEndpoints = {
       ),
     );
   },
+  getBusinessHistory: (
+    query: BusinessHistoryQuery = {},
+    options: { signal?: AbortSignal } = {},
+  ) =>
+    apiFetch<ApiPage<BusinessHistoryDto>>(
+      withApiQuery("/api/ledger/business-history", query),
+      options,
+    ),
 
   // Receiving tasks & reviews
   getReceivingTasks: (query: ReceivingQuery) =>

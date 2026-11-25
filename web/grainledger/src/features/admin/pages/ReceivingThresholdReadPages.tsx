@@ -58,7 +58,7 @@ export function ReceivingThresholdHistoryPage() {
   const percentage = (value: string | null) => value == null ? "—" : `${value}%`;
   return <Workflow title={t("receivingThreshold.history")} actions={<Link to={adminPaths.receivingThresholds}>{t("nav.admin.receivingThresholds")}</Link>}>
     <Panel title={t("receivingThreshold.changes")}>
-      <search className="grid gap-3 sm:grid-cols-2">
+      <search className="record-filter grid gap-3 sm:grid-cols-2">
         <label htmlFor="threshold-history-scope">{t("receivingThreshold.source")}<select id="threshold-history-scope" value={scope} onChange={event => { setScope(event.target.value as typeof scope); setCompany(""); setPage(1); }}>
           <option value="">{t("receivingThreshold.all")}</option>
           <option value="SYSTEM_DEFAULT">{t("receivingThreshold.scope.SYSTEM_DEFAULT")}</option>

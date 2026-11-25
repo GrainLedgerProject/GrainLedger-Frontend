@@ -122,3 +122,65 @@ it("keeps the season and plot actions read-only for the customer manager", async
     expect(screen.queryByRole("button", { name })).toBeNull();
   }
 });
+
+it("opens spray history in a modal for a plot link and loads declaration details", async () => {
+  calls.mockImplementation(async input => {
+    const endpoint = url(input);
+    if (endpoint.pathname === `/api/crop-seasons/${season.id}`) return Response.json(season);
+    if (endpoint.pathname === "/api/plot-seasons") {
+      return page([{ id: "link-spray", plotId: plot.id, seasonId: season.id, plotCode: plot.code, seasonName: season.name, riceVariety: "ST25", canEdit: true, canDelete: true }]);
+    }
+    if (endpoint.pathname === "/api/spray-declarations") {
+      return Response.json({
+        items: [{
+          id: "decl-1",
+          plotSeasonId: "link-spray",
+          plotCode: plot.code,
+          seasonName: season.name,
+          appliedOn: "2027-01-12",
+          recordedAt: "2027-01-12T09:00:00Z",
+          itemCount: 1,
+        }],
+        page: 1,
+        pageSize: 10,
+        hasMore: false,
+      });
+    }
+    if (endpoint.pathname === "/api/spray-declarations/decl-1") {
+      return Response.json({
+        id: "decl-1",
+        plotSeasonId: "link-spray",
+        appliedOn: "2027-01-12",
+        informationSource: "Farmer diary",
+        evidenceRef: "EV-900",
+        capturedAt: "2027-01-12T08:50:00Z",
+        recordedAt: "2027-01-12T09:00:00Z",
+        items: [{ id: "item-1", productName: "BioProtect", substanceId: "sub-1" }],
+      });
+    }
+    if (endpoint.pathname === "/api/active-substances") {
+      return Response.json({ items: [{ id: "sub-1", code: "AZO", name: "Azoxystrobin" }], page: 1, pageSize: 50, hasMore: false });
+    }
+    return page([season]);
+  });
+
+  openAs("CUSTOMER_MANAGER", ["farms.read"]);
+  fireEvent.click(await screen.findByRole("button", { name: season.name }));
+  fireEvent.click(await screen.findByRole("button", { name: /Spray history/ }));
+
+  const dialog = within(await screen.findByRole("dialog", { name: "Spray history" }));
+  expect(await dialog.findByText(/PLT-100 · Winter–Spring 2027 · ST25/)).toBeTruthy();
+  const sprayListCall = requests("GET").find(([input]) => url(input).pathname === "/api/spray-declarations");
+  expect(url(sprayListCall![0]).searchParams.get("plotSeasonId")).toBe("link-spray");
+
+  fireEvent.click(await dialog.findByRole("button", { name: "Details" }));
+  expect(await dialog.findByText("Farmer diary")).toBeTruthy();
+  expect(dialog.getByText("EV-900")).toBeTruthy();
+  expect(await dialog.findByText("BioProtect · Azoxystrobin")).toBeTruthy();
+
+  fireEvent.click(dialog.getByRole("button", { name: "Back to list" }));
+  expect(await dialog.findByRole("button", { name: "Details" })).toBeTruthy();
+
+  fireEvent.click(dialog.getAllByRole("button", { name: "Close" })[0]);
+  expect(screen.queryByRole("dialog", { name: "Spray history" })).toBeNull();
+});

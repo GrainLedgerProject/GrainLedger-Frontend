@@ -504,7 +504,8 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-3 relative">
             <MagnifyingGlass
-              className="absolute left-3 top-2.5 text-ink-tertiary"
+              aria-hidden="true"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
               size={16}
             />
             <input
@@ -515,13 +516,13 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
               )}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm("")}
-                className="absolute right-2.5 top-2.5 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
                 title="Xóa tìm kiếm"
               >
                 <X size={14} />
@@ -537,7 +538,7 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                   e.target.value as "ALL" | "HANDED_OVER" | "IN_STORE",
                 )
               }
-              className="w-full py-2 px-3 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-overlay"
             >
               <option value="ALL">Tất cả tình trạng bàn giao</option>
               <option value="HANDED_OVER">

@@ -122,7 +122,7 @@ export function ExportOrdersWorkspace({
               </label>
               <ExportIconField icon={SortAscendingIcon}>
                 <select
-                className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                 id={id}
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}

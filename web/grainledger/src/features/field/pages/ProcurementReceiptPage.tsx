@@ -192,7 +192,9 @@ export const ProcurementReceiptPage: React.FC = () => {
             procurementEndpoints
               .getFarmers({ pageSize: 100 })
               .catch(() => null),
-            procurementEndpoints.getReferenceData().catch(() => null),
+            canCapture
+              ? procurementEndpoints.getReferenceData().catch(() => null)
+              : Promise.resolve(null),
             procurementEndpoints
               .getPlotSeasons({ pageSize: 100 })
               .catch(() => null),
@@ -266,7 +268,7 @@ export const ProcurementReceiptPage: React.FC = () => {
       }
       isFetchingRef.current = false;
     }
-  }, [isOnline, t]);
+  }, [canCapture, isOnline, t]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -742,8 +744,9 @@ export const ProcurementReceiptPage: React.FC = () => {
       <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
         <div className="relative w-full sm:w-80">
           <MagnifyingGlass
-            size={18}
-            className="absolute top-3.5 left-3 text-ink-tertiary"
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
           <input
             type="text"
@@ -753,7 +756,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-3 text-sm rounded-full bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
           />
         </div>
 

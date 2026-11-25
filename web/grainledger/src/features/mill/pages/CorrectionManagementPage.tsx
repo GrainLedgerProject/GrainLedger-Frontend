@@ -206,6 +206,11 @@ export const CorrectionManagementPage: React.FC = () => {
 
         {/* Search Input */}
         <div className="relative w-full md:w-80">
+          <MagnifyingGlass
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+          />
           <input
             type="text"
             value={searchQuery}
@@ -214,11 +219,7 @@ export const CorrectionManagementPage: React.FC = () => {
               "mill.pendingCorrections.searchPlaceholder",
               "Tìm theo mã CORR-, OP-, lý do...",
             )}
-            className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none transition-colors"
-          />
-          <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
           />
           {searchQuery && (
             <button

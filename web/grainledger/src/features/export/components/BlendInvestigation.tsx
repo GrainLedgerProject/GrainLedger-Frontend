@@ -115,8 +115,9 @@ export function BlendCandidateList({
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
         <div className="relative">
           <MagnifyingGlass
-            size={14}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
           <input
             type="search"
@@ -127,7 +128,7 @@ export function BlendCandidateList({
             )}
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised pl-8 pr-3 py-1.5 text-xs focus:border-accent-primary focus:outline-none"
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
           />
         </div>
         <select
@@ -136,7 +137,7 @@ export function BlendCandidateList({
           onChange={(e) =>
             setStatusFilter(e.target.value as "ALL" | "ELIGIBLE" | "EXCLUDED")
           }
-          className="rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-1.5 text-xs focus:border-accent-primary focus:outline-none"
+          className="filter-control w-full border-ink-tertiary/20 bg-surface-raised font-semibold sm:w-auto dark:bg-surface-base"
         >
           <option value="ALL">{text("Tất cả ứng viên", "All candidates")}</option>
           <option value="ELIGIBLE">{text("Khả dụng hợp lệ", "Eligible only")}</option>

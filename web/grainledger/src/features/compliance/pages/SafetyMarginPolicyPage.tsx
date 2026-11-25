@@ -515,7 +515,7 @@ function MarketPolicyEditor({
                   <MagnifyingGlass
                     size={16}
                     aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-tertiary"
+                    className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
                   />
                   <input
                     name="substanceSearch"
@@ -523,7 +523,7 @@ function MarketPolicyEditor({
                     value={substanceSearch}
                     onChange={(e) => setSubstanceSearch(e.target.value)}
                     placeholder={text("Tìm theo mã hoặc tên hoạt chất...", "Search substance code or name...")}
-                    className="pl-10 pr-9"
+                    className="filter-control border-ink-tertiary/20 pe-9 ps-10"
                   />
                   {substanceSearch && (
                     <button

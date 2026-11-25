@@ -1,4 +1,4 @@
-﻿import { useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import { adminEndpoints } from "@/api/admin";
 import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
+import { planningEndpoints } from "@/api/planning";
 import { useAuthStore } from "@/app/store/authStore";
 import {
   CorrectionEvidence,
@@ -31,8 +32,22 @@ import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { adminPaths } from "../paths";
 
-type PolicyMode = "balance" | "blend" | "mixed";
+type PolicyMode = "balance" | "blend" | "mixed" | "yield";
 type WorkflowTextFn = (vi: string, en: string) => string;
+
+interface PublishedYieldRule {
+  id: string;
+  facilityId: string;
+  compatibilityPolicyId: string;
+  versionNo: number;
+  outputFraction: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  evidenceId: string;
+  reviewedBy: string;
+  reviewAuthority: string;
+  reviewedAt: string;
+}
 
 const setupKey = ["ledger-facility-setup"];
 const operationKinds = [
@@ -95,6 +110,7 @@ interface PolicyRowView {
   secondaryScope?: string;
   searchText: string;
   effectiveFrom: string;
+  effectiveTo?: string | null;
   evidenceId?: string;
   balanceKind?: string;
   tolerancePercent?: string;
@@ -103,12 +119,16 @@ interface PolicyRowView {
   mixedCommodity?: string;
   mixedStage?: string;
   mixedProductIdentity?: string;
+  yieldVersionNo?: number;
+  yieldOutputFraction?: string;
+  yieldReviewSummary?: string;
 }
 
 function buildHistoryRows(
   mode: PolicyMode,
   setup: SetupApiResponse,
   text: WorkflowTextFn,
+  yieldRules: PublishedYieldRule[],
 ): PolicyRowView[] {
   if (mode === "balance") {
     return (setup.policies ?? []).map((row) => {
@@ -160,6 +180,40 @@ function buildHistoryRows(
     });
   }
 
+  if (mode === "yield") {
+    return yieldRules.map((row) => {
+      const facilityName = lookupName(setup.facilities, row.facilityId);
+      const compatibility = (setup.compatibilities ?? []).find(
+        (item) => item.id === row.compatibilityPolicyId,
+      );
+      const blendInputs = (compatibility?.inputProducts ?? []).map((input) => {
+        const [commodityId, product] = input.split(":");
+        return {
+          commodity: lookupName(setup.commodities, commodityId),
+          product: product ?? "",
+        };
+      });
+      const blendOutput = compatibility
+        ? lookupName(setup.commodities, compatibility.outputCommodityId)
+        : row.compatibilityPolicyId;
+      return {
+        id: row.id,
+        primaryScope: facilityName,
+        secondaryScope: blendOutput,
+        effectiveFrom: row.effectiveFrom,
+        effectiveTo: row.effectiveTo,
+        evidenceId: row.evidenceId,
+        blendInputs,
+        blendOutput,
+        yieldVersionNo: row.versionNo,
+        yieldOutputFraction: row.outputFraction,
+        yieldReviewSummary: `${row.reviewedBy} · ${row.reviewAuthority}`,
+        searchText:
+          `${facilityName} ${blendOutput} v${row.versionNo} ${row.outputFraction} ${row.reviewedBy} ${row.reviewAuthority}`.toLowerCase(),
+      };
+    });
+  }
+
   return (setup.mixedBulkPolicies ?? []).map((row) => {
     const location = setup.locations?.find((loc) => loc.id === row.locationId);
     const locationName = location?.name ?? row.locationId;
@@ -193,8 +247,10 @@ function buildHistoryRows(
 
 export function BalancePolicyPage() {
   const text = useWorkflowText();
-  const canConfigure = useAuthStore((s) =>
-    s.user?.permissions.includes("platform.configure"),
+  const user = useAuthStore((s) => s.user);
+  const canConfigure = Boolean(user?.permissions.includes("platform.configure"));
+  const canPublishYield = Boolean(
+    user?.permissions.includes("blend.yield-policy.manage"),
   );
   const setup = useQuery({
     queryKey: setupKey,
@@ -203,15 +259,19 @@ export function BalancePolicyPage() {
   const organizations = useQuery({
     queryKey: ["admin-policy-organizations"],
     queryFn: adminEndpoints.getOrganizations,
-    enabled: Boolean(canConfigure),
+    enabled: canConfigure,
   });
   const [mode, setMode] = useState<PolicyMode>("balance");
   const [searchQuery, setSearchQuery] = useState("");
+  const [publishedYieldRules, setPublishedYieldRules] = useState<
+    PublishedYieldRule[]
+  >([]);
 
   const titles: Record<PolicyMode, string> = {
     balance: text("Dung sai công đoạn", "Operation tolerance"),
     blend: text("Tương thích phối trộn", "Blend compatibility"),
     mixed: text("Tương thích lưu kho trộn", "Mixed-bulk storage compatibility"),
+    yield: text("Tỷ lệ thu hồi dự kiến", "Prospective planning yield"),
   };
 
   const categoryCards: {
@@ -250,6 +310,16 @@ export function BalancePolicyPage() {
       ),
       count: setup.data?.mixedBulkPolicies?.length ?? 0,
       icon: Warehouse,
+    },
+    {
+      id: "yield",
+      title: titles.yield,
+      description: text(
+        "Hiệu suất thu hồi dự kiến theo quy tắc phối trộn cho lập kế hoạch",
+        "Prospective planning yield fraction per blend rule",
+      ),
+      count: publishedYieldRules.length,
+      icon: Sliders,
     },
   ];
 
@@ -294,20 +364,24 @@ export function BalancePolicyPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Link
-            to={adminPaths.facilities}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
-          >
-            <Buildings size={15} aria-hidden="true" />
-            <span>{text("Cơ sở & Silo", "Facilities & Silos")}</span>
-          </Link>
-          <Link
-            to={adminPaths.receivingThresholds}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
-          >
-            <Sliders size={15} aria-hidden="true" />
-            <span>{text("Ngưỡng tiếp nhận", "Receiving thresholds")}</span>
-          </Link>
+          {canConfigure && (
+            <>
+              <Link
+                to={adminPaths.facilities}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
+              >
+                <Buildings size={15} aria-hidden="true" />
+                <span>{text("Cơ sở & Silo", "Facilities & Silos")}</span>
+              </Link>
+              <Link
+                to={adminPaths.receivingThresholds}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
+              >
+                <Sliders size={15} aria-hidden="true" />
+                <span>{text("Ngưỡng tiếp nhận", "Receiving thresholds")}</span>
+              </Link>
+            </>
+          )}
           <button
             type="button"
             onClick={handleReload}
@@ -365,7 +439,7 @@ export function BalancePolicyPage() {
 
       {setup.data && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {categoryCards.map((card) => {
               const Icon = card.icon;
               const active = mode === card.id;
@@ -423,38 +497,76 @@ export function BalancePolicyPage() {
             mode={mode}
             onModeChange={setMode}
             setup={setup.data}
+            yieldRules={publishedYieldRules}
             title={titles[mode]}
             titles={titles}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
 
-          {canConfigure && organizations.data ? (
+          {(mode === "yield" ? canPublishYield : Boolean(canConfigure && organizations.data)) ? (
             <PolicyEditor
               key={mode}
               mode={mode}
               modeTitle={titles[mode]}
               setup={setup.data}
-              owners={organizations.data.filter(
-                (org) => org.kind === "Customer",
-              )}
+              yieldRules={publishedYieldRules}
+              onYieldRulePublished={(rule) =>
+                setPublishedYieldRules((prev) => [rule, ...prev])
+              }
+              defaultReviewer={user?.displayName ?? ""}
+              defaultOwnerId={
+                mode === "yield" && !canConfigure ? (user?.organizationId ?? "") : ""
+              }
+              owners={
+                canConfigure && organizations.data
+                  ? organizations.data.filter((org) => org.kind === "Customer")
+                  : [
+                      ...(user?.organizationId
+                        ? [
+                            {
+                              id: user.organizationId,
+                              name:
+                                user.organizationName ||
+                                text(
+                                  "Đơn vị nhà máy hiện tại",
+                                  "Current mill organization",
+                                ),
+                            },
+                          ]
+                        : []),
+                      ...(setup.data.owners ?? []),
+                    ].filter(
+                      (owner, index, arr) =>
+                        Boolean(owner.id) &&
+                        arr.findIndex((item) => item.id === owner.id) === index,
+                    )
+              }
             />
           ) : (
-            !canConfigure && (
-              <div className="flex items-center gap-2.5 rounded-2xl border border-ink-tertiary/20 bg-surface-base px-4 py-3 text-xs text-ink-secondary dark:bg-surface-raised">
-                <ShieldCheck
-                  size={18}
-                  className="shrink-0 text-accent-primary"
-                  aria-hidden="true"
-                />
-                <span>
-                  {text(
-                    "Bạn đang xem ở chế độ chỉ đọc. Cần quyền cấu hình nền tảng để ghi phiên bản chính sách mới.",
-                    "Read-only view. Platform configuration permission is required to record new policy versions.",
-                  )}
-                </span>
-              </div>
-            )
+            <div className="flex items-center gap-2.5 rounded-2xl border border-ink-tertiary/20 bg-surface-base px-4 py-3 text-xs text-ink-secondary dark:bg-surface-raised">
+              <ShieldCheck
+                size={18}
+                className="shrink-0 text-accent-primary"
+                aria-hidden="true"
+              />
+              <span>
+                {mode === "yield"
+                  ? text(
+                      "Chỉ Quản lý nhà máy có quyền blend.yield-policy.manage mới công bố được quy tắc tỷ lệ thu hồi dự kiến.",
+                      "Only Mill Managers with blend.yield-policy.manage permission can publish prospective yield rules.",
+                    )
+                  : canPublishYield
+                    ? text(
+                        "Bạn đang xem ở chế độ chỉ đọc cho dung sai và tương thích. Chọn thẻ Tỷ lệ thu hồi dự kiến để công bố quy tắc hiệu suất.",
+                        "Read-only for tolerances and compatibilities. Select Prospective planning yield to publish yield rules.",
+                      )
+                    : text(
+                        "Bạn đang xem ở chế độ chỉ đọc. Cần quyền cấu hình nền tảng để ghi phiên bản chính sách mới.",
+                        "Read-only view. Platform configuration permission is required to record new policy versions.",
+                      )}
+              </span>
+            </div>
           )}
         </>
       )}
@@ -466,6 +578,7 @@ function PolicyHistory({
   mode,
   onModeChange,
   setup,
+  yieldRules,
   title,
   titles,
   searchQuery,
@@ -474,6 +587,7 @@ function PolicyHistory({
   mode: PolicyMode;
   onModeChange: (nextMode: PolicyMode) => void;
   setup: SetupApiResponse;
+  yieldRules: PublishedYieldRule[];
   title: string;
   titles: Record<PolicyMode, string>;
   searchQuery: string;
@@ -481,7 +595,7 @@ function PolicyHistory({
 }) {
   const text = useWorkflowText();
   const [renderedAt] = useState(() => Date.now());
-  const allRows = buildHistoryRows(mode, setup, text);
+  const allRows = buildHistoryRows(mode, setup, text, yieldRules);
   const query = searchQuery.trim().toLowerCase();
   const filteredRows = query
     ? allRows.filter((row) => row.searchText.includes(query))
@@ -491,7 +605,13 @@ function PolicyHistory({
   );
 
   const HeaderIcon =
-    mode === "balance" ? Scales : mode === "blend" ? GitBranch : Warehouse;
+    mode === "balance"
+      ? Scales
+      : mode === "blend"
+        ? GitBranch
+        : mode === "mixed"
+          ? Warehouse
+          : Sliders;
 
   return (
     <section className="record-card">
@@ -532,7 +652,7 @@ function PolicyHistory({
               name="policyType"
               value={mode}
               onChange={(e) => onModeChange(e.target.value as PolicyMode)}
-              className="min-h-10 rounded-full border border-ink-tertiary/20 bg-surface-raised px-3.5 py-1.5 text-xs font-semibold text-ink-primary transition-colors focus:border-accent-primary focus:outline-none dark:bg-surface-overlay"
+              className="filter-control w-auto border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-overlay"
             >
               {Object.entries(titles).map(([id, label]) => (
                 <option key={id} value={id}>
@@ -544,9 +664,9 @@ function PolicyHistory({
 
           <div className="relative min-w-0 sm:w-64">
             <MagnifyingGlass
-              size={15}
+              size={16}
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-tertiary"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
             />
             <input
               type="search"
@@ -557,7 +677,7 @@ function PolicyHistory({
                 "Tìm cơ sở, mặt hàng, công đoạn...",
                 "Search facility, commodity, rule...",
               )}
-              className="min-h-10 w-full rounded-full border border-ink-tertiary/20 bg-surface-raised py-1.5 pr-9 pl-9 text-xs text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none dark:bg-surface-overlay"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
             />
             {searchQuery && (
               <button
@@ -664,12 +784,40 @@ function PolicyHistory({
                           </span>
                         </div>
                       )}
+                      {mode === "yield" && (
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge
+                              status="BALANCED"
+                              size="sm"
+                              label={`v${row.yieldVersionNo ?? 1}`}
+                            />
+                            <span className="inline-flex items-center rounded-md border border-accent-primary/30 bg-accent-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-accent-primary">
+                              {row.yieldOutputFraction}
+                            </span>
+                            <span className="text-xs text-ink-secondary">
+                              {row.blendOutput}
+                            </span>
+                          </div>
+                          {row.yieldReviewSummary && (
+                            <p className="text-[11px] text-ink-tertiary">
+                              {text("Thẩm định bởi", "Reviewed by")}:{" "}
+                              {row.yieldReviewSummary}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div className="flex flex-col items-start gap-1">
                         <span className="font-mono text-xs text-ink-primary">
                           {new Date(row.effectiveFrom).toLocaleString()}
                         </span>
+                        {row.effectiveTo && (
+                          <span className="font-mono text-[11px] text-ink-tertiary">
+                            → {new Date(row.effectiveTo).toLocaleString()}
+                          </span>
+                        )}
                         <StatusBadge
                           status={isScheduled ? "PENDING" : "COMPLIANT"}
                           size="sm"
@@ -703,10 +851,15 @@ function PolicyHistory({
           </span>
           <p className="font-semibold text-ink-primary">
             {allRows.length === 0
-              ? text(
-                  "Chưa có phiên bản chính sách trong phạm vi này.",
-                  "No policies have been recorded in this scope.",
-                )
+              ? mode === "yield"
+                ? text(
+                    "Chưa có phiên bản tỷ lệ thu hồi dự kiến nào được công bố trong phiên làm việc này.",
+                    "No prospective planning yield rules have been published in this session yet.",
+                  )
+                : text(
+                    "Chưa có phiên bản chính sách trong phạm vi này.",
+                    "No policies have been recorded in this scope.",
+                  )
               : text(
                   "Không tìm thấy quy tắc phù hợp với bộ lọc.",
                   "No policies match the current search filter.",
@@ -731,18 +884,33 @@ function PolicyEditor({
   mode,
   modeTitle,
   setup,
+  yieldRules,
+  onYieldRulePublished,
+  defaultReviewer,
+  defaultOwnerId,
   owners,
 }: {
   mode: PolicyMode;
   modeTitle: string;
   setup: SetupApiResponse;
+  yieldRules: PublishedYieldRule[];
+  onYieldRulePublished: (rule: PublishedYieldRule) => void;
+  defaultReviewer: string;
+  defaultOwnerId: string;
   owners: { id: string; name: string }[];
 }) {
   const text = useWorkflowText();
   const queryClient = useQueryClient();
   const [facility, setFacility] = useState("");
   const [locationId, setLocation] = useState("");
-  const [ownerId, setOwner] = useState("");
+  const [compatibilityId, setCompatibilityId] = useState("");
+  const [ownerId, setOwner] = useState(() =>
+    defaultOwnerId && owners.some((owner) => owner.id === defaultOwnerId)
+      ? defaultOwnerId
+      : mode === "yield" && owners.length === 1
+        ? owners[0].id
+        : "",
+  );
   const [evidenceId, setEvidence] = useState("");
   const [message, setMessage] = useState("");
   const [formRevision, setFormRevision] = useState(0);
@@ -755,6 +923,20 @@ function PolicyEditor({
       : facility;
 
   const mixedLocations = setup.locations?.filter((row) => row.mixedBulk) ?? [];
+  const facilityCompatibilities = (setup.compatibilities ?? []).filter(
+    (row) => !facilityId || row.facilityId === facilityId,
+  );
+  const suggestedYieldVersion =
+    Math.max(
+      0,
+      ...yieldRules
+        .filter(
+          (row) =>
+            row.facilityId === facilityId &&
+            row.compatibilityPolicyId === compatibilityId,
+        )
+        .map((row) => row.versionNo),
+    ) + 1;
 
   const save = useMutation({
     mutationFn: (command: () => Promise<unknown>) => command(),
@@ -818,6 +1000,86 @@ function PolicyEditor({
             productIdentity: value("productIdentity"),
             identityScopeConfirmed: true,
           });
+        case "yield": {
+          const compatPolicyId = value("compatibilityPolicyId");
+          const versionNo = Number(value("versionNo"));
+          const outputFraction = value("outputFraction");
+          const effectiveFromIso = base.effectiveFrom;
+          const effectiveToRaw = value("effectiveTo");
+          const effectiveToIso = effectiveToRaw
+            ? new Date(effectiveToRaw).toISOString()
+            : null;
+          const reviewedBy = value("reviewedBy");
+          const reviewAuthority = value("reviewAuthority");
+          const reviewedAtRaw = value("reviewedAt");
+          const reviewedAtIso = new Date(reviewedAtRaw).toISOString();
+          if (!compatPolicyId) {
+            throw new Error(
+              text(
+                "Chọn quy tắc tương thích phối trộn trước khi công bố.",
+                "Select a blend compatibility policy before publishing.",
+              ),
+            );
+          }
+          if (!Number.isInteger(versionNo) || versionNo < 1) {
+            throw new Error(
+              text(
+                "Số phiên bản phải là số nguyên dương liên tiếp.",
+                "Version number must be a positive integer.",
+              ),
+            );
+          }
+          const fractionNum = Number(outputFraction);
+          if (
+            !/^(0(\.[0-9]{1,12})?|1(\.0{1,12})?)$/.test(outputFraction) ||
+            !Number.isFinite(fractionNum) ||
+            fractionNum <= 0 ||
+            fractionNum > 1
+          ) {
+            throw new Error(
+              text(
+                "Tỷ lệ thu hồi (outputFraction) phải nằm trong khoảng (0, 1] với tối đa 12 chữ số thập phân.",
+                "Output fraction must be within (0, 1] with up to 12 decimal places.",
+              ),
+            );
+          }
+          if (
+            effectiveToIso &&
+            Date.parse(effectiveToIso) <= Date.parse(effectiveFromIso)
+          ) {
+            throw new Error(
+              text(
+                "Thời điểm kết thúc hiệu lực phải sau thời điểm bắt đầu.",
+                "Effective end time must be after effective start time.",
+              ),
+            );
+          }
+          if (Date.parse(reviewedAtIso) > Date.now()) {
+            throw new Error(
+              text(
+                "Thời điểm thẩm định không được ở tương lai.",
+                "Review timestamp cannot be in the future.",
+              ),
+            );
+          }
+          const payload: PublishedYieldRule = {
+            id: base.id,
+            facilityId,
+            compatibilityPolicyId: compatPolicyId,
+            versionNo,
+            outputFraction,
+            effectiveFrom: effectiveFromIso,
+            effectiveTo: effectiveToIso,
+            evidenceId,
+            reviewedBy,
+            reviewAuthority,
+            reviewedAt: reviewedAtIso,
+          };
+          const created = await planningEndpoints.createYieldRule(payload);
+          onYieldRulePublished(payload);
+          setCompatibilityId("");
+          return created;
+        }
       }
     });
   }
@@ -921,6 +1183,7 @@ function PolicyEditor({
                       value={facility}
                       onChange={(e) => {
                         setFacility(e.target.value);
+                        setCompatibilityId("");
                         setEvidence("");
                       }}
                     >
@@ -1131,10 +1394,141 @@ function PolicyEditor({
                 </div>
               )}
 
-              <label className="sm:max-w-sm">
-                <span>{text("Hiệu lực từ", "Effective from")} *</span>
-                <input type="datetime-local" name="effectiveFrom" required />
-              </label>
+              {mode === "yield" && (
+                <div className="space-y-4">
+                  <label>
+                    <span>
+                      {text(
+                        "Quy tắc tương thích phối trộn",
+                        "Blend compatibility policy",
+                      )}{" "}
+                      *
+                    </span>
+                    <select
+                      name="compatibilityPolicyId"
+                      required
+                      value={compatibilityId}
+                      onChange={(e) => setCompatibilityId(e.target.value)}
+                    >
+                      <option value="" disabled>
+                        —
+                      </option>
+                      {facilityCompatibilities.map((row) => {
+                        const outName = lookupName(
+                          commodities,
+                          row.outputCommodityId,
+                        );
+                        const inSummary = (row.inputProducts ?? [])
+                          .map((item) => {
+                            const [comId, product] = item.split(":");
+                            return `${lookupName(commodities, comId)} (${product})`;
+                          })
+                          .join(" + ");
+                        return (
+                          <option key={row.id} value={row.id}>
+                            {inSummary} → {outName}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+
+                  {facilityId && facilityCompatibilities.length === 0 && (
+                    <p
+                      role="status"
+                      className="rounded-lg border border-functional-hold-border bg-functional-hold-bg px-3 py-2 text-xs text-ink-primary"
+                    >
+                      {text(
+                        "Cơ sở này chưa có quy tắc tương thích phối trộn. Quản trị viên cần tạo quy tắc tương thích trước.",
+                        "This facility has no blend compatibility rules yet. An administrator must create one first.",
+                      )}
+                    </p>
+                  )}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span>{text("Phiên bản", "Version number")} *</span>
+                      <input
+                        key={`${compatibilityId}:${suggestedYieldVersion}`}
+                        type="number"
+                        name="versionNo"
+                        min={1}
+                        step={1}
+                        required
+                        defaultValue={suggestedYieldVersion}
+                      />
+                    </label>
+                    <label>
+                      <span>
+                        {text(
+                          "Tỷ lệ thu hồi (0 < x ≤ 1)",
+                          "Output fraction (0 < x ≤ 1)",
+                        )}{" "}
+                        *
+                      </span>
+                      <input
+                        name="outputFraction"
+                        required
+                        inputMode="decimal"
+                        pattern="(0(\.[0-9]{1,12})?|1(\.0{1,12})?)"
+                        placeholder="0.65"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <label>
+                      <span>
+                        {text("Người thẩm định", "Reviewed by")} *
+                      </span>
+                      <input
+                        name="reviewedBy"
+                        required
+                        defaultValue={defaultReviewer}
+                      />
+                    </label>
+                    <label>
+                      <span>
+                        {text("Cơ quan / Bộ phận thẩm định", "Review authority")}{" "}
+                        *
+                      </span>
+                      <input
+                        name="reviewAuthority"
+                        required
+                        placeholder={text(
+                          "VD: Hội đồng kỹ thuật nhà máy",
+                          "e.g. Mill Technical Board",
+                        )}
+                      />
+                    </label>
+                    <label>
+                      <span>
+                        {text("Thời điểm thẩm định", "Reviewed at")} *
+                      </span>
+                      <input
+                        type="datetime-local"
+                        name="reviewedAt"
+                        required
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label>
+                  <span>{text("Hiệu lực từ", "Effective from")} *</span>
+                  <input type="datetime-local" name="effectiveFrom" required />
+                </label>
+                {mode === "yield" && (
+                  <label>
+                    <span>
+                      {text("Hiệu lực đến (tùy chọn)", "Effective to (optional)")}
+                    </span>
+                    <input type="datetime-local" name="effectiveTo" />
+                  </label>
+                )}
+              </div>
             </fieldset>
 
             {facilityId && ownerId ? (

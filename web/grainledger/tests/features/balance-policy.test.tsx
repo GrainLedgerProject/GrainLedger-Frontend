@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import "@/app/i18n";
 import { adminEndpoints } from "@/api/admin";
 import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
+import { planningEndpoints } from "@/api/planning";
 import { useAuthStore } from "@/app/store/authStore";
 import { BalancePolicyPage } from "@/features/admin/pages/BalancePolicyPage";
 
@@ -186,5 +187,79 @@ describe("BalancePolicyPage", () => {
       }),
     );
     expect(await screen.findByText("Đã ghi nhận phiên bản chính sách.")).toBeTruthy();
+  });
+
+  it("allows Mill Manager with blend.yield-policy.manage to publish prospective planning yield rules", async () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: {
+        id: "user-mgr-yield",
+        email: "mgr-yield@example.com",
+        displayName: "Trưởng ca vận hành",
+        role: "MILL_MANAGER",
+        organizationId: "org-mill-1",
+        organizationName: "Nhà máy Thốt Nốt",
+        isActive: true,
+        permissions: ["blend.yield-policy.manage"],
+      },
+    });
+    vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue(sampleSetup);
+    const getOrgs = vi.spyOn(adminEndpoints, "getOrganizations").mockResolvedValue([]);
+    const uploadEvidence = vi.spyOn(ledgerEndpoints, "uploadEvidence").mockResolvedValue({});
+    const createYieldRule = vi.spyOn(planningEndpoints, "createYieldRule").mockResolvedValue({
+      id: "yield-1",
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /Tỷ lệ thu hồi dự kiến/ }));
+    expect(getOrgs).not.toHaveBeenCalled();
+
+    const editorHeading = await screen.findByRole("heading", { name: "Ghi phiên bản chính sách" });
+    const form = editorHeading.closest("section")!.querySelector("form")!;
+
+    fireEvent.change(form.querySelector('select[name="facilityId"]')!, { target: { value: "fac-1" } });
+    fireEvent.change(form.querySelector('select[name="compatibilityPolicyId"]')!, { target: { value: "comp-1" } });
+
+    const fileInput = await waitFor(() => form.querySelector('input[type="file"]')!);
+    const file = new File(["yield-report"], "yield-trial.pdf", { type: "application/pdf" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: "Tải chứng cứ lên" }));
+
+    await waitFor(() => expect(uploadEvidence).toHaveBeenCalledTimes(1));
+    expect(uploadEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        facilityId: "fac-1",
+        ownerId: "org-mill-1",
+      }),
+    );
+    await screen.findByText(/Đã lưu chứng cứ/);
+
+    fireEvent.change(form.querySelector('input[name="outputFraction"]')!, { target: { value: "0.68" } });
+    fireEvent.change(form.querySelector('input[name="reviewAuthority"]')!, { target: { value: "Hội đồng kỹ thuật" } });
+    fireEvent.change(form.querySelector('input[name="reviewedAt"]')!, {
+      target: { value: "2026-11-20T09:00" },
+    });
+    fireEvent.change(form.querySelector('input[name="effectiveFrom"]')!, {
+      target: { value: "2026-12-01T00:00" },
+    });
+    fireEvent.change(form.querySelector('input[name="effectiveTo"]')!, {
+      target: { value: "2027-06-01T00:00" },
+    });
+
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(createYieldRule).toHaveBeenCalledTimes(1));
+    expect(createYieldRule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        facilityId: "fac-1",
+        compatibilityPolicyId: "comp-1",
+        versionNo: 1,
+        outputFraction: "0.68",
+        reviewedBy: "Trưởng ca vận hành",
+        reviewAuthority: "Hội đồng kỹ thuật",
+      }),
+    );
+    expect(await screen.findByText("0.68")).toBeTruthy();
   });
 });

@@ -995,7 +995,7 @@ function PreparationForms({
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={text("Nhập mã lô...", "Filter lot code...")}
-                            className={`${inputClass} ps-9`}
+                            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
                           />
                         </ExportIconField>
                       </div>
@@ -1031,7 +1031,7 @@ function PreparationForms({
                                 changeLine(index, blankLine());
                               }
                             }}
-                            className={`${inputClass} mt-1 font-mono`}
+                            className="filter-control mt-1 border-ink-tertiary/20 bg-surface-raised font-mono dark:bg-surface-base"
                           >
                             <option value="">
                               {text("Chọn vị trí tồn kho", "Select a stock position")}

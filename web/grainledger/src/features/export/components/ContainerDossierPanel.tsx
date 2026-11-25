@@ -67,21 +67,24 @@ export function ContainerDossierPanel({
   const d = dossier.data;
 
   const generatePackingList = useContainerCommand(
-    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) =>
-      containerExecutionEndpoints.addDocument(c.id, { operationId, ...input }),
+    (operationId, input: { version: number }) =>
+      containerExecutionEndpoints.generatePackingList(c.id, {
+        operationId,
+        version: input.version,
+      }),
     saved,
     { persistKey: `container:${c.id}:packing-list` },
   );
 
   function handlePackingListAction(mode: "save" | "preview") {
-    if (!d) return;
-    const locale: "vi" | "en" = text("vi", "en") === "en" ? "en" : "vi";
-    const generated = buildPackingListDocument({
-      containerCode: c.code || d.containerNumber,
-      dossier: d,
-      locale,
-    });
     if (mode === "preview") {
+      if (!d) return;
+      const locale: "vi" | "en" = text("vi", "en") === "en" ? "en" : "vi";
+      const generated = buildPackingListDocument({
+        containerCode: c.code || d.containerNumber,
+        dossier: d,
+        locale,
+      });
       saveExportFile(
         new Blob([generated.html], { type: "text/html;charset=utf-8" }),
         generated.filename,
@@ -91,11 +94,6 @@ export function ContainerDossierPanel({
     if (!workflow.data) return;
     generatePackingList.submit({
       version: workflow.data.version,
-      documentType: generated.documentType,
-      filename: generated.filename,
-      contentType: generated.contentType,
-      content: generated.contentBase64,
-      reason: generated.reason,
     });
   }
 

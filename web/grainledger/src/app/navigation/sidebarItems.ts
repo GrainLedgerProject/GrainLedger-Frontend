@@ -1,4 +1,5 @@
 import { dashboardPaths } from "@/features/dashboard/paths";
+import { authPaths } from "@/features/auth/paths";
 import { auditPaths } from "@/features/audit/paths";
 import { adminPaths } from "@/features/admin/paths";
 import { catalogsPaths } from "@/features/catalogs/paths";
@@ -52,6 +53,15 @@ export interface NavItem {
   activeMatch?: (pathname: string) => boolean;
 }
 
+const isMillOperationPath = (pathname: string) =>
+  pathname === millPaths.operation ||
+  pathname.startsWith(millPaths.operation + "/") ||
+  pathname === millPaths.operationDrafts ||
+  pathname.startsWith(millPaths.operationDrafts + "/");
+
+const isStockOverviewPath = (pathname: string) =>
+  pathname === millPaths.stock || pathname.startsWith("/stock/lots/");
+
 function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: number): NavItem[] {
     switch (role) {
       case "MILL_ADMIN":
@@ -100,6 +110,7 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
           {
             label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
             path: catalogsPaths.mrlVersions,
+            permission: "platform.configure",
             icon: BookOpen,
           },
           {
@@ -126,6 +137,7 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             path: millPaths.operation,
             icon: Scales,
             isPrimary: true,
+            activeMatch: isMillOperationPath,
           },
           {
             label: t("nav.mill.containerWork", "Công việc container"),
@@ -167,6 +179,7 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             label: t("nav.stock.overview", "Tồn kho định danh"),
             path: millPaths.stock,
             icon: Package,
+            activeMatch: isStockOverviewPath,
           },
           {
             label: t("nav.mill.reconciliations", "Đối soát & Xác nhận"),
@@ -186,7 +199,9 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
           {
             label: t("nav.mill.operations", "Ghi bước chế biến"),
             path: millPaths.operation,
+            permission: "conversions.write",
             icon: Factory,
+            activeMatch: isMillOperationPath,
           },
           {
             label: t("nav.mill.containerWork", "Công việc container"),
@@ -296,9 +311,10 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: ShieldCheck,
           },
           {
-            label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
-            path: catalogsPaths.mrlVersions,
-            icon: BookOpen,
+            label: t("nav.export.plansPending"),
+            path: exportPaths.pending,
+            permission: "blend.approve",
+            icon: Scales,
           },
           {
             label: t("nav.events", "Tìm sự kiện"),
@@ -344,6 +360,7 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
           {
             label: t("nav.compliance.mrlVersions", "Phiên bản MRL"),
             path: catalogsPaths.mrlVersions,
+            permission: "mrl.read",
             icon: BookOpen,
           },
           {
@@ -365,6 +382,7 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             path: millPaths.stock,
             icon: Package,
             isPrimary: true,
+            activeMatch: isStockOverviewPath,
           },
         ];
 
@@ -380,9 +398,34 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
     }
   }
 
-export function getSidebarItems(role: UserRole, permissions: string[], t: TFunction, pendingOfflineCount: number) {
+export function getSidebarItems(
+  role: UserRole,
+  permissions: string[],
+  t: TFunction,
+  pendingOfflineCount: number,
+  options?: { pendingAccess?: boolean },
+): NavItem[] {
+  if (options?.pendingAccess) {
+    return [
+      {
+        label: t("nav.home", "Tổng quan"),
+        path: dashboardPaths.home,
+        icon: House,
+      },
+      {
+        label: t("nav.profile", "Thông tin cá nhân"),
+        path: authPaths.profile,
+        icon: Users,
+      },
+    ];
+  }
   const navItems = roleNavigation(role, t, pendingOfflineCount);
-  if (role === "MILL_OPERATOR") navItems.push({ label: t("workflows.transfer.title"), path: millPaths.stockTransfer, icon: Truck });
+  if (
+    role === "MILL_OPERATOR" ||
+    (role === "MILL_MANAGER" && permissions.includes("holds.process"))
+  ) {
+    navItems.push({ label: t("workflows.transfer.title"), path: millPaths.stockTransfer, icon: Truck });
+  }
   if ((role === "MILL_OPERATOR" && permissions.includes("conversions.write")) || (role === "MILL_MANAGER" && permissions.includes("conversions.confirm"))) navItems.push({ label: t("workflows.variance.title"), path: millPaths.varianceReview, icon: Scales });
   if (["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "CUSTOMER_PROCUREMENT_OFFICER"].includes(role)) navItems.push({ label: t("receivingThreshold.own"), path: adminPaths.companyReceivingThreshold, icon: Scales });
   if (role === "CUSTOMER_MANAGER" && permissions.includes("residue.evidence.manage")) navItems.push({ label: t("workflows.residue.title"), path: compliancePaths.residueEvidence, icon: Flask });
@@ -422,6 +465,21 @@ export function getSidebarItems(role: UserRole, permissions: string[], t: TFunct
       label: t("nav.compliance.residueProfiles", "Hồ sơ dư lượng"),
       path: compliancePaths.profiles,
       icon: Flask,
+    });
+  }
+  if (
+    !navItems.some((item) => item.path === millPaths.stock) &&
+    permissions.some((permission) =>
+      ["lots.read.all", "lots.read.facility", "lots.read.tenant"].includes(
+        permission,
+      ),
+    )
+  ) {
+    navItems.push({
+      label: t("nav.stock.ledger", "Tồn kho sổ cái"),
+      path: millPaths.stock,
+      icon: Package,
+      activeMatch: isStockOverviewPath,
     });
   }
 

@@ -105,7 +105,7 @@ export function ExportContainerList({
               {text("Trạng thái container", "Container status")}
             </label>
             <select
-              className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
               id={id}
               value={status}
               onChange={(e) => setStatus(e.target.value)}

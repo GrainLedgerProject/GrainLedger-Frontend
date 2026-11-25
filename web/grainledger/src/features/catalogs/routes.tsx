@@ -10,5 +10,8 @@ const mrlVersionsPage = lazyScreen(() =>
 
 export const catalogsRoutes = [
   screenRoute(catalogsPaths.masterData, masterDataPage, { roles: ["MILL_ADMIN"] }),
-  screenRoute(catalogsPaths.mrlVersions, mrlVersionsPage, { roles: ["MILL_ADMIN", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"] }),
+  screenRoute(catalogsPaths.mrlVersions, mrlVersionsPage, {
+    roles: ["MILL_ADMIN", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["platform.configure", "mrl.read"],
+  }),
 ];

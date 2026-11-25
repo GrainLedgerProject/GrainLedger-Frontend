@@ -21,6 +21,7 @@ import {
   FloppyDisk,
   LockSimple,
   Scales,
+  Stack,
   Trash,
   Warning,
 } from "@phosphor-icons/react";
@@ -516,12 +517,6 @@ export const OperationEntryPage: React.FC = () => {
   };
 
   return (
-    <>
-    {canWrite && <div className="mb-4">
-      <Link to={millPaths.operationDrafts} className="font-semibold text-accent-primary underline">
-        {i18n.language.startsWith("en") ? "Multi-lot operations and drafts" : "Công đoạn nhiều lô và bản nháp"}
-      </Link>
-    </div>}
     <div className="space-y-6 pb-12">
       {/* Page Header - Synchronized with CustomerOrganizationsPage */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
@@ -546,7 +541,20 @@ export const OperationEntryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {canWrite && (
+            <Link
+              to={millPaths.operationDrafts}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-accent-primary/30 bg-accent-primary/5 hover:bg-accent-primary/10 text-accent-primary text-xs font-semibold transition-colors shadow-xs"
+            >
+              <Stack size={15} weight="bold" aria-hidden="true" />
+              <span>
+                {i18n.language.startsWith("en")
+                  ? "Multi-lot operations and drafts"
+                  : "Công đoạn nhiều lô và bản nháp"}
+              </span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => void fetchLots(true)}
@@ -1214,6 +1222,5 @@ export const OperationEntryPage: React.FC = () => {
         </div>
       </form>
     </div>
-    </>
   );
 };

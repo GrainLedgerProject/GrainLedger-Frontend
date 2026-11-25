@@ -310,12 +310,12 @@ export function ResidueProfilesPage() {
               <MagnifyingGlass
                 size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <input
                 id="residue-search"
                 type="search"
-                className={`${field} pl-10`}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t(
@@ -336,11 +336,11 @@ export function ResidueProfilesPage() {
               <StatusFilterIcon
                 size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <select
                 id="residue-status"
-                className={field}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
               >
@@ -363,11 +363,11 @@ export function ResidueProfilesPage() {
               <ScopeFilterIcon
                 size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <select
                 id="residue-scope"
-                className={field}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                 value={scopeFilter}
                 onChange={(event) => setScopeFilter(event.target.value)}
               >

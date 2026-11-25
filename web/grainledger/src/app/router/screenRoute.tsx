@@ -12,16 +12,29 @@ export function lazyScreen(load: () => Promise<{ default: ComponentType }>) {
 interface ScreenOptions {
   roles?: UserRole[];
   permission?: string;
+  anyPermissions?: string[];
   kind?: "placeholder" | "integration-pending";
 }
 
-export function screenRoute(path: string, screen: ReactElement, { roles, permission, kind }: ScreenOptions = {}): RouteObject {
+export function screenRoute(
+  path: string,
+  screen: ReactElement,
+  { roles, permission, anyPermissions, kind }: ScreenOptions = {},
+): RouteObject {
   const content = <Suspense fallback={<GrainLoader />}>{screen}</Suspense>;
   return {
     path,
     handle: { kind: kind ?? "screen" },
-    element: roles || permission
-      ? <ProtectedRoute allowedRoles={roles} requiredPermission={permission}>{content}</ProtectedRoute>
+    element: roles || permission || (anyPermissions && anyPermissions.length > 0)
+      ? (
+          <ProtectedRoute
+            allowedRoles={roles}
+            requiredPermission={permission}
+            requiredAnyPermissions={anyPermissions}
+          >
+            {content}
+          </ProtectedRoute>
+        )
       : content,
   };
 }

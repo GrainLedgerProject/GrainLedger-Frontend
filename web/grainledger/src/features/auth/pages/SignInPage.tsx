@@ -8,6 +8,7 @@ import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { authApi } from "@/features/auth/api/authApi";
+import { isPendingUserAccess } from "@/features/auth/api/sessionUser";
 import { authEndpoints } from "@/api/auth";
 import {
   signInSchema,
@@ -70,7 +71,13 @@ export const SignInPage: React.FC = () => {
   // Auto-redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated && !restoringSession) {
-      navigate(returnUrl || (user?.organizationId ? ROLE_DEFINITIONS[user.role].defaultPath : "/home"), { replace: true });
+      navigate(
+        returnUrl ||
+          (!isPendingUserAccess(user) && user?.organizationId
+            ? ROLE_DEFINITIONS[user.role].defaultPath
+            : "/home"),
+        { replace: true },
+      );
     }
   }, [isAuthenticated, restoringSession, returnUrl, navigate, user]);
 

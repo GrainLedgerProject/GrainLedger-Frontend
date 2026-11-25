@@ -59,7 +59,7 @@ function ResidueEvaluationPanel({ lotId }: { lotId: string }) {
     <form method="post" onSubmit={submit} className="space-y-3">
       <fieldset className="space-y-2" disabled={evaluation.isPending}>
         <legend>{text("Hoạt chất cần đánh giá (tối đa 200)", "Active substances to evaluate (up to 200)")}</legend>
-        <input aria-label={text("Tìm hoạt chất", "Find a substance")} name="search" type="search" value={search} onChange={e => setSearch(e.target.value)} />
+        <input aria-label={text("Tìm hoạt chất", "Find a substance")} name="search" type="search" value={search} onChange={e => setSearch(e.target.value)} className="filter-control border-ink-tertiary/20 bg-surface-base" />
         <div className="max-h-44 space-y-1 overflow-y-auto">
           {substances.data?.filter(row => selected.includes(row.id) || `${row.code} ${row.name}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(row =>
             <label key={row.id} className="!flex-row items-center">

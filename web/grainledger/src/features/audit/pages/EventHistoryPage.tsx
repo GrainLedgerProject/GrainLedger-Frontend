@@ -1,14 +1,16 @@
 import { logger } from "@/shared/utils/logger";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { ledgerHistoryKinds } from "@/api/history";
 import { ledgerEndpoints } from "@/api/ledger";
+import { useAuthStore } from "@/app/store/authStore";
 import { eventLabel } from "../model/eventPresentation";
 import {
+  BUSINESS_CATEGORIES,
   fetchBusinessHistory,
-  type BusinessGroup,
-  type BusinessHistoryItem,
+  type BusinessCategory,
+  type BusinessHistoryPageResult,
 } from "../model/businessHistory";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
@@ -36,17 +38,20 @@ export const EventHistoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const text = useWorkflowText();
+  const user = useAuthStore((s) => s.user);
   const entityFilterId = React.useId();
   const eventTypeFilterId = React.useId();
-  const [historyMode, setHistoryMode] = useState<"ledger" | "business">(
-    "ledger",
+  const [historyMode, setHistoryMode] = useState<"ledger" | "business">(() =>
+    user?.role === "MILL_ADMIN" ? "business" : "ledger",
   );
-  const [businessGroup, setBusinessGroup] = useState<BusinessGroup>("ALL");
+  const [businessCategory, setBusinessCategory] =
+    useState<BusinessCategory>("ALL");
   const [businessRef, setBusinessRef] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [businessPage, setBusinessPage] = useState(1);
   const [events, setEvents] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => user?.role !== "MILL_ADMIN");
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
@@ -101,49 +106,85 @@ export const EventHistoryPage: React.FC = () => {
 
   // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
-  const currentBusinessKey = `${businessGroup}:${reload}`;
+  const trimmedBusinessRef = businessRef.trim();
+  const currentBusinessKey = `${businessCategory}:${trimmedBusinessRef}:${fromDate}:${toDate}:${businessPage}:${reload}`;
   const [businessState, setBusinessState] = useState<{
     key: string;
-    rows: BusinessHistoryItem[];
+    data?: BusinessHistoryPageResult;
+    error?: string;
   } | null>(null);
+  const businessError =
+    businessState?.key === currentBusinessKey
+      ? (businessState.error ?? null)
+      : null;
   const businessPending =
     historyMode === "business" && businessState?.key !== currentBusinessKey;
 
   useEffect(() => {
     if (historyMode !== "business") return;
-    let cancelled = false;
-    void fetchBusinessHistory(businessGroup).then((rows) => {
-      if (!cancelled) {
-        setBusinessState({ key: currentBusinessKey, rows });
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [historyMode, businessGroup, currentBusinessKey]);
+    const controller = new AbortController();
+    void fetchBusinessHistory(
+      {
+        category: businessCategory === "ALL" ? undefined : businessCategory,
+        search: trimmedBusinessRef || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+        page: businessPage,
+        pageSize: 25,
+      },
+      { signal: controller.signal },
+    )
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setBusinessState({ key: currentBusinessKey, data });
+        }
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        logger.error(err);
+        setBusinessState({
+          key: currentBusinessKey,
+          error:
+            err instanceof Error
+              ? err.message
+              : text(
+                  "Không thể tải lịch sử nghiệp vụ.",
+                  "Unable to load business history.",
+                ),
+        });
+      });
+    return () => controller.abort();
+  }, [
+    historyMode,
+    businessCategory,
+    trimmedBusinessRef,
+    fromDate,
+    toDate,
+    businessPage,
+    currentBusinessKey,
+    text,
+  ]);
 
-  const filteredBusinessItems = useMemo(() => {
-    const rows =
-      businessState?.key === currentBusinessKey ? businessState.rows : [];
-    const q = businessRef.trim().toLowerCase();
-    return rows.filter((row) => {
-      if (q) {
-        const hay =
-          `${row.referenceCode} ${row.id} ${row.title} ${row.summary}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      const dateStr = row.timestamp.slice(0, 10);
-      if (fromDate && dateStr < fromDate) return false;
-      if (toDate && dateStr > toDate) return false;
-      return true;
-    });
-  }, [businessState, currentBusinessKey, businessRef, fromDate, toDate]);
+  const businessItems =
+    businessState?.key === currentBusinessKey
+      ? (businessState.data?.items ?? [])
+      : [];
+  const businessTotalCount =
+    businessState?.key === currentBusinessKey
+      ? (businessState.data?.totalCount ?? 0)
+      : 0;
+  const businessHasMore =
+    businessState?.key === currentBusinessKey
+      ? Boolean(businessState.data?.hasMore)
+      : false;
 
-  const toModalAuditEvent = (item: BusinessHistoryItem): AuditEvent => ({
+  const toModalAuditEvent = (
+    item: BusinessHistoryPageResult["items"][number],
+  ): AuditEvent => ({
     rowKey: item.id,
     id: item.referenceCode || item.id,
-    kind: item.category,
-    eventType: item.category,
+    kind: item.eventType || item.category,
+    eventType: item.eventType || item.category,
     entityType: "Event",
     entityId: item.referenceCode,
     actorId: item.actorName,
@@ -175,6 +216,7 @@ export const EventHistoryPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (historyMode !== "ledger") return;
     const controller = new AbortController();
     async function loadEvents() {
       try {
@@ -208,7 +250,7 @@ export const EventHistoryPage: React.FC = () => {
     }
     void loadEvents();
     return () => controller.abort();
-  }, [page, reload, searchTerm, t]);
+  }, [historyMode, page, reload, searchTerm, t]);
 
   const entityLabels: Record<AuditEvent["entityType"], string> = {
     Lot: t("audit.events.filterLot", "Lô hàng"),
@@ -330,6 +372,12 @@ export const EventHistoryPage: React.FC = () => {
 
       {historyMode === "business" ? (
         <div className="space-y-4">
+          {businessError && (
+            <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
+              <WarningCircle size={18} weight="fill" className="shrink-0" />
+              <span>{businessError}</span>
+            </div>
+          )}
           <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               <label className="space-y-1">
@@ -338,33 +386,21 @@ export const EventHistoryPage: React.FC = () => {
                 </span>
                 <select
                   aria-label={text("Nhóm nghiệp vụ", "Business group")}
-                  value={businessGroup}
-                  onChange={(e) =>
-                    setBusinessGroup(e.target.value as BusinessGroup)
-                  }
-                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                  value={businessCategory}
+                  onChange={(e) => {
+                    setBusinessCategory(e.target.value as BusinessCategory);
+                    setBusinessPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
                 >
                   <option value="ALL">
-                    {text("Tất cả nhóm nghiệp vụ", "All groups")}
+                    {text("Tất cả nhóm nghiệp vụ", "All categories")}
                   </option>
-                  <option value="CAPTURE">
-                    {text(
-                      "Thu mua, lấy mẫu & Lab",
-                      "Procurement, Samples & Lab",
-                    )}
-                  </option>
-                  <option value="MILL_OPERATIONS">
-                    {text(
-                      "Chế biến & Điều chỉnh",
-                      "Mill Operations & Corrections",
-                    )}
-                  </option>
-                  <option value="QUALITY_HOLD">
-                    {text("Lệnh HOLD & Chất lượng", "Quality HOLD Orders")}
-                  </option>
-                  <option value="EXPORT_CONTAINER">
-                    {text("Đơn xuất & Container", "Export Orders & Containers")}
-                  </option>
+                  {BUSINESS_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -380,8 +416,11 @@ export const EventHistoryPage: React.FC = () => {
                     "Receipt, sample, report, order code...",
                   )}
                   value={businessRef}
-                  onChange={(e) => setBusinessRef(e.target.value)}
-                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                  onChange={(e) => {
+                    setBusinessRef(e.target.value);
+                    setBusinessPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
                 />
               </label>
 
@@ -393,8 +432,11 @@ export const EventHistoryPage: React.FC = () => {
                   type="date"
                   aria-label={text("Từ ngày", "From date")}
                   value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setBusinessPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
                 />
               </label>
 
@@ -406,15 +448,18 @@ export const EventHistoryPage: React.FC = () => {
                   type="date"
                   aria-label={text("Đến ngày", "To date")}
                   value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setBusinessPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
                 />
               </label>
             </div>
             <p className="text-xs text-ink-secondary border-t border-ink-tertiary/10 pt-2">
               {text(
-                `Hiển thị ${filteredBusinessItems.length} bản ghi nghiệp vụ theo quyền truy cập hiện tại.`,
-                `Showing ${filteredBusinessItems.length} business records within your authorized scope.`,
+                `Hiển thị ${businessItems.length} / ${businessTotalCount} bản ghi nghiệp vụ theo quyền truy cập hiện tại.`,
+                `Showing ${businessItems.length} / ${businessTotalCount} business records within your authorized scope.`,
               )}
             </p>
           </div>
@@ -428,7 +473,7 @@ export const EventHistoryPage: React.FC = () => {
                 )}
               />
             </div>
-          ) : filteredBusinessItems.length === 0 ? (
+          ) : businessItems.length === 0 ? (
             <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
               <ClockCounterClockwise
                 size={40}
@@ -450,15 +495,15 @@ export const EventHistoryPage: React.FC = () => {
                       <th className="py-3.5 px-4">
                         {text("Thời gian", "Time")}
                       </th>
-                      <th className="py-3.5 px-4">{text("Nhóm", "Group")}</th>
+                      <th className="py-3.5 px-4">{text("Nhóm", "Category")}</th>
                       <th className="py-3.5 px-4">
                         {text("Mã tham chiếu", "Reference")}
                       </th>
                       <th className="py-3.5 px-4">
-                        {text("Tóm tắt nghiệp vụ", "Summary")}
+                        {text("Loại & Tác nhân", "Event & Actor")}
                       </th>
                       <th className="py-3.5 px-4">
-                        {text("Trạng thái", "Status")}
+                        {text("Sự kiện", "Event")}
                       </th>
                       <th className="py-3.5 px-4 text-right">
                         {text("Chi tiết", "Details")}
@@ -466,7 +511,7 @@ export const EventHistoryPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-ink-tertiary/10">
-                    {filteredBusinessItems.map((item) => (
+                    {businessItems.map((item) => (
                       <tr
                         key={item.id}
                         className="hover:bg-surface-raised/60 transition-colors"
@@ -477,23 +522,23 @@ export const EventHistoryPage: React.FC = () => {
                           )}
                         </td>
                         <td className="py-3.5 px-4 font-semibold text-ink-primary">
-                          {item.group}
+                          {item.category}
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-accent-primary">
                           {item.referenceCode}
                         </td>
                         <td className="py-3.5 px-4 text-ink-primary">
-                          <div className="font-medium">{item.title}</div>
-                          {item.summary && (
-                            <div className="text-[11px] text-ink-secondary">
-                              {item.summary}
+                          <div className="font-medium">{item.actorName}</div>
+                          {item.subjectId && (
+                            <div className="text-[11px] font-mono text-ink-secondary">
+                              {item.subjectId}
                             </div>
                           )}
                         </td>
                         <td className="py-3.5 px-4">
                           <StatusBadge
                             status="PENDING"
-                            label={item.status}
+                            label={item.eventType}
                             size="sm"
                           />
                         </td>
@@ -516,6 +561,32 @@ export const EventHistoryPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          <div className="flex items-center justify-between gap-3 text-xs text-ink-secondary">
+            <span>
+              {t("audit.events.pageNumber", "Trang {{page}}", {
+                page: businessPage,
+              })}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={businessPending || businessPage <= 1}
+                onClick={() => setBusinessPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+              >
+                {t("common.previousPage", "Trang trước")}
+              </button>
+              <button
+                type="button"
+                disabled={businessPending || !businessHasMore}
+                onClick={() => setBusinessPage((p) => p + 1)}
+                className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+              >
+                {t("common.nextPage", "Trang sau")}
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -532,7 +603,8 @@ export const EventHistoryPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2 relative">
                 <MagnifyingGlass
-                  className="absolute left-3 top-2.5 text-ink-tertiary"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
                   size={16}
                 />
                 <input
@@ -544,13 +616,13 @@ export const EventHistoryPage: React.FC = () => {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={handleKeyDownSearch}
-                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised pe-9 ps-10 placeholder:text-ink-tertiary dark:bg-surface-overlay"
                 />
                 {searchInput && (
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="absolute right-2.5 top-2.5 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
                     title="Xóa tìm kiếm"
                   >
                     <X size={14} />
@@ -571,7 +643,7 @@ export const EventHistoryPage: React.FC = () => {
                   id={entityFilterId}
                   value={entityFilter}
                   onChange={(e) => setEntityFilter(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-overlay"
                 >
                   <option value="ALL">
                     {t("audit.events.filterAllEntities", "Tất cả đối tượng")}
@@ -597,7 +669,7 @@ export const EventHistoryPage: React.FC = () => {
                   id={eventTypeFilterId}
                   value={eventTypeFilter}
                   onChange={(e) => setEventTypeFilter(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-overlay"
                 >
                   <option value="ALL">
                     {t("audit.events.filterAllTypes", "Tất cả loại sự kiện")}

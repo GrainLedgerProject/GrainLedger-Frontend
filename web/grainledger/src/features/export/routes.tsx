@@ -57,8 +57,7 @@ const readers = {
   roles: [
     "CUSTOMER_EXPORT_OFFICER",
     "CUSTOMER_MANAGER",
-    "MILL_ADMIN",
-  ] as ("CUSTOMER_EXPORT_OFFICER" | "CUSTOMER_MANAGER" | "MILL_ADMIN")[],
+  ] as ("CUSTOMER_EXPORT_OFFICER" | "CUSTOMER_MANAGER")[],
   permission: "export-orders.read",
 };
 

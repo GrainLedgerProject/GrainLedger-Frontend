@@ -279,6 +279,7 @@
     },
     "stock": {
       "overview": "Stock by Location",
+      "ledger": "Ledger stock",
       "lots": "Rice/Paddy Lot Details"
     },
     "manager": {

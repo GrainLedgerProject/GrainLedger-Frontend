@@ -16,7 +16,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
-import { panel, field, iconButton, button, primary, alert } from "./mrlStyles";
+import { panel, iconButton, button, primary, alert } from "./mrlStyles";
 import { MrlStatusBadge } from "./MrlStatusBadge";
 import { MrlAlerts } from "./MrlAlerts";
 import { localNow } from "../model/mrlDate";
@@ -228,12 +228,12 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
               <MagnifyingGlass
                 size={16}
                 aria-hidden="true"
-                className="absolute left-3 top-2.5 text-ink-tertiary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
               />
               <input
                 id="mrl-search"
                 type="search"
-                className={`${field} pl-10`}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t("apiAudit.mrl.searchPlaceholder")}
@@ -251,11 +251,11 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
               <StatusFilterIcon
                 size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <select
                 id="mrl-status"
-                className={field}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                 value={filter}
                 onChange={(event) => setFilter(event.target.value)}
               >
@@ -276,11 +276,11 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
               <Globe
                 size={16}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
               />
               <select
                 id="mrl-market-filter"
-                className={field}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
                 value={marketFilter}
                 onChange={(event) => setMarketFilter(event.target.value)}
               >
