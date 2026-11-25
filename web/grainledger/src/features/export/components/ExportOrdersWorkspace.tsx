@@ -22,6 +22,7 @@ import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { Decimal } from "@/shared/utils/decimalMass";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { useExportWorkspaceData } from "../hooks/useExportWorkspaceData";
+import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
 import { ExportOrderHistory, ExportOrderMaintenance, type OrderMaintenance } from "./ExportOrderMaintenance";
 import {
   allocationPercent,
@@ -249,10 +250,32 @@ function OrderAllocation({
         cache.invalidateQueries({ queryKey: ["export-workspace-orders"] }),
       ]);
     },
+    { persistKey: `export-order:${data.orderId}:add-container` },
   );
   const percent = order
     ? allocationPercent(order.allocatedMassKg, order.requiredMassKg)
     : 0;
+  const orderContainers = data.containers.data ?? [];
+  const closedContainers = orderContainers.filter(
+    (c) => c.status === "CLOSED",
+  );
+  const closedMassKg = sumMass(closedContainers.map((c) => c.targetMassKg));
+  const closedPercent = order
+    ? allocationPercent(closedMassKg, order.requiredMassKg)
+    : 0;
+  const orderCompleted =
+    Boolean(order) &&
+    orderContainers.length > 0 &&
+    closedContainers.length === orderContainers.length &&
+    new Decimal(closedMassKg).gte(order!.requiredMassKg);
+  const completionStatus: {
+    type: "COMPLIANT" | "PENDING" | "HOLD";
+    label: [string, string];
+  } = orderCompleted
+    ? { type: "COMPLIANT", label: ["Đã hoàn thành", "Completed"] }
+    : new Decimal(closedMassKg).gt(0)
+      ? { type: "PENDING", label: ["Đang đóng niêm", "Closing in progress"] }
+      : { type: "HOLD", label: ["Chưa hoàn thành", "Not completed"] };
   return (
     <ExportSection
       title={order?.code ?? text("Chi tiết đơn hàng", "Order details")}
@@ -285,36 +308,79 @@ function OrderAllocation({
             <button type="button" disabled={data.detail.isFetching || add.isPending} onClick={() => setMaintenance({ type: "spec", order, etag })}>{t("workflows.export.spec")}</button>
           </div>}
           <div className="space-y-5">
-            <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4">
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="font-semibold">
-                  {text(
-                    "Phân bổ mục tiêu container",
-                    "Container target allocation",
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-semibold">
+                    {text(
+                      "Phân bổ mục tiêu container",
+                      "Container target allocation",
+                    )}
+                  </span>
+                  <span className="font-mono text-accent-primary">
+                    {percent}%
+                  </span>
+                </div>
+                <progress
+                  className="mt-3 h-2 w-full accent-accent-primary"
+                  max={100}
+                  value={percent}
+                  aria-label={text(
+                    "Tiến độ phân bổ container",
+                    "Container allocation progress",
                   )}
-                </span>
-                <span className="font-mono text-accent-primary">
-                  {percent}%
-                </span>
+                />
+                <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-ink-secondary">
+                  <span>
+                    {massLabel(order.allocatedMassKg, locale)} /{" "}
+                    {massLabel(order.requiredMassKg, locale)} kg
+                  </span>
+                  <span>
+                    {text("Còn lại chưa chia", "Unallocated")}:{" "}
+                    {massLabel(order.remainingMassKg, locale)} kg
+                  </span>
+                </div>
               </div>
-              <progress
-                className="mt-3 h-2 w-full accent-accent-primary"
-                max={100}
-                value={percent}
-                aria-label={text(
-                  "Tiến độ phân bổ container",
-                  "Container allocation progress",
-                )}
-              />
-              <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-ink-secondary">
-                <span>
-                  {massLabel(order.allocatedMassKg, locale)} /{" "}
-                  {massLabel(order.requiredMassKg, locale)} kg
-                </span>
-                <span>
-                  {text("Còn lại", "Remaining")}:{" "}
-                  {massLabel(order.remainingMassKg, locale)} kg
-                </span>
+
+              <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="font-semibold">
+                    {text(
+                      "Hoàn thành đóng niêm (CLOSED)",
+                      "Closed container completion",
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge
+                      status={completionStatus.type}
+                      label={text(...completionStatus.label)}
+                      size="sm"
+                    />
+                    <span className="font-mono text-accent-primary">
+                      {closedPercent}%
+                    </span>
+                  </div>
+                </div>
+                <progress
+                  className="mt-3 h-2 w-full accent-accent-primary"
+                  max={100}
+                  value={closedPercent}
+                  aria-label={text(
+                    "Tiến độ hoàn thành đơn theo container đã đóng niêm",
+                    "Order completion progress by closed containers",
+                  )}
+                />
+                <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-ink-secondary">
+                  <span>
+                    {massLabel(closedMassKg, locale)} /{" "}
+                    {massLabel(order.requiredMassKg, locale)} kg{" "}
+                    {text("đã CLOSED", "CLOSED")}
+                  </span>
+                  <span>
+                    {closedContainers.length} / {orderContainers.length}{" "}
+                    {text("container đã đóng niêm", "closed containers")}
+                  </span>
+                </div>
               </div>
             </div>
             <div>
@@ -387,7 +453,10 @@ function OrderAllocation({
                   }}
                   className="space-y-3 border-t border-ink-tertiary/15 pt-4"
                 >
-                  <fieldset disabled={add.isPending} className="space-y-3">
+                  <fieldset
+                    disabled={add.isPending || add.uncertain}
+                    className="space-y-3"
+                  >
                     <legend className="mb-2 text-xs font-semibold">
                       {text("Thêm container", "Add container")}
                     </legend>
@@ -454,7 +523,15 @@ function OrderAllocation({
                       )}
                     </div>
                   </fieldset>
-                  <Feedback error={add.error} />
+                  <ContainerCommandFeedback
+                    error={add.error}
+                    uncertain={add.uncertain}
+                    retry={add.retry}
+                    success={add.isSuccess}
+                    isPending={add.isPending}
+                    restoredPending={add.restoredPending}
+                    discardPending={add.discardPending}
+                  />
                   {add.isError && (
                     <button
                       type="button"

@@ -5,6 +5,7 @@ import { useAuthStore } from "@/app/store/authStore";
 import { LabReportEditor } from "../components/LabReportEditor";
 import { DeleteLabReportDialog, LabReportConfirmation } from "../components/LabReportDraftActions";
 import { compliancePaths, labResultPath } from "../paths";
+import { riskPaths } from "@/features/risk/paths";
 import {
   labReportEndpoints,
   type LabReportResponse,
@@ -64,6 +65,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
   const navigate = useNavigate();
   const canWrite = useAuthStore(state => state.user?.permissions.includes("lab.write") ?? false);
   const canSelectEvidence = useAuthStore(state => state.user?.permissions.includes("residue.evidence.manage") ?? false);
+  const canTrace = useAuthStore(state =>
+    state.user?.permissions.some(p => p === "trace.read.tenant" || p === "trace.read.all") ?? false,
+  );
 
   const [reports, setReports] = useState<LabReportItem[]>([]);
   const [selectedReport, setSelectedReport] = useState<LabReportItem | null>(
@@ -795,6 +799,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
                         <th className="py-2.5 px-3">Nồng độ đo được</th>
                         <th className="py-2.5 px-3">Giới hạn LOQ</th>
                         <th className="py-2.5 px-3">Phương pháp thử</th>
+                        {canTrace && <th className="py-2.5 px-3 text-right">Truy vết</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ink-tertiary/10">
@@ -820,13 +825,29 @@ export const MrlComplianceCheckPage: React.FC = () => {
                               <td className="py-2.5 px-3 text-ink-tertiary">
                                 {res.method || "Chưa có dữ liệu"}
                               </td>
+                              {canTrace && (
+                                <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                  {isConfirmed(selectedReport) &&
+                                  rs.confirmedSampleId ? (
+                                    <Link
+                                      to={`${riskPaths.traceback}?reportId=${encodeURIComponent(selectedReport.id)}&resultId=${encodeURIComponent(res.id)}`}
+                                      onClick={() => setSelectedReport(null)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary hover:bg-accent-primary/20 transition-colors"
+                                    >
+                                      <span>Truy xuôi từ kết quả</span>
+                                    </Link>
+                                  ) : (
+                                    <span className="text-ink-tertiary">—</span>
+                                  )}
+                                </td>
+                              )}
                             </tr>
                           )),
                         )
                       ) : (
                         <tr>
                           <td
-                            colSpan={4}
+                            colSpan={canTrace ? 5 : 4}
                             className="py-4 px-3 text-ink-secondary"
                           >
                             Báo cáo chưa có bộ kết quả xét nghiệm.

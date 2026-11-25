@@ -1,7 +1,8 @@
-﻿import { useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LabReportResponse } from "@/api/compliance";
 import { residueEndpoints, type ResidueReportReview, type ResidueReportReviewRow } from "@/api/residue";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
@@ -58,14 +59,14 @@ export function LabResidueReview({ report, companyId }: { report: LabReportRespo
     }
   }
 
-  return <details className="rounded-xl border border-ink-tertiary/20 p-3">
-    <summary className="font-semibold">{text("Rà soát liên kết từng kết quả xét nghiệm", "Review laboratory result bindings")}</summary>
-    <form method="post" className="mt-3 space-y-3" onSubmit={submit}>
+  return <details className="rounded-xl border border-ink-tertiary/20 bg-surface-base p-4 dark:bg-surface-raised">
+    <summary className="cursor-pointer font-display text-sm font-bold text-ink-primary">{text("Rà soát liên kết từng kết quả xét nghiệm", "Review laboratory result bindings")}</summary>
+    <form method="post" className="record-form mt-3 space-y-3" onSubmit={submit}>
       <fieldset disabled={busy} className="space-y-3">
         <legend className="sr-only">{text("Rà soát kết quả", "Review results")}</legend>
-        <label className="!flex-row items-center">
-          <input type="checkbox" name="asReceivedConfirmed" checked={basis} onChange={e => { setBasis(e.target.checked); setDirty(true); setSaved(false); }} />
-          {text("Tôi xác nhận nồng độ theo mẫu nhận.", "I confirm that concentrations are reported as received.")}
+        <label className="!flex-row cursor-pointer items-center gap-2.5 rounded-lg border border-ink-tertiary/20 bg-surface-raised/50 p-2.5 text-xs font-medium text-ink-primary dark:bg-surface-overlay/30">
+          <input type="checkbox" name="asReceivedConfirmed" checked={basis} onChange={e => { setBasis(e.target.checked); setDirty(true); setSaved(false); }} className="size-4 shrink-0 accent-accent-primary" />
+          <span>{text("Tôi xác nhận nồng độ theo mẫu nhận.", "I confirm that concentrations are reported as received.")}</span>
         </label>
         {snapshot?.rows.map((row, index) => {
           const input = rows[index] ?? row.input;
@@ -108,12 +109,13 @@ export function LabResidueReview({ report, companyId }: { report: LabReportRespo
           </fieldset>;
         })}
       </fieldset>
-      {saved && <p role="status">{text("Đã xác nhận liên kết kết quả.", "Result bindings confirmed.")}</p>}
-      {dirty && snapshot && <p role="status">{text("Cần xem trước lại sau khi thay đổi dữ liệu.", "Preview again after changing review inputs.")}</p>}
-      <Feedback error={preview.error ?? confirm.error} pending={busy} />
+      {saved && <p role="status" className="record-success">{text("Đã xác nhận liên kết kết quả.", "Result bindings confirmed.")}</p>}
+      {dirty && snapshot && <p role="status" className="text-xs font-medium text-ink-secondary">{text("Cần xem trước lại sau khi thay đổi dữ liệu.", "Preview again after changing review inputs.")}</p>}
+      {busy && <div className="flex justify-center py-2"><GrainLoader size="sm" label={text("Đang rà soát liên kết kết quả...", "Reviewing result bindings...")} /></div>}
+      <Feedback error={preview.error ?? confirm.error} />
       <div className="flex flex-wrap gap-2">
-        <button type="submit" value="preview" disabled={busy}>{text("Xem trước liên kết", "Preview bindings")}</button>
-        <button type="submit" value="confirm" disabled={busy || dirty || !basis || !ready.length}>{text("Xác nhận liên kết phù hợp", "Confirm eligible bindings")} ({ready.length})</button>
+        <button type="submit" value="preview" disabled={busy} className="record-button rounded-full">{text("Xem trước liên kết", "Preview bindings")}</button>
+        <button type="submit" value="confirm" disabled={busy || dirty || !basis || !ready.length} className="record-button record-primary rounded-full">{text("Xác nhận liên kết phù hợp", "Confirm eligible bindings")} ({ready.length})</button>
       </div>
     </form>
   </details>;

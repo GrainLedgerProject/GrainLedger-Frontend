@@ -49,12 +49,14 @@ export function ContainerClosureForm({
         operationId,
       }),
     saved,
+    { persistKey: `container:${c.id}:metadata` },
   );
 
   const close = useContainerCommand(
     (operationId, version: number) =>
       containerExecutionEndpoints.close(c.id, { operationId, version }),
     saved,
+    { persistKey: `container:${c.id}:close` },
   );
 
   const locked =
@@ -237,6 +239,9 @@ export function ContainerClosureForm({
               uncertain={metadata.uncertain}
               retry={metadata.retry}
               success={metadata.isSuccess}
+              isPending={metadata.isPending}
+              restoredPending={metadata.restoredPending}
+              discardPending={metadata.discardPending}
             />
           </form>
 
@@ -331,6 +336,9 @@ export function ContainerClosureForm({
               uncertain={close.uncertain}
               retry={close.retry}
               success={close.isSuccess}
+              isPending={close.isPending}
+              restoredPending={close.restoredPending}
+              discardPending={close.discardPending}
             />
           </form>
         </div>

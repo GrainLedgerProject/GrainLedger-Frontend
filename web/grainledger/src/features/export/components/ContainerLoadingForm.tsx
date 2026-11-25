@@ -59,6 +59,7 @@ export function ContainerLoadingForm({
       setConfirmed(false);
       await saved();
     },
+    { persistKey: `container:${c.id}:loading` },
   );
 
   const allocations = c.approval?.allocations ?? [];
@@ -418,6 +419,9 @@ export function ContainerLoadingForm({
             uncertain={command.uncertain}
             retry={command.retry}
             success={command.isSuccess}
+            isPending={command.isPending}
+            restoredPending={command.restoredPending}
+            discardPending={command.discardPending}
           />
         </form>
       )}

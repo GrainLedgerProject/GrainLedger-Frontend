@@ -12,7 +12,7 @@ export function ContainerHoldForm({ container, saved }: { container: ContainerEx
     containerExecutionEndpoints.placeHold(container.id, { operationId, ...input }), async () => {
       setReason("");
       await saved();
-    });
+    }, { persistKey: `container:${container.id}:hold` });
 
   return (
     <div className="gl-workflow">
@@ -28,7 +28,7 @@ export function ContainerHoldForm({ container, saved }: { container: ContainerEx
             <button type="submit" disabled={!reason.trim()}>{text("Ban hành HOLD", "Place HOLD")}</button>
           </fieldset>
         </form>
-        <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} />
+        <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} isPending={command.isPending} restoredPending={command.restoredPending} discardPending={command.discardPending} />
       </Panel>
     </div>
   );

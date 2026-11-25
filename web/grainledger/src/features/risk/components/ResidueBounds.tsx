@@ -1,10 +1,11 @@
-﻿import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { catalogsEndpoints } from "@/api/catalogs";
 import { ledgerEndpoints, type ResidueEvaluation } from "@/api/ledger";
 import { collectPages } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
+import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { riskPaths } from "../paths";
@@ -73,7 +74,18 @@ function ResidueEvaluationPanel({ lotId }: { lotId: string }) {
         <button type="submit" value="save" disabled={evaluation.isPending || !selected.length}>{text("Lưu đánh giá", "Save evaluation")}</button>
       </div>
     </form>
-    <Feedback error={history.error ?? substances.error ?? evaluation.error} pending={history.isPending || substances.isPending || evaluation.isPending} />
+    {(history.isPending || substances.isPending || evaluation.isPending) && (
+      <div className="flex justify-center py-4">
+        <GrainLoader
+          size="sm"
+          label={text(
+            "Đang tải dữ liệu đánh giá dư lượng...",
+            "Loading residue evaluation data...",
+          )}
+        />
+      </div>
+    )}
+    <Feedback error={history.error ?? substances.error ?? evaluation.error} />
     {history.data?.items.length ? <div className="space-y-2">
       <h3 className="font-semibold">{text("Đánh giá đã lưu", "Saved evaluations")}</h3>
       <div className="flex flex-wrap gap-2">{history.data.items.map(row => <button key={row.id} type="button"

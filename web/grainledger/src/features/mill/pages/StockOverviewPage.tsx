@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import Decimal from "decimal.js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -145,6 +145,7 @@ export function StockOverviewPage() {
 function StockDetail({ lotId, references }: { lotId: string; references?: SetupApiResponse }) {
   const text = useWorkflowText();
   const canTrace = useAuthStore(s => s.user?.permissions.some(permission => ["trace.read.tenant", "trace.read.all"].includes(permission)));
+  const canSources = useAuthStore(s => s.user?.role === "CUSTOMER_MANAGER" || Boolean(s.user?.permissions.includes("trace.read.all")));
   const query = useQuery({ queryKey: [...scope, "detail", lotId], queryFn: async () => await ledgerEndpoints.getLot(lotId) as StockLot });
   const lot = query.data;
   return <>
@@ -152,7 +153,7 @@ function StockDetail({ lotId, references }: { lotId: string; references?: SetupA
     {lot && <Panel title={lot.code}>
       <p>{lot.stage} · {lot.productIdentity} · {references?.commodities?.find(row => row.id === lot.commodityId)?.name ?? lot.commodityId}</p>
       {lot.restrictions.length > 0 && <p>{text("Hạn chế", "Restrictions")} · {lot.restrictions.join(", ")}</p>}
-      {canTrace && <Link to={`${riskPaths.traceback}?lotId=${encodeURIComponent(lotId)}&direction=backward`}>{text("Truy vết lô", "Trace lot")}</Link>}
+      {canTrace && <Link className="inline-flex items-center gap-1.5 rounded-lg bg-accent-primary/10 px-3 py-1.5 text-xs font-semibold text-accent-primary hover:bg-accent-primary/20" to={`${riskPaths.traceback}?lotId=${encodeURIComponent(lotId)}${canSources ? "&direction=backward" : "&direction=forward"}`}>{text("Truy vết lô", "Trace lot")}</Link>}
       <h3 className="font-semibold">{text("Vị trí tồn kho", "Stock positions")}</h3>
       <div className="overflow-x-auto"><table>
         <thead><tr><th scope="col">{text("Cơ sở", "Facility")}</th><th scope="col">{text("Vị trí", "Location")}</th>

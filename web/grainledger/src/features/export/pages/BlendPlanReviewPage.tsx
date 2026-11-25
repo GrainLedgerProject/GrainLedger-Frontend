@@ -19,6 +19,7 @@ import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useExportCommand } from "../hooks/useExportCommand";
+import { ContainerCommandFeedback } from "../components/ContainerCommandFeedback";
 import { massLabel } from "../model/exportPresentation";
 import { blendPlanRequestPath, exportPaths } from "../paths";
 import {
@@ -149,6 +150,7 @@ export function BlendPlanReviewContent({
       setReason("");
       await refresh();
     },
+    { persistKey: `blend-plan-review:${planId}` },
   );
   const current = decision.data;
   const fresh =
@@ -552,6 +554,17 @@ export function BlendPlanReviewContent({
           </>
         )
       )}
+      {command.hasPendingRecovery && !confirmation && (
+        <ContainerCommandFeedback
+          error={command.error}
+          uncertain={command.uncertain}
+          retry={command.retry}
+          success={command.isSuccess}
+          isPending={command.isPending}
+          restoredPending={command.restoredPending}
+          discardPending={command.discardPending}
+        />
+      )}
       <Modal
         isOpen={confirmation !== null}
         closeOnBackdrop={!command.isPending}
@@ -588,7 +601,15 @@ export function BlendPlanReviewContent({
                 />
               </label>
             )}
-            <Feedback error={command.error} />
+            <ContainerCommandFeedback
+              error={command.error}
+              uncertain={command.uncertain}
+              retry={command.retry}
+              success={command.isSuccess}
+              isPending={command.isPending}
+              restoredPending={command.restoredPending}
+              discardPending={command.discardPending}
+            />
             {command.isError && (
               <button
                 type="button"

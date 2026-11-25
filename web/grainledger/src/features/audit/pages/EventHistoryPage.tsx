@@ -1,13 +1,20 @@
 import { logger } from "@/shared/utils/logger";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { ledgerHistoryKinds } from "@/api/history";
 import { ledgerEndpoints } from "@/api/ledger";
 import { eventLabel } from "../model/eventPresentation";
+import {
+  fetchBusinessHistory,
+  type BusinessGroup,
+  type BusinessHistoryItem,
+} from "../model/businessHistory";
 import { toAuditEvent, type AuditEvent } from "../model/historyEvent";
 import { EventDetailsModal } from "../components/EventDetailsModal";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import {
   Calendar,
   ClockCounterClockwise,
@@ -28,8 +35,16 @@ import {
 export const EventHistoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const text = useWorkflowText();
   const entityFilterId = React.useId();
   const eventTypeFilterId = React.useId();
+  const [historyMode, setHistoryMode] = useState<"ledger" | "business">(
+    "ledger",
+  );
+  const [businessGroup, setBusinessGroup] = useState<BusinessGroup>("ALL");
+  const [businessRef, setBusinessRef] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +101,65 @@ export const EventHistoryPage: React.FC = () => {
 
   // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
+  const currentBusinessKey = `${businessGroup}:${reload}`;
+  const [businessState, setBusinessState] = useState<{
+    key: string;
+    rows: BusinessHistoryItem[];
+  } | null>(null);
+  const businessPending =
+    historyMode === "business" && businessState?.key !== currentBusinessKey;
+
+  useEffect(() => {
+    if (historyMode !== "business") return;
+    let cancelled = false;
+    void fetchBusinessHistory(businessGroup).then((rows) => {
+      if (!cancelled) {
+        setBusinessState({ key: currentBusinessKey, rows });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [historyMode, businessGroup, currentBusinessKey]);
+
+  const filteredBusinessItems = useMemo(() => {
+    const rows =
+      businessState?.key === currentBusinessKey ? businessState.rows : [];
+    const q = businessRef.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (q) {
+        const hay =
+          `${row.referenceCode} ${row.id} ${row.title} ${row.summary}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      const dateStr = row.timestamp.slice(0, 10);
+      if (fromDate && dateStr < fromDate) return false;
+      if (toDate && dateStr > toDate) return false;
+      return true;
+    });
+  }, [businessState, currentBusinessKey, businessRef, fromDate, toDate]);
+
+  const toModalAuditEvent = (item: BusinessHistoryItem): AuditEvent => ({
+    rowKey: item.id,
+    id: item.referenceCode || item.id,
+    kind: item.category,
+    eventType: item.category,
+    entityType: "Event",
+    entityId: item.referenceCode,
+    actorId: item.actorName,
+    postingId: null,
+    lotId: null,
+    operationId: null,
+    locationId: null,
+    ownerId: null,
+    ownerName: item.actorName,
+    quantityKg: null,
+    reversesPostingId: null,
+    occurredAt: item.timestamp,
+    timestamp: item.timestamp,
+    payload: item.details,
+    details: item.details,
+  });
 
   const fetchEvents = () => {
     setLoading(true);
@@ -204,266 +278,508 @@ export const EventHistoryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-xl border border-ink-tertiary/20 bg-surface-raised p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setHistoryMode("ledger")}
+              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
+                historyMode === "ledger"
+                  ? "bg-accent-primary text-white"
+                  : "text-ink-secondary hover:text-ink-primary"
+              }`}
+            >
+              {text("Nhật ký sổ cái", "Ledger audit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryMode("business")}
+              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
+                historyMode === "business"
+                  ? "bg-accent-primary text-white"
+                  : "text-ink-secondary hover:text-ink-primary"
+              }`}
+            >
+              {text("Lịch sử nghiệp vụ", "Business history")}
+            </button>
+          </div>
           <button
             type="button"
-            onClick={fetchEvents}
-            disabled={loading}
+            onClick={() => {
+              if (historyMode === "business") {
+                setReload((value) => value + 1);
+              } else {
+                fetchEvents();
+              }
+            }}
+            disabled={loading || businessPending}
             className="p-2.5 rounded-full border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-secondary hover:text-ink-primary transition-colors"
             title={t("audit.events.btnRefresh", "Làm mới danh sách")}
           >
             <ArrowsClockwise
               size={16}
-              className={loading ? "motion-safe:animate-spin" : undefined}
+              className={
+                loading || businessPending
+                  ? "motion-safe:animate-spin"
+                  : undefined
+              }
             />
           </button>
         </div>
       </div>
 
-      {/* Alerts */}
-      {error && (
-        <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
-          <WarningCircle size={18} weight="fill" className="shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {historyMode === "business" ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Nhóm nghiệp vụ", "Business group")}
+                </span>
+                <select
+                  aria-label={text("Nhóm nghiệp vụ", "Business group")}
+                  value={businessGroup}
+                  onChange={(e) =>
+                    setBusinessGroup(e.target.value as BusinessGroup)
+                  }
+                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                >
+                  <option value="ALL">
+                    {text("Tất cả nhóm nghiệp vụ", "All groups")}
+                  </option>
+                  <option value="CAPTURE">
+                    {text(
+                      "Thu mua, lấy mẫu & Lab",
+                      "Procurement, Samples & Lab",
+                    )}
+                  </option>
+                  <option value="MILL_OPERATIONS">
+                    {text(
+                      "Chế biến & Điều chỉnh",
+                      "Mill Operations & Corrections",
+                    )}
+                  </option>
+                  <option value="QUALITY_HOLD">
+                    {text("Lệnh HOLD & Chất lượng", "Quality HOLD Orders")}
+                  </option>
+                  <option value="EXPORT_CONTAINER">
+                    {text("Đơn xuất & Container", "Export Orders & Containers")}
+                  </option>
+                </select>
+              </label>
 
-      {/* Filter and Search Card */}
-      <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2 relative">
-            <MagnifyingGlass
-              className="absolute left-3 top-2.5 text-ink-tertiary"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder={t(
-                "audit.events.searchCurrentPage",
-                "Tìm trong trang hiện tại: mã sự kiện, mã lô, người ghi...",
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Mã tham chiếu", "Reference code")}
+                </span>
+                <input
+                  type="search"
+                  aria-label={text("Mã tham chiếu", "Reference code")}
+                  placeholder={text(
+                    "Mã phiếu, mẫu, báo cáo, container...",
+                    "Receipt, sample, report, order code...",
+                  )}
+                  value={businessRef}
+                  onChange={(e) => setBusinessRef(e.target.value)}
+                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Từ ngày", "From date")}
+                </span>
+                <input
+                  type="date"
+                  aria-label={text("Từ ngày", "From date")}
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Đến ngày", "To date")}
+                </span>
+                <input
+                  type="date"
+                  aria-label={text("Đến ngày", "To date")}
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 text-ink-primary focus:border-accent-primary focus:outline-none"
+                />
+              </label>
+            </div>
+            <p className="text-xs text-ink-secondary border-t border-ink-tertiary/10 pt-2">
+              {text(
+                `Hiển thị ${filteredBusinessItems.length} bản ghi nghiệp vụ theo quyền truy cập hiện tại.`,
+                `Showing ${filteredBusinessItems.length} business records within your authorized scope.`,
               )}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleKeyDownSearch}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute right-2.5 top-2.5 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
-                title="Xóa tìm kiếm"
-              >
-                <X size={14} />
-              </button>
-            )}
+            </p>
           </div>
 
-          <div className="relative items-center gap-2">
-            <label htmlFor={entityFilterId} className="sr-only">
-              {t("audit.events.thEntity", "Đối tượng")}
-            </label>
-            <SortAscendingIcon aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary" size={16} />
-            <select
-              id={entityFilterId}
-              value={entityFilter}
-              onChange={(e) => setEntityFilter(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
-            >
-              <option value="ALL">
-                {t(
-                  "audit.events.filterAllEntities",
-                  "Tất cả đối tượng",
+          {businessPending ? (
+            <div className="py-16 flex justify-center">
+              <GrainLoader
+                label={text(
+                  "Đang tải lịch sử nghiệp vụ...",
+                  "Loading business history...",
                 )}
-              </option>
-              {Object.entries(entityLabels).map(([type, label]) => (
-                <option key={type} value={type}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative items-center gap-2">
-            <label htmlFor={eventTypeFilterId} className="sr-only">
-              {t("audit.events.thEventType", "Loại sự kiện")}
-            </label>
-            <Funnel aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary" size={16} />
-            <select
-              id={eventTypeFilterId}
-              value={eventTypeFilter}
-              onChange={(e) => setEventTypeFilter(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
-            >
-              <option value="ALL">
-                {t("audit.events.filterAllTypes", "Tất cả loại sự kiện")}
-              </option>
-              {ledgerHistoryKinds.map((kind) => (
-                <option key={kind} value={kind}>
-                  {eventLabel(kind, i18n.language)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="text-xs text-ink-secondary flex items-center justify-between pt-2.5 border-t border-ink-tertiary/10">
-          <span>
-            {t(
-              "audit.events.showingPageCount",
-              "Trang hiện tại: {{count}} dòng hiển thị · Tổng cộng {{total}} dòng",
-              {
-                count: filteredEvents.length,
-                total: totalCount,
-              },
-            )}
-          </span>
-          <span className="font-mono text-xs text-accent-primary font-bold">
-            {t(
-              "audit.events.accessScope",
-              "Dữ liệu được giới hạn theo quyền truy cập",
-            )}
-          </span>
-        </div>
-      </div>
-
-      {/* Events Table */}
-      {loading ? (
-        <div className="py-16 flex justify-center">
-          <GrainLoader
-            label={t(
-              "audit.events.loading",
-              "Đang tải chuỗi sự kiện đối soát bất biến...",
-            )}
-          />
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
-          <ClockCounterClockwise
-            size={40}
-            className="mx-auto text-ink-tertiary mb-3 opacity-60"
-          />
-          <p className="text-sm font-semibold text-ink-primary">
-            {t(
-              "audit.events.noEvents",
-              "Không tìm thấy sự kiện nào phù hợp với bộ lọc.",
-            )}
-          </p>
-          <p className="text-xs text-ink-secondary mt-1">
-            Vui lòng thử điều chỉnh lại từ khóa tìm kiếm hoặc loại đối tượng.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thTime", "Thời gian")}
-                  </th>
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thEventId", "Mã sự kiện")}
-                  </th>
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thEntity", "Đối tượng")}
-                  </th>
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thEventType", "Loại sự kiện")}
-                  </th>
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thActor", "Tài khoản ghi")}
-                  </th>
-                  <th className="py-3.5 px-4">
-                    {t("audit.events.thQuantity", "Khối lượng (kg)")}
-                  </th>
-                  <th className="py-3.5 px-4 text-right">
-                    {t("audit.events.thDetails", "Chi tiết")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink-tertiary/10 font-sans">
-                {filteredEvents.map((evt) => (
-                  <tr
-                    key={evt.rowKey}
-                    className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
-                  >
-                    <td className="py-3.5 px-4 text-ink-secondary whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <Calendar size={13} className="text-ink-tertiary" />
-                        <span>
-                          {new Date(evt.timestamp).toLocaleString(
+              />
+            </div>
+          ) : filteredBusinessItems.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
+              <ClockCounterClockwise
+                size={40}
+                className="mx-auto text-ink-tertiary mb-3 opacity-60"
+              />
+              <p className="text-sm font-semibold text-ink-primary">
+                {text(
+                  "Chưa có sự kiện nghiệp vụ khớp bộ lọc.",
+                  "No matching business records.",
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
+                      <th className="py-3.5 px-4">
+                        {text("Thời gian", "Time")}
+                      </th>
+                      <th className="py-3.5 px-4">{text("Nhóm", "Group")}</th>
+                      <th className="py-3.5 px-4">
+                        {text("Mã tham chiếu", "Reference")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {text("Tóm tắt nghiệp vụ", "Summary")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {text("Trạng thái", "Status")}
+                      </th>
+                      <th className="py-3.5 px-4 text-right">
+                        {text("Chi tiết", "Details")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-tertiary/10">
+                    {filteredBusinessItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-surface-raised/60 transition-colors"
+                      >
+                        <td className="py-3.5 px-4 font-mono text-ink-secondary whitespace-nowrap">
+                          {new Date(item.timestamp).toLocaleString(
                             i18n.language.startsWith("en") ? "en-US" : "vi-VN",
                           )}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono text-xs font-bold text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-md inline-block">
-                        {evt.id}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5">
-                        {getEntityIcon(evt.entityType)}
-                        <span className="font-semibold text-ink-primary text-xs">
-                          {entityLabels[evt.entityType]}:
-                        </span>
-                        <span className="font-mono text-xs text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded-lg">
-                          {evt.entityId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary">
-                        {eventLabel(evt.eventType, i18n.language)}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-ink-secondary truncate max-w-[150px] font-mono text-xs">
-                      {evt.actorId}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-ink-tertiary">
-                      {evt.quantityKg ?? "—"}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedEvent(evt)}
-                        className="px-2.5 py-1 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary font-semibold text-xs inline-flex items-center gap-1.5 transition-colors shadow-xs"
-                      >
-                        <Eye size={14} />
-                        <span>{t("audit.events.btnView", "Xem")}</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-ink-primary">
+                          {item.group}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-accent-primary">
+                          {item.referenceCode}
+                        </td>
+                        <td className="py-3.5 px-4 text-ink-primary">
+                          <div className="font-medium">{item.title}</div>
+                          {item.summary && (
+                            <div className="text-[11px] text-ink-secondary">
+                              {item.summary}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <StatusBadge
+                            status="PENDING"
+                            label={item.status}
+                            size="sm"
+                          />
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedEvent(toModalAuditEvent(item))
+                            }
+                            className="px-2.5 py-1 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary font-semibold text-xs inline-flex items-center gap-1.5"
+                          >
+                            <Eye size={14} />
+                            <span>{text("Xem", "View")}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      ) : (
+        <>
+          {/* Alerts */}
+          {error && (
+            <div className="p-3.5 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger text-xs flex items-center gap-2">
+              <WarningCircle size={18} weight="fill" className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
-      <div className="flex items-center justify-between gap-3 text-xs text-ink-secondary">
-        <span>{t("audit.events.pageNumber", "Trang {{page}}", { page })}</span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={loading || page <= 1}
-            onClick={() => changePage(page - 1)}
-            className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
-          >
-            {t("common.previousPage", "Trang trước")}
-          </button>
-          <button
-            type="button"
-            disabled={loading || !hasMore}
-            onClick={() => changePage(page + 1)}
-            className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
-          >
-            {t("common.nextPage", "Trang sau")}
-          </button>
-        </div>
-      </div>
+          {/* Filter and Search Card */}
+          <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="md:col-span-2 relative">
+                <MagnifyingGlass
+                  className="absolute left-3 top-2.5 text-ink-tertiary"
+                  size={16}
+                />
+                <input
+                  type="text"
+                  placeholder={t(
+                    "audit.events.searchCurrentPage",
+                    "Tìm trong trang hiện tại: mã sự kiện, mã lô, người ghi...",
+                  )}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={handleKeyDownSearch}
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-2.5 top-2.5 p-0.5 text-ink-tertiary hover:text-ink-primary transition-colors"
+                    title="Xóa tìm kiếm"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <div className="relative items-center gap-2">
+                <label htmlFor={entityFilterId} className="sr-only">
+                  {t("audit.events.thEntity", "Đối tượng")}
+                </label>
+                <SortAscendingIcon
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+                  size={16}
+                />
+                <select
+                  id={entityFilterId}
+                  value={entityFilter}
+                  onChange={(e) => setEntityFilter(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                >
+                  <option value="ALL">
+                    {t("audit.events.filterAllEntities", "Tất cả đối tượng")}
+                  </option>
+                  {Object.entries(entityLabels).map(([type, label]) => (
+                    <option key={type} value={type}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative items-center gap-2">
+                <label htmlFor={eventTypeFilterId} className="sr-only">
+                  {t("audit.events.thEventType", "Loại sự kiện")}
+                </label>
+                <Funnel
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+                  size={16}
+                />
+                <select
+                  id={eventTypeFilterId}
+                  value={eventTypeFilter}
+                  onChange={(e) => setEventTypeFilter(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary placeholder:text-ink-tertiary focus:border-accent-primary focus:outline-none focus:rounded-lg transition-colors"
+                >
+                  <option value="ALL">
+                    {t("audit.events.filterAllTypes", "Tất cả loại sự kiện")}
+                  </option>
+                  {ledgerHistoryKinds.map((kind) => (
+                    <option key={kind} value={kind}>
+                      {eventLabel(kind, i18n.language)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="text-xs text-ink-secondary flex items-center justify-between pt-2.5 border-t border-ink-tertiary/10">
+              <span>
+                {t(
+                  "audit.events.showingPageCount",
+                  "Trang hiện tại: {{count}} dòng hiển thị · Tổng cộng {{total}} dòng",
+                  {
+                    count: filteredEvents.length,
+                    total: totalCount,
+                  },
+                )}
+              </span>
+              <span className="font-mono text-xs text-accent-primary font-bold">
+                {t(
+                  "audit.events.accessScope",
+                  "Dữ liệu được giới hạn theo quyền truy cập",
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Events Table */}
+          {loading ? (
+            <div className="py-16 flex justify-center">
+              <GrainLoader
+                label={t(
+                  "audit.events.loading",
+                  "Đang tải chuỗi sự kiện đối soát bất biến...",
+                )}
+              />
+            </div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-ink-tertiary/15 rounded-2xl bg-surface-base dark:bg-surface-raised">
+              <ClockCounterClockwise
+                size={40}
+                className="mx-auto text-ink-tertiary mb-3 opacity-60"
+              />
+              <p className="text-sm font-semibold text-ink-primary">
+                {t(
+                  "audit.events.noEvents",
+                  "Không tìm thấy sự kiện nào phù hợp với bộ lọc.",
+                )}
+              </p>
+              <p className="text-xs text-ink-secondary mt-1">
+                Vui lòng thử điều chỉnh lại từ khóa tìm kiếm hoặc loại đối
+                tượng.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase tracking-wider text-xs">
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thTime", "Thời gian")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thEventId", "Mã sự kiện")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thEntity", "Đối tượng")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thEventType", "Loại sự kiện")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thActor", "Tài khoản ghi")}
+                      </th>
+                      <th className="py-3.5 px-4">
+                        {t("audit.events.thQuantity", "Khối lượng (kg)")}
+                      </th>
+                      <th className="py-3.5 px-4 text-right">
+                        {t("audit.events.thDetails", "Chi tiết")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-tertiary/10 font-sans">
+                    {filteredEvents.map((evt) => (
+                      <tr
+                        key={evt.rowKey}
+                        className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
+                      >
+                        <td className="py-3.5 px-4 text-ink-secondary whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-mono text-xs">
+                            <Calendar size={13} className="text-ink-tertiary" />
+                            <span>
+                              {new Date(evt.timestamp).toLocaleString(
+                                i18n.language.startsWith("en")
+                                  ? "en-US"
+                                  : "vi-VN",
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-xs font-bold text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-md inline-block">
+                            {evt.id}
+                          </span>
+                          {evt.kind === "TRACEBACK" && (
+                            <span className="mt-1 block font-mono text-[11px] text-ink-secondary">
+                              Trace ID: {evt.id}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5">
+                            {getEntityIcon(evt.entityType)}
+                            <span className="font-semibold text-ink-primary text-xs">
+                              {entityLabels[evt.entityType]}:
+                            </span>
+                            <span className="font-mono text-xs text-accent-primary bg-functional-balanced-bg border border-accent-primary/20 px-1.5 py-0.5 rounded-lg">
+                              {evt.entityId}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary">
+                            {eventLabel(evt.eventType, i18n.language)}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-ink-secondary truncate max-w-[150px] font-mono text-xs">
+                          {evt.actorId}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-ink-tertiary">
+                          {evt.quantityKg ?? "—"}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvent(evt)}
+                            className="px-2.5 py-1 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary font-semibold text-xs inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                          >
+                            <Eye size={14} />
+                            <span>{t("audit.events.btnView", "Xem")}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 text-xs text-ink-secondary">
+            <span>
+              {t("audit.events.pageNumber", "Trang {{page}}", { page })}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={loading || page <= 1}
+                onClick={() => changePage(page - 1)}
+                className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+              >
+                {t("common.previousPage", "Trang trước")}
+              </button>
+              <button
+                type="button"
+                disabled={loading || !hasMore}
+                onClick={() => changePage(page + 1)}
+                className="px-3 py-2 rounded-lg border border-ink-tertiary/20 disabled:opacity-40"
+              >
+                {t("common.nextPage", "Trang sau")}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {selectedEvent && (
         <EventDetailsModal

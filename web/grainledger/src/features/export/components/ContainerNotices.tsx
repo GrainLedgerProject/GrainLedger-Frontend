@@ -85,7 +85,7 @@ function ReadNotice({ notice }: { notice: ContainerNotice }) {
         cache.invalidateQueries({ queryKey: ["container-workflow", notice.containerId] }),
         cache.invalidateQueries({ queryKey: ["container-execution", notice.containerId] }),
       ]);
-    });
+    }, { persistKey: `container:${notice.containerId}:notice:${notice.id}` });
   const prepare = useMutation({
     mutationFn: () => containerExecutionEndpoints.getWorkflow(notice.containerId),
     onSuccess: workflow => command.submit({ version: workflow.version }),
@@ -99,7 +99,7 @@ function ReadNotice({ notice }: { notice: ContainerNotice }) {
         onClick={() => prepare.mutate()}
       >{text("Đánh dấu đã đọc", "Mark read")}</button>
       <Feedback error={prepare.error} />
-      <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} />
+      <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} isPending={command.isPending} restoredPending={command.restoredPending} discardPending={command.discardPending} />
     </div>
   );
 }

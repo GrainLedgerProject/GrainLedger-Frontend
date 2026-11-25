@@ -53,7 +53,32 @@ export function ApprovedPlanExecutionPage() {
     queryFn: containerExecutionEndpoints.listProduction,
     enabled: operator,
   });
-  const selected = workItems.data?.items.find(item => item.containerId === params.get("container"));
+  const requestedContainerId = params.get("container") ?? "";
+  const selected = workItems.data?.items.find(item => item.containerId === requestedContainerId);
+  const needsDirectFallback = Boolean(
+    allowed &&
+    requestedContainerId &&
+    !selected &&
+    !workItems.isPending &&
+    !workItems.error,
+  );
+  const directWorkflow = useQuery({
+    queryKey: ["container-workflow", requestedContainerId],
+    queryFn: () => containerExecutionEndpoints.getWorkflow(requestedContainerId),
+    enabled: needsDirectFallback,
+    retry: false,
+  });
+  const directDetail = useQuery({
+    queryKey: ["container-execution-direct", requestedContainerId],
+    queryFn: () => containerExecutionEndpoints.getDetail(requestedContainerId),
+    enabled: needsDirectFallback,
+    retry: false,
+  });
+  const directLookups = useQuery({
+    queryKey: ["container-direct-lookups"],
+    queryFn: async () => (await ledgerEndpoints.getLookups()) as SetupApiResponse,
+    enabled: needsDirectFallback && Boolean(manager),
+  });
   const productionStates = new Map(production.data?.items.map(item => [item.containerId, item.state]));
   const canWrite = Boolean(operator && user?.permissions.includes("conversions.write"));
 
@@ -96,6 +121,48 @@ export function ApprovedPlanExecutionPage() {
           </Panel>
           {selected && (
             <WorkItem key={selected.containerId} item={selected} planId={planId} canWrite={canWrite} canRespond={Boolean(manager)} />
+          )}
+          {!selected && needsDirectFallback && (
+            <div className="space-y-4">
+              <Feedback
+                error={directWorkflow.error ?? (directWorkflow.data ? null : directDetail.error)}
+                pending={directWorkflow.isPending}
+              />
+              {directWorkflow.data && (
+                <>
+                  <div className="rounded-xl border border-functional-stale-border bg-functional-stale-bg/40 p-3.5 text-xs text-ink-primary">
+                    <p className="font-semibold">
+                      {text(
+                        "Đang mở trực tiếp container ngoài hàng đợi mở (ví dụ container đã CLOSED có cảnh báo HOLD).",
+                        "Viewing container opened directly outside the open work queue (such as a CLOSED container with a HOLD alert).",
+                      )}
+                    </p>
+                    <p className="mt-1 font-mono text-ink-secondary">
+                      {directDetail.data?.container.code ?? requestedContainerId} ·{" "}
+                      {directWorkflow.data.status ?? directDetail.data?.container.status ?? "CLOSED"}
+                    </p>
+                  </div>
+                  <ContainerControls
+                    workflow={directWorkflow.data}
+                    facilityId={
+                      directDetail.data?.container.facilityId ??
+                      directWorkflow.data.proposals?.[0]?.context.facilityId ??
+                      user?.assignedFacilities?.[0] ??
+                      directLookups.data?.facilities?.[0]?.id
+                    }
+                    canOperate={false}
+                    canRespond={Boolean(manager)}
+                    refresh={async () => {
+                      await Promise.all([
+                        directWorkflow.refetch(),
+                        directDetail.refetch(),
+                        workItems.refetch(),
+                      ]);
+                    }}
+                  />
+                </>
+              )}
+            </div>
           )}
         </>
       ) : <p role="status">{text("Cần quyền vận hành container hoặc xử lý HOLD tại cơ sở được phân công.", "This screen requires container operations or HOLD processing access at an assigned facility.")}</p>}
@@ -144,7 +211,7 @@ function ProductionWork({ id, refresh }: { id: string; refresh: () => Promise<vo
     const body = { operationId, version: input.version };
     if (input.action === "draft") return containerExecutionEndpoints.saveProductionDraft(id, { ...body, draft: input.draft });
     return input.action === "commit" ? containerExecutionEndpoints.commitProduction(id, body) : containerExecutionEndpoints.prepareNextProduction(id, body);
-  }, refresh);
+  }, refresh, { persistKey: `container:${id}:production` });
   const current = task.data;
   const blocked = command.isPending || command.uncertain || task.isFetching;
   async function commit(version: number) {
@@ -185,7 +252,7 @@ function ProductionWork({ id, refresh }: { id: string; refresh: () => Promise<vo
           )}
         </>
       )}
-      <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} />
+      <ContainerCommandFeedback error={command.error} uncertain={command.uncertain} retry={command.retry} success={command.isSuccess} isPending={command.isPending} restoredPending={command.restoredPending} discardPending={command.discardPending} />
     </Panel>
   );
 }

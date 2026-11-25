@@ -238,6 +238,15 @@ export interface CandidateLineage {
   };
 }
 
+export interface CandidatePageSummary {
+  inventoryEligibleCount: number;
+  inventoryEligibleMassKg: string;
+  directProductAvailableMassKg: string | null;
+  excludedCount: number;
+  inventoryShortfallKg: string;
+}
+
 export interface CandidatePage extends ApiPage<StockCandidate> {
   scopeRevision: string;
+  summary?: CandidatePageSummary;
 }

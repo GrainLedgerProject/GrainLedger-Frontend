@@ -6,13 +6,22 @@ import {
   type ContainerExecution,
 } from "@/api/containerExecution";
 import { Feedback } from "@/shared/ui/Workflow";
+import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useContainerCommand } from "../hooks/useContainerCommand";
 import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
 import { saveExportFile } from "../model/saveExportFile";
 import {
+  buildPackingListDocument,
+  classifyDocumentOrigin,
+  displayDocumentReason,
+  originBadgeProps,
+  rememberUploadedDocument,
+} from "../model/packingList";
+import {
   DownloadSimple,
   FileCode,
+  FilePlus,
   FileText,
   LinkSimple,
   Plus,
@@ -56,6 +65,39 @@ export function ContainerDossierPanel({
   });
 
   const d = dossier.data;
+
+  const generatePackingList = useContainerCommand(
+    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) =>
+      containerExecutionEndpoints.addDocument(c.id, { operationId, ...input }),
+    saved,
+    { persistKey: `container:${c.id}:packing-list` },
+  );
+
+  function handlePackingListAction(mode: "save" | "preview") {
+    if (!d) return;
+    const locale: "vi" | "en" = text("vi", "en") === "en" ? "en" : "vi";
+    const generated = buildPackingListDocument({
+      containerCode: c.code || d.containerNumber,
+      dossier: d,
+      locale,
+    });
+    if (mode === "preview") {
+      saveExportFile(
+        new Blob([generated.html], { type: "text/html;charset=utf-8" }),
+        generated.filename,
+      );
+      return;
+    }
+    if (!workflow.data) return;
+    generatePackingList.submit({
+      version: workflow.data.version,
+      documentType: generated.documentType,
+      filename: generated.filename,
+      contentType: generated.contentType,
+      content: generated.contentBase64,
+      reason: generated.reason,
+    });
+  }
 
   return (
     <>
@@ -154,12 +196,66 @@ export function ContainerDossierPanel({
         aria-label={text("Chứng từ theo phiên bản", "Versioned documents")}
         className={`${panelClass}`}
       >
-        <div className="flex items-center gap-2.5 border-b border-ink-tertiary/15 pb-3">
-          <FileCode size={20} className="text-accent-primary" />
-          <h2 className="font-display text-sm font-bold text-ink-primary">
-            {text("Chứng từ theo phiên bản", "Versioned documents")}
-          </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-tertiary/15 pb-3">
+          <div className="flex items-center gap-2.5">
+            <FileCode size={20} className="text-accent-primary" />
+            <h2 className="font-display text-sm font-bold text-ink-primary">
+              {text("Chứng từ theo phiên bản", "Versioned documents")}
+            </h2>
+          </div>
+
+          {c.status === "CLOSED" && d && (
+            <div className="flex flex-wrap items-center gap-2">
+              {canWrite && workflow.data && (
+                <button
+                  type="button"
+                  disabled={
+                    generatePackingList.isPending ||
+                    generatePackingList.uncertain
+                  }
+                  onClick={() => handlePackingListAction("save")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50"
+                >
+                  <FilePlus size={14} weight="bold" />
+                  <span>
+                    {generatePackingList.isPending
+                      ? text(
+                          "Đang sinh Packing List...",
+                          "Generating Packing List...",
+                        )
+                      : text(
+                          "Sinh Packing List từ hồ sơ niêm phong",
+                          "Generate Packing List from closure dossier",
+                        )}
+                  </span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handlePackingListAction("preview")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary text-xs font-medium transition-all"
+              >
+                <DownloadSimple size={14} />
+                <span>
+                  {text(
+                    "Tải bản in Packing List",
+                    "Download printable Packing List",
+                  )}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
+
+        <ContainerCommandFeedback
+          error={generatePackingList.error}
+          uncertain={generatePackingList.uncertain}
+          retry={generatePackingList.retry}
+          success={generatePackingList.isSuccess}
+          isPending={generatePackingList.isPending}
+          restoredPending={generatePackingList.restoredPending}
+          discardPending={generatePackingList.discardPending}
+        />
 
         <Feedback pending={workflow.isPending} error={workflow.error} />
 
@@ -171,39 +267,54 @@ export function ContainerDossierPanel({
 
         {workflow.data && workflow.data.documents.length > 0 && (
           <div className="space-y-3">
-            {workflow.data.documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="p-3.5 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-              >
-                <div>
-                  <p className="font-medium text-ink-primary">
-                    <span className="font-semibold">{doc.documentType}</span> ·{" "}
-                    <span className="font-mono">v{doc.version}</span> ·{" "}
-                    <span className="font-mono text-accent-primary">
+            {workflow.data.documents.map((doc) => {
+              const origin = classifyDocumentOrigin(doc, c.id);
+              const badge = originBadgeProps(origin);
+              const cleanReason = displayDocumentReason(doc.reason);
+              return (
+                <div
+                  key={doc.id}
+                  className="p-3.5 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-ink-primary">
+                        <span className="font-semibold">
+                          {doc.documentType}
+                        </span>{" "}
+                        · <span className="font-mono">v{doc.version}</span> ·{" "}
+                        <span className="font-mono text-accent-primary">
+                          {doc.filename}
+                        </span>
+                      </p>
+                      <StatusBadge
+                        status={badge.status}
+                        label={text(...badge.label)}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="text-[11px] text-ink-secondary">
+                      {cleanReason || "—"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={download.isPending}
+                    onClick={() =>
+                      download.mutate({ id: doc.id, name: doc.filename })
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs font-semibold shadow-xs transition-all shrink-0"
+                  >
+                    <DownloadSimple size={14} />
+                    <span>
+                      {text("Tải chứng từ", "Download document")} ·{" "}
                       {doc.filename}
                     </span>
-                  </p>
-                  <p className="text-[11px] text-ink-secondary mt-0.5">
-                    {doc.reason}
-                  </p>
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={download.isPending}
-                  onClick={() =>
-                    download.mutate({ id: doc.id, name: doc.filename })
-                  }
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs font-semibold shadow-xs transition-all shrink-0"
-                >
-                  <DownloadSimple size={14} />
-                  <span>
-                    {text("Tải chứng từ", "Download document")} · {doc.filename}
-                  </span>
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -247,7 +358,9 @@ export function ContainerDossierPanel({
                   key={s.id}
                   className="p-3 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 text-xs text-ink-primary flex items-center justify-between"
                 >
-                  <p>{s.reason} · {new Date(s.recordedAt).toLocaleString()}</p>
+                  <p>
+                    {s.reason} · {new Date(s.recordedAt).toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
@@ -283,21 +396,37 @@ function ContainerDocumentForm({
   const [reading, setReading] = useState(false);
   const [error, setError] = useState("");
   const readingRef = useRef(false);
+  const lastSubmittedRef = useRef<{
+    containerId: string;
+    documentType: string;
+    filename: string;
+    reason: string;
+  } | null>(null);
   const command = useContainerCommand(
-    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) =>
-      containerExecutionEndpoints.addDocument(containerId, {
+    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) => {
+      lastSubmittedRef.current = {
+        containerId,
+        documentType: input.documentType,
+        filename: input.filename,
+        reason: input.reason,
+      };
+      return containerExecutionEndpoints.addDocument(containerId, {
         operationId,
         ...input,
-      }),
-    saved,
+      });
+    },
+    async () => {
+      if (lastSubmittedRef.current) {
+        rememberUploadedDocument(lastSubmittedRef.current);
+      }
+      await saved();
+    },
+    { persistKey: `container:${containerId}:doc-upload` },
   );
 
   return (
     <form
-      aria-label={text(
-        "Thêm phiên bản chứng từ",
-        "Add document version",
-      )}
+      aria-label={text("Thêm phiên bản chứng từ", "Add document version")}
       className="space-y-4 p-4 rounded-xl bg-surface-raised/30 dark:bg-surface-overlay/10 border border-ink-tertiary/20"
       onSubmit={async (e) => {
         e.preventDefault();
@@ -339,8 +468,7 @@ function ContainerDocumentForm({
                   text("Không đọc được tệp.", "Could not read the file."),
                 ),
               );
-            reader.onload = () =>
-              resolve(String(reader.result).split(",")[1]);
+            reader.onload = () => resolve(String(reader.result).split(",")[1]);
             reader.readAsDataURL(file);
           });
           command.submit({ ...input, content });
@@ -443,6 +571,9 @@ function ContainerDocumentForm({
         uncertain={command.uncertain}
         retry={command.retry}
         success={command.isSuccess}
+        isPending={command.isPending}
+        restoredPending={command.restoredPending}
+        discardPending={command.discardPending}
       />
     </form>
   );
@@ -469,6 +600,7 @@ function ContainerSupplementForm({
         ...input,
       }),
     saved,
+    { persistKey: `container:${containerId}:supplement` },
   );
 
   return (
@@ -556,6 +688,9 @@ function ContainerSupplementForm({
         uncertain={command.uncertain}
         retry={command.retry}
         success={command.isSuccess}
+        isPending={command.isPending}
+        restoredPending={command.restoredPending}
+        discardPending={command.discardPending}
       />
     </form>
   );

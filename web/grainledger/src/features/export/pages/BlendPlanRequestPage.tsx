@@ -1,6 +1,6 @@
 import { ExportActionLink as Link } from "../components/ExportActionLink";
 import { ExportActionProvider } from "../components/ExportActionProvider";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { exportEndpoints, type StockCandidate } from "@/api/exports";
@@ -17,8 +17,14 @@ import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { exportPaths, planReviewPath } from "../paths";
+import { compliancePaths } from "@/features/compliance/paths";
+import { ContainerCommandFeedback } from "../components/ContainerCommandFeedback";
 import { ExportWorkspaceNav } from "../components/ExportWorkspaceUI";
-import { BlendCandidateList, BlendDiagnostics, BlendRatioEditor } from "../components/BlendInvestigation";
+import {
+  BlendCandidateList,
+  BlendDiagnostics,
+  BlendRatioEditor,
+} from "../components/BlendInvestigation";
 import {
   ArrowLeft,
   ArrowsClockwise,
@@ -135,6 +141,7 @@ function BlendPlanRequestContent({
     async () => {
       await Promise.all([plans.refetch(), context.refetch()]);
     },
+    { persistKey: `blend-plan:${containerId}:create` },
   );
 
   const cancel = useExportCommand(
@@ -143,12 +150,15 @@ function BlendPlanRequestContent({
     async () => {
       await plans.refetch();
     },
+    { persistKey: `blend-plan:${containerId}:cancel` },
   );
 
   const selected = plans.data?.find((p) => p.id === selectedPlanId);
 
   return (
-    <div className={`text-ink-primary [container:workspace/inline-size] space-y-6${embedded ? "" : " pb-12"}`}>
+    <div
+      className={`text-ink-primary [container:workspace/inline-size] space-y-6${embedded ? "" : " pb-12"}`}
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-tertiary/15 pb-4">
         <div hidden={embedded}>
@@ -537,12 +547,20 @@ function PreviewPlan({
   const [includeExcluded, setIncludeExcluded] = useState(false);
   const [includeOther, setIncludeOther] = useState(false);
   const [candidate, setCandidate] = useState<StockCandidate | null>(null);
-  const [objective, setObjective] = useState<PreviewBlendPlanRequest["objective"]>();
+  const [objective, setObjective] =
+    useState<PreviewBlendPlanRequest["objective"]>();
   const [moistureAttributeId, setMoistureAttribute] = useState("");
   const [ratioDirty, setRatioDirty] = useState(false);
 
   const candidates = useQuery({
-    queryKey: ["plan-candidates", plan.id, facility, page, includeExcluded, includeOther],
+    queryKey: [
+      "plan-candidates",
+      plan.id,
+      facility,
+      page,
+      includeExcluded,
+      includeOther,
+    ],
     queryFn: () =>
       exportEndpoints.getCandidates(plan.containerId, {
         facilityId: facility,
@@ -565,7 +583,9 @@ function PreviewPlan({
         ...request,
         facilityId: facility,
       }),
-    onSuccess: () => setRatioDirty(false),
+    onSuccess: () => {
+      setRatioDirty(false);
+    },
   });
 
   const propose = useExportCommand(
@@ -579,16 +599,44 @@ function PreviewPlan({
         queryKey: ["container-plans", plan.containerId],
       });
     },
+    { persistKey: `blend-plan:${plan.id}:propose` },
   );
 
   const result = preview.data;
-  const previewCurrent = Boolean(candidates.data && preview.variables?.scopeRevision === candidates.data.scopeRevision);
+  const previewCurrent = Boolean(
+    candidates.data &&
+    preview.variables?.scopeRevision === candidates.data.scopeRevision,
+  );
+  const [expiredPreviewRef, setExpiredPreviewRef] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!result?.expiresAt || !result.previewReference) return;
+    const expiresAtMs = Date.parse(result.expiresAt);
+    if (!Number.isFinite(expiresAtMs)) return;
+    const ref = result.previewReference;
+    const delay = Math.max(0, expiresAtMs - Date.now());
+    const timer = window.setTimeout(() => setExpiredPreviewRef(ref), delay);
+    return () => window.clearTimeout(timer);
+  }, [result?.expiresAt, result?.previewReference]);
+  const previewExpired = Boolean(
+    result?.previewReference && expiredPreviewRef === result.previewReference,
+  );
+  const missingAssessmentSetup = Boolean(
+    result &&
+    ([
+      ...(result.reasons ?? []),
+      ...(result.assessmentFindings?.map((f) => f.code) ?? []),
+    ].some((code) => /POLICY|OBSERVATION|MARGIN|ASSESSMENT/i.test(code)) ||
+      result.assessmentStatus === "BLOCKED"),
+  );
   function calculate(adjustment?: PreviewBlendPlanRequest["adjustment"]) {
     if (!candidates.data) return;
     preview.mutate({
       scopeRevision: candidates.data.scopeRevision,
       objective,
-      moistureAttributeId: objective === "MIN_MOISTURE" ? moistureAttributeId : undefined,
+      moistureAttributeId:
+        objective === "MIN_MOISTURE" ? moistureAttributeId : undefined,
       adjustment,
     });
   }
@@ -600,35 +648,101 @@ function PreviewPlan({
         pending={candidates.isPending || preview.isPending}
       />
       <div className="flex flex-wrap gap-4">
-        <label className="!flex-row items-center"><input type="checkbox" checked={includeExcluded} onChange={e => {
-          setIncludeExcluded(e.target.checked); setPage(1); setCandidate(null);
-        }} />{text("Hiện cả tồn kho bị loại", "Include excluded stock")}</label>
-        <label className="!flex-row items-center"><input type="checkbox" checked={includeOther} onChange={e => {
-          setIncludeOther(e.target.checked); setPage(1); setCandidate(null);
-        }} />{text("Hiện cả sản phẩm khác", "Include other products")}</label>
+        <label className="!flex-row items-center">
+          <input
+            type="checkbox"
+            checked={includeExcluded}
+            onChange={(e) => {
+              setIncludeExcluded(e.target.checked);
+              setPage(1);
+              setCandidate(null);
+            }}
+          />
+          {text("Hiện cả tồn kho bị loại", "Include excluded stock")}
+        </label>
+        <label className="!flex-row items-center">
+          <input
+            type="checkbox"
+            checked={includeOther}
+            onChange={(e) => {
+              setIncludeOther(e.target.checked);
+              setPage(1);
+              setCandidate(null);
+            }}
+          />
+          {text("Hiện cả sản phẩm khác", "Include other products")}
+        </label>
       </div>
-      {candidates.data && <BlendCandidateList data={candidates.data} facilityId={facility}
-        containerId={plan.containerId} candidate={candidate} onCandidate={setCandidate}
-        page={page} onPage={value => { setPage(value); setCandidate(null); }} />}
+      {candidates.data && (
+        <BlendCandidateList
+          data={candidates.data}
+          facilityId={facility}
+          containerId={plan.containerId}
+          candidate={candidate}
+          onCandidate={setCandidate}
+          page={page}
+          onPage={(value) => {
+            setPage(value);
+            setCandidate(null);
+          }}
+        />
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
-        <label>{text("Mục tiêu tối ưu", "Optimization objective")}
-          <select value={objective ?? ""} onChange={e => { setObjective((e.target.value || undefined) as typeof objective); preview.reset(); }}>
+        <label>
+          {text("Mục tiêu tối ưu", "Optimization objective")}
+          <select
+            value={objective ?? ""}
+            onChange={(e) => {
+              setObjective((e.target.value || undefined) as typeof objective);
+              preview.reset();
+            }}
+          >
             <option value="">{text("Mặc định", "Default")}</option>
-            <option value="MIN_LOCATIONS">{text("Ít vị trí nhất", "Minimize locations")}</option>
-            <option value="MIN_LOTS">{text("Ít lô nhất", "Minimize lots")}</option>
-            <option value="RETAIN_HEAD_RICE">{text("Giữ lại gạo nguyên", "Retain head rice")}</option>
-            <option value="MAX_RESIDUE_HEADROOM">{text("Tăng biên an toàn dư lượng", "Maximize residue headroom")}</option>
-            <option value="MIN_MOISTURE">{text("Giảm độ ẩm", "Minimize moisture")}</option>
+            <option value="MIN_LOCATIONS">
+              {text("Ít vị trí nhất", "Minimize locations")}
+            </option>
+            <option value="MIN_LOTS">
+              {text("Ít lô nhất", "Minimize lots")}
+            </option>
+            <option value="RETAIN_HEAD_RICE">
+              {text("Giữ lại gạo nguyên", "Retain head rice")}
+            </option>
+            <option value="MAX_RESIDUE_HEADROOM">
+              {text("Tăng biên an toàn dư lượng", "Maximize residue headroom")}
+            </option>
+            <option value="MIN_MOISTURE">
+              {text("Giảm độ ẩm", "Minimize moisture")}
+            </option>
           </select>
         </label>
-        {objective === "MIN_MOISTURE" && <label>{text("Chỉ tiêu độ ẩm trong đặc tả", "Moisture attribute from specification")}
-          <select value={moistureAttributeId} onChange={e => { setMoistureAttribute(e.target.value); preview.reset(); }}>
-            <option value="">—</option>
-            {order.data?.limits?.filter(row => row.unit === "%").map(row => <option key={row.attributeId} value={row.attributeId}>{row.attributeName ?? row.attributeCode ?? row.attributeId}</option>)}
-          </select>
-        </label>}
+        {objective === "MIN_MOISTURE" && (
+          <label>
+            {text(
+              "Chỉ tiêu độ ẩm trong đặc tả",
+              "Moisture attribute from specification",
+            )}
+            <select
+              value={moistureAttributeId}
+              onChange={(e) => {
+                setMoistureAttribute(e.target.value);
+                preview.reset();
+              }}
+            >
+              <option value="">—</option>
+              {order.data?.limits
+                ?.filter((row) => row.unit === "%")
+                .map((row) => (
+                  <option key={row.attributeId} value={row.attributeId}>
+                    {row.attributeName ?? row.attributeCode ?? row.attributeId}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
       </div>
-      {objective === "MIN_MOISTURE" && <Feedback error={order.error} pending={order.isPending} />}
+      {objective === "MIN_MOISTURE" && (
+        <Feedback error={order.error} pending={order.isPending} />
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-surface-raised dark:bg-surface-overlay/40 border border-ink-tertiary/20">
         <div className="flex items-center gap-3">
@@ -643,7 +757,15 @@ function PreviewPlan({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to={compliancePaths.safetyMargin}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:bg-surface-raised hover:text-ink-primary transition-colors"
+          >
+            <span>
+              {text("Căn cứ đánh giá xuất khẩu", "Export assessment setup")}
+            </span>
+          </Link>
           <button
             type="button"
             disabled={
@@ -665,7 +787,11 @@ function PreviewPlan({
           {candidates.data && (
             <button
               type="button"
-              disabled={preview.isPending || propose.isPending || (objective === "MIN_MOISTURE" && !moistureAttributeId)}
+              disabled={
+                preview.isPending ||
+                propose.isPending ||
+                (objective === "MIN_MOISTURE" && !moistureAttributeId)
+              }
               onClick={() => calculate()}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50"
             >
@@ -706,6 +832,39 @@ function PreviewPlan({
               </span>
             </p>
           </div>
+
+          {result.expiresAt && (
+            <div
+              className={`rounded-xl border px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2 ${
+                previewExpired
+                  ? "border-functional-rejected-border bg-functional-rejected-bg text-accent-danger"
+                  : "border-functional-stale-border bg-functional-stale-bg/40 text-ink-primary"
+              }`}
+            >
+              <span>
+                {previewExpired
+                  ? text(
+                      "Bản mô phỏng đã quá thời hạn 10 phút. Vui lòng tính toán lại trước khi gửi duyệt.",
+                      "This preview has expired (10-minute window). Recalculate before submitting.",
+                    )
+                  : text(
+                      `Hiệu lực mô phỏng tối đa 10 phút (đến ${new Date(result.expiresAt).toLocaleTimeString()}).`,
+                      `Preview valid within 10-minute window (until ${new Date(result.expiresAt).toLocaleTimeString()}).`,
+                    )}
+              </span>
+              {missingAssessmentSetup && (
+                <Link
+                  to={compliancePaths.safetyMargin}
+                  className="font-semibold text-accent-primary underline"
+                >
+                  {text(
+                    "Mở thiết lập đánh giá xuất khẩu →",
+                    "Configure export assessment →",
+                  )}
+                </Link>
+              )}
+            </div>
+          )}
 
           {result.reasons && result.reasons.length > 0 && (
             <div className="space-y-1">
@@ -819,29 +978,54 @@ function PreviewPlan({
             )}
 
           <BlendDiagnostics result={result} />
-          {previewCurrent && result.previewReference && <BlendRatioEditor key={result.previewReference} result={result}
-            disabled={preview.isPending || propose.isPending} onDirty={setRatioDirty}
-            onAssess={firstQuantityKg => calculate({ firstQuantityKg, previewReference: result.previewReference! })} />}
+          {previewCurrent && result.previewReference && (
+            <BlendRatioEditor
+              key={result.previewReference}
+              result={result}
+              disabled={preview.isPending || propose.isPending}
+              onDirty={setRatioDirty}
+              onAssess={(firstQuantityKg) =>
+                calculate({
+                  firstQuantityKg,
+                  previewReference: result.previewReference!,
+                })
+              }
+            />
+          )}
 
           {/* Submit Proposal CTA */}
           {result.canPropose && result.previewReference && (
-            <div className="pt-3 border-t border-ink-tertiary/15 flex justify-end">
-              <button
-                disabled={
-                  propose.isPending ||
-                  preview.isPending ||
-                  !previewCurrent || ratioDirty
-                }
-                onClick={() => propose.submit(result.previewReference!)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-md shadow-accent-primary/20 transition-all disabled:opacity-50"
-              >
-                <CheckCircle size={16} weight="bold" />
-                <span>
-                  {propose.isPending
-                    ? text("Đang gửi...", "Submitting...")
-                    : text("Gửi đề xuất để duyệt", "Submit for approval")}
-                </span>
-              </button>
+            <div className="pt-3 border-t border-ink-tertiary/15 space-y-3">
+              <ContainerCommandFeedback
+                error={propose.error}
+                uncertain={propose.uncertain}
+                retry={propose.retry}
+                success={propose.isSuccess}
+                isPending={propose.isPending}
+                restoredPending={propose.restoredPending}
+                discardPending={propose.discardPending}
+              />
+              <div className="flex justify-end">
+                <button
+                  disabled={
+                    propose.isPending ||
+                    propose.uncertain ||
+                    preview.isPending ||
+                    previewExpired ||
+                    !previewCurrent ||
+                    ratioDirty
+                  }
+                  onClick={() => propose.submit(result.previewReference!)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-md shadow-accent-primary/20 transition-all disabled:opacity-50"
+                >
+                  <CheckCircle size={16} weight="bold" />
+                  <span>
+                    {propose.isPending
+                      ? text("Đang gửi...", "Submitting...")
+                      : text("Gửi đề xuất để duyệt", "Submit for approval")}
+                  </span>
+                </button>
+              </div>
             </div>
           )}
         </div>

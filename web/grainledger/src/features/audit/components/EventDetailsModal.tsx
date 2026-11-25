@@ -38,7 +38,17 @@ export function EventDetailsModal({ event, onClose }: { event: AuditEvent; onClo
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const title = eventLabel(event.kind, locale);
   const details = structuredDetails(event.details);
+  const traceId =
+    event.kind === "TRACEBACK"
+      ? event.id
+      : details &&
+          typeof details === "object" &&
+          "traceId" in details &&
+          typeof (details as Record<string, unknown>).traceId === "string"
+        ? ((details as Record<string, unknown>).traceId as string)
+        : null;
   const references = [
+    ...(traceId ? [[text("Mã truy vết (Trace ID)", "Trace ID"), traceId]] : []),
     [text('Mã sự kiện', 'Event ID'), event.id], [text('Mã bút toán', 'Posting ID'), event.postingId],
     [text('Mã lô hàng', 'Lot ID'), event.lotId], [text('Mã công đoạn', 'Operation ID'), event.operationId],
     [text('Mã vị trí lưu trữ', 'Location ID'), event.locationId], [text('Mã đơn vị sở hữu', 'Owner ID'), event.ownerId],

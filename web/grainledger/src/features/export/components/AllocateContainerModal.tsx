@@ -8,11 +8,9 @@ import { useExportCommand } from "@/features/export/hooks/useExportCommand";
 import { Modal } from "@/shared/ui/Modal";
 import { Feedback } from "@/shared/ui/Workflow";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
+import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
-import {
-  allocationPercent,
-  massLabel,
-} from "../model/exportPresentation";
+import { allocationPercent, massLabel } from "../model/exportPresentation";
 
 export interface AllocateContainerModalProps {
   orderId: string;
@@ -47,12 +45,15 @@ export function AllocateContainerModal({
     async () => {
       setMass("");
       await Promise.all([
-        cache.invalidateQueries({ queryKey: ["export-container-list", orderId] }),
+        cache.invalidateQueries({
+          queryKey: ["export-container-list", orderId],
+        }),
         cache.invalidateQueries({ queryKey: ["export-order-detail", orderId] }),
         cache.invalidateQueries({ queryKey: ["export-workspace-orders"] }),
       ]);
       onClose();
     },
+    { persistKey: `export-order:${orderId}:allocate` },
   );
 
   const order = detail.data?.data;
@@ -82,7 +83,9 @@ export function AllocateContainerModal({
     e.preventDefault();
     if (!order || !etag || !e.currentTarget.reportValidity()) return;
 
-    const input = e.currentTarget.elements.namedItem("targetMass") as HTMLInputElement;
+    const input = e.currentTarget.elements.namedItem(
+      "targetMass",
+    ) as HTMLInputElement;
     try {
       const d = new Decimal(mass);
       const valid = d.gt(0) && d.lte(order.remainingMassKg);
@@ -95,7 +98,9 @@ export function AllocateContainerModal({
             ),
       );
     } catch {
-      input.setCustomValidity(text("Khối lượng không hợp lệ.", "Invalid mass value."));
+      input.setCustomValidity(
+        text("Khối lượng không hợp lệ.", "Invalid mass value."),
+      );
     }
 
     if (e.currentTarget.reportValidity()) {
@@ -117,16 +122,20 @@ export function AllocateContainerModal({
         kind="allocate"
         title={text("Phân bổ thêm container", "Allocate more containers")}
         icon={<Truck size={20} weight="duotone" />}
-        subtitle={order && (
-          <p className="font-mono text-xs text-ink-secondary">
-            {text("Đơn hàng", "Order")}: <span className="font-bold text-accent-primary">{order.code}</span>
-          </p>
-        )}
+        subtitle={
+          order && (
+            <p className="font-mono text-xs text-ink-secondary">
+              {text("Đơn hàng", "Order")}:{" "}
+              <span className="font-bold text-accent-primary">
+                {order.code}
+              </span>
+            </p>
+          )
+        }
         closeLabel={text("Đóng", "Close")}
         closeDisabled={add.isPending}
         onClose={onClose}
       >
-
         {/* Loading / Error States */}
         {detail.isPending && (
           <div className="flex items-center justify-center py-10">
@@ -143,7 +152,10 @@ export function AllocateContainerModal({
             <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-4">
               <div className="flex items-center justify-between gap-3 text-xs">
                 <span className="font-semibold text-ink-primary">
-                  {text("Tiến độ phân bổ hợp đồng", "Contract allocation progress")}
+                  {text(
+                    "Tiến độ phân bổ hợp đồng",
+                    "Contract allocation progress",
+                  )}
                 </span>
                 <span className="font-mono font-bold text-accent-primary">
                   {percent}%
@@ -157,13 +169,18 @@ export function AllocateContainerModal({
               />
               <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px] text-ink-secondary">
                 <div>
-                  <span className="text-ink-tertiary">{text("Đã phân bổ", "Allocated")}:</span>{" "}
+                  <span className="text-ink-tertiary">
+                    {text("Đã phân bổ", "Allocated")}:
+                  </span>{" "}
                   <span className="font-mono font-medium text-ink-primary">
-                    {massLabel(order.allocatedMassKg, locale)} / {massLabel(order.requiredMassKg, locale)} kg
+                    {massLabel(order.allocatedMassKg, locale)} /{" "}
+                    {massLabel(order.requiredMassKg, locale)} kg
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-ink-tertiary">{text("Còn lại", "Remaining")}:</span>{" "}
+                  <span className="text-ink-tertiary">
+                    {text("Còn lại", "Remaining")}:
+                  </span>{" "}
                   <span className="font-mono font-bold text-accent-primary">
                     {massLabel(order.remainingMassKg, locale)} kg
                   </span>
@@ -174,7 +191,10 @@ export function AllocateContainerModal({
             {isFullyAllocated ? (
               <div className="rounded-xl border border-accent-warning/30 bg-accent-warning/10 p-4 text-xs text-ink-primary">
                 <p className="font-semibold text-accent-warning">
-                  {text("Đã phân bổ 100% khối lượng hợp đồng", "100% contract mass already allocated")}
+                  {text(
+                    "Đã phân bổ 100% khối lượng hợp đồng",
+                    "100% contract mass already allocated",
+                  )}
                 </p>
                 <p className="mt-1 text-ink-secondary">
                   {text(
@@ -194,13 +214,19 @@ export function AllocateContainerModal({
               </div>
             ) : (
               <form
-                aria-label={text("Thêm container cho đơn hàng", "Add an order container")}
+                aria-label={text(
+                  "Thêm container cho đơn hàng",
+                  "Add an order container",
+                )}
                 onSubmit={handleSubmit}
                 className="space-y-4"
               >
                 <fieldset disabled={add.isPending} className="space-y-4">
                   <div>
-                    <label htmlFor={id} className="mb-1.5 block text-xs font-semibold text-ink-primary">
+                    <label
+                      htmlFor={id}
+                      className="mb-1.5 block text-xs font-semibold text-ink-primary"
+                    >
                       {text(
                         "Khối lượng mục tiêu của container mới (kg)",
                         "New container target (kg)",
@@ -225,7 +251,10 @@ export function AllocateContainerModal({
                   {/* Quick suggestion buttons */}
                   <div className="space-y-1.5">
                     <span className="text-[11px] font-medium text-ink-tertiary">
-                      {text("Gợi ý nhanh theo quy cách chuẩn:", "Quick standard suggestions:")}
+                      {text(
+                        "Gợi ý nhanh theo quy cách chuẩn:",
+                        "Quick standard suggestions:",
+                      )}
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       {new Decimal(order.remainingMassKg).gte(25000) && (
@@ -252,7 +281,8 @@ export function AllocateContainerModal({
                           className="rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 font-mono text-xs font-medium text-accent-primary transition-colors hover:bg-accent-primary/20"
                           onClick={() => setMass(order.remainingMassKg)}
                         >
-                          {text("Toàn bộ còn lại", "All remaining")} ({massLabel(order.remainingMassKg, locale)} kg)
+                          {text("Toàn bộ còn lại", "All remaining")} (
+                          {massLabel(order.remainingMassKg, locale)} kg)
                         </button>
                       )}
                     </div>
@@ -262,7 +292,11 @@ export function AllocateContainerModal({
                   {mass && (
                     <div className="rounded-lg bg-surface-raised/70 p-2.5 text-xs">
                       <span className="text-ink-secondary">
-                        {text("Còn lại sau khi phân bổ", "Remaining after allocation")}:{" "}
+                        {text(
+                          "Còn lại sau khi phân bổ",
+                          "Remaining after allocation",
+                        )}
+                        :{" "}
                       </span>
                       <span className="font-mono font-bold text-accent-primary">
                         {massLabel(remainingAfter, locale)} kg
@@ -274,14 +308,30 @@ export function AllocateContainerModal({
                   {order.limits.length > 0 && (
                     <div className="border-t border-ink-tertiary/15 pt-3">
                       <p className="flex items-center gap-1.5 text-[11px] font-medium text-ink-secondary">
-                        <ShieldCheck size={14} className="text-accent-primary" />
-                        {text("Chỉ tiêu áp dụng cho container này", "Quality specs applied to this container")}: {order.limits.length} {text("chỉ tiêu", "limits")} (v{order.specificationVersion})
+                        <ShieldCheck
+                          size={14}
+                          className="text-accent-primary"
+                        />
+                        {text(
+                          "Chỉ tiêu áp dụng cho container này",
+                          "Quality specs applied to this container",
+                        )}
+                        : {order.limits.length} {text("chỉ tiêu", "limits")} (v
+                        {order.specificationVersion})
                       </p>
                     </div>
                   )}
                 </fieldset>
 
-                <Feedback error={add.error} />
+                <ContainerCommandFeedback
+                  error={add.error}
+                  uncertain={add.uncertain}
+                  retry={add.retry}
+                  success={add.isSuccess}
+                  isPending={add.isPending}
+                  restoredPending={add.restoredPending}
+                  discardPending={add.discardPending}
+                />
 
                 {/* Form Actions */}
                 <div className="flex items-center justify-end gap-3 border-t border-ink-tertiary/15 pt-4">
@@ -296,7 +346,7 @@ export function AllocateContainerModal({
                   <button
                     type="submit"
                     className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-accent-primary bg-accent-primary px-4 text-ink-inverse hover:bg-accent-primary-dim"
-                    disabled={add.isPending || !mass}
+                    disabled={add.isPending || add.uncertain || !mass}
                   >
                     <Plus size={16} aria-hidden="true" />
                     {add.isPending

@@ -48,7 +48,7 @@ export function ContainerProductionPanel({
   }, async () => {
     setReason("");
     await saved();
-  });
+  }, { persistKey: `container:${c.id}:production` });
   const reviewable = canReview && production.data && ["PRODUCED", "APPROVED", "REJECTED"].includes(production.data.state)
     && Boolean(production.data.outputId) && c.status !== "CLOSED" && !c.holds.length;
   function review(action: "approve" | "reject") {
@@ -146,6 +146,9 @@ export function ContainerProductionPanel({
         uncertain={command.uncertain}
         retry={command.retry}
         success={command.isSuccess}
+        isPending={command.isPending}
+        restoredPending={command.restoredPending}
+        discardPending={command.discardPending}
       />
     </section>
   );

@@ -404,7 +404,7 @@ describe("Export role workflow", () => {
       "HOLD read unavailable",
     );
     expect(
-      screen.queryByText("Không có lô hàng nào bị phong toả HOLD"),
+      screen.queryByText("Không tìm thấy lệnh HOLD lô trong phạm vi hiện tại"),
     ).toBeNull();
   });
   it("opens the plan menu as its own workspace instead of redirecting to orders", async () => {

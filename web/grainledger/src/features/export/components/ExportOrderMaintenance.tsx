@@ -7,6 +7,7 @@ import { Modal } from "@/shared/ui/Modal";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useContainerCommand } from "../hooks/useContainerCommand";
 import { useExportOrderCatalogs } from "../hooks/useExportOrderCatalogs";
+import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
 
 export type OrderMaintenance = { type: "order" | "spec"; order: ExportOrderDetail; etag: string } | { type: "target"; container: ExportContainerDto };
 type Change = { type: "order"; id: string; etag: string; body: Omit<UpdateExportOrderRequest, "operationId"> }
@@ -23,15 +24,16 @@ export function ExportOrderMaintenance({ action, onClose, onSaved }: { action: O
       case "spec": return exportEndpoints.addSpecifications(input.id, { operationId, limits: input.limits }, input.etag);
       case "target": return exportEndpoints.updateContainer(input.id, { operationId, targetMass: input.targetMass, unit: input.unit }, input.etag);
     }
-  }, onSaved);
+  }, onSaved, {
+    persistKey: `export-order-maint:${action.type}:${action.type === "target" ? action.container.id : action.order.id}`,
+  });
   const stale = operation.error instanceof ApiError && operation.error.status === 412;
   const close = () => { if (!operation.isPending) onClose(); };
   return <Modal isOpen ariaLabel={title} onClose={close} closeOnBackdrop={false}>
     <div className="gl-workflow w-[calc(100vw-2rem)] max-w-2xl space-y-4 rounded-2xl bg-surface-base p-4 text-ink-primary dark:bg-surface-raised sm:p-6">
       <header className="border-b border-ink-tertiary/20 pb-3"><h2 className="font-display text-xl font-bold">{title}</h2><p className="font-mono text-sm text-ink-secondary">{"order" in action ? action.order.code : action.container.internalCode}</p></header>
       <OrderEditorFields action={action} blocked={operation.isPending || operation.uncertain || stale} submit={operation.submit} />
-      <Feedback error={operation.error} pending={operation.isPending} />
-      {operation.uncertain && <button type="button" onClick={operation.retry}>{t("field.seasons.retry")}</button>}
+      <ContainerCommandFeedback error={operation.error} uncertain={operation.uncertain} retry={operation.retry} success={operation.isSuccess} isPending={operation.isPending} restoredPending={operation.restoredPending} discardPending={operation.discardPending} />
       <button type="button" onClick={close} disabled={operation.isPending}>{t(stale || operation.uncertain ? "workflows.closeReload" : "field.seasons.cancel")}</button>
     </div>
   </Modal>;

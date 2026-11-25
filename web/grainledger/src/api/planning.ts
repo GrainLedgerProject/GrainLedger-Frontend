@@ -277,6 +277,7 @@ export interface BlendPreview {
   reasons: string[];
   assessmentStatus: string;
   previewReference: string | null;
+  expiresAt?: string | null;
   canPropose: boolean;
   selection: { selectedMassKg: string; allocations: { lotId: string; lotCode: string; locationId: string; quantityKg: string }[] } | null;
   assessmentFindings: { code: string; status: string; actual: string | null; limit: string | null; unit: string | null }[];

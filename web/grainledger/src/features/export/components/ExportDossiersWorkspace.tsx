@@ -5,6 +5,7 @@ import {
   ArrowRight,
   DownloadSimple,
   FileCode,
+  FilePlus,
   FileText,
   FolderOpen,
   LockSimple,
@@ -12,7 +13,10 @@ import {
   ShieldCheck,
   StackSimple,
 } from "@phosphor-icons/react";
-import { containerExecutionEndpoints } from "@/api/containerExecution";
+import {
+  containerExecutionEndpoints,
+  type ContainerDocumentRequest,
+} from "@/api/containerExecution";
 import type { ExportContainerDto } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -20,8 +24,20 @@ import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useAuthStore } from "@/app/store/authStore";
 import { containerPath, exportPaths } from "../paths";
 import { massLabel } from "../model/exportPresentation";
+import {
+  buildPackingListDocument,
+  classifyDocumentOrigin,
+  displayDocumentReason,
+  originBadgeProps,
+} from "../model/packingList";
 import { saveExportFile } from "../model/saveExportFile";
-import { ExportEmpty, ExportIconField, ExportSearch } from "./ExportWorkspaceUI";
+import { useContainerCommand } from "../hooks/useContainerCommand";
+import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
+import {
+  ExportEmpty,
+  ExportIconField,
+  ExportSearch,
+} from "./ExportWorkspaceUI";
 
 const documentTypes: Record<string, [string, string]> = {
   PACKING_LIST: ["Phiếu đóng gói", "Packing list"],
@@ -240,6 +256,17 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
       saveExportFile(blob, file.filename);
     },
   });
+  const generatePackingList = useContainerCommand(
+    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) =>
+      containerExecutionEndpoints.addDocument(container.id, {
+        operationId,
+        ...input,
+      }),
+    async () => {
+      await workflow.refetch();
+    },
+    { persistKey: `container:${container.id}:packing-list` },
+  );
   const documents = workflow.data?.documents ?? [];
   const latest = new Map<string, number>();
   for (const document of documents)
@@ -423,10 +450,53 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
               />
               {text("Chứng từ đính kèm", "Attached documents")}
             </h3>
-            <span className="text-xs text-ink-secondary">
-              {visible.length} {text("tệp hiển thị", "files shown")}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {canAttach && d && workflow.data && (
+                <button
+                  type="button"
+                  disabled={
+                    generatePackingList.isPending ||
+                    generatePackingList.uncertain
+                  }
+                  onClick={() => {
+                    const locale: "vi" | "en" =
+                      text("vi", "en") === "en" ? "en" : "vi";
+                    const generated = buildPackingListDocument({
+                      containerCode: container.internalCode,
+                      dossier: d,
+                      locale,
+                    });
+                    generatePackingList.submit({
+                      version: workflow.data.version,
+                      documentType: generated.documentType,
+                      filename: generated.filename,
+                      contentType: generated.contentType,
+                      content: generated.contentBase64,
+                      reason: generated.reason,
+                    });
+                  }}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-accent-primary px-3 py-1.5 text-xs font-semibold text-ink-inverse hover:bg-accent-primary-dim transition-colors disabled:opacity-50"
+                >
+                  <FilePlus size={14} aria-hidden="true" />
+                  {generatePackingList.isPending
+                    ? text("Đang sinh...", "Generating...")
+                    : text("Sinh Packing List", "Generate Packing List")}
+                </button>
+              )}
+              <span className="text-xs text-ink-secondary">
+                {visible.length} {text("tệp hiển thị", "files shown")}
+              </span>
+            </div>
           </div>
+          <ContainerCommandFeedback
+            error={generatePackingList.error}
+            uncertain={generatePackingList.uncertain}
+            retry={generatePackingList.retry}
+            success={generatePackingList.isSuccess}
+            isPending={generatePackingList.isPending}
+            restoredPending={generatePackingList.restoredPending}
+            discardPending={generatePackingList.discardPending}
+          />
           <Feedback error={workflow.error} pending={workflow.isPending} />
           {workflow.isError && (
             <button
@@ -483,43 +553,56 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
               </div>
               {visible.length ? (
                 <ul className="divide-y divide-ink-tertiary/15">
-                  {visible.map((file) => (
-                    <li
-                      key={file.id}
-                      className="flex flex-wrap items-center gap-3 py-4"
-                    >
-                      <FileText
-                        size={22}
-                        className="shrink-0 text-ink-secondary"
-                        aria-hidden="true"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="break-all text-xs font-semibold">
-                          {file.filename}
-                        </p>
-                        <p className="mt-1 text-[11px] text-ink-secondary">
-                          {typeLabel(file.documentType)} · v{file.version} ·{" "}
-                          {new Date(file.recordedAt).toLocaleDateString(
-                            text("vi-VN", "en-GB"),
-                          )}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary w-11 px-2.5"
-                        aria-label={`${text("Tải", "Download")} ${file.filename} v${file.version}`}
-                        disabled={download.isPending}
-                        onClick={() =>
-                          download.mutate({
-                            id: file.id,
-                            filename: file.filename,
-                          })
-                        }
+                  {visible.map((file) => {
+                    const origin = classifyDocumentOrigin(file, container.id);
+                    const badge = originBadgeProps(origin);
+                    const cleanReason = displayDocumentReason(file.reason);
+                    return (
+                      <li
+                        key={file.id}
+                        className="flex flex-wrap items-center gap-3 py-4"
                       >
-                        <DownloadSimple size={17} aria-hidden="true" />
-                      </button>
-                    </li>
-                  ))}
+                        <FileText
+                          size={22}
+                          className="shrink-0 text-ink-secondary"
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="break-all text-xs font-semibold">
+                              {file.filename}
+                            </p>
+                            <StatusBadge
+                              status={badge.status}
+                              label={text(...badge.label)}
+                              size="sm"
+                            />
+                          </div>
+                          <p className="text-[11px] text-ink-secondary">
+                            {typeLabel(file.documentType)} · v{file.version} ·{" "}
+                            {new Date(file.recordedAt).toLocaleDateString(
+                              text("vi-VN", "en-GB"),
+                            )}
+                            {cleanReason ? ` · ${cleanReason}` : ""}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary w-11 px-2.5"
+                          aria-label={`${text("Tải", "Download")} ${file.filename} v${file.version}`}
+                          disabled={download.isPending}
+                          onClick={() =>
+                            download.mutate({
+                              id: file.id,
+                              filename: file.filename,
+                            })
+                          }
+                        >
+                          <DownloadSimple size={17} aria-hidden="true" />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="rounded-xl border border-dashed border-ink-tertiary/25 p-5 text-center text-xs text-ink-secondary">

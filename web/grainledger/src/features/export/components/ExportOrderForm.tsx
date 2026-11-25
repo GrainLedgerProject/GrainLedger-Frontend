@@ -9,6 +9,7 @@ import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { useExportCommand } from "../hooks/useExportCommand";
 import { useExportOrderCatalogs } from "../hooks/useExportOrderCatalogs";
+import { ContainerCommandFeedback } from "./ContainerCommandFeedback";
 import {
   Calendar,
   Export,
@@ -51,6 +52,7 @@ export function ExportOrderForm({
       await saved(result.id);
     },
     () => {},
+    { persistKey: "export-order:create" },
   );
   useEffect(() => { onBusyChange?.(create.isPending); }, [create.isPending, onBusyChange]);
 
@@ -394,7 +396,7 @@ export function ExportOrderForm({
             <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-ink-tertiary/15">
               <button
                 type="submit"
-                disabled={create.isPending}
+                disabled={create.isPending || create.uncertain}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold shadow-md shadow-accent-primary/20 transition-all disabled:opacity-50"
               >
                 <Plus size={16} weight="bold" />
@@ -406,7 +408,15 @@ export function ExportOrderForm({
               </button>
             </div>
 
-            <Feedback error={create.error} />
+            <ContainerCommandFeedback
+              error={create.error}
+              uncertain={create.uncertain}
+              retry={create.retry}
+              success={create.isSuccess}
+              isPending={create.isPending}
+              restoredPending={create.restoredPending}
+              discardPending={create.discardPending}
+            />
           </fieldset>
         </form>
       )}

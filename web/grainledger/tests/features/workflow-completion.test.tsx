@@ -239,14 +239,18 @@ describe("workflow routes", () => {
     await waitFor(() => expect(propose).toHaveBeenCalledWith("plan", { operationId: expect.any(String), previewReference: "server-reference" }));
     expect(preview).toHaveBeenCalledWith("plan", { facilityId: "facility", scopeRevision: "current-scope" });
   });
-  it("uses confirmed lab result identifiers for a trace deep link", async () => {
+  it("uses confirmed lab result identifiers for a trace deep link after user clicks Run trace", async () => {
     vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue(page([]));
     const trace = vi.spyOn(ledgerEndpoints, "traceLotFromLab").mockResolvedValue({ traceId: "trace", complete: true, asOf: "2026-11-19T03:00:00Z", lots: [], edges: [], sources: [] });
     mount(<TraceabilityPage/>, "/?reportId=report&resultId=result&view=history");
+    const runBtn = await screen.findByRole("button", { name: /Chạy truy vết|Run trace/ });
+    expect(trace).not.toHaveBeenCalled();
+    fireEvent.click(runBtn);
     await screen.findByText(/Đầy đủ/);
     expect(trace).toHaveBeenCalledWith({ reportId: "report", resultId: "result", view: "history" });
   });
   it("renders persisted contribution percentages and current source labels", async () => {
+    login("CUSTOMER_MANAGER", ["trace.read.all"]);
     vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue(page([]));
     vi.spyOn(ledgerEndpoints, "traceLot").mockResolvedValue({ complete: true, asOf: "2026-11-19T03:00:00Z", sourceContributionsVisible: true,
       lots: [{ id: "lot", code: "RICE-001", stage: "HEAD_RICE", producedKg: "100", restrictions: [], contributions: [{ sourceLotId: "source", quantityKg: "70", denominatorKg: "100", percentage: "70.000000" }] }], edges: [],

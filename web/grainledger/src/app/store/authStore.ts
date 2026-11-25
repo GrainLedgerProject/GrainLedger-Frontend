@@ -8,6 +8,7 @@ import {
   setCookie,
 } from '@/shared/utils/cookies';
 import { extractUserProfileFromJwt, isJwtValidFormat } from '@/shared/utils/jwt';
+import { configurePendingCommandScope } from '@/shared/hooks/pendingCommandStore';
 import { create } from 'zustand';
 
 interface AuthState {
@@ -210,3 +211,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 }));
+
+configurePendingCommandScope(
+  () => {
+    const user = useAuthStore.getState().user;
+    return user ? `${user.organizationId ?? 'none'}:${user.id}` : null;
+  },
+  (onChange) => useAuthStore.subscribe(onChange),
+);

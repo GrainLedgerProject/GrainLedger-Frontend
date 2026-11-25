@@ -1,10 +1,18 @@
-import { ApiError } from "@/api/client";
-import { useCommand } from "@/shared/hooks/useCommand";
+import { useCommand, type UseCommandOptions } from "@/shared/hooks/useCommand";
+import { isUncertainCommandError } from "@/shared/hooks/pendingCommandStore";
 
-/** A timed-out write must replay its original payload, even if a background read changed versions. */
-export function useContainerCommand<T>(send: (operationId: string, input: T) => Promise<unknown>, saved: () => void | Promise<void>) {
-  const command = useCommand(send, saved);
-  const uncertain = command.isError && (!(command.error instanceof ApiError) ||
-    command.error.status === 0 || command.error.status === 408 || command.error.status >= 500);
-  return { ...command, uncertain, retry() { if (command.variables !== undefined) command.submit(command.variables); } };
+export function useContainerCommand<T>(
+  send: (operationId: string, input: T) => Promise<unknown>,
+  saved: () => void | Promise<void>,
+  options?: UseCommandOptions<T>,
+) {
+  const command = useCommand(send, saved, options);
+  const liveUncertain =
+    command.isError && isUncertainCommandError(command.error);
+  const uncertain = liveUncertain || command.hasPendingRecovery;
+
+  return {
+    ...command,
+    uncertain,
+  };
 }
