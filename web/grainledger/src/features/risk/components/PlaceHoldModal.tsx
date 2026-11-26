@@ -25,6 +25,7 @@ interface PlaceHoldModalProps {
   traceId?: string;
   initialLot?: HoldSelectableLot | null;
   selectableLots?: HoldSelectableLot[];
+  selectableContainers?: { containerId: string; code: string }[];
   containerContext?: {
     containerId: string;
     containerCode: string;
@@ -51,6 +52,7 @@ function readFileAsBase64(file: File): Promise<string> {
 }
 
 const EMPTY_LOTS: HoldSelectableLot[] = [];
+const EMPTY_CONTAINERS: { containerId: string; code: string }[] = [];
 
 export function PlaceHoldModal(props: PlaceHoldModalProps) {
   if (!props.isOpen) return null;
@@ -65,20 +67,37 @@ function PlaceHoldModalContent({
   traceId,
   initialLot,
   selectableLots = EMPTY_LOTS,
+  selectableContainers = EMPTY_CONTAINERS,
   containerContext,
 }: PlaceHoldModalProps) {
   const text = useWorkflowText();
   const uid = useId();
   const cache = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const canIssueLotHold =
-    user?.role === "CUSTOMER_MANAGER" && user.permissions.includes("holds.manage");
-  const canWriteContainer = user?.permissions.includes("containers.write") ?? false;
+  const canIssueHold =
+    user?.role === "CUSTOMER_MANAGER" &&
+    user.permissions.includes("holds.manage");
 
+  const availableContainers = useMemo(() => {
+    const map = new Map<string, { containerId: string; code: string }>();
+    if (containerContext) {
+      map.set(containerContext.containerId, {
+        containerId: containerContext.containerId,
+        code: containerContext.containerCode,
+      });
+    }
+    for (const c of selectableContainers) {
+      if (!map.has(c.containerId)) map.set(c.containerId, c);
+    }
+    return Array.from(map.values());
+  }, [containerContext, selectableContainers]);
+
+  const canChooseContainer = canIssueHold && availableContainers.length > 0;
   const [targetKind, setTargetKind] = useState<"lot" | "container">(
-    containerContext && !initialLot && !canIssueLotHold && canWriteContainer
-      ? "container"
-      : "lot",
+    containerContext && !initialLot ? "container" : "lot",
+  );
+  const [selectedContainerId, setSelectedContainerId] = useState(
+    containerContext?.containerId ?? selectableContainers[0]?.containerId ?? "",
   );
   const [lotSearch, setLotSearch] = useState("");
   const [selectedLotId, setSelectedLotId] = useState(
@@ -106,13 +125,17 @@ function PlaceHoldModalContent({
       })) as { items?: LotOption[] };
       return res.items ?? [];
     },
-    enabled: isOpen && targetKind === "lot" && canIssueLotHold,
+    enabled: isOpen && targetKind === "lot" && canIssueHold,
   });
 
+  const activeContainerId =
+    containerContext?.containerId ||
+    (targetKind === "container" ? selectedContainerId : "");
+
   const containerDetail = useQuery({
-    queryKey: ["hold-modal-container", containerContext?.containerId],
-    queryFn: () => containerExecutionEndpoints.getDetail(containerContext!.containerId),
-    enabled: isOpen && Boolean(containerContext?.containerId),
+    queryKey: ["hold-modal-container", activeContainerId],
+    queryFn: () => containerExecutionEndpoints.getDetail(activeContainerId),
+    enabled: isOpen && Boolean(activeContainerId),
   });
 
   const mergedLots = useMemo(() => {
@@ -155,34 +178,39 @@ function PlaceHoldModalContent({
     { persistKey: `hold-create:${selectedLotId || "select"}` },
   );
 
-  const containerCommand = useCommand<
-    | { mode: "hold"; containerId: string; version: number; reason: string }
-    | { mode: "supplement"; containerId: string; version: number; evidenceId: string; reason: string }
-  >(
+  const containerCommand = useCommand<{
+    containerId: string;
+    version: number;
+    reason: string;
+    evidenceId?: string;
+  }>(
     (operationId, input) =>
-      input.mode === "hold"
-        ? containerExecutionEndpoints.placeHold(input.containerId, {
-            operationId,
-            version: input.version,
-            reason: input.reason,
-          })
-        : containerExecutionEndpoints.addSupplement(input.containerId, {
-            operationId,
-            version: input.version,
-            evidenceId: input.evidenceId,
-            reason: input.reason,
-          }),
+      containerExecutionEndpoints.placeHold(input.containerId, {
+        operationId,
+        version: input.version,
+        reason: input.reason,
+        ...(input.evidenceId ? { evidenceId: input.evidenceId } : {}),
+      }),
     async () => {
       setReason("");
       setEvidenceFile(null);
       setManualEvidenceId("");
-      await cache.invalidateQueries({ queryKey: ["actual-container-trace"] });
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: ["actual-container-trace"] }),
+        cache.invalidateQueries({ queryKey: ["ledger-trace"] }),
+        cache.invalidateQueries({
+          queryKey: ["container-execution", activeContainerId],
+        }),
+        cache.invalidateQueries({
+          queryKey: ["container-workflow", activeContainerId],
+        }),
+      ]);
       await onSuccess?.();
       onClose();
     },
     {
-      persistKey: containerContext
-        ? `container:${containerContext.containerId}:trace-hold`
+      persistKey: activeContainerId
+        ? `container:${activeContainerId}:trace-hold`
         : undefined,
     },
   );
@@ -190,21 +218,34 @@ function PlaceHoldModalContent({
   async function resolveEvidenceId(): Promise<string | undefined> {
     if (manualEvidenceId.trim()) {
       const cleaned = manualEvidenceId.trim();
-      if (!/^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(cleaned)) {
+      if (
+        !/^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(cleaned)
+      ) {
         throw new Error(
-          text("Mã chứng cứ phải là UUID hợp lệ.", "Evidence ID must be a valid UUID."),
+          text(
+            "Mã chứng cứ phải là UUID hợp lệ.",
+            "Evidence ID must be a valid UUID.",
+          ),
         );
       }
       return cleaned;
     }
     if (!evidenceFile) return undefined;
     const ownerId =
+      (targetKind === "container"
+        ? containerDetail.data?.container.companyId
+        : chosenLot?.ownerId) ??
+      containerDetail.data?.container.companyId ??
       chosenLot?.ownerId ??
       setup.data?.owners?.[0]?.id ??
       user?.organizationId ??
       "";
     const facilityId =
       facilityOverride ||
+      (targetKind === "container"
+        ? containerDetail.data?.container.facilityId
+        : chosenLot?.facilityId) ||
+      containerDetail.data?.container.facilityId ||
       chosenLot?.facilityId ||
       setup.data?.facilities?.[0]?.id ||
       "";
@@ -237,37 +278,29 @@ function PlaceHoldModalContent({
     try {
       setUploading(true);
       const evidenceId = await resolveEvidenceId();
-      if (targetKind === "container" && containerContext && containerDetail.data) {
-        const { version, status } = containerDetail.data.container;
-        if (status === "CLOSED") {
-          if (!evidenceId) {
-            throw new Error(
-              text(
-                "Container đã CLOSED chỉ hỗ trợ bổ sung chứng cứ hoặc đặt HOLD trên các lô nguồn/đã xếp.",
-                "CLOSED containers require linking evidence as a supplement, or placing a HOLD on affected lots.",
-              ),
-            );
-          }
-          containerCommand.submit({
-            mode: "supplement",
-            containerId: containerContext.containerId,
-            version,
-            evidenceId,
-            reason: reason.trim(),
-          });
-        } else {
-          containerCommand.submit({
-            mode: "hold",
-            containerId: containerContext.containerId,
-            version,
-            reason: reason.trim(),
-          });
+      if (targetKind === "container") {
+        if (!activeContainerId || !containerDetail.data) {
+          throw new Error(
+            text(
+              "Đang tải thông tin phiên bản container, vui lòng thử lại.",
+              "Container version details are still loading.",
+            ),
+          );
         }
+        const { version } = containerDetail.data.container;
+        containerCommand.submit({
+          containerId: activeContainerId,
+          version,
+          reason: reason.trim(),
+          ...(evidenceId ? { evidenceId } : {}),
+        });
         return;
       }
 
       if (!selectedLotId) {
-        throw new Error(text("Vui lòng chọn lô hàng hợp lệ.", "Select a valid lot."));
+        throw new Error(
+          text("Vui lòng chọn lô hàng hợp lệ.", "Select a valid lot."),
+        );
       }
       lotCommand.submit({
         lotId: selectedLotId,
@@ -304,14 +337,14 @@ function PlaceHoldModalContent({
               {traceId
                 ? `${text("Mã truy vết tham chiếu", "Reference Trace ID")}: ${traceId}`
                 : text(
-                    "Ghi nhận phong tỏa trên lô hàng hoặc bổ sung kiểm soát container.",
-                    "Issue a hold on the affected lot or container.",
+                    "Ghi nhận phong tỏa trên lô hàng hoặc container (bao gồm sau niêm phong).",
+                    "Issue a HOLD on the affected lot or container (including post-closure).",
                   )}
             </p>
           </div>
         </div>
 
-        {!canIssueLotHold && !canWriteContainer ? (
+        {!canIssueHold ? (
           <p className="text-xs text-accent-danger">
             {text(
               "Tài khoản hiện tại không có quyền đặt lệnh HOLD.",
@@ -319,8 +352,11 @@ function PlaceHoldModalContent({
             )}
           </p>
         ) : (
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 text-xs">
-            {containerContext && canIssueLotHold && canWriteContainer && (
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            className="space-y-4 text-xs"
+          >
+            {canChooseContainer && (
               <div className="flex gap-2 rounded-xl bg-surface-raised p-1">
                 <button
                   type="button"
@@ -342,7 +378,7 @@ function PlaceHoldModalContent({
                       : "text-ink-secondary"
                   }`}
                 >
-                  {text("HOLD / Chứng cứ container", "Container HOLD / evidence")}
+                  {text("HOLD container", "HOLD container")}
                 </button>
               </div>
             )}
@@ -358,7 +394,10 @@ function PlaceHoldModalContent({
                       type="text"
                       value={lotSearch}
                       onChange={(e) => setLotSearch(e.target.value)}
-                      placeholder={text("Nhập mã lô để lọc...", "Filter by lot code...")}
+                      placeholder={text(
+                        "Nhập mã lô để lọc...",
+                        "Filter by lot code...",
+                      )}
                       className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 focus:border-accent-primary focus:outline-none"
                     />
                   </label>
@@ -375,25 +414,70 @@ function PlaceHoldModalContent({
                     onChange={(e) => setSelectedLotId(e.target.value)}
                     className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 font-mono focus:border-accent-primary focus:outline-none"
                   >
-                    <option value="">{text("Chọn lô...", "Select a lot...")}</option>
+                    <option value="">
+                      {text("Chọn lô...", "Select a lot...")}
+                    </option>
                     {mergedLots.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.code}
-                        {item.stage ? ` (${item.stage})` : ""} · {item.id.slice(0, 8)}
+                        {item.stage ? ` (${item.stage})` : ""} ·{" "}
+                        {item.id.slice(0, 8)}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
             ) : (
-              <div className="rounded-xl border border-ink-tertiary/20 bg-surface-raised/50 p-3 space-y-1">
-                <p className="font-semibold text-ink-primary">
-                  Container: <span className="font-mono">{containerContext?.containerCode}</span>
-                </p>
+              <div className="rounded-xl border border-ink-tertiary/20 bg-surface-raised/50 p-3 space-y-2">
+                {availableContainers.length > 1 && !containerContext ? (
+                  <label
+                    htmlFor={`${uid}-container`}
+                    className="block space-y-1"
+                  >
+                    <span className="font-semibold text-ink-secondary">
+                      {text("Container áp dụng HOLD", "Target container")} *
+                    </span>
+                    <select
+                      id={`${uid}-container`}
+                      required
+                      value={selectedContainerId}
+                      onChange={(e) => setSelectedContainerId(e.target.value)}
+                      className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-base px-3 py-2 font-mono focus:border-accent-primary focus:outline-none"
+                    >
+                      {availableContainers.map((c) => (
+                        <option key={c.containerId} value={c.containerId}>
+                          {c.code} · {c.containerId.slice(0, 8)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <p className="font-semibold text-ink-primary">
+                    Container:{" "}
+                    <span className="font-mono">
+                      {availableContainers.find(
+                        (c) => c.containerId === activeContainerId,
+                      )?.code ?? activeContainerId}
+                    </span>
+                  </p>
+                )}
                 {containerDetail.data && (
                   <p className="text-ink-secondary">
-                    {text("Trạng thái", "Status")}: {containerDetail.data.container.status} · v{containerDetail.data.container.version}
+                    {text("Trạng thái", "Status")}:{" "}
+                    {containerDetail.data.container.status} · v
+                    {containerDetail.data.container.version}
+                    {containerDetail.data.container.status === "CLOSED" && (
+                      <span className="ml-2 text-accent-danger font-medium">
+                        {text(
+                          "(Hỗ trợ đặt HOLD kèm chứng cứ sau CLOSE)",
+                          "(HOLD with evidence supported after CLOSE)",
+                        )}
+                      </span>
+                    )}
                   </p>
+                )}
+                {containerDetail.error && (
+                  <Feedback error={containerDetail.error} />
                 )}
               </div>
             )}
@@ -420,7 +504,12 @@ function PlaceHoldModalContent({
             <div className="rounded-xl border border-dashed border-ink-tertiary/30 bg-surface-raised/40 p-3 space-y-2.5">
               <p className="font-semibold text-ink-secondary flex items-center gap-1.5">
                 <UploadSimple size={15} className="text-accent-primary" />
-                <span>{text("Đính kèm tệp chứng cứ (tùy chọn)", "Attach evidence file (optional)")}</span>
+                <span>
+                  {text(
+                    "Đính kèm tệp chứng cứ (tùy chọn)",
+                    "Attach evidence file (optional)",
+                  )}
+                </span>
               </p>
               <input
                 type="file"
@@ -428,13 +517,19 @@ function PlaceHoldModalContent({
                 onChange={(e) => setEvidenceFile(e.target.files?.[0] ?? null)}
                 className="w-full text-[11px]"
               />
-              {evidenceFile && !chosenLot?.facilityId && setup.data?.facilities?.length ? (
+              {evidenceFile &&
+              !(targetKind === "container"
+                ? containerDetail.data?.container.facilityId
+                : chosenLot?.facilityId) &&
+              setup.data?.facilities?.length ? (
                 <label className="block space-y-1">
                   <span className="text-[11px] text-ink-secondary">
                     {text("Cơ sở lưu chứng cứ", "Evidence facility")}
                   </span>
                   <select
-                    value={facilityOverride || setup.data.facilities[0]?.id || ""}
+                    value={
+                      facilityOverride || setup.data.facilities[0]?.id || ""
+                    }
                     onChange={(e) => setFacilityOverride(e.target.value)}
                     className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-base px-2.5 py-1.5 text-[11px]"
                   >
@@ -448,7 +543,10 @@ function PlaceHoldModalContent({
               ) : null}
               <label className="block space-y-1">
                 <span className="text-[11px] text-ink-secondary">
-                  {text("Hoặc nhập mã chứng cứ đã lưu (UUID)", "Or existing evidence ID (UUID)")}
+                  {text(
+                    "Hoặc nhập mã chứng cứ đã lưu (UUID)",
+                    "Or existing evidence ID (UUID)",
+                  )}
                 </span>
                 <input
                   type="text"
@@ -487,7 +585,8 @@ function PlaceHoldModalContent({
                   activeCmd.isPending ||
                   activeCmd.uncertain ||
                   !reason.trim() ||
-                  (targetKind === "lot" && !selectedLotId)
+                  (targetKind === "lot" && !selectedLotId) ||
+                  (targetKind === "container" && !containerDetail.data)
                 }
                 className="rounded-xl bg-accent-danger px-4 py-2 font-semibold text-white hover:bg-accent-danger/90 disabled:opacity-50"
               >

@@ -194,6 +194,8 @@ export interface ExportOrderDetail extends ExportOrderSummary {
   limits: (ExportLimitInput & { attributeName?: string; attributeCode?: string; unit?: string })[];
   allocatedMassKg: string;
   remainingMassKg: string;
+  completedMassKg?: string;
+  fulfillmentStatus?: "COMPLETE" | "IN_PROGRESS" | string;
   specificationVersion: number;
   canEdit: boolean;
 }

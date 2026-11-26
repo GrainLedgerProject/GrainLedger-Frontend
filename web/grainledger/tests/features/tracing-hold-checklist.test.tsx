@@ -10,7 +10,9 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/app/i18n";
+import { NotificationCenter } from "@/app/layout/NotificationCenter";
 import { useAuthStore } from "@/app/store/authStore";
+import { useUiStore } from "@/app/store/uiStore";
 import { catalogsEndpoints } from "@/api/catalogs";
 import { ApiError } from "@/api/client";
 import { labReportEndpoints, sampleEndpoints } from "@/api/compliance";
@@ -27,14 +29,19 @@ import { EventHistoryPage } from "@/features/audit/pages/EventHistoryPage";
 import { MrlComplianceCheckPage } from "@/features/compliance/pages/MrlComplianceCheckPage";
 import { ContainerClosureForm } from "@/features/export/components/ContainerClosureForm";
 import { ContainerDossierPanel } from "@/features/export/components/ContainerDossierPanel";
+import { ContainerHoldForm } from "@/features/export/components/ContainerHoldForm";
+import { ExportDossiersWorkspace } from "@/features/export/components/ExportDossiersWorkspace";
 import {
   ExportOrderDetails,
 } from "@/features/export/components/ExportOrdersWorkspace";
+import { classifyDocumentOrigin } from "@/features/export/model/packingList";
 import { ApprovedPlanExecutionPage } from "@/features/mill/pages/ApprovedPlanExecutionPage";
 import { StockTransferPage } from "@/features/mill/pages/StockTransferPage";
+import { PlaceHoldModal } from "@/features/risk/components/PlaceHoldModal";
 import { ContainerTracePage } from "@/features/risk/pages/ContainerTracePage";
 import { HoldManagementPage } from "@/features/risk/pages/HoldManagementPage";
 import { TraceabilityPage } from "@/features/risk/pages/TraceabilityPage";
+import { ResidueBounds } from "@/features/risk/components/ResidueBounds";
 import type { UserRole } from "@/shared/types/roles";
 
 const page = <T,>(items: T[], hasMore = false) => ({
@@ -566,6 +573,12 @@ describe("Tracing & Container HOLD checklist", () => {
     await screen.findByText(/Trace ID: ct-trace-1/);
     expect(screen.getByText(/Tổng hợp đóng góp theo thửa ruộng/)).toBeTruthy();
     expect(screen.getByText("60%")).toBeTruthy();
+    expect(screen.getByText(/Dòng lô hàng vào container/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Mở truy vết ngược/ }).getAttribute("href")).toContain(
+      "lotId=s1&direction=backward",
+    );
+    fireEvent.change(screen.getByLabelText("Lô đang xem"), { target: { value: "s2" } });
+    expect(screen.getByRole("button", { name: /RAW-1 → 100 kg/ })).toBeTruthy();
     expect(screen.getByText(/Danh sách lô tổ tiên lịch sử/)).toBeTruthy();
     expect(screen.getByText(/Liên kết vật tư lịch sử giữa các lô/)).toBeTruthy();
     expect(getSetup).not.toHaveBeenCalled();
@@ -842,5 +855,484 @@ describe("Tracing & Container HOLD checklist", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Đang tải…")).toBeNull();
     expect(getSetup).not.toHaveBeenCalled();
+  });
+
+  it("renders affectedPlans, sourceLoadedKg, separated container held/restricted badges, and role-aware container links", async () => {
+    signIn("CUSTOMER_MANAGER", ["trace.read.all", "export-orders.read"]);
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({ facilities: [], locations: [] });
+    vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue(page([]));
+    vi.spyOn(ledgerEndpoints, "traceLot").mockResolvedValue({
+      traceId: "trace-forward-1",
+      schemaVersion: 2,
+      complete: true,
+      asOf: "2026-11-26T00:00:00Z",
+      sourceContributionsVisible: true,
+      affectedPlans: [
+        {
+          proposalId: "prop-pre-1",
+          planId: "plan-pre-1",
+          version: 3,
+          containerId: "cont-pre-1",
+          containerCode: "CT-PRE-01",
+          containerVersion: 1,
+          status: "APPROVED",
+          activeApproval: true,
+          basis: "SAVED_PLANNING",
+        },
+      ],
+      actualContainers: [
+        {
+          containerId: "cont-act-1",
+          code: "CT-ACT-01",
+          linkedLoadedKg: "500.000000",
+          sourceLoadedKg: "250.000000",
+          status: "LOADING",
+          version: 2,
+          basis: "ACTUAL_LOADING",
+          held: false,
+          restricted: true,
+        },
+      ],
+      lots: [
+        {
+          id: "src-lot-1",
+          code: "RAW-ST25-01",
+          stage: "RAW_PADDY",
+          producedKg: "1000",
+          restrictions: [],
+          positions: [],
+        },
+      ],
+      edges: [],
+    });
+
+    const cmMount = mount(<TraceabilityPage />, "/?lotId=src-lot-1&direction=forward");
+    await screen.findByText("Phương án bị ảnh hưởng trước khi nạp container");
+    expect(screen.getByText("CT-PRE-01")).toBeTruthy();
+    expect(screen.getByText(/Quy thuộc từ nguồn đang truy/)).toBeTruthy();
+    expect(screen.getByText("250.000000 kg")).toBeTruthy();
+    expect(screen.getByText("Lô đã nạp hạn chế")).toBeTruthy();
+    expect(screen.queryByText("Container HOLD")).toBeNull();
+    expect(screen.getByRole("link", { name: "CT-ACT-01" }).getAttribute("href")).toBe(
+      "/risk/container-trace?container=cont-act-1",
+    );
+    cmMount.unmount();
+
+    // Export Officer cannot open /risk/container-trace, so links go to Export container loading/dossier route
+    signIn("CUSTOMER_EXPORT_OFFICER", ["trace.read.tenant", "export-orders.read", "containers.write"]);
+    mount(<TraceabilityPage />, "/?lotId=src-lot-1&direction=forward");
+    const eoLink = await screen.findByRole("link", { name: "CT-ACT-01" });
+    expect(eoLink.getAttribute("href")).toBe("/export/containers/cont-act-1/loading");
+  });
+
+  it("allows CustomerManager without containers.write to place container HOLD with evidenceId even when CLOSED", async () => {
+    signIn("CUSTOMER_MANAGER", ["holds.manage"]);
+    const evidenceUuid = "22222222-2222-4222-8222-222222222222";
+    const closedContainer: ContainerExecution = {
+      id: "cont-closed-hold",
+      orderId: "ord-1",
+      code: "CT-CLOSED-HOLD",
+      companyId: "org-1",
+      targetKg: "20000",
+      loadedKg: "20000",
+      remainingKg: "0",
+      status: "CLOSED",
+      version: 11,
+      facilityId: "fac-1",
+      containerNumber: "MSCU999",
+      sealNumber: "SEAL-88",
+      dossierAvailable: true,
+      holds: [],
+      loads: [],
+      approval: null,
+    };
+    vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
+      facilities: [{ id: "fac-1", name: "Mill 1" }],
+      owners: [{ id: "org-1", name: "Owner" }],
+    });
+    vi.spyOn(containerExecutionEndpoints, "getDetail").mockResolvedValue({
+      container: closedContainer,
+      readiness: {
+        phase: "CLOSE",
+        checkedAt: "2026-11-26T00:00:00Z",
+        assessmentStatus: "PASS",
+        findings: [],
+      },
+    });
+    const placeHoldSpy = vi
+      .spyOn(containerExecutionEndpoints, "placeHold")
+      .mockResolvedValue({ ...closedContainer, status: "HOLD", version: 12 });
+    const supplementSpy = vi.spyOn(containerExecutionEndpoints, "addSupplement");
+
+    const modalMount = mount(
+      <PlaceHoldModal
+        isOpen={true}
+        onClose={vi.fn()}
+        selectableLots={[]}
+        containerContext={{
+          containerId: "cont-closed-hold",
+          containerCode: "CT-CLOSED-HOLD",
+        }}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /^HOLD container$/ }));
+    expect(await screen.findByText(/Hỗ trợ đặt HOLD kèm chứng cứ sau CLOSE/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/Lý do & căn cứ phong tỏa/), {
+      target: { value: "Post-seal recall" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("00000000-0000-0000-0000-000000000000"), {
+      target: { value: evidenceUuid },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Xác nhận đặt HOLD/ }));
+
+    await waitFor(() => expect(placeHoldSpy).toHaveBeenCalledTimes(1));
+    expect(placeHoldSpy).toHaveBeenCalledWith("cont-closed-hold", {
+      operationId: expect.any(String),
+      version: 11,
+      reason: "Post-seal recall",
+      evidenceId: evidenceUuid,
+    });
+    expect(supplementSpy).not.toHaveBeenCalled();
+    modalMount.unmount();
+
+    // ContainerHoldForm also attaches evidenceId on CLOSED containers
+    const formMount = mount(
+      <ContainerHoldForm container={closedContainer} saved={vi.fn(async () => {})} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Lý do HOLD/), {
+      target: { value: "Direct form HOLD after seal" },
+    });
+    fireEvent.change(screen.getByLabelText(/Hoặc nhập mã chứng cứ đã lưu/), {
+      target: { value: evidenceUuid },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Ban hành HOLD/ }));
+    await waitFor(() => expect(placeHoldSpy).toHaveBeenCalledTimes(2));
+    expect(placeHoldSpy.mock.calls[1]).toEqual([
+      "cont-closed-hold",
+      {
+        operationId: expect.any(String),
+        version: 11,
+        reason: "Direct form HOLD after seal",
+        evidenceId: evidenceUuid,
+      },
+    ]);
+    formMount.unmount();
+  });
+
+  it("opens exact affected lot from inherited HOLD notification and sends poolRevision when isolating from mixed-bulk", async () => {
+    signIn("MILL_MANAGER", ["holds.process"]);
+    useUiStore.setState({ isNotificationsOpen: true });
+    vi.spyOn(ledgerEndpoints, "getNotifications").mockResolvedValue({
+      items: [
+        {
+          id: "notif-1",
+          holdId: "hold-parent-1",
+          lotId: "lot-child-99",
+          ownerId: "org-1",
+          ownerName: "Rice Corp",
+          message: "Inherited HOLD on blended lot",
+          createdAt: "2026-11-26T01:00:00Z",
+          readAt: null,
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      totalCount: 1,
+      hasMore: false,
+    });
+
+    const bellMount = mount(<NotificationCenter />);
+    const isoLink = await screen.findByRole("link", {
+      name: /Mở cách ly đúng lô/,
+    });
+    expect(isoLink.getAttribute("href")).toBe(
+      "/stock/transfer?lotId=lot-child-99&holdId=hold-parent-1",
+    );
+    bellMount.unmount();
+    useUiStore.setState({ isNotificationsOpen: false });
+
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
+      facilities: [{ id: "fac-1", name: "Mill 1" }],
+      locations: [
+        { id: "loc-mixed", facilityId: "fac-1", name: "Silo Trộn", kind: "STORE", cleared: true, mixedBulk: true },
+        { id: "loc-iso", facilityId: "fac-1", name: "Kho Cách Ly", kind: "ISOLATION", cleared: true, mixedBulk: false },
+      ],
+    });
+    vi.spyOn(ledgerEndpoints, "getHolds").mockResolvedValue(page([]));
+    vi.spyOn(ledgerEndpoints, "getLots").mockResolvedValue(page([]));
+    vi.spyOn(ledgerEndpoints, "getLot").mockResolvedValue({
+      id: "lot-child-99",
+      code: "BLEND-CHILD-99",
+      ownerId: "org-1",
+      isCurrentPool: true,
+      poolRevision: "7",
+      positions: [
+        {
+          locationId: "loc-mixed",
+          quantityKg: "400",
+          availableKg: "0",
+          poolRevision: "7",
+        },
+      ],
+    });
+    const postTransfer = vi.spyOn(ledgerEndpoints, "postTransfer").mockResolvedValue({ id: "tr-mixed" });
+
+    mount(<StockTransferPage />, "/?holdId=hold-parent-1&lotId=lot-child-99");
+    fireEvent.change(await screen.findByLabelText("Vị trí xuất"), {
+      target: { value: "loc-mixed" },
+    });
+    fireEvent.change(screen.getByLabelText("Vị trí nhập"), {
+      target: { value: "loc-iso" },
+    });
+    fireEvent.change(screen.getByLabelText("Khối lượng điều chuyển (kg)"), {
+      target: { value: "400" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ghi điều chuyển" }));
+
+    await waitFor(() => expect(postTransfer).toHaveBeenCalledTimes(1));
+    expect(postTransfer.mock.calls[0][0]).toMatchObject({
+      lotId: "lot-child-99",
+      fromLocationId: "loc-mixed",
+      toLocationId: "loc-iso",
+      quantityKg: "400",
+      holdId: "hold-parent-1",
+      poolRevision: 7,
+    });
+  });
+
+  it("classifies origin:GENERATED as SYSTEM_GENERATED and calls generatePackingList with separate retry key in ExportDossiersWorkspace", async () => {
+    expect(
+      classifyDocumentOrigin({
+        id: "d-gen",
+        documentType: "PACKING_LIST",
+        version: 1,
+        filename: "CT-packing-list.html",
+        contentType: "text/html",
+        sha256: "abc",
+        reason: "Packing List generated",
+        recordedAt: "2026-11-26T00:00:00Z",
+        origin: "GENERATED",
+      }),
+    ).toBe("SYSTEM_GENERATED");
+
+    signIn("CUSTOMER_EXPORT_OFFICER", ["export-orders.read", "containers.write"]);
+    const wf: ContainerWorkflowDetail = {
+      containerId: "c-dossier-gen",
+      version: 9,
+      status: "CLOSED",
+      documents: [
+        {
+          id: "doc-gen-1",
+          documentType: "PACKING_LIST",
+          version: 1,
+          filename: "CT-PACKING.html",
+          contentType: "text/html",
+          sha256: "123",
+          reason: "Server generated",
+          recordedAt: "2026-11-26T00:00:00Z",
+          origin: "GENERATED",
+        },
+      ],
+      supplements: [],
+      reviews: [],
+      handoffs: [],
+    };
+    vi.spyOn(containerExecutionEndpoints, "getDossier").mockResolvedValue({
+      schemaVersion: 1,
+      containerId: "c-dossier-gen",
+      orderId: "ord-1",
+      containerNumber: "CONT-9",
+      sealNumber: "SEAL-9",
+      targetKg: "20000",
+      closedAt: "2026-11-26T00:00:00Z",
+      closedBy: "officer",
+      assessment: { assessmentStatus: "PASS", checkedAt: "2026-11-26T00:00:00Z", findings: [] },
+      lines: [],
+    });
+    vi.spyOn(containerExecutionEndpoints, "getWorkflow").mockResolvedValue(wf);
+    const genSpy = vi
+      .spyOn(containerExecutionEndpoints, "generatePackingList")
+      .mockRejectedValueOnce(new ApiError(0, "Network dropped"))
+      .mockResolvedValue(wf);
+    const addDocSpy = vi.spyOn(containerExecutionEndpoints, "addDocument");
+
+    mount(
+      <ExportDossiersWorkspace
+        orderId="ord-1"
+        params={new URLSearchParams()}
+        setParams={vi.fn()}
+        scope={["export-dossiers"]}
+        containers={[
+          {
+            id: "c-dossier-gen",
+            orderId: "ord-1",
+            internalCode: "CT-GEN-9",
+            targetMassKg: "20000",
+            originalMass: "20000",
+            originalUnit: "KG",
+            status: "CLOSED",
+            version: 9,
+          },
+        ]}
+      />,
+    );
+
+    await screen.findByText("Hệ thống sinh");
+    expect(screen.queryByText("Bản cũ chưa rõ nguồn")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sinh Packing List" }));
+    await waitFor(() => expect(genSpy).toHaveBeenCalledWith("c-dossier-gen", {
+      operationId: expect.any(String),
+      version: 9,
+    }));
+    expect(addDocSpy).not.toHaveBeenCalled();
+
+    // Retry uses export-dossiers key without colliding with ContainerDossierPanel's persistKey
+    const sessionKeys = Object.keys(sessionStorage);
+    expect(
+      sessionKeys.some((k) =>
+        k.includes("grainledger.pendingCommand.") &&
+        k.endsWith(":export-dossiers:c-dossier-gen:generate-packing-list"),
+      ),
+    ).toBe(true);
+    expect(
+      sessionKeys.some((k) => k.endsWith(":container:c-dossier-gen:packing-list")),
+    ).toBe(false);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Thử lại cùng yêu cầu/ }));
+    await waitFor(() => expect(genSpy).toHaveBeenCalledTimes(2));
+    expect(genSpy.mock.calls[1]).toEqual(genSpy.mock.calls[0]);
+  });
+
+  it("uses backend completedMassKg and fulfillmentStatus instead of CLOSED container targetMassKg", async () => {
+    signIn("CUSTOMER_EXPORT_OFFICER", ["export-orders.read", "containers.read"]);
+    vi.spyOn(exportEndpoints, "getOrderResource").mockResolvedValue({
+      etag: '"2"',
+      data: {
+        id: "ord-manifest",
+        code: "EXP-MANIFEST",
+        marketId: "EU",
+        commodityId: "rice",
+        requiredMassKg: "50000",
+        allocatedMassKg: "50000",
+        remainingMassKg: "0",
+        completedMassKg: "20000",
+        fulfillmentStatus: "IN_PROGRESS",
+        shippingFrom: "2026-12-01",
+        shippingTo: "2026-12-10",
+        createdAt: "2026-11-26T00:00:00Z",
+        version: 2,
+        specificationVersion: 1,
+        limits: [],
+        canEdit: true,
+      },
+    });
+    vi.spyOn(exportEndpoints, "getContainers").mockResolvedValue(
+      page([
+        {
+          id: "c-closed-partial",
+          orderId: "ord-manifest",
+          internalCode: "CT-PARTIAL",
+          targetMassKg: "50000",
+          originalMass: "50000",
+          originalUnit: "KG",
+          status: "CLOSED",
+          version: 4,
+        },
+      ]),
+    );
+
+    mount(<ExportOrderDetails orderId="ord-manifest" />);
+    await screen.findByText(/20\.000 \/ 50\.000 kg/);
+    expect(screen.getByText("40%")).toBeTruthy();
+    expect(screen.getByText("Đang đóng niêm")).toBeTruthy();
+    expect(screen.queryByText("Đã hoàn thành")).toBeNull();
+  });
+
+  it("renders ResidueBounds synchronized card UI, previews residue calculation, and loads saved history", async () => {
+    signIn("CUSTOMER_MANAGER", ["residue.evaluate"]);
+    vi.spyOn(ledgerEndpoints, "getResidueEvaluations").mockResolvedValue({
+      items: [
+        {
+          id: "eval-saved-1",
+          snapshotAt: "2026-11-26T00:00:00Z",
+          persistedAt: "2026-11-26T00:01:00Z",
+          engineVersion: "residue-engine-v2",
+        },
+      ],
+    });
+    vi.spyOn(catalogsEndpoints, "getActiveSubstances").mockResolvedValue(
+      page([
+        {
+          id: "sub-1",
+          code: "TRICYCLAZOLE",
+          name: "Tricyclazole",
+          isActive: true,
+        },
+        {
+          id: "sub-2",
+          code: "BUPROFEZIN",
+          name: "Buprofezin",
+          isActive: true,
+        },
+      ]),
+    );
+    const previewSpy = vi
+      .spyOn(ledgerEndpoints, "getResiduePreview")
+      .mockResolvedValue({
+        snapshotAt: "2026-11-26T01:00:00Z",
+        engineVersion: "residue-engine-v2",
+        results: [
+          {
+            substanceId: "sub-1",
+            status: "PASS",
+            lower: "0.001",
+            upper: "0.009",
+            unit: "mg/kg",
+            reasons: ["Within MRL"],
+            provenance: [
+              {
+                kind: "LAB_REPORT",
+                sourceLotId: "src-1",
+                reportId: "rep-1",
+                resultId: "res-1",
+              },
+            ],
+            rules: [
+              {
+                id: "rule-1",
+                version: 1,
+                kind: "MRL_LIMIT",
+                evidenceReference: "ev-ref-1",
+              },
+            ],
+          },
+        ],
+      });
+
+    mount(<ResidueBounds lotId="lot-res-1" />);
+    fireEvent.click(screen.getByText("Khoảng dư lượng và lịch sử đánh giá"));
+
+    expect(await screen.findByText(/TRICYCLAZOLE/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Tìm hoạt chất"), {
+      target: { value: "TRICYCLAZOLE" },
+    });
+    expect(screen.queryByText(/BUPROFEZIN/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.getByText("1 / 200")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xem trước" }));
+    await waitFor(() =>
+      expect(previewSpy).toHaveBeenCalledWith("lot-res-1", {
+        substanceIds: "sub-1",
+      }),
+    );
+    expect(await screen.findByText("Kết quả xem trước")).toBeTruthy();
+    expect(screen.getByText("PASS")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /Truy vết kết quả lab/ }).getAttribute("href"),
+    ).toContain("reportId=rep-1&resultId=res-1");
   });
 });

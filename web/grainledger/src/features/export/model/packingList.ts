@@ -57,6 +57,7 @@ export function classifyDocumentOrigin(
 ): DocumentOriginKind {
   const explicit = (doc.origin ?? doc.source ?? "").toUpperCase();
   if (
+    explicit === "GENERATED" ||
     explicit === "SYSTEM_GENERATED" ||
     explicit === "SYSTEM" ||
     doc.reason.startsWith(SYSTEM_GENERATED_TAG)

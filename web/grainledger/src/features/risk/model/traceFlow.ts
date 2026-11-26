@@ -199,8 +199,10 @@ export function buildTraceFlowGraph({
     containerId: string;
     code: string;
     linkedLoadedKg?: string;
+    sourceLoadedKg?: string | null;
     status?: string;
     held?: boolean;
+    restricted?: boolean;
   }[];
   rootLotId?: string;
   focusContainerId?: string;
@@ -351,6 +353,12 @@ export function buildTraceFlowGraph({
       if (info?.linkedLoadedKg) {
         meta.push(`${locale === "vi" ? "Thực xếp liên kết" : "Linked loaded"}: ${formatKg(info.linkedLoadedKg)} kg`);
       }
+      if (info?.sourceLoadedKg != null) {
+        meta.push(`${locale === "vi" ? "Quy thuộc nguồn gốc" : "Source attributed"}: ${formatKg(info.sourceLoadedKg)} kg`);
+      }
+      if (info?.restricted && !info?.held) {
+        meta.push(locale === "vi" ? "Lô đã nạp đang bị hạn chế" : "Loaded lot restricted");
+      }
       if (proposals.length) {
         meta.push(`${locale === "vi" ? "Phương án" : "Proposal"}: ${proposals.join(", ")}`);
       }
@@ -359,10 +367,10 @@ export function buildTraceFlowGraph({
         kind: "container",
         label: info?.code || (edge.containerId === focusContainerId ? containerLabel : undefined) || edge.containerId.slice(0, 12),
         sublabel: info?.status || "CONTAINER",
-        badge: info?.held ? "HOLD" : undefined,
+        badge: info?.held ? "HOLD container" : info?.restricted ? (locale === "vi" ? "Lô hạn chế" : "Restricted lot") : undefined,
         meta,
         containerId: edge.containerId,
-        restricted: info?.held,
+        restricted: Boolean(info?.held || info?.restricted),
         isFocus: edge.containerId === focusContainerId,
       });
     }

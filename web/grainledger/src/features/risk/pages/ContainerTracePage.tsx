@@ -876,16 +876,24 @@ export function ContainerTracePage() {
                             </td>
                             <td>
                               {held ? (
-                                <StatusBadge
-                                  status="HOLD"
-                                  label={
-                                    lot.restrictions?.join(", ") ||
-                                    (lot.directHoldIds?.length
-                                      ? text("HOLD trực tiếp", "Direct HOLD")
-                                      : text("HOLD kế thừa", "Inherited HOLD"))
-                                  }
-                                  size="sm"
-                                />
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <StatusBadge
+                                    status="HOLD"
+                                    label={
+                                      lot.restrictions?.join(", ") ||
+                                      (lot.directHoldIds?.length
+                                        ? text("HOLD trực tiếp", "Direct HOLD")
+                                        : text("HOLD kế thừa", "Inherited HOLD"))
+                                    }
+                                    size="sm"
+                                  />
+                                  <Link
+                                    to={`${riskPaths.traceback}?lotId=${encodeURIComponent(lot.id)}&direction=forward`}
+                                    className="text-[11px] font-semibold text-accent-primary hover:underline"
+                                  >
+                                    {text("Mở lô →", "Open lot →")}
+                                  </Link>
+                                </div>
                               ) : (
                                 <span className="text-xs text-ink-tertiary">—</span>
                               )}

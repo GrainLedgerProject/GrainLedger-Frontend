@@ -17,7 +17,13 @@ import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
 import type { LoadingEdge } from "@/api/containerExecution";
 import { useAuthStore } from "@/app/store/authStore";
 import { labResultPath } from "@/features/compliance/paths";
+import {
+  containerPath,
+  exportPaths,
+  planReviewPath,
+} from "@/features/export/paths";
 import { receiptPath, sourceLotPath } from "@/features/field/paths";
+import { millPaths } from "@/features/mill/paths";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback, Panel } from "@/shared/ui/Workflow";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
@@ -74,9 +80,23 @@ interface TraceResult {
     containerId: string;
     code: string;
     linkedLoadedKg: string;
+    sourceLoadedKg?: string | null;
     status: string;
+    version?: number;
+    basis?: string;
     held: boolean;
     restricted?: boolean;
+  }[];
+  affectedPlans?: {
+    proposalId: string;
+    planId: string;
+    version: number;
+    containerId: string;
+    containerCode: string;
+    containerVersion?: number;
+    status: string;
+    activeApproval?: boolean;
+    basis?: string;
   }[];
   corrections?: {
     id: string;
@@ -205,6 +225,32 @@ export function TraceabilityPage() {
   const canIssueHold =
     user?.role === "CUSTOMER_MANAGER" &&
     Boolean(user?.permissions.includes("holds.manage"));
+  const canOpenContainerTrace =
+    (user?.role === "CUSTOMER_MANAGER" || user?.role === "MILL_ADMIN") &&
+    Boolean(
+      user.permissions.some(
+        (p) => p === "trace.read.tenant" || p === "trace.read.all",
+      ),
+    );
+  const canOpenPlan = Boolean(user?.permissions.includes("export-orders.read"));
+  const canOpenStock = Boolean(
+    user?.permissions.some(
+      (p) =>
+        p === "lots.read.all" ||
+        p === "lots.read.facility" ||
+        p === "lots.read.tenant",
+    ),
+  );
+  const canIsolateHold =
+    user?.role === "MILL_MANAGER" &&
+    Boolean(user.permissions.includes("holds.process"));
+  const containerLink = (containerId: string, status?: string) =>
+    canOpenContainerTrace
+      ? `${riskPaths.containerTrace}?container=${encodeURIComponent(containerId)}`
+      : containerPath(
+          status === "CLOSED" ? exportPaths.dossier : exportPaths.loading,
+          containerId,
+        );
 
   const [choosingLab, setChoosingLab] = useState(false);
   const [params, setParams] = useSearchParams();
@@ -215,7 +261,7 @@ export function TraceabilityPage() {
   const [manualLotId, setManualLotId] = useState("");
   const [page, setPage] = useState(1);
   const [runLabKey, setRunLabKey] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"table" | "flowchart">("table");
+  const [viewMode, setViewMode] = useState<"table" | "flowchart">("flowchart");
   const [selectedResidueLotId, setSelectedResidueLotId] = useState("");
   const [expandedSourceLotId, setExpandedSourceLotId] = useState<string | null>(
     null,
@@ -428,12 +474,14 @@ export function TraceabilityPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to={riskPaths.containerTrace}
-            className="rounded-xl border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-accent-primary hover:bg-surface-raised"
-          >
-            {text("Truy xuất container", "Trace container")}
-          </Link>
+          {canOpenContainerTrace && (
+            <Link
+              to={riskPaths.containerTrace}
+              className="rounded-xl border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-accent-primary hover:bg-surface-raised"
+            >
+              {text("Truy xuất container", "Trace container")}
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -1012,6 +1060,74 @@ export function TraceabilityPage() {
                       </div>
                     )}
 
+                    {!!r.affectedPlans?.length && (
+                      <section className="space-y-2 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-3.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="text-xs font-semibold text-ink-primary">
+                            {text(
+                              "Phương án bị ảnh hưởng trước khi nạp container",
+                              "Affected blend plans (pre-loading)",
+                            )}
+                          </h3>
+                          <StatusBadge
+                            status="PENDING"
+                            size="sm"
+                            label={`${r.affectedPlans.length}`}
+                          />
+                        </div>
+                        <ul className="space-y-1.5 text-xs">
+                          {r.affectedPlans.map((plan) => (
+                            <li
+                              key={`${plan.proposalId}:${plan.planId}`}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-tertiary/15 bg-surface-base px-3 py-2"
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                  className="font-mono font-bold text-accent-primary underline"
+                                  to={containerLink(plan.containerId)}
+                                >
+                                  {plan.containerCode}
+                                </Link>
+                                <span className="font-mono text-ink-secondary">
+                                  v{plan.version}
+                                </span>
+                                <StatusBadge
+                                  status={
+                                    plan.activeApproval
+                                      ? "COMPLIANT"
+                                      : plan.status === "REJECTED" ||
+                                          plan.status === "REVOKED" ||
+                                          plan.status === "HOLD"
+                                        ? "HOLD"
+                                        : "PENDING"
+                                  }
+                                  label={
+                                    plan.activeApproval
+                                      ? `${plan.status} · ${text("Đang bảo lưu", "Reserved")}`
+                                      : plan.status
+                                  }
+                                  size="sm"
+                                />
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-secondary">
+                                <span className="font-mono">
+                                  {plan.proposalId}
+                                </span>
+                                {canOpenPlan && (
+                                  <Link
+                                    to={planReviewPath(plan.planId)}
+                                    className="font-semibold text-accent-primary hover:underline"
+                                  >
+                                    {text("Mở phương án →", "Open plan →")}
+                                  </Link>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
                     {!!r.actualContainers?.length && (
                       <section className="space-y-2 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-3.5">
                         <h3 className="text-xs font-semibold text-ink-primary">
@@ -1029,28 +1145,66 @@ export function TraceabilityPage() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <Link
                                   className="font-mono font-bold text-accent-primary underline"
-                                  to={`${riskPaths.containerTrace}?container=${encodeURIComponent(container.containerId)}`}
+                                  to={containerLink(
+                                    container.containerId,
+                                    container.status,
+                                  )}
                                 >
                                   {container.code}
                                 </Link>
                                 <StatusBadge
                                   status={
-                                    container.held || container.restricted
+                                    container.held
                                       ? "HOLD"
                                       : container.status === "CLOSED"
                                         ? "COMPLIANT"
                                         : "PENDING"
                                   }
-                                  label={`${container.status}${container.held || container.restricted ? " · HOLD" : ""}`}
+                                  label={container.status}
                                   size="sm"
                                 />
+                                {container.held && (
+                                  <StatusBadge
+                                    status="HOLD"
+                                    label="Container HOLD"
+                                    size="sm"
+                                  />
+                                )}
+                                {container.restricted && (
+                                  <StatusBadge
+                                    status="STALE"
+                                    label={text(
+                                      "Lô đã nạp hạn chế",
+                                      "Loaded lot restricted",
+                                    )}
+                                    size="sm"
+                                  />
+                                )}
                               </div>
-                              <span className="font-mono text-ink-secondary">
-                                {text("Liên kết từ lô nguồn", "Linked loaded")}:{" "}
-                                <strong className="text-ink-primary">
-                                  {container.linkedLoadedKg} kg
-                                </strong>
-                              </span>
+                              <div className="flex flex-wrap items-center gap-3 font-mono text-ink-secondary">
+                                <span>
+                                  {text(
+                                    "Liên kết từ lô nguồn",
+                                    "Linked loaded",
+                                  )}
+                                  :{" "}
+                                  <strong className="text-ink-primary">
+                                    {container.linkedLoadedKg} kg
+                                  </strong>
+                                </span>
+                                {container.sourceLoadedKg != null && (
+                                  <span className="text-accent-primary font-semibold">
+                                    {text(
+                                      "Quy thuộc từ nguồn đang truy",
+                                      "Attributed from traced source",
+                                    )}
+                                    :{" "}
+                                    <strong>
+                                      {container.sourceLoadedKg} kg
+                                    </strong>
+                                  </span>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -1199,14 +1353,42 @@ export function TraceabilityPage() {
                                         />
                                       )}
                                       {inheritedHold && (
-                                        <StatusBadge
-                                          status="STALE"
-                                          label={text(
-                                            "HOLD kế thừa",
-                                            "Inherited HOLD",
+                                        <>
+                                          <StatusBadge
+                                            status="STALE"
+                                            label={text(
+                                              "HOLD kế thừa",
+                                              "Inherited HOLD",
+                                            )}
+                                            size="sm"
+                                          />
+                                          {canIsolateHold &&
+                                            item.effectiveHoldIds?.[0] && (
+                                              <Link
+                                                to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(item.id)}&holdId=${encodeURIComponent(item.effectiveHoldIds[0])}`}
+                                                className="font-semibold text-accent-danger hover:underline"
+                                              >
+                                                {text(
+                                                  "Mở cách ly lô →",
+                                                  "Isolate lot →",
+                                                )}
+                                              </Link>
+                                            )}
+                                          {canOpenStock && (
+                                            <Link
+                                              to={millPaths.lot.replace(
+                                                ":lotId",
+                                                encodeURIComponent(item.id),
+                                              )}
+                                              className="font-semibold text-accent-primary hover:underline"
+                                            >
+                                              {text(
+                                                "Mở lô bị ảnh hưởng →",
+                                                "Open affected lot →",
+                                              )}
+                                            </Link>
                                           )}
-                                          size="sm"
-                                        />
+                                        </>
                                       )}
                                       {item.restrictions?.length ? (
                                         <span>
@@ -1527,6 +1709,10 @@ export function TraceabilityPage() {
                       }}
                       traceId={r.traceId}
                       selectableLots={holdSelectableLots}
+                      selectableContainers={r.actualContainers?.map((c) => ({
+                        containerId: c.containerId,
+                        code: c.code,
+                      }))}
                       initialLot={
                         holdSelectableLots.find(
                           (item) => item.id === effectiveResidueLotId,

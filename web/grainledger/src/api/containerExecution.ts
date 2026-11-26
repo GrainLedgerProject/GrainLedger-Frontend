@@ -24,7 +24,7 @@ export interface ContainerExecution {
   containerNumber: string | null;
   sealNumber: string | null;
   dossierAvailable: boolean;
-  holds: { id: string; reason: string; recordedAt: string }[];
+  holds: { id: string; reason: string; recordedAt: string; evidenceId?: string | null }[];
   loads: {
     id: string;
     proposalId: string;
@@ -416,7 +416,7 @@ export const containerExecutionEndpoints = {
     post<ContainerExecution>(`${path(id)}/execution/metadata`, body),
   close: (id: string, body: ContainerVersionRequest) =>
     post<ContainerExecution>(`${path(id)}/execution/close`, body),
-  placeHold: (id: string, body: ContainerVersionRequest & { reason: string }) =>
+  placeHold: (id: string, body: ContainerVersionRequest & { reason: string; evidenceId?: string }) =>
     post<ContainerExecution>(`${path(id)}/execution/holds`, body),
   trace: (id: string) =>
     apiFetch<ContainerTrace>(`${path(id)}/execution/trace`, { method: "POST" }),
