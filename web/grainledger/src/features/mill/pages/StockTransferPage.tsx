@@ -31,7 +31,7 @@ type TransferPosition = {
   facilityId?: string;
   quantityKg?: string;
   availableKg: string;
-  poolRevision?: number;
+  poolRevision?: number | string;
 };
 type TransferLot = {
   id: string;
@@ -39,7 +39,7 @@ type TransferLot = {
   ownerId: string;
   positions: TransferPosition[];
   isCurrentPool?: boolean;
-  poolRevision?: number;
+  poolRevision?: number | string;
 };
 type HoldItem = {
   id: string;
@@ -214,7 +214,13 @@ export function StockTransferPage() {
     const fields = new FormData(event.currentTarget);
     const quantityKg = String(fields.get("quantityKg") ?? "");
     const date = new Date(String(fields.get("occurredAt") ?? ""));
-    const revision = position.poolRevision ?? lot.poolRevision;
+    const rawRevision = position.poolRevision ?? lot.poolRevision;
+    const revision =
+      rawRevision === undefined ||
+      rawRevision === null ||
+      String(rawRevision).trim() === ""
+        ? undefined
+        : Number(rawRevision);
     const maxMass = holdIsolationMode
       ? (position.quantityKg ?? position.availableKg)
       : position.availableKg;
@@ -229,9 +235,10 @@ export function StockTransferPage() {
     }
     if (!Number.isFinite(date.getTime())) return;
     if (
-      !holdIsolationMode &&
       source?.mixedBulk &&
-      (!lot.isCurrentPool || !Number.isSafeInteger(revision))
+      (!lot.isCurrentPool ||
+        revision === undefined ||
+        !Number.isSafeInteger(revision))
     ) {
       setError(t("workflows.transfer.poolChanged"));
       return;
@@ -253,7 +260,8 @@ export function StockTransferPage() {
       quantityKg,
       occurredAt: date.toISOString(),
       ...(source?.mixedBulk &&
-        !holdIsolationMode && { poolRevision: revision }),
+        revision !== undefined &&
+        Number.isSafeInteger(revision) && { poolRevision: revision }),
       ...(holdIsolationMode && selectedHoldId && { holdId: selectedHoldId }),
     });
   }

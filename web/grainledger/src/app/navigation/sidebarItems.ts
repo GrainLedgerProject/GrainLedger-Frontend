@@ -114,6 +114,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: BookOpen,
           },
           {
+            label: t("nav.risk.traceback", "Truy vết hai chiều"),
+            path: riskPaths.traceback,
+            permission: "trace.read.all",
+            icon: Crosshair,
+          },
+          {
             label: t("nav.events", "Tìm sự kiện"),
             path: auditPaths.events,
             icon: MagnifyingGlass,

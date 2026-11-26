@@ -7,13 +7,27 @@ import {
 } from "@tanstack/react-query";
 import { BellIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
+import { Link, useInRouterContext } from "react-router-dom";
 import { ledgerEndpoints } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
+import { millPaths } from "@/features/mill/paths";
+import { riskPaths } from "@/features/risk/paths";
 
 export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
   const { t, i18n } = useTranslation();
+  const inRouter = useInRouterContext();
   const user = useAuthStore((s) => s.user);
+  const canIsolate =
+    user?.role === "MILL_MANAGER" && Boolean(user.permissions.includes("holds.process"));
+  const canTrace = Boolean(
+    user?.permissions.some((p) => p === "trace.read.tenant" || p === "trace.read.all"),
+  );
+  const canStock = Boolean(
+    user?.permissions.some(
+      (p) => p === "lots.read.all" || p === "lots.read.facility" || p === "lots.read.tenant",
+    ),
+  );
   const open = useUiStore((s) => s.isNotificationsOpen);
   const setOpen = useUiStore((s) => s.setNotificationsOpen);
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -162,6 +176,45 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
                 <p className="my-2 break-words text-sm text-ink-primary">
                   {item.message}
                 </p>
+                {inRouter && item.lotId && (canIsolate || canTrace || canStock) && (
+                  <div className="mb-2 flex flex-wrap gap-2 text-xs">
+                    {canIsolate && (
+                      <Link
+                        to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(item.lotId)}${
+                          item.holdId ? `&holdId=${encodeURIComponent(item.holdId)}` : ""
+                        }`}
+                        onClick={() => setOpen(false)}
+                        className="font-semibold text-accent-danger hover:underline"
+                      >
+                        {i18n.language.startsWith("en")
+                          ? "Open isolation for affected lot →"
+                          : "Mở cách ly đúng lô →"}
+                      </Link>
+                    )}
+                    {canTrace && (
+                      <Link
+                        to={`${riskPaths.traceback}?lotId=${encodeURIComponent(item.lotId)}&direction=forward`}
+                        onClick={() => setOpen(false)}
+                        className="font-semibold text-accent-primary hover:underline"
+                      >
+                        {i18n.language.startsWith("en")
+                          ? "Inspect lot in traceback →"
+                          : "Mở lô trong truy vết →"}
+                      </Link>
+                    )}
+                    {!canIsolate && !canTrace && canStock && (
+                      <Link
+                        to={millPaths.lot.replace(":lotId", encodeURIComponent(item.lotId))}
+                        onClick={() => setOpen(false)}
+                        className="font-semibold text-accent-primary hover:underline"
+                      >
+                        {i18n.language.startsWith("en")
+                          ? "Open affected stock lot →"
+                          : "Mở lô tồn kho →"}
+                      </Link>
+                    )}
+                  </div>
+                )}
                 <time
                   className="text-xs text-ink-tertiary"
                   dateTime={item.createdAt}

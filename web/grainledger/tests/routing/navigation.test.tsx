@@ -256,13 +256,12 @@ describe("application navigation", () => {
     expect(screen.queryByText("Không có quyền truy cập màn hình này")).toBeNull();
     cleanup();
 
-    // P1-4: MILL_ADMIN blocked from Field/Mill/Hold operational routes, allowed on Crop Seasons & Container Trace & Events
+    // MILL_ADMIN is blocked from Field/Mill/Hold operational routes, allowed on Crop Seasons, Traceback, Container Trace & Events
     for (const blockedPath of [
       fieldPaths.farmers,
       fieldPaths.receipts,
       millPaths.receiving,
       riskPaths.holds,
-      riskPaths.traceback,
       millPaths.stock,
     ]) {
       renderRoute(
@@ -273,6 +272,17 @@ describe("application navigation", () => {
       expect(screen.getByText("Không có quyền truy cập màn hình này"), blockedPath).toBeTruthy();
       cleanup();
     }
+
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({ facilities: [], locations: [] });
+    vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 25, hasMore: false });
+    expect(
+      itemsFor("MILL_ADMIN", ["trace.read.all"]).some(
+        (item) => item.path === riskPaths.traceback,
+      ),
+    ).toBe(true);
+    renderRoute("MILL_ADMIN", ["trace.read.all"], riskPaths.traceback);
+    expect(screen.queryByText("Không có quyền truy cập màn hình này")).toBeNull();
+    cleanup();
 
     // P1-4: Previously unguarded routes block missing permissions
     renderRoute("CUSTOMER_PROCUREMENT_OFFICER", ["farms.write", "purchases.write", "history.read"], millPaths.stock);

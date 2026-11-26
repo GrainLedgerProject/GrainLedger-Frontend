@@ -259,21 +259,17 @@ function OrderAllocation({
   const closedContainers = orderContainers.filter(
     (c) => c.status === "CLOSED",
   );
-  const closedMassKg = sumMass(closedContainers.map((c) => c.targetMassKg));
+  const completedMassKg = order?.completedMassKg ?? "0";
   const closedPercent = order
-    ? allocationPercent(closedMassKg, order.requiredMassKg)
+    ? allocationPercent(completedMassKg, order.requiredMassKg)
     : 0;
-  const orderCompleted =
-    Boolean(order) &&
-    orderContainers.length > 0 &&
-    closedContainers.length === orderContainers.length &&
-    new Decimal(closedMassKg).gte(order!.requiredMassKg);
+  const orderCompleted = order?.fulfillmentStatus === "COMPLETE";
   const completionStatus: {
     type: "COMPLIANT" | "PENDING" | "HOLD";
     label: [string, string];
   } = orderCompleted
     ? { type: "COMPLIANT", label: ["Đã hoàn thành", "Completed"] }
-    : new Decimal(closedMassKg).gt(0)
+    : new Decimal(completedMassKg).gt(0)
       ? { type: "PENDING", label: ["Đang đóng niêm", "Closing in progress"] }
       : { type: "HOLD", label: ["Chưa hoàn thành", "Not completed"] };
   return (
@@ -372,9 +368,9 @@ function OrderAllocation({
                 />
                 <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-ink-secondary">
                   <span>
-                    {massLabel(closedMassKg, locale)} /{" "}
+                    {massLabel(completedMassKg, locale)} /{" "}
                     {massLabel(order.requiredMassKg, locale)} kg{" "}
-                    {text("đã CLOSED", "CLOSED")}
+                    {text("đã CLOSED (manifest)", "CLOSED (manifest)")}
                   </span>
                   <span>
                     {closedContainers.length} / {orderContainers.length}{" "}

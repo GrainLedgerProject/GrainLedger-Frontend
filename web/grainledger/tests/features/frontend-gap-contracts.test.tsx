@@ -1,4 +1,4 @@
-﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -142,4 +142,17 @@ it("sends the backend CSRF token when revoking a Google cookie session", async (
   expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/auth/csrf", "/api/auth/logout-all"]);
   expect(new Headers(fetch.mock.calls[1][1]?.headers).get("X-CSRF-TOKEN")).toBe("anti-forgery");
   expect(fetch.mock.calls[1][1]).toMatchObject({ method: "POST", credentials: "include" });
+});
+
+it("shows restricted card without receiving permission and GrainLoader while loading queue", async () => {
+  renderAs("AUTHORIZED_STOCK_VIEWER", ["stock.read"], <ReceivingTasksPage />);
+  expect(await screen.findByText("Receiving access restricted")).toBeTruthy();
+  expect(screen.getByRole("alert").textContent).toContain("Receiving requires measurement or review permission");
+  cleanup();
+
+  vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({ facilities: [{ id: "facility", name: "Mill" }] });
+  vi.spyOn(ledgerEndpoints, "getReceivingTasks").mockReturnValue(new Promise(() => {}));
+  renderAs("MILL_OPERATOR", ["lots.receive"], <ReceivingTasksPage />);
+  expect(await screen.findByText("Loading receiving queue...")).toBeTruthy();
+  expect(screen.queryByText("Loading…")).toBeNull();
 });

@@ -15,7 +15,6 @@ import {
 } from "@phosphor-icons/react";
 import {
   containerExecutionEndpoints,
-  type ContainerDocumentRequest,
 } from "@/api/containerExecution";
 import type { ExportContainerDto } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
@@ -25,7 +24,6 @@ import { useAuthStore } from "@/app/store/authStore";
 import { containerPath, exportPaths } from "../paths";
 import { massLabel } from "../model/exportPresentation";
 import {
-  buildPackingListDocument,
   classifyDocumentOrigin,
   displayDocumentReason,
   originBadgeProps,
@@ -257,15 +255,15 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
     },
   });
   const generatePackingList = useContainerCommand(
-    (operationId, input: Omit<ContainerDocumentRequest, "operationId">) =>
-      containerExecutionEndpoints.addDocument(container.id, {
+    (operationId, input: { version: number }) =>
+      containerExecutionEndpoints.generatePackingList(container.id, {
         operationId,
-        ...input,
+        version: input.version,
       }),
     async () => {
       await workflow.refetch();
     },
-    { persistKey: `container:${container.id}:packing-list` },
+    { persistKey: `export-dossiers:${container.id}:generate-packing-list` },
   );
   const documents = workflow.data?.documents ?? [];
   const latest = new Map<string, number>();
@@ -459,20 +457,8 @@ function DossierPreview({ container }: { container: ExportContainerDto }) {
                     generatePackingList.uncertain
                   }
                   onClick={() => {
-                    const locale: "vi" | "en" =
-                      text("vi", "en") === "en" ? "en" : "vi";
-                    const generated = buildPackingListDocument({
-                      containerCode: container.internalCode,
-                      dossier: d,
-                      locale,
-                    });
                     generatePackingList.submit({
                       version: workflow.data.version,
-                      documentType: generated.documentType,
-                      filename: generated.filename,
-                      contentType: generated.contentType,
-                      content: generated.contentBase64,
-                      reason: generated.reason,
                     });
                   }}
                   className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-accent-primary px-3 py-1.5 text-xs font-semibold text-ink-inverse hover:bg-accent-primary-dim transition-colors disabled:opacity-50"

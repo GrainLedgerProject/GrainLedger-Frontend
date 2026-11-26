@@ -1,6 +1,15 @@
 import { useState } from "react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Cube,
+  FlowArrow,
+  Package,
+} from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import type { LoadingEdge } from "@/api/containerExecution";
+import { useAuthStore } from "@/app/store/authStore";
+import { containerPath, exportPaths } from "@/features/export/paths";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { Decimal } from "@/shared/utils/decimalMass";
@@ -10,6 +19,7 @@ export interface ActualContainerTargetSummary {
   containerId: string;
   code: string;
   linkedLoadedKg?: string;
+  sourceLoadedKg?: string | null;
   status?: string;
   held?: boolean;
   restricted?: boolean;
@@ -29,6 +39,14 @@ export function ActualLoading({
   tracedLotId?: string;
 }) {
   const text = useWorkflowText();
+  const user = useAuthStore((s) => s.user);
+  const canOpenContainerTrace =
+    (user?.role === "CUSTOMER_MANAGER" || user?.role === "MILL_ADMIN") &&
+    Boolean(
+      user.permissions.some(
+        (p) => p === "trace.read.tenant" || p === "trace.read.all",
+      ),
+    );
   const containerMap = new Map(containers.map((c) => [c.containerId, c]));
 
   return (
@@ -82,7 +100,16 @@ export function ActualLoading({
                     </span>
                     <span className="text-ink-tertiary">→</span>
                     <Link
-                      to={`${riskPaths.containerTrace}?container=${encodeURIComponent(edge.containerId)}`}
+                      to={
+                        canOpenContainerTrace
+                          ? `${riskPaths.containerTrace}?container=${encodeURIComponent(edge.containerId)}`
+                          : containerPath(
+                              target?.status === "CLOSED"
+                                ? exportPaths.dossier
+                                : exportPaths.loading,
+                              edge.containerId,
+                            )
+                      }
                       className="font-mono font-bold text-accent-primary underline underline-offset-2"
                     >
                       {target?.code || edge.containerId}
@@ -90,13 +117,27 @@ export function ActualLoading({
                     {target?.status && (
                       <StatusBadge
                         status={
-                          target.held || target.restricted
+                          target.held
                             ? "HOLD"
                             : target.status === "CLOSED"
                               ? "COMPLIANT"
                               : "PENDING"
                         }
-                        label={`${target.status}${target.held || target.restricted ? " · HOLD" : ""}`}
+                        label={target.status}
+                        size="sm"
+                      />
+                    )}
+                    {target?.held && (
+                      <StatusBadge
+                        status="HOLD"
+                        label={text("Container HOLD", "Container HOLD")}
+                        size="sm"
+                      />
+                    )}
+                    {target?.restricted && (
+                      <StatusBadge
+                        status="STALE"
+                        label={text("Lô đã nạp hạn chế", "Loaded lot restricted")}
                         size="sm"
                       />
                     )}
@@ -114,9 +155,15 @@ export function ActualLoading({
                         </strong>
                       </span>
                     )}
+                    {target?.sourceLoadedKg != null && (
+                      <span className="text-accent-primary font-semibold">
+                        {text("Quy thuộc nguồn gốc (container)", "Source attributed (container)")}:{" "}
+                        {target.sourceLoadedKg} kg
+                      </span>
+                    )}
                     {tracedContributionKg && new Decimal(tracedContributionKg).gt(0) && (
                       <span className="text-accent-primary font-semibold">
-                        {text("Phân bổ lô truy vết", "Traced lot share")}:{" "}
+                        {text("Phân bổ theo dòng xếp", "Line source share")}:{" "}
                         {tracedContributionKg} kg
                       </span>
                     )}
@@ -197,7 +244,11 @@ export function ActualLoading({
   );
 }
 
-export function ContainerLotFlow({ names, edges, loading }: {
+export function ContainerLotFlow({
+  names,
+  edges,
+  loading,
+}: {
   names: Map<string, string>;
   edges: { inputLotId: string; outputLotId: string; inputConsumedKg: string }[];
   loading: LoadingEdge[];
@@ -205,32 +256,179 @@ export function ContainerLotFlow({ names, edges, loading }: {
   const text = useWorkflowText();
   const [picked, setPicked] = useState(loading[0]?.lotId ?? "");
   const active = picked || names.keys().next().value || "";
-  const inEdges = edges.filter(edge => edge.outputLotId === active);
-  const outEdges = edges.filter(edge => edge.inputLotId === active);
-  return <section className="space-y-3 rounded-lg border border-ink-tertiary/20 p-3">
-    <h3 className="font-semibold">{text("Dòng lô hàng vào container", "Lot flow into container")}</h3>
-    <label>{text("Lô đang xem", "Selected lot")}
-      <select value={active} onChange={e => setPicked(e.target.value)}>
-        {[...names].map(([id, code]) => <option key={id} value={id}>{code}</option>)}
-      </select>
-    </label>
-    <div className="grid gap-3 sm:grid-cols-3">
-      <div className="space-y-2"><p>{text("Đầu vào", "Inputs")}</p>
-        {inEdges.map((edge, index) => <button type="button" key={index} onClick={() => setPicked(edge.inputLotId)} className="w-full text-start">
-          {names.get(edge.inputLotId) ?? edge.inputLotId} → {edge.inputConsumedKg} kg
-        </button>)}
+  const activeCode = names.get(active) ?? active;
+  const inEdges = edges.filter((edge) => edge.outputLotId === active);
+  const outEdges = edges.filter((edge) => edge.inputLotId === active);
+  const containerLoads = loading.filter((edge) => edge.lotId === active);
+
+  return (
+    <section
+      aria-label={text("Dòng lô hàng vào container", "Lot flow into container")}
+      className="record-card"
+    >
+      <div className="record-card-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="record-icon-tile" aria-hidden="true">
+            <FlowArrow size={20} weight="bold" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-display text-base font-bold text-ink-primary">
+              {text("Dòng lô hàng vào container", "Lot flow into container")}
+            </h3>
+            <p className="mt-0.5 text-xs text-ink-secondary">
+              {text(
+                "Điều hướng các lô đầu vào, lô trung tâm đang xem và nhánh đầu ra xếp container.",
+                "Navigate upstream input lots, the active focus lot, and downstream container outputs.",
+              )}
+            </p>
+          </div>
+        </div>
+        {activeCode && (
+          <StatusBadge
+            status="ACTIVE"
+            size="sm"
+            label={`${inEdges.length} → ${activeCode} → ${outEdges.length + containerLoads.length}`}
+          />
+        )}
       </div>
-      <div className="self-start rounded-lg bg-accent-primary/10 p-3">
-        <Link to={`${riskPaths.traceback}?lotId=${encodeURIComponent(active)}&direction=backward`}>{names.get(active) ?? active}</Link>
+
+      <div className="space-y-5 p-4 sm:p-5">
+        <label className="block space-y-1.5 text-xs sm:max-w-md">
+          <span className="font-semibold text-ink-secondary">
+            {text("Lô đang xem", "Selected lot")}
+          </span>
+          <select
+            value={active}
+            onChange={(e) => setPicked(e.target.value)}
+            className="min-h-11 w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-3 py-2 font-mono text-xs text-ink-primary transition-colors focus:border-accent-primary focus:outline-none dark:bg-surface-overlay"
+          >
+            {[...names].map(([id, code]) => (
+              <option key={id} value={id}>
+                {code}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          {/* Upstream Inputs */}
+          <div className="space-y-3 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-3.5 dark:bg-surface-overlay/25">
+            <div className="flex items-center justify-between gap-2 border-b border-ink-tertiary/15 pb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                {text("Đầu vào", "Inputs")}
+              </p>
+              <StatusBadge status="PENDING" size="sm" label={`${inEdges.length}`} />
+            </div>
+
+            {inEdges.length > 0 ? (
+              <div className="space-y-2">
+                {inEdges.map((edge, index) => (
+                  <button
+                    type="button"
+                    key={`${edge.inputLotId}:${index}`}
+                    onClick={() => setPicked(edge.inputLotId)}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-2.5 text-start text-xs transition-all hover:border-accent-primary/40 hover:bg-surface-raised dark:bg-surface-overlay dark:hover:bg-surface-raised"
+                  >
+                    <span className="min-w-0 truncate font-mono font-semibold text-ink-primary">
+                      {names.get(edge.inputLotId) ?? edge.inputLotId} → {edge.inputConsumedKg} kg
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      aria-hidden="true"
+                      className="shrink-0 text-accent-primary"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-ink-tertiary/20 px-3 py-4 text-center text-xs text-ink-tertiary">
+                {text("Lô nguồn khởi đầu", "Origin source lot")}
+              </p>
+            )}
+          </div>
+
+          {/* Center Focus Lot */}
+          <div className="space-y-3 rounded-xl border-2 border-accent-primary/40 bg-accent-primary/5 p-4 dark:bg-accent-primary/10">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent-primary">
+                <Package size={15} weight="bold" aria-hidden="true" />
+                <span>{text("Lô đang xem", "Focus lot")}</span>
+              </span>
+              <StatusBadge status="ACTIVE" size="sm" label={text("Trung tâm", "Focus")} />
+            </div>
+
+            <p className="break-all font-mono text-base font-bold text-ink-primary">
+              {activeCode}
+            </p>
+
+            {active && (
+              <Link
+                to={`${riskPaths.traceback}?lotId=${encodeURIComponent(active)}&direction=backward`}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-primary/30 bg-surface-base px-3.5 py-1.5 text-xs font-semibold text-accent-primary transition-colors hover:bg-surface-raised dark:bg-surface-raised dark:hover:bg-surface-overlay"
+              >
+                <span>{text("Mở truy vết ngược", "Open backward trace")}</span>
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            )}
+          </div>
+
+          {/* Downstream Outputs & Container Loads */}
+          <div className="space-y-3 rounded-xl border border-ink-tertiary/20 bg-surface-raised/40 p-3.5 dark:bg-surface-overlay/25">
+            <div className="flex items-center justify-between gap-2 border-b border-ink-tertiary/15 pb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                {text("Đầu ra", "Outputs")}
+              </p>
+              <StatusBadge
+                status="ACTIVE"
+                size="sm"
+                label={`${outEdges.length + containerLoads.length}`}
+              />
+            </div>
+
+            {outEdges.length > 0 || containerLoads.length > 0 ? (
+              <div className="space-y-2">
+                {outEdges.map((edge, index) => (
+                  <button
+                    type="button"
+                    key={`${edge.outputLotId}:${index}`}
+                    onClick={() => setPicked(edge.outputLotId)}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-2.5 text-start text-xs transition-all hover:border-accent-primary/40 hover:bg-surface-raised dark:bg-surface-overlay dark:hover:bg-surface-raised"
+                  >
+                    <span className="min-w-0 truncate font-mono font-semibold text-ink-primary">
+                      → {names.get(edge.outputLotId) ?? edge.outputLotId} · {edge.inputConsumedKg} kg
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      aria-hidden="true"
+                      className="shrink-0 text-accent-primary"
+                    />
+                  </button>
+                ))}
+                {containerLoads.map((edge) => (
+                  <div
+                    key={edge.containerId}
+                    className="flex items-center gap-2 rounded-xl border border-functional-compliant-border/50 bg-functional-compliant-bg/30 px-3 py-2.5 text-xs font-mono font-semibold text-ink-primary dark:bg-functional-compliant-bg/20"
+                  >
+                    <Cube
+                      size={15}
+                      weight="bold"
+                      aria-hidden="true"
+                      className="shrink-0 text-accent-primary"
+                    />
+                    <span>
+                      → {text("Container", "Container")} · {edge.quantityKg} kg
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-ink-tertiary/20 px-3 py-4 text-center text-xs text-ink-tertiary">
+                {text("Chưa có lô đầu ra", "No downstream outputs")}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="space-y-2"><p>{text("Đầu ra", "Outputs")}</p>
-        {outEdges.map((edge, index) => <button type="button" key={index} onClick={() => setPicked(edge.outputLotId)} className="w-full text-start">
-          → {names.get(edge.outputLotId) ?? edge.outputLotId} · {edge.inputConsumedKg} kg
-        </button>)}
-        {loading.filter(edge => edge.lotId === active).map(edge => <p key={edge.containerId} className="rounded-lg bg-surface-overlay p-2">
-          → {text("Container", "Container")} · {edge.quantityKg} kg
-        </p>)}
-      </div>
-    </div>
-  </section>;
+    </section>
+  );
 }

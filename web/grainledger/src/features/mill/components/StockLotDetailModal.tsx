@@ -49,6 +49,8 @@ export interface StockLot {
   commodityId: string;
   positions: StockPosition[];
   restrictions: string[];
+  directHoldIds?: string[];
+  effectiveHoldIds?: string[];
   mixedBulk?: boolean;
   sourceComposition?: {
     sourceLotId: string;
@@ -99,6 +101,11 @@ export function StockLotDetailModal({
     (s) =>
       s.user?.role === "CUSTOMER_MANAGER" ||
       Boolean(s.user?.permissions.includes("trace.read.all")),
+  );
+  const canIsolateHold = useAuthStore(
+    (s) =>
+      s.user?.role === "MILL_MANAGER" &&
+      Boolean(s.user.permissions.includes("holds.process")),
   );
 
   const lookups = useQuery({
@@ -176,20 +183,44 @@ export function StockLotDetailModal({
 
       {lot && (
         <div className="space-y-4">
-          {lot.restrictions.length > 0 && (
+          {(lot.restrictions.length > 0 ||
+            Boolean(lot.directHoldIds?.length) ||
+            Boolean(lot.effectiveHoldIds?.length)) && (
             <div
               role="status"
-              className="flex flex-wrap items-center gap-2 rounded-xl border border-functional-hold-border bg-functional-hold-bg/60 p-3 text-xs text-accent-danger dark:bg-functional-hold-bg/25"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-functional-hold-border bg-functional-hold-bg/60 p-3 text-xs text-accent-danger dark:bg-functional-hold-bg/25"
             >
-              <StatusBadge
-                status="HOLD"
-                label={text("Đang hạn chế", "Restricted")}
-                size="sm"
-              />
-              <LockSimple size={15} className="shrink-0" aria-hidden="true" />
-              <span className="font-semibold [overflow-wrap:anywhere]">
-                {lot.restrictions.join(" · ")}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge
+                  status="HOLD"
+                  label={
+                    lot.directHoldIds?.length
+                      ? text("HOLD trực tiếp", "Direct HOLD")
+                      : lot.effectiveHoldIds?.length
+                        ? text("HOLD kế thừa", "Inherited HOLD")
+                        : text("Đang hạn chế", "Restricted")
+                  }
+                  size="sm"
+                />
+                <LockSimple size={15} className="shrink-0" aria-hidden="true" />
+                <span className="font-semibold [overflow-wrap:anywhere]">
+                  {lot.restrictions.join(" · ") ||
+                    lot.effectiveHoldIds?.join(", ") ||
+                    lot.directHoldIds?.join(", ")}
+                </span>
+              </div>
+              {inRouter && canIsolateHold && (
+                <Link
+                  to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(activeLotId)}${
+                    (lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])
+                      ? `&holdId=${encodeURIComponent((lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])!)}`
+                      : ""
+                  }`}
+                  className="font-semibold text-accent-danger underline"
+                >
+                  {text("Mở phiếu cách ly (ISOLATION) →", "Open ISOLATION transfer →")}
+                </Link>
+              )}
             </div>
           )}
 
