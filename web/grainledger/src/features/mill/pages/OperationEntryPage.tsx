@@ -509,8 +509,11 @@ export const OperationEntryPage: React.FC = () => {
         err instanceof Error
           ? err.message
           : "Không thể ghi nhận bút toán vào sổ cái.";
+      const isBalanceError =
+        !balanceResult.isBalanced ||
+        /Mass variance exceeds|exceeds confirmed tolerance|cân bằng khối lượng/i.test(msg);
       setApiErrorMessage(msg);
-      setSubmissionStatus("REJECTED");
+      setSubmissionStatus(isBalanceError || isInputLotOnHold ? "REJECTED" : "IDLE");
     } finally {
       setIsSubmitting(false);
     }

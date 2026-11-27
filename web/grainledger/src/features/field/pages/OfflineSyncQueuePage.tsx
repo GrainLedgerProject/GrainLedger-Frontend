@@ -186,7 +186,7 @@ export const OfflineSyncQueuePage: React.FC = () => {
         ) : (
           <div className="divide-y divide-ink-tertiary/10">
             {records.map((record) => {
-              const item = record.request.payload?.items?.[0];
+              const items = record.request.payload?.items ?? [];
               return (
                 <article key={record.id} className="p-4 sm:p-5 flex gap-3">
                   <div className="p-2 h-fit rounded-xl bg-accent-primary/10 text-accent-primary">
@@ -196,14 +196,26 @@ export const OfflineSyncQueuePage: React.FC = () => {
                     <div className="flex gap-2 justify-between items-start">
                       <p className="font-semibold text-sm text-ink-primary">
                         Phiếu thu mua lúa tươi
+                        {items.length > 1 ? ` (${items.length} dòng)` : ""}
                       </p>
                       <span className="shrink-0 px-2 py-1 rounded-full bg-accent-warning/10 text-accent-warning text-[10px] font-bold">
                         CHỜ GỬI
                       </span>
                     </div>
-                    <p className="font-mono text-xs text-ink-secondary mt-1">
-                      {item?.measuredValue || "0"} kg · Độ ẩm {item?.moisturePercent || "0"}%
-                    </p>
+                    {items.length > 0 ? (
+                      <ul className="mt-1 space-y-0.5 font-mono text-xs text-ink-secondary">
+                        {items.map((line, index) => (
+                          <li key={line.itemId || `${record.id}-${index}`}>
+                            {items.length > 1 ? `Dòng ${line.lineNo ?? index + 1}: ` : ""}
+                            {line.measuredValue || "0"} {line.measuredUnit || "KG"} · Độ ẩm {line.moisturePercent || "0"}%
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="font-mono text-xs text-ink-secondary mt-1">
+                        0 KG · Độ ẩm 0%
+                      </p>
+                    )}
                     <p className="text-xs text-ink-tertiary mt-1">
                       Ghi nhận{" "}
                       {new Date(record.capturedAt).toLocaleString("vi-VN")}

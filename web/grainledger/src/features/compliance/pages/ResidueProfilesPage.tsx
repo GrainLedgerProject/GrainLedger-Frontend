@@ -42,11 +42,13 @@ export function ResidueProfilesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [scopeFilter, setScopeFilter] = useState("all");
+  const [methodFilter, setMethodFilter] = useState("all");
+  const [operationFilter, setOperationFilter] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [retiring, setRetiring] = useState(false);
   const [reason, setReason] = useState("");
   const [notice, setNotice] = useState("");
-  const [editor, setEditor] = useState<{ source: ResidueProfileVersion | null } | null>(null);
+  const [editor, setEditor] = useState<{ source: ResidueProfileVersion | null; clone?: boolean } | null>(null);
   const scope = [
     user?.id,
     user?.organizationId,
@@ -135,6 +137,37 @@ export function ResidueProfilesPage() {
     ).format(new Date(value));
   };
   const allProfiles = profiles.data?.items ?? [];
+  const userCompanyId = user?.organizationId ?? null;
+  const canCloneAsCompany = Boolean(
+    selected &&
+    !selected.companyId &&
+    !selected.retirement &&
+    userCompanyId &&
+    user?.permissions.includes("residue.company-policy.manage") &&
+    !allProfiles.some(
+      (item) =>
+        item.code === selected.code && (item.companyId ?? null) === userCompanyId,
+    ) &&
+    !allProfiles.some(
+      (item) => item.supersedesId === selected.id && (item.companyId ?? null) === null,
+    ),
+  );
+  const availableMethods = Array.from(
+    new Set(
+      allProfiles.flatMap((profile) =>
+        profile.laboratory
+          .map((lab) => lab.analyticalMethod.trim())
+          .filter(Boolean),
+      ),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+  const availableOperations = Array.from(
+    new Set(
+      allProfiles.flatMap((profile) =>
+        profile.steps.map((step) => step.process.trim()).filter(Boolean),
+      ),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
   const retiredCount = allProfiles.filter(
     (profile) => profile.retirement,
   ).length;
@@ -147,13 +180,27 @@ export function ResidueProfilesPage() {
       (status === "all" ||
         Boolean(profile.retirement) === (status === "retired")) &&
       (scopeFilter === "all" ||
-        Boolean(profile.companyId) === (scopeFilter === "company")),
+        Boolean(profile.companyId) === (scopeFilter === "company")) &&
+      (methodFilter === "all" ||
+        profile.laboratory.some(
+          (lab) => lab.analyticalMethod.trim() === methodFilter,
+        )) &&
+      (operationFilter === "all" ||
+        profile.steps.some((step) => step.process.trim() === operationFilter)),
   );
-  const filtered = Boolean(query || status !== "all" || scopeFilter !== "all");
+  const filtered = Boolean(
+    query ||
+    status !== "all" ||
+    scopeFilter !== "all" ||
+    methodFilter !== "all" ||
+    operationFilter !== "all",
+  );
   const clearFilters = () => {
     setSearch("");
     setStatus("all");
     setScopeFilter("all");
+    setMethodFilter("all");
+    setOperationFilter("all");
   };
   const publishedLabel = t("residueProfiles.published", "Đã công bố");
   const retiredLabel = t("residueProfiles.retired", "Đã ngừng sử dụng");
@@ -298,7 +345,7 @@ export function ResidueProfilesPage() {
         className={`${panel} space-y-4 p-4 sm:p-5`}
         aria-label={t("residueProfiles.filters", "Bộ lọc hồ sơ")}
       >
-        <div className="grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))]">
           <div>
             <label
               htmlFor="residue-search"
@@ -380,6 +427,66 @@ export function ResidueProfilesPage() {
                 <option value="company">
                   {t("residueProfiles.companyScope", "Phạm vi công ty")}
                 </option>
+              </select>
+            </span>
+          </div>
+          <div>
+            <label
+              htmlFor="residue-method"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {text("Phương pháp phân tích", "Analytical method")}
+            </label>
+            <span className="relative block">
+              <Flask
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="residue-method"
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
+                value={methodFilter}
+                onChange={(event) => setMethodFilter(event.target.value)}
+              >
+                <option value="all">
+                  {text("Tất cả phương pháp", "All methods")}
+                </option>
+                {availableMethods.map((methodName) => (
+                  <option key={methodName} value={methodName}>
+                    {methodName}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div>
+            <label
+              htmlFor="residue-operation"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {text("Công đoạn xử lý", "Processing operation")}
+            </label>
+            <span className="relative block">
+              <SlidersHorizontal
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-secondary"
+              />
+              <select
+                id="residue-operation"
+                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
+                value={operationFilter}
+                onChange={(event) => setOperationFilter(event.target.value)}
+              >
+                <option value="all">
+                  {text("Tất cả công đoạn", "All operations")}
+                </option>
+                {availableOperations.map((operationName) => (
+                  <option key={operationName} value={operationName}>
+                    {operationName}
+                  </option>
+                ))}
               </select>
             </span>
           </div>
@@ -856,21 +963,33 @@ export function ResidueProfilesPage() {
                     <span>{mutation.error.message}</span>
                   </div>
                 )}
-                {mayRetire && !retiring && (
+                {(mayRetire || canCloneAsCompany) && !retiring && (
                   <div className="flex flex-wrap justify-end gap-2 border-t border-ink-tertiary/15 pt-4">
-                    {!profiles.data?.items.some(item => item.code === selected.code &&
+                    {canCloneAsCompany && selected && (
+                      <button
+                        type="button"
+                        className={button}
+                        disabled={detail.isFetching}
+                        onClick={() => setEditor({ source: selected, clone: true })}
+                      >
+                        {text("Nhân bản cho doanh nghiệp", "Clone as company profile")}
+                      </button>
+                    )}
+                    {mayRetire && !profiles.data?.items.some(item => item.code === selected.code &&
                       (item.companyId ?? null) === (selected.companyId ?? null) && Number(item.versionNo) > Number(selected.versionNo)) &&
                       <button type="button" className={button} disabled={detail.isFetching}
                         onClick={() => setEditor({ source: selected })}>{text("Tạo phiên bản kế tiếp", "Create next version")}</button>}
-                    <button
-                      type="button"
-                      className={`${button} border-accent-danger/30 text-accent-danger hover:bg-accent-danger/5`}
-                      disabled={detail.isFetching || detail.isError}
-                      onClick={() => setRetiring(true)}
-                    >
-                      <Archive size={16} aria-hidden="true" />
-                      {t("residueProfiles.retire", "Ngừng sử dụng hồ sơ")}
-                    </button>
+                    {mayRetire && (
+                      <button
+                        type="button"
+                        className={`${button} border-accent-danger/30 text-accent-danger hover:bg-accent-danger/5`}
+                        disabled={detail.isFetching || detail.isError}
+                        onClick={() => setRetiring(true)}
+                      >
+                        <Archive size={16} aria-hidden="true" />
+                        {t("residueProfiles.retire", "Ngừng sử dụng hồ sơ")}
+                      </button>
+                    )}
                   </div>
                 )}
                 {mayRetire && retiring && (
@@ -946,7 +1065,8 @@ export function ResidueProfilesPage() {
         </div>
       </Modal>
       {editor && <ResidueProfileEditor source={editor.source}
-        companyId={editor.source ? editor.source.companyId ?? null : publicationCompanyId}
+        companyId={editor.clone ? userCompanyId : editor.source ? editor.source.companyId ?? null : publicationCompanyId}
+        clone={Boolean(editor.clone)}
         onClose={() => setEditor(null)} onSaved={record => {
           cache.setQueryData(["residue-profile", ...scope, record.id], record);
           setEditor(null);

@@ -209,35 +209,35 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
 
   try {
     logger.info("Synchronizing offline reference data and farmer catalog...");
-    const [farmersRes, refRes, plotSeasonsRes, plotsRes] = await Promise.all([
-      procurementEndpoints.getFarmers({ pageSize: 200 }).catch(() => null),
-      procurementEndpoints.getReferenceData().catch(() => null),
-      procurementEndpoints.getPlotSeasons({ pageSize: 100 }).catch(() => null),
-      procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
+    const fetchAllPages = async <T,>(
+      load: (q: { page: number; pageSize: number }) => Promise<unknown>,
+    ): Promise<T[]> => {
+      const all: T[] = [];
+      for (let page = 1; ; page++) {
+        const res = await load({ page, pageSize: 100 });
+        if (Array.isArray(res)) {
+          all.push(...(res as T[]));
+          return all;
+        }
+        const paged = res as { items?: T[]; hasMore?: boolean } | null | undefined;
+        const pageRows = Array.isArray(paged?.items) ? paged.items : [];
+        all.push(...pageRows);
+        if (!paged?.hasMore || pageRows.length === 0) return all;
+      }
+    };
+
+    const [farmers, refRes, plotSeasonItems, plotItems] = await Promise.all([
+      fetchAllPages<CachedFarmer>((q) => procurementEndpoints.getFarmers(q)),
+      procurementEndpoints.getReferenceData(),
+      fetchAllPages<CachedPlotSeason>((q) => procurementEndpoints.getPlotSeasons(q)).catch(() => [] as CachedPlotSeason[]),
+      fetchAllPages<CachedPlot>((q) => procurementEndpoints.getPlots(q)).catch(() => [] as CachedPlot[]),
     ]);
     if (currentOfflineOwnerKey() !== ownerKey) return { farmersCount: 0, success: false };
 
-    let farmersCount = 0;
-
-    if (farmersRes) {
-      const items = Array.isArray(farmersRes)
-        ? farmersRes
-        : (farmersRes as { items?: CachedFarmer[] })?.items || [];
-
-      if (items.length > 0) {
-        await saveCachedFarmers(items, false, ownerKey);
-        farmersCount = items.length;
-      }
-    }
+    await saveCachedFarmers(farmers, false, ownerKey);
+    const farmersCount = farmers.length;
 
     if (refRes) {
-      const plotSeasonItems = Array.isArray(plotSeasonsRes)
-        ? plotSeasonsRes
-        : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
-      const plotItems = Array.isArray(plotsRes)
-        ? plotsRes
-        : (plotsRes as { items?: CachedPlot[] })?.items || [];
-
       const compositeRefData: CachedReferenceData = {
         ...(refRes as ProcurementReferenceResponse),
         plotSeasons: plotSeasonItems,

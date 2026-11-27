@@ -42,6 +42,18 @@ function isConfirmed(report: LabReportItem): boolean {
   return report.confirmedAt != null || report.status === "CONFIRMED";
 }
 
+function isCompliantStatus(statusStr?: string | null): boolean {
+  return ["COMPLIANT", "PASS", "CONFORMING", "WITHIN_ASSESSED_LIMITS"].includes(
+    statusStr?.toUpperCase() || "",
+  );
+}
+
+function isNonCompliantStatus(statusStr?: string | null): boolean {
+  return ["NON_COMPLIANT", "FAIL", "REJECTED", "EXCEEDS_LIMIT"].includes(
+    statusStr?.toUpperCase() || "",
+  );
+}
+
 function parseReports(value: unknown): {
   items: LabReportItem[];
   hasMore: boolean;
@@ -156,20 +168,13 @@ export const MrlComplianceCheckPage: React.FC = () => {
 
   // KPI counts
   const kpiTotal = reports.length;
-  const kpiCompliant = reports.filter((r) =>
-    ["COMPLIANT", "PASS", "CONFORMING"].includes(
-      r.assessmentStatus?.toUpperCase(),
-    ),
-  ).length;
-  const kpiNonCompliant = reports.filter((r) =>
-    ["NON_COMPLIANT", "FAIL", "REJECTED"].includes(
-      r.assessmentStatus?.toUpperCase(),
-    ),
-  ).length;
+  const kpiCompliant = reports.filter((r) => isCompliantStatus(r.assessmentStatus)).length;
+  const kpiNonCompliant = reports.filter((r) => isNonCompliantStatus(r.assessmentStatus)).length;
   const kpiPending = reports.filter(
     (r) =>
       !isConfirmed(r) &&
-      !["COMPLIANT", "PASS"].includes(r.assessmentStatus?.toUpperCase()),
+      !isCompliantStatus(r.assessmentStatus) &&
+      !isNonCompliantStatus(r.assessmentStatus),
   ).length;
 
   // Filtered reports
@@ -184,17 +189,13 @@ export const MrlComplianceCheckPage: React.FC = () => {
         (report.laboratoryConclusion &&
           report.laboratoryConclusion.toLowerCase().includes(debouncedSearch));
 
-      const statusUpper = report.assessmentStatus?.toUpperCase() || "";
       const matchAssessment =
         assessmentFilter === "ALL" ||
-        (assessmentFilter === "COMPLIANT" &&
-          ["COMPLIANT", "PASS"].includes(statusUpper)) ||
-        (assessmentFilter === "NON_COMPLIANT" &&
-          ["NON_COMPLIANT", "FAIL", "REJECTED"].includes(statusUpper)) ||
+        (assessmentFilter === "COMPLIANT" && isCompliantStatus(report.assessmentStatus)) ||
+        (assessmentFilter === "NON_COMPLIANT" && isNonCompliantStatus(report.assessmentStatus)) ||
         (assessmentFilter === "PENDING" &&
-          !["COMPLIANT", "PASS", "NON_COMPLIANT", "FAIL"].includes(
-            statusUpper,
-          ));
+          !isCompliantStatus(report.assessmentStatus) &&
+          !isNonCompliantStatus(report.assessmentStatus));
 
       return matchSearch && matchAssessment;
     });
@@ -225,9 +226,9 @@ export const MrlComplianceCheckPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (statusStr: string) => {
+  const getStatusBadge = (statusStr?: string | null) => {
     const upper = statusStr?.toUpperCase() || "";
-    if (["COMPLIANT", "PASS", "CONFORMING"].includes(upper)) {
+    if (isCompliantStatus(upper)) {
       return (
         <StatusBadge
           status="COMPLIANT"
@@ -235,7 +236,7 @@ export const MrlComplianceCheckPage: React.FC = () => {
         />
       );
     }
-    if (["NON_COMPLIANT", "FAIL", "REJECTED"].includes(upper)) {
+    if (isNonCompliantStatus(upper)) {
       return (
         <StatusBadge
           status="NON_COMPLIANT"
@@ -243,10 +244,34 @@ export const MrlComplianceCheckPage: React.FC = () => {
         />
       );
     }
+    if (["WARNING", "MARGIN_WARNING", "APPROACHING_LIMIT"].includes(upper)) {
+      return (
+        <StatusBadge
+          status="PENDING"
+          label={t("compliance.mrl.warningMargin", "CẢNH BÁO - TIỆM CẬN BIÊN AN TOÀN")}
+        />
+      );
+    }
+    if (["INCOMPLETE", "INSUFFICIENT_EVIDENCE"].includes(upper)) {
+      return (
+        <StatusBadge
+          status="PENDING"
+          label={t("compliance.mrl.insufficientEvidence", "CHƯA ĐỦ CĂN CỨ MRL")}
+        />
+      );
+    }
+    if (upper === "NO_MRL_IN_VN") {
+      return (
+        <StatusBadge
+          status="PENDING"
+          label={t("compliance.mrl.noVnMrl", "CHƯA CÓ NGƯỠNG MRL VN")}
+        />
+      );
+    }
     return (
       <StatusBadge
         status="PENDING"
-        label={t("compliance.mrl.warningMargin", "CHỜ ĐỐI SOÁT")}
+        label={t("compliance.mrl.notAssessed", "CHƯA ĐÁNH GIÁ MRL")}
       />
     );
   };
@@ -527,7 +552,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   <div className="flex items-center gap-1 text-ink-primary font-medium mt-0.5 truncate">
                     <Tag size={13} className="text-ink-tertiary shrink-0" />
                     <span className="truncate">
-                      {report.statedStandard || "EC 396/2005"}
+                      {report.statedStandard?.trim() ||
+                        t("compliance.mrl.noStatedStandard", "Chưa nêu tiêu chuẩn")}
                     </span>
                   </div>
                 </div>
@@ -612,7 +638,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-ink-secondary max-w-[200px] truncate">
-                      {report.statedStandard || "EC 396/2005"}
+                      {report.statedStandard?.trim() ||
+                        t("compliance.mrl.noStatedStandard", "Chưa nêu tiêu chuẩn")}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {getStatusBadge(report.assessmentStatus)}
@@ -751,7 +778,8 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     Quy chuẩn đối chiếu:
                   </span>
                   <span className="font-medium text-ink-primary">
-                    {selectedReport.statedStandard || "EC No 396/2005"}
+                    {selectedReport.statedStandard?.trim() ||
+                      t("compliance.mrl.noStatedStandard", "Chưa nêu tiêu chuẩn")}
                   </span>
                 </div>
               </div>

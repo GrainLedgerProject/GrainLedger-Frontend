@@ -1,5 +1,5 @@
 import { confirmAction } from "@/app/store/feedbackStore";
-import React, { useEffect, useState, useCallback, useId } from "react";
+import React, { useEffect, useState, useCallback, useId, useRef } from "react";
 import { selectSessionOwner } from "@/app/store/sessionOwner";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { DuplicateWarning } from "../components/DuplicateWarning";
@@ -79,12 +79,19 @@ export const FarmerRegistrationPage: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Farmer detail modal state
-  const [viewingFarmer, setViewingFarmer] = useState<FarmerRecord | null>(null);
+  const [initialFarmerId] = useState(
+    () => new URLSearchParams(window.location.search).get("farmerId") ?? "",
+  );
+  const [viewingFarmer, setViewingFarmer] = useState<FarmerRecord | null>(() =>
+    initialFarmerId ? { id: initialFarmerId, code: "", name: "" } : null,
+  );
   const [farmerPlots, setFarmerPlots] = useState<FarmerPlotSummary[]>([]);
   const [farmerPlotsPage, setFarmerPlotsPage] = useState(1);
   const [farmerPlotsHasMore, setFarmerPlotsHasMore] = useState(false);
   const [farmerPlotsTotal, setFarmerPlotsTotal] = useState(0);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(() =>
+    Boolean(initialFarmerId),
+  );
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -209,11 +216,8 @@ export const FarmerRegistrationPage: React.FC = () => {
     };
   }, [isOnline, page, searchQuery, t]);
 
-  const openFarmerDetail = useCallback(
+  const loadFarmerDetail = useCallback(
     async (farmer: FarmerRecord, targetPage = 1) => {
-      setViewingFarmer(farmer);
-      setFarmerPlotsPage(targetPage);
-      setLoadingDetail(true);
       try {
         const [detailRes, plotsRes] = await Promise.all([
           procurementEndpoints.getFarmer(farmer.id).catch(() => null),
@@ -248,6 +252,23 @@ export const FarmerRegistrationPage: React.FC = () => {
     },
     [],
   );
+
+  const openFarmerDetail = useCallback(
+    async (farmer: FarmerRecord, targetPage = 1) => {
+      setViewingFarmer(farmer);
+      setFarmerPlotsPage(targetPage);
+      setLoadingDetail(true);
+      await loadFarmerDetail(farmer, targetPage);
+    },
+    [loadFarmerDetail],
+  );
+
+  const initialFarmerHandledRef = useRef(false);
+  useEffect(() => {
+    if (initialFarmerHandledRef.current || !initialFarmerId) return;
+    initialFarmerHandledRef.current = true;
+    void loadFarmerDetail({ id: initialFarmerId, code: "", name: "" }, 1);
+  }, [initialFarmerId, loadFarmerDetail]);
 
   const handleOpenCreate = () => {
     setEditingFarmer(null);
@@ -785,12 +806,22 @@ export const FarmerRegistrationPage: React.FC = () => {
                       key={p.id}
                       className="flex items-center justify-between px-3.5 py-2.5"
                     >
-                      <a
-                        href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}`}
-                        className="font-mono font-bold text-accent-primary hover:underline"
-                      >
-                        {p.code}
-                      </a>
+                      {inRouter ? (
+                        <Link
+                          to={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}&plotId=${encodeURIComponent(p.id)}`}
+                          onClick={() => setViewingFarmer(null)}
+                          className="font-mono font-bold text-accent-primary hover:underline"
+                        >
+                          {p.code}
+                        </Link>
+                      ) : (
+                        <a
+                          href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}&plotId=${encodeURIComponent(p.id)}`}
+                          className="font-mono font-bold text-accent-primary hover:underline"
+                        >
+                          {p.code}
+                        </a>
+                      )}
                       <span className="font-mono text-ink-primary">
                         {Number(p.areaHa).toFixed(2)} ha
                       </span>

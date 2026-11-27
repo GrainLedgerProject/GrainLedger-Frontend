@@ -1,4 +1,4 @@
-﻿import { useId, useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { catalogsEndpoints } from "@/api/catalogs";
 import { collectPages } from "@/api/query";
@@ -24,9 +24,10 @@ const samePath = (a: ResidueProcessStep, b: ResidueProcessStep) =>
   a.process === b.process && a.inputStage === b.inputStage && a.outputStage === b.outputStage &&
   a.outputFraction === b.outputFraction && a.conditions === b.conditions;
 
-export function ResidueProfileEditor({ source, companyId, onClose, onSaved }: {
+export function ResidueProfileEditor({ source, companyId, clone = false, onClose, onSaved }: {
   source: ResidueProfileVersion | null;
   companyId: string | null;
+  clone?: boolean;
   onClose: () => void;
   onSaved: (record: ResidueProfileVersion) => void;
 }) {
@@ -62,12 +63,12 @@ export function ResidueProfileEditor({ source, companyId, onClose, onSaved }: {
     const value = (name: string) => String(form.get(name) ?? "").trim();
     const effectiveTo = value("effectiveTo");
     publish.mutate({
-      id, code: source?.code ?? value("code"), versionNo: Number(source?.versionNo ?? 0) + 1,
+      id, code: source?.code ?? value("code"), versionNo: clone ? 1 : Number(source?.versionNo ?? 0) + 1,
       companyId, kind: "FLOW", schemaVersion: 2, substanceId: source?.substanceId ?? value("substanceId"),
       commodityId: source?.commodityId ?? value("commodityId"), residueDefinition: value("residueDefinition"),
       unit: "mg/kg", decimalPlaces: Number(value("decimalPlaces")), asReceivedConfirmed: form.has("confirmed"),
       effectiveFrom: new Date(value("effectiveFrom")).toISOString(), effectiveTo: effectiveTo ? new Date(effectiveTo).toISOString() : null,
-      supersedesId: source?.id ?? null, evidenceRef: value("evidenceRef"), applicabilityStatement: value("applicabilityStatement"),
+      supersedesId: clone ? null : source?.id ?? null, evidenceRef: value("evidenceRef"), applicabilityStatement: value("applicabilityStatement"),
       reviewedBy: value("reviewedBy"), reviewAuthority: value("reviewAuthority"), reviewedAt: new Date(value("reviewedAt")).toISOString(),
       laboratory: labs.map(({ key, numericKind }) => ({
         analyticalMethod: value(`method-${key}`), numericInterpretationKind: numericKind || null,
@@ -82,16 +83,20 @@ export function ResidueProfileEditor({ source, companyId, onClose, onSaved }: {
           factorLower: value(`lower-${key}`), factorUpper: value(`upper-${key}`), factorSemantics: semantics,
           anchorStage: value(`anchor-${key}`) || null, homogeneousMixing: form.has(`homogeneous-${key}`),
         };
-        return { ...revision, id: source?.steps.find(old => samePath(old, revision))?.id ?? key };
+        return { ...revision, id: (clone ? undefined : source?.steps.find(old => samePath(old, revision))?.id) ?? key };
       }),
     });
   }
 
-  const title = source ? text("Công bố phiên bản thay thế", "Publish a revised profile") : text("Công bố hồ sơ dư lượng mới", "Publish a residue profile");
+  const title = source
+    ? clone
+      ? text("Nhân bản thành hồ sơ doanh nghiệp", "Clone as company profile")
+      : text("Công bố phiên bản thay thế", "Publish a revised profile")
+    : text("Công bố hồ sơ dư lượng mới", "Publish a residue profile");
   return <Modal isOpen ariaLabel={title} onClose={() => { if (!publish.isPending) onClose(); }} closeOnBackdrop={false}
     className="gl-workflow w-[48rem] space-y-4 !rounded-2xl !bg-surface-base !p-5 shadow-xl dark:!bg-surface-raised">
     <h2 id={titleId} className="font-display text-xl font-semibold">{title}</h2>
-    <p>{source ? `${source.code} · v${Number(source.versionNo) + 1}` :
+    <p>{source ? `${source.code} · v${clone ? 1 : Number(source.versionNo) + 1}${clone ? ` (${text("Phạm vi doanh nghiệp", "Company scope")})` : ""}` :
       companyId ? text("Phạm vi doanh nghiệp", "Company scope") : text("Phạm vi hệ thống", "System scope")}</p>
     <Feedback error={catalogs.error} pending={catalogs.isPending} />
     <form method="post" aria-labelledby={titleId} onSubmit={submit} className="space-y-4">

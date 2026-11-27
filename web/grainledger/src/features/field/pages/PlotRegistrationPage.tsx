@@ -135,8 +135,17 @@ export const PlotRegistrationPage: React.FC = () => {
   );
   const retrying = !editingPlot && Boolean(registration);
 
-  // Modal State for Viewing Plot Map
   const [viewingMapPlot, setViewingMapPlot] = useState<PlotRecord | null>(null);
+  const [requestedPlotId] = useState(
+    () => new URLSearchParams(window.location.search).get("plotId") ?? "",
+  );
+  const [dismissedRequestedPlot, setDismissedRequestedPlot] = useState(false);
+
+  const requestedPlotQuery = useQuery({
+    queryKey: ["field-plot-detail-param", requestedPlotId],
+    queryFn: () => procurementEndpoints.getPlot(requestedPlotId),
+    enabled: Boolean(requestedPlotId),
+  });
 
   const plotsQuery = useQuery({
     queryKey: ["field-plots", searchQuery, selectedFarmerId, page, i18n.language],
@@ -174,6 +183,17 @@ export const PlotRegistrationPage: React.FC = () => {
     totalCount = 0,
     hasMore = false,
   } = plotsQuery.data ?? {};
+  const activeViewingPlot: PlotRecord | null =
+    viewingMapPlot ??
+    (!dismissedRequestedPlot && requestedPlotQuery.data
+      ? {
+          ...requestedPlotQuery.data,
+          farmerName:
+            plots.find((p) => p.id === requestedPlotQuery.data.id)?.farmerName ||
+            farmers.find((f) => f.id === requestedPlotQuery.data.farmerId)?.name ||
+            requestedPlotQuery.data.farmerId,
+        }
+      : null);
   const loading = plotsQuery.isFetching;
   const error = actionError ?? plotsQuery.error?.message;
   const loadData = () => {
@@ -220,6 +240,7 @@ export const PlotRegistrationPage: React.FC = () => {
 
   const openDetail = (plot: PlotRecord, edit: boolean) => {
     setError(null);
+    setDismissedRequestedPlot(true);
     plotDetail.mutate(plot, {
       onSuccess: (detail) => {
         if (edit && detail.canEdit !== false) handleOpenEdit(detail);
@@ -828,11 +849,14 @@ export const PlotRegistrationPage: React.FC = () => {
 
       {/* Map Preview Modal */}
       <Modal
-        isOpen={Boolean(viewingMapPlot)}
-        onClose={() => setViewingMapPlot(null)}
+        isOpen={Boolean(activeViewingPlot)}
+        onClose={() => {
+          setViewingMapPlot(null);
+          setDismissedRequestedPlot(true);
+        }}
         ariaLabel={t("field.plot.previewTitle", "Xem vị trí thửa ruộng")}
       >
-        {viewingMapPlot && (
+        {activeViewingPlot && (
           <div className="w-full max-w-xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
             <div className="p-4 border-b border-ink-tertiary/15 flex items-center justify-between">
               <div>
@@ -840,12 +864,15 @@ export const PlotRegistrationPage: React.FC = () => {
                   {t("field.plot.previewBadge", "ĐỊNH VỊ GIS")}
                 </span>
                 <h3 className="font-display font-bold text-base text-ink-primary">
-                  {viewingMapPlot.code} - {viewingMapPlot.farmerName}
+                  {activeViewingPlot.code} - {activeViewingPlot.farmerName}
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setViewingMapPlot(null)}
+                onClick={() => {
+                  setViewingMapPlot(null);
+                  setDismissedRequestedPlot(true);
+                }}
                 className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary cursor-pointer"
               >
                 <X size={18} />
@@ -854,17 +881,17 @@ export const PlotRegistrationPage: React.FC = () => {
 
             <div className="p-4 space-y-3">
               <MapLocationPicker
-                value={formatDisplayCoord(viewingMapPlot.geometry)}
+                value={formatDisplayCoord(activeViewingPlot.geometry)}
                 polygon={
-                  viewingMapPlot.geometry?.type === "Polygon"
-                    ? viewingMapPlot.geometry.coordinates
+                  activeViewingPlot.geometry?.type === "Polygon"
+                    ? activeViewingPlot.geometry.coordinates
                     : undefined
                 }
                 onChange={() => {}}
                 disabled={true}
                 height={320}
               />
-              <PlotRelatedRecords plotId={viewingMapPlot.id} />
+              <PlotRelatedRecords plotId={activeViewingPlot.id} />
 
               <div className="grid grid-cols-2 gap-3 text-xs bg-surface-raised dark:bg-surface-overlay p-3 rounded-lg border border-ink-tertiary/15">
                 <div>
@@ -872,7 +899,7 @@ export const PlotRegistrationPage: React.FC = () => {
                     Diện tích canh tác:
                   </span>
                   <span className="font-mono font-bold text-ink-primary text-sm">
-                    {Number(viewingMapPlot.areaHa).toFixed(2)} ha
+                    {Number(activeViewingPlot.areaHa).toFixed(2)} ha
                   </span>
                 </div>
                 <div>
@@ -880,9 +907,9 @@ export const PlotRegistrationPage: React.FC = () => {
                     Toạ độ GPS (Vĩ độ, Kinh độ):
                   </span>
                   <span className="font-mono font-bold text-accent-primary text-sm">
-                    {viewingMapPlot.geometry?.type === "Polygon"
+                    {activeViewingPlot.geometry?.type === "Polygon"
                       ? t("field.plot.polygonBoundary", "Ranh giới đa giác")
-                      : formatDisplayCoord(viewingMapPlot.geometry)}
+                      : formatDisplayCoord(activeViewingPlot.geometry)}
                   </span>
                 </div>
               </div>
@@ -891,10 +918,11 @@ export const PlotRegistrationPage: React.FC = () => {
                 <div className="flex justify-end pt-2">
                   <button
                     type="button"
-                    disabled={viewingMapPlot.canEdit === false}
+                    disabled={activeViewingPlot.canEdit === false}
                     onClick={() => {
-                      const plotToEdit = viewingMapPlot;
+                      const plotToEdit = activeViewingPlot;
                       setViewingMapPlot(null);
+                      setDismissedRequestedPlot(true);
                       handleOpenEdit(plotToEdit);
                     }}
                     className="px-4 py-2 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-colors cursor-pointer inline-flex items-center gap-1.5"

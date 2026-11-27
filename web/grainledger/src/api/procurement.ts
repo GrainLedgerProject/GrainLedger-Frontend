@@ -141,8 +141,12 @@ export interface SourceLotDetail {
   stage: string;
   procurementId: string;
   procurementCode: string;
+  farmerId?: string;
+  plotId?: string;
+  seasonId?: string;
   plotSeasonId: string;
   riceVariety: string;
+  farmerCode?: string | null;
   plotCode: string | null;
   farmerName: string | null;
   seasonName: string | null;

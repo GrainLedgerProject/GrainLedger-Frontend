@@ -2,7 +2,7 @@ import { ledgerEndpoints } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
 import { confirmAction, toast } from "@/app/store/feedbackStore";
 import { useQuery } from "@tanstack/react-query";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { FacilityDto, LocationDto, EquipmentDto, LocationKind } from "@/api/ledger";
 
@@ -50,6 +50,7 @@ export function useFacilityConfig() {
   const [editingVersion, setEditingVersion] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const createIdRef = useRef<{ fingerprint: string; id: string } | null>(null);
 
   // Form Fields
   const [formName, setFormName] = useState("");
@@ -123,6 +124,7 @@ export function useFacilityConfig() {
     );
     setFormKind("STORE");
     setFormMixedBulk(false);
+    createIdRef.current = null;
     setIsModalOpen(true);
   };
 
@@ -179,16 +181,25 @@ export function useFacilityConfig() {
       setSubmitting(true);
       setModalError(null);
 
+      const trimmedName = formName.trim();
+      const fingerprint = JSON.stringify([modalType, formFacilityId, trimmedName, formKind, formMixedBulk]);
+      const createId = isEdit
+        ? undefined
+        : createIdRef.current?.fingerprint === fingerprint
+          ? createIdRef.current.id
+          : (createIdRef.current = { fingerprint, id: crypto.randomUUID() }).id;
+
       if (modalType === "FACILITY") {
         if (isEdit && editingId) {
           await ledgerEndpoints.updateFacility(editingId, {
-            name: formName.trim(),
+            name: trimmedName,
             version: editingVersion,
           });
           toast.success(`Đã cập nhật nhà máy "${formName}" thành công.`);
         } else {
           await ledgerEndpoints.createFacility({
-            name: formName.trim(),
+            id: createId,
+            name: trimmedName,
           });
           toast.success(`Đã thêm nhà máy "${formName}" thành công.`);
         }
@@ -200,7 +211,7 @@ export function useFacilityConfig() {
         if (isEdit && editingId) {
           await ledgerEndpoints.updateLocation(editingId, {
             facilityId: formFacilityId,
-            name: formName.trim(),
+            name: trimmedName,
             kind: formKind,
             version: editingVersion,
             mixedBulk: formMixedBulk,
@@ -208,8 +219,9 @@ export function useFacilityConfig() {
           toast.success(`Đã cập nhật vị trí "${formName}" thành công.`);
         } else {
           await ledgerEndpoints.createLocation({
+            id: createId,
             facilityId: formFacilityId,
-            name: formName.trim(),
+            name: trimmedName,
             kind: formKind,
             mixedBulk: formMixedBulk,
           });
@@ -224,19 +236,21 @@ export function useFacilityConfig() {
         if (isEdit && editingId) {
           await ledgerEndpoints.updateEquipment(editingId, {
             facilityId: formFacilityId,
-            name: formName.trim(),
+            name: trimmedName,
             version: editingVersion,
           });
           toast.success(`Đã cập nhật thiết bị "${formName}" thành công.`);
         } else {
           await ledgerEndpoints.createEquipment({
+            id: createId,
             facilityId: formFacilityId,
-            name: formName.trim(),
+            name: trimmedName,
           });
           toast.success(`Đã thêm thiết bị "${formName}" thành công.`);
         }
       }
 
+      createIdRef.current = null;
       setIsModalOpen(false);
       await loadData();
     } catch (err: unknown) {

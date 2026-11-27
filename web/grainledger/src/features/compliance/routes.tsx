@@ -27,8 +27,8 @@ export const complianceRoutes = [
     anyPermissions: ["lab.read", "lab.write"],
   }),
   screenRoute(compliancePaths.newSample, createElement(labSampleRegistrationPage, { defaultTab: "CREATE" }), {
-    roles: ["CUSTOMER_MANAGER"],
-    permission: "lab.write",
+    roles: ["CUSTOMER_PROCUREMENT_OFFICER"],
+    permission: "purchases.write",
   }),
   screenRoute(compliancePaths.results, mrlComplianceCheckPage, {
     roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],

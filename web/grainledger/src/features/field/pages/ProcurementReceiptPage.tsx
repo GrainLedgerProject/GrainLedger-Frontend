@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { receiptPath } from "../paths";
+import { toDecimal } from "@/shared/utils/decimalMass";
 import {
   procurementEndpoints,
   type RegisterProcurementRequest,
@@ -74,8 +75,11 @@ interface ProcurementReceiptItem {
   farmerName?: string;
   commodityName?: string;
   receivedAt: string;
+  itemCount?: number;
   totalQuantityKg?: number;
   totalNetMassKg?: string;
+  remainingStockKg?: string;
+  availableStockKg?: string;
   status?: string;
   isOfflinePending?: boolean;
   items?: Array<{
@@ -85,6 +89,52 @@ interface ProcurementReceiptItem {
     moisturePercent: string | null;
     lotId: string;
   }>;
+}
+
+function buildPendingReceiptItems(
+  queued: Awaited<ReturnType<typeof getQueuedProcurements>>,
+  cachedFarmers: CachedFarmer[] | null | undefined,
+  massUnits: ReadonlyArray<{ code: string; kgFactor: string }> | undefined,
+  fallbackFarmerLabel: string,
+): ProcurementReceiptItem[] {
+  const units = massUnits?.length ? massUnits : DEFAULT_MASS_UNITS;
+  return queued.map((q) => {
+    const rawItems = q.request.payload?.items ?? [];
+    const mappedItems = rawItems.map((item, idx) => ({
+      lineNo: Number(item.lineNo ?? idx + 1),
+      measuredValue: item.measuredValue,
+      measuredUnit: item.measuredUnit,
+      moisturePercent: item.moisturePercent,
+      lotId: item.lotId,
+    }));
+    let computedWeight = toDecimal(0);
+    let canComputeWeight = mappedItems.length > 0;
+    for (const item of mappedItems) {
+      const unitCode = (item.measuredUnit || "KG").toUpperCase();
+      const unitMeta = units.find((u) => u.code.toUpperCase() === unitCode);
+      const valStr = item.measuredValue?.trim();
+      if (!unitMeta || !valStr || isNaN(Number(valStr))) {
+        canComputeWeight = false;
+        break;
+      }
+      computedWeight = computedWeight.plus(toDecimal(valStr).mul(toDecimal(unitMeta.kgFactor)));
+    }
+    const matchedFarmer = (cachedFarmers || []).find(
+      (f) => f.id === q.request.payload?.farmerId,
+    );
+    return {
+      id: q.id,
+      code: `OFFLINE-${q.request.clientOperationId.slice(0, 8).toUpperCase()}`,
+      farmerId: q.request.payload?.farmerId || "",
+      farmerName: matchedFarmer?.name || fallbackFarmerLabel,
+      receivedAt: q.capturedAt,
+      itemCount: mappedItems.length,
+      totalNetMassKg: canComputeWeight ? computedWeight.toString() : undefined,
+      isOfflinePending: true,
+      status: "PENDING",
+      items: mappedItems,
+    };
+  });
 }
 
 export const ProcurementReceiptPage: React.FC = () => {
@@ -202,34 +252,12 @@ export const ProcurementReceiptPage: React.FC = () => {
       const queued = await getQueuedProcurements().catch(() => []);
       if (!isMountedRef.current) return;
 
-      const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
-        const item = q.request.payload?.items?.[0];
-        const matchedFarmer = (cachedFarmers || []).find(
-          (f) => f.id === q.request.payload?.farmerId,
-        );
-        return {
-          id: q.id,
-          code: `OFFLINE-${q.request.clientOperationId.slice(0, 8).toUpperCase()}`,
-          farmerId: q.request.payload?.farmerId || "",
-          farmerName:
-            matchedFarmer?.name ||
-            t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
-          receivedAt: q.capturedAt,
-          isOfflinePending: true,
-          status: "PENDING",
-          items: item
-            ? [
-                {
-                  lineNo: 1,
-                  measuredValue: item.measuredValue,
-                  measuredUnit: item.measuredUnit,
-                  moisturePercent: item.moisturePercent,
-                  lotId: item.lotId,
-                },
-              ]
-            : [],
-        };
-      });
+      const pendingItems = buildPendingReceiptItems(
+        queued,
+        cachedFarmers,
+        cachedRef?.massUnits,
+        t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
+      );
 
       // 3. If online, fetch fresh server data
       if (isOnline) {
@@ -384,34 +412,12 @@ export const ProcurementReceiptPage: React.FC = () => {
 
         const queued = await getQueuedProcurements().catch(() => []);
         if (!active) return;
-        const pendingItems: ProcurementReceiptItem[] = queued.map((q) => {
-          const item = q.request.payload?.items?.[0];
-          const matchedFarmer = (cachedFarmers || []).find(
-            (f) => f.id === q.request.payload?.farmerId,
-          );
-          return {
-            id: q.id,
-            code: `OFFLINE-${q.id.slice(0, 8).toUpperCase()}`,
-            farmerId: q.request.payload?.farmerId || "",
-            farmerName:
-              matchedFarmer?.name ||
-              t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
-            receivedAt: q.capturedAt,
-            isOfflinePending: true,
-            status: "PENDING",
-            items: item
-              ? [
-                  {
-                    lineNo: 1,
-                    measuredValue: item.measuredValue,
-                    measuredUnit: item.measuredUnit,
-                    moisturePercent: item.moisturePercent,
-                    lotId: item.lotId,
-                  },
-                ]
-              : [],
-          };
-        });
+        const pendingItems = buildPendingReceiptItems(
+          queued,
+          cachedFarmers,
+          cachedRef?.massUnits,
+          t("field.receipt.offlineFarmer", "Nông hộ (Chờ đồng bộ)"),
+        );
 
         if (isOnline) {
           const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
@@ -1081,8 +1087,17 @@ export const ProcurementReceiptPage: React.FC = () => {
                   <th className="py-3 px-4">
                     {t("field.receipt.farmer", "Nông hộ")}
                   </th>
+                  <th className="py-3 px-4 text-right">
+                    {t("field.receipt.lineCount", "Số dòng")}
+                  </th>
                   <th className="py-3 px-4">
                     {t("field.receipt.weightKg", "Khối lượng cân (kg)")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.remainingStockKg", "Tồn còn lại (kg)")}
+                  </th>
+                  <th className="py-3 px-4">
+                    {t("field.receipt.availableStockKg", "Tồn khả dụng (kg)")}
                   </th>
                   <th className="py-3 px-4">
                     {t("field.receipt.moisture", "Độ ẩm (%)")}
@@ -1095,9 +1110,22 @@ export const ProcurementReceiptPage: React.FC = () => {
               <tbody className="divide-y divide-ink-tertiary/10">
                 {filteredReceipts.map((r) => {
                   const firstItem = r.items?.[0];
+                  const lineCount = r.itemCount ?? r.items?.length;
                   const displayWeight = r.totalNetMassKg ?? r.totalQuantityKg;
                   const displayMoisture =
-                    r.items?.length === 1 ? firstItem?.moisturePercent : null;
+                    r.items?.length === 1
+                      ? firstItem?.moisturePercent != null
+                        ? `${firstItem.moisturePercent}%`
+                        : null
+                      : r.items && r.items.length > 1
+                        ? r.items
+                            .map((item) =>
+                              item.moisturePercent != null
+                                ? `${item.moisturePercent}%`
+                                : "—",
+                            )
+                            .join(" / ")
+                        : null;
 
                   return (
                     <tr
@@ -1136,17 +1164,34 @@ export const ProcurementReceiptPage: React.FC = () => {
                           </span>
                         </span>
                       </td>
+                      <td className="py-3 px-4 text-right font-mono text-ink-secondary">
+                        {lineCount == null ? "—" : lineCount}
+                      </td>
                       <td className="py-3 px-4 font-mono font-bold text-ink-primary">
-                        {displayWeight == null ? "—" : `${displayWeight} kg`}
+                        <div>
+                          {displayWeight == null ? "—" : `${displayWeight} kg`}
+                        </div>
+                        {r.isOfflinePending && r.items && r.items.length > 1 && (
+                          <div className="mt-0.5 text-[11px] font-normal text-ink-secondary">
+                            {r.items
+                              .map(
+                                (item) =>
+                                  `${item.measuredValue || "0"} ${item.measuredUnit || "KG"} (${item.moisturePercent || "0"}%)`,
+                              )
+                              .join(" + ")}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-ink-secondary">
+                        {r.remainingStockKg == null ? "—" : `${r.remainingStockKg} kg`}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-ink-secondary">
+                        {r.availableStockKg == null ? "—" : `${r.availableStockKg} kg`}
                       </td>
                       <td className="py-3 px-4 font-mono">
                         <span className="inline-flex items-center gap-1 text-accent-info font-semibold">
                           <Drop size={13} />
-                          <span>
-                            {displayMoisture == null
-                              ? "—"
-                              : `${displayMoisture}%`}
-                          </span>
+                          <span>{displayMoisture ?? "—"}</span>
                         </span>
                       </td>
                       <td className="py-3 px-4">

@@ -97,7 +97,7 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const canMutateSamples = Boolean(
-    user?.permissions.some((p) => p === "purchases.write" || p === "lab.write"),
+    user?.permissions.includes("purchases.write"),
   );
   const canReadLabReports = Boolean(
     user?.permissions.some((p) => p === "lab.read" || p === "lab.write"),
@@ -164,6 +164,45 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
     setError(null);
     setReloadCount((c) => c + 1);
   }, []);
+
+  useEffect(() => {
+    const requestedSampleId = new URLSearchParams(window.location.search).get("sampleId");
+    if (!requestedSampleId) return;
+    let active = true;
+    sampleEndpoints
+      .getSample(requestedSampleId)
+      .then((sample) => {
+        if (!active || !sample) return;
+        setHandovers([]);
+        setLoadingHandovers(true);
+        setLinkedReports([]);
+        setLoadingReports(canReadLabReports);
+        setSelectedSample(sample);
+        if (canReadLabReports) {
+          void labReportEndpoints
+            .getLabReports({ sampleId: sample.id, pageSize: 20 })
+            .then((res) => {
+              if (!active) return;
+              const items = Array.isArray(res)
+                ? res
+                : ((res as { items?: LabReportResponse[] })?.items ?? []);
+              setLinkedReports(items);
+            })
+            .catch(() => {
+              if (active) setLinkedReports([]);
+            })
+            .finally(() => {
+              if (active) setLoadingReports(false);
+            });
+        }
+      })
+      .catch(() => {
+        // Ignore missing or unauthorized sample ID from deep-link query
+      });
+    return () => {
+      active = false;
+    };
+  }, [canReadLabReports]);
 
   useEffect(() => {
     let active = true;

@@ -41,13 +41,36 @@ export function ContainerClosureForm({
   const [seal, setSeal] = useState(c.sealNumber ?? "");
   const [confirmedVersion, setConfirmedVersion] = useState<number | null>(null);
   const [editingVersion, setEditingVersion] = useState(c.version);
+  const [savedFromVersion, setSavedFromVersion] = useState<number | null>(null);
+
+  const metadataDirty =
+    number.trim() !== (c.containerNumber ?? "") ||
+    seal.trim() !== (c.sealNumber ?? "");
+
+  const effectiveEditingVersion =
+    savedFromVersion !== null &&
+    c.version === savedFromVersion + 1 &&
+    !metadataDirty
+      ? c.version
+      : editingVersion;
 
   const metadata = useContainerCommand(
-    (operationId, input: Omit<ContainerMetadataRequest, "operationId">) =>
-      containerExecutionEndpoints.saveMetadata(c.id, {
+    async (
+      operationId,
+      input: Omit<ContainerMetadataRequest, "operationId">,
+    ) => {
+      const result = (await containerExecutionEndpoints.saveMetadata(c.id, {
         ...input,
         operationId,
-      }),
+      })) as { version?: number } | null | undefined;
+      if (result && typeof result.version === "number") {
+        setEditingVersion(result.version);
+        setSavedFromVersion(null);
+      } else {
+        setSavedFromVersion(input.version);
+      }
+      return result;
+    },
     saved,
     { persistKey: `container:${c.id}:metadata` },
   );
@@ -65,10 +88,6 @@ export function ContainerClosureForm({
     close.isPending ||
     close.uncertain ||
     refreshing;
-
-  const metadataDirty =
-    number.trim() !== (c.containerNumber ?? "") ||
-    seal.trim() !== (c.sealNumber ?? "");
 
   const ready =
     canClose &&
@@ -96,9 +115,13 @@ export function ContainerClosureForm({
       <div className="p-3.5 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 text-xs text-ink-secondary">
         <p>
           {text("Mục tiêu theo container", "This container's target")}:{" "}
-          <strong className="font-mono text-ink-primary">{c.targetKg} kg</strong>{" "}
+          <strong className="font-mono text-ink-primary">
+            {c.targetKg} kg
+          </strong>{" "}
           · {text("Đã thực xếp", "Actually loaded")}:{" "}
-          <strong className="font-mono text-accent-primary">{c.loadedKg} kg</strong>
+          <strong className="font-mono text-accent-primary">
+            {c.loadedKg} kg
+          </strong>
         </p>
       </div>
 
@@ -117,7 +140,7 @@ export function ContainerClosureForm({
         </div>
       ) : canWrite ? (
         <div className="space-y-6">
-          {editingVersion !== c.version && (
+          {effectiveEditingVersion !== c.version && (
             <div className="flex items-center justify-between p-3 rounded-xl bg-functional-stale-bg/40 border border-functional-stale-border text-xs">
               <span>
                 {text(
@@ -130,6 +153,7 @@ export function ContainerClosureForm({
                 disabled={locked}
                 onClick={() => {
                   setEditingVersion(c.version);
+                  setSavedFromVersion(null);
                   setNumber(c.containerNumber ?? "");
                   setSeal(c.sealNumber ?? "");
                   setConfirmedVersion(null);
@@ -157,11 +181,13 @@ export function ContainerClosureForm({
               e.preventDefault();
               if (
                 !locked &&
-                editingVersion === c.version &&
+                effectiveEditingVersion === c.version &&
                 e.currentTarget.reportValidity()
               ) {
+                setEditingVersion(effectiveEditingVersion);
+                setSavedFromVersion(null);
                 metadata.submit({
-                  version: editingVersion,
+                  version: effectiveEditingVersion,
                   containerNumber: number.trim(),
                   sealNumber: seal.trim(),
                 });
@@ -170,7 +196,7 @@ export function ContainerClosureForm({
             className="space-y-4"
           >
             <fieldset
-              disabled={locked || editingVersion !== c.version}
+              disabled={locked || effectiveEditingVersion !== c.version}
               className="space-y-4"
             >
               <legend className="sr-only">
@@ -188,6 +214,8 @@ export function ContainerClosureForm({
                       maxLength={80}
                       value={number}
                       onChange={(e) => {
+                        setEditingVersion(effectiveEditingVersion);
+                        setSavedFromVersion(null);
                         setNumber(e.target.value);
                         setConfirmedVersion(null);
                       }}
@@ -207,6 +235,8 @@ export function ContainerClosureForm({
                       maxLength={80}
                       value={seal}
                       onChange={(e) => {
+                        setEditingVersion(effectiveEditingVersion);
+                        setSavedFromVersion(null);
                         setSeal(e.target.value);
                         setConfirmedVersion(null);
                       }}
@@ -220,7 +250,7 @@ export function ContainerClosureForm({
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={locked || editingVersion !== c.version}
+                  disabled={locked || effectiveEditingVersion !== c.version}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-base hover:bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs font-semibold shadow-xs transition-all disabled:opacity-50"
                 >
                   <FloppyDisk size={16} />

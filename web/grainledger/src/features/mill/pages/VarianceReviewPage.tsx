@@ -18,8 +18,9 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import { ledgerEndpoints, type CorrectionOperation, type SetupApiResponse } from "@/api/ledger";
+import { ledgerEndpoints, type CorrectionOperation, type PolicyDto, type SetupApiResponse } from "@/api/ledger";
 import { pageItems, type ApiPage } from "@/api/query";
+import { toDecimal } from "@/shared/utils/decimalMass";
 import { useAuthStore } from "@/app/store/authStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -33,6 +34,36 @@ const evidenceWrapperClass =
 
 function hasNonZeroVariance(varianceKg?: string | null): boolean {
   return varianceKg != null && !/^[+-]?0+(?:\.0+)?$/.test(varianceKg);
+}
+
+function evaluatePolicyTolerance(operation: CorrectionOperation, policies?: PolicyDto[]) {
+  if (!policies) return { policyKnown: false as const };
+  const occurredMs = Date.parse(operation.occurredAt);
+  const activePolicy = policies
+    .filter(
+      (item) =>
+        item.facilityId === operation.facilityId &&
+        item.kind === operation.kind &&
+        (!Number.isFinite(occurredMs) || Date.parse(item.effectiveFrom) <= occurredMs),
+    )
+    .sort((a, b) => Date.parse(b.effectiveFrom) - Date.parse(a.effectiveFrom))[0];
+  if (!activePolicy) {
+    return { policyKnown: true as const, missingPolicy: true as const, exceedsTolerance: false as const, allowedKg: null, tolerancePercent: null };
+  }
+  const totalInput = operation.inputs.reduce((sum, row) => sum.plus(toDecimal(row.quantityKg)), toDecimal(0));
+  const allowedKg = totalInput
+    .mul(toDecimal(activePolicy.tolerancePercent))
+    .mul(10000)
+    .floor()
+    .div(1_000_000);
+  const absVariance = toDecimal(operation.varianceKg).abs();
+  return {
+    policyKnown: true as const,
+    missingPolicy: false as const,
+    exceedsTolerance: absVariance.greaterThan(allowedKg),
+    allowedKg: allowedKg.toString(),
+    tolerancePercent: activePolicy.tolerancePercent,
+  };
 }
 
 export function VarianceReviewPage() {
@@ -149,6 +180,17 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
     queryKey: [...key, "lookup"],
     queryFn: async () => (await ledgerEndpoints.getLookups()) as SetupApiResponse,
   });
+  const policySetup = useQuery({
+    queryKey: [...key, "setup-policies"],
+    queryFn: async () => {
+      try {
+        return await ledgerEndpoints.getSetup();
+      } catch {
+        return null;
+      }
+    },
+  });
+  const effectivePolicies = policySetup.data?.policies ?? lookup.data?.policies;
   const facility = (facilityId: string) =>
     lookup.data?.facilities?.find((row) => row.id === facilityId)?.name ?? facilityId;
 
@@ -214,7 +256,7 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
           </div>
           <div className="font-display text-2xl font-bold text-ink-primary">{confirmedCount}</div>
           <p className="text-[11px] text-ink-tertiary">
-            {text("Sẵn sàng để Vận hành viên ghi sổ cái", "Ready for operator commit")}
+            {text("Sẵn sàng để kiểm tra điều kiện chốt sổ cái", "Ready for operator commit review")}
           </p>
         </div>
       </div>
@@ -460,10 +502,18 @@ function VarianceQueue({ userId, confirm }: { userId: string; confirm: boolean }
                       confirm={confirm}
                       loading={detail.isFetching}
                       lookup={lookup.data}
+                      policies={effectivePolicies}
                       onRefresh={() => cache.invalidateQueries({ queryKey: key })}
-                      onSaved={async () => {
+                      onSaved={async (toleranceBlocked) => {
                         setMessage(
-                          t(confirm ? "workflows.variance.confirmedSaved" : "workflows.variance.committed"),
+                          confirm
+                            ? toleranceBlocked
+                              ? text(
+                                  "Đã lưu xác nhận chênh lệch. Lưu ý: bản nháp vẫn vượt dung sai hoặc thiếu chính sách nên chưa thể chốt vào sổ cái.",
+                                  "Variance confirmation saved. Note: this draft exceeds policy tolerance or lacks an active policy, so it still cannot be posted.",
+                                )
+                              : t("workflows.variance.confirmedSaved")
+                            : t("workflows.variance.committed"),
                         );
                         setId("");
                         await cache.invalidateQueries({ queryKey: key });
@@ -485,6 +535,7 @@ function VarianceDetail({
   confirm,
   loading,
   lookup,
+  policies,
   onRefresh,
   onSaved,
 }: {
@@ -492,8 +543,9 @@ function VarianceDetail({
   confirm: boolean;
   loading: boolean;
   lookup?: SetupApiResponse;
+  policies?: PolicyDto[];
   onRefresh: () => Promise<void>;
-  onSaved: () => Promise<void>;
+  onSaved: (toleranceBlocked: boolean) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const text = useWorkflowText();
@@ -502,10 +554,12 @@ function VarianceDetail({
   const [reviewed, setReviewed] = useState(false);
   const current = operation.confirmedVersion === operation.version;
   const nonzero = hasNonZeroVariance(operation.varianceKg);
+  const toleranceCheck = evaluatePolicyTolerance(operation, policies);
+  const toleranceBlocked = toleranceCheck.policyKnown && (toleranceCheck.exceedsTolerance || toleranceCheck.missingPolicy);
   const valid =
     operation.status === "DRAFT" &&
     !operation.boundCorrectionId &&
-    (confirm ? nonzero && !current : !nonzero || current);
+    (confirm ? nonzero && !current : (!nonzero || current) && !toleranceBlocked);
   const mutation = useMutation({
     mutationFn: () =>
       confirm
@@ -515,7 +569,7 @@ function VarianceDetail({
             reason: reason.trim(),
           })
         : ledgerEndpoints.commitOperation(operation.id, {}),
-    onSuccess: onSaved,
+    onSuccess: () => onSaved(toleranceBlocked),
     onError: async () => {
       setReviewed(false);
       await onRefresh();
@@ -546,6 +600,13 @@ function VarianceDetail({
             <span className="font-mono">{operation.varianceKg ?? "—"}</span>{" "}
             <span className="text-xs font-semibold text-ink-secondary">kg</span>
           </dd>
+          {toleranceCheck.policyKnown && !toleranceCheck.missingPolicy && (
+            <p className="mt-1 text-[11px] text-ink-secondary">
+              {text("Dung sai chính sách:", "Policy tolerance:")}{" "}
+              <span className="font-mono font-semibold">{toleranceCheck.allowedKg} kg</span>{" "}
+              ({toleranceCheck.tolerancePercent}%)
+            </p>
+          )}
         </div>
         <div className="rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 p-3.5 dark:bg-surface-overlay/30">
           <dt className="text-xs font-medium text-ink-secondary">{t("workflows.variance.loss")}</dt>
@@ -616,9 +677,31 @@ function VarianceDetail({
         </section>
       </div>
 
+      {toleranceBlocked && (
+        <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-accent-warning/30 bg-functional-stale-bg p-3.5 text-xs text-accent-warning">
+          <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+          <span>
+            {toleranceCheck.missingPolicy
+              ? text(
+                  "Chưa có chính sách cân bằng khối lượng đang hiệu lực cho công đoạn này — chưa thể chốt vào sổ cái.",
+                  "No applicable confirmed balance policy is active for this operation — it cannot be posted to the ledger yet.",
+                )
+              : text(
+                  `Chênh lệch (${operation.varianceKg} kg) vượt dung sai cho phép (${toleranceCheck.allowedKg} kg). Ngay cả sau khi quản lý xác nhận, thao tác chốt sổ cái vẫn bị chặn cho tới khi điều chỉnh số liệu hoặc cập nhật chính sách.`,
+                  `Variance (${operation.varianceKg} kg) exceeds the allowed policy tolerance (${toleranceCheck.allowedKg} kg). Even with manager confirmation, posting to the ledger will remain blocked until masses or policy are updated.`,
+                )}
+          </span>
+        </div>
+      )}
+
       {!valid ? (
         <div className="rounded-xl border border-dashed border-ink-tertiary/25 bg-surface-raised/40 px-4 py-3 text-xs font-medium text-ink-secondary">
-          {t(current ? "workflows.variance.confirmed" : "workflows.variance.wait")}
+          {toleranceBlocked && !confirm
+            ? text(
+                "Bản nháp hiện chưa đạt điều kiện dung sai chính sách để chốt sổ cái.",
+                "This draft does not currently meet policy tolerance requirements for ledger posting.",
+              )
+            : t(current ? "workflows.variance.confirmed" : "workflows.variance.wait")}
         </div>
       ) : (
         <form

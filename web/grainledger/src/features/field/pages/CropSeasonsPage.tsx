@@ -93,14 +93,21 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
   const [page, setPage] = useState(1);
   const [linkPage, setLinkPage] = useState(1);
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get("seasonId") ?? "");
+  const [plotSeasonParam] = useState(() => new URLSearchParams(window.location.search).get("plotSeasonId") ?? "");
+  const linkedPlotSeason = useQuery({
+    queryKey: [...scope, "plot-season-target", plotSeasonParam],
+    queryFn: () => procurement.getPlotSeason(plotSeasonParam),
+    enabled: Boolean(plotSeasonParam && !selected && !canConfigure),
+  });
+  const activeSeasonId = selected || linkedPlotSeason.data?.seasonId || "";
   const [status, setStatus] = useState("");
   const [sprayHistoryLink, setSprayHistoryLink] = useState<PlotSeasonReference | null>(null);
   const detailPanel = useRef<HTMLElement>(null);
   const [list, detail, links] = useQueries({
     queries: [
       { queryKey: [...scope, "list", page, search, sort], queryFn: () => procurement.getCropSeasons({ companyId, search, page, pageSize, sortBy, sortDirection }) },
-      { queryKey: [...scope, "detail", selected], queryFn: () => procurement.getCropSeason(selected), enabled: Boolean(selected) },
-      { queryKey: [...scope, "links", selected, linkPage], queryFn: () => procurement.getPlotSeasons({ seasonId: selected, page: linkPage, pageSize }), enabled: canReadLinks && Boolean(selected) },
+      { queryKey: [...scope, "detail", activeSeasonId], queryFn: () => procurement.getCropSeason(activeSeasonId), enabled: Boolean(activeSeasonId) },
+      { queryKey: [...scope, "links", activeSeasonId, linkPage], queryFn: () => procurement.getPlotSeasons({ seasonId: activeSeasonId, page: linkPage, pageSize }), enabled: canReadLinks && Boolean(activeSeasonId) },
     ]
   });
   const season = detail.data;
@@ -154,9 +161,9 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
               <th scope="col">{t("field.seasons.name")}</th>
               <th scope="col">{t("field.seasons.period")}</th>
             </tr></thead>
-            <tbody>{list.data.items.map(item => <tr key={item.id} className={selected === item.id ? "bg-accent-primary/10" : undefined}>
+            <tbody>{list.data.items.map(item => <tr key={item.id} className={activeSeasonId === item.id ? "bg-accent-primary/10" : undefined}>
               <th scope="row" className="w-1/2 break-words">
-                <button type="button" aria-pressed={selected === item.id} onClick={() => {
+                <button type="button" aria-pressed={activeSeasonId === item.id} onClick={() => {
                   setSelected(item.id);
                   setLinkPage(1);
                   detailPanel.current?.focus({ preventScroll: true });
@@ -183,8 +190,8 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
             {season.canDelete && <button type="button" className="record-button text-accent-danger" onClick={() => setAction({ type: "deleteSeason", season })}><Trash aria-hidden="true" size={16} />{t("field.seasons.deleteSeason")}</button>}
           </div>}
         </header>
-        {!selected && <RecordEmpty icon={<CalendarDots size={40} />}>{t("field.seasons.chooseSeason")}</RecordEmpty>}
-        {selected && <RecordFeedback error={detail.error} pending={detail.isPending} label={text("Đang tải chi tiết vụ mùa…", "Loading crop season details…")} />}
+        {!activeSeasonId && <RecordEmpty icon={<CalendarDots size={40} />}>{t("field.seasons.chooseSeason")}</RecordEmpty>}
+        {activeSeasonId && <RecordFeedback error={detail.error ?? linkedPlotSeason.error} pending={detail.isPending || linkedPlotSeason.isPending} label={text("Đang tải chi tiết vụ mùa…", "Loading crop season details…")} />}
         {season && !detail.error && canReadLinks && <>
           <div className="record-card-header">
             <h3 id="season-links-title" className="record-card-title"><MapPin aria-hidden="true" size={18} className="text-accent-primary" />{t("field.seasons.plots")}</h3>
@@ -198,7 +205,7 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
                 <th scope="col">{t("field.seasons.variety")}</th>
                 <th scope="col" className="text-end">{t("field.seasons.actions")}</th>
               </tr></thead>
-              <tbody>{links.data.items.map(link => <tr key={link.id}>
+              <tbody>{links.data.items.map(link => <tr key={link.id} className={plotSeasonParam === link.id ? "bg-accent-primary/10" : undefined}>
                 <th scope="row" className="font-mono font-bold text-accent-primary [overflow-wrap:anywhere]">{link.plotCode}</th>
                 <td className="[overflow-wrap:anywhere]">{link.riceVariety}</td>
                 <td><div className="flex flex-wrap items-center justify-end gap-1">

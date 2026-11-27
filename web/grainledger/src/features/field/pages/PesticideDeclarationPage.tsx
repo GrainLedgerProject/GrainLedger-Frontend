@@ -1,4 +1,4 @@
-﻿import { useId, useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { ClipboardText, Eye, Plus, SprayBottle, Trash } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -29,24 +29,26 @@ export function PesticideDeclarationPage() {
   const { t, i18n } = useTranslation();
   const text = useWorkflowText();
   const historyId = useId();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const plotSeasonId = params.get("plotSeasonId") || undefined;
+  const declarationIdParam = params.get("declarationId") || undefined;
   const owner = useAuthStore(selectSessionOwner);
   const canWrite = useAuthStore(s => s.user?.permissions.includes("farms.write"));
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<SprayDeclarationSummary | null>(null);
+  const activeId = selected?.id ?? declarationIdParam;
   const [status, setStatus] = useState("");
   const list = useQuery({
     queryKey: [...scope, plotSeasonId, page],
     queryFn: () => procurementEndpoints.getSprayDeclarations({ plotSeasonId, page, pageSize: 20 }),
   });
   const detail = useQuery({
-    queryKey: ["field-spray-detail", selected?.id],
-    queryFn: () => procurementEndpoints.getSprayDeclaration(selected!.id),
-    enabled: Boolean(selected),
+    queryKey: ["field-spray-detail", activeId],
+    queryFn: () => procurementEndpoints.getSprayDeclaration(activeId!),
+    enabled: Boolean(activeId),
   });
-  const substances = useQuery({ ...substancesQuery, enabled: Boolean(selected) });
+  const substances = useQuery({ ...substancesQuery, enabled: Boolean(activeId) });
   const historyTitle = text("Lịch sử khai báo", "Declaration history");
   const appliedOnLabel = text("Ngày phun", "Application date");
   const dateFormat = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeZone: "UTC" });
@@ -81,8 +83,13 @@ export function PesticideDeclarationPage() {
           <tbody>{list.data.items.map(row => <tr key={row.id}>
             <td>{date(row.appliedOn)}</td>
             <th scope="row" className="min-w-24 [overflow-wrap:anywhere] sm:min-w-36">
-              <span className="font-mono font-bold text-accent-primary">{row.plotCode || row.plotSeasonId}</span>
-              {row.seasonName && <span className="mt-0.5 block text-xs font-normal text-ink-secondary">{row.seasonName}</span>}
+              <Link
+                className="record-link inline-flex flex-col items-start [overflow-wrap:anywhere]"
+                to={`${fieldPaths.seasons}?plotSeasonId=${encodeURIComponent(row.plotSeasonId)}`}
+              >
+                <span className="font-mono font-bold text-accent-primary">{row.plotCode || row.plotSeasonId}</span>
+                {row.seasonName && <span className="mt-0.5 block text-xs font-normal text-ink-secondary">{row.seasonName}</span>}
+              </Link>
             </th>
             <td className="text-end tabular-nums">{row.itemCount}</td>
             <td className="text-end"><button type="button" title={t("common.details")} className="record-row-action whitespace-nowrap" onClick={() => setSelected(row)}>
@@ -99,15 +106,23 @@ export function PesticideDeclarationPage() {
         setPage(1);
         setStatus(text("Đã lưu khai báo phun thuốc.", "Pesticide declaration saved."));
       }} />}
-    {selected && <RecordDialog title={text("Chi tiết khai báo", "Declaration details")}
-      subtitle={[selected.plotCode || selected.plotSeasonId, selected.seasonName].filter(Boolean).join(" · ")}
-      icon={<ClipboardText size={22} />} onClose={() => setSelected(null)} dismissOnBackdrop>
+    {activeId && <RecordDialog title={text("Chi tiết khai báo", "Declaration details")}
+      subtitle={[(selected?.plotCode || detail.data?.plotSeasonId || selected?.plotSeasonId), selected?.seasonName].filter(Boolean).join(" · ")}
+      icon={<ClipboardText size={22} />} onClose={() => {
+        setSelected(null);
+        if (declarationIdParam) {
+          const next = new URLSearchParams(params);
+          next.delete("declarationId");
+          setParams(next, { replace: true });
+        }
+      }} dismissOnBackdrop>
       <RecordFeedback error={detail.error} pending={detail.isPending} label={text("Đang tải chi tiết khai báo…", "Loading declaration details…")} />
       {detail.data && <div className="space-y-5">
         <dl className="record-details [overflow-wrap:anywhere] sm:grid-cols-2">
           <div><dt>{appliedOnLabel}</dt><dd>{date(detail.data.appliedOn)}</dd></div>
           <div><dt>{text("Nguồn thông tin", "Information source")}</dt><dd>{detail.data.informationSource}</dd></div>
           <div><dt>{text("Tham chiếu chứng cứ", "Evidence reference")}</dt><dd>{detail.data.evidenceRef || "—"}</dd></div>
+          <div><dt>{text("Thu thập lúc", "Captured at")}</dt><dd><time dateTime={detail.data.capturedAt}>{new Date(detail.data.capturedAt).toLocaleString(i18n.language)}</time></dd></div>
           <div><dt>{text("Ghi nhận lúc", "Recorded at")}</dt><dd><time dateTime={detail.data.recordedAt}>{new Date(detail.data.recordedAt).toLocaleString(i18n.language)}</time></dd></div>
         </dl>
         <div className="space-y-2">

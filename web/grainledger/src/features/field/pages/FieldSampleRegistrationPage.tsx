@@ -13,7 +13,7 @@ import { RecordDialog, RecordEmpty, RecordFeedback, RecordPagination, RecordRefr
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { captureWasRejected, loadPendingCapture, submitPendingCapture } from "../offline/pendingCapture";
-import { fieldPaths, sourceLotPath } from "../paths";
+import { fieldPaths, receiptPath, sourceLotPath } from "../paths";
 
 const key = ["field-samples"];
 const kinds = {
@@ -85,6 +85,7 @@ export function FieldSampleRegistrationPage() {
           {list.data.items.length ? <RecordTable labelledBy={listTitleId}>
             <thead><tr>
               <th scope="col">{text("Mẫu", "Sample")}</th>
+              <th scope="col">{text("Vật liệu", "Material")}</th>
               <th scope="col">{text("Niêm phong", "Seal")}</th>
               <th scope="col">{text("Lấy lúc", "Collected at")}</th>
               <th scope="col" className="text-end">{text("Lần bàn giao", "Handovers")}</th>
@@ -93,6 +94,7 @@ export function FieldSampleRegistrationPage() {
               <th scope="row" className="whitespace-nowrap">
                 <button type="button" className="record-row-action font-mono text-accent-primary" onClick={() => select(row.id)}>{row.code}</button>
               </th>
+              <td className="[overflow-wrap:anywhere]">{row.materialDescription || text("Chưa ghi nhận", "Not recorded")}</td>
               <td className="font-mono [overflow-wrap:anywhere]">{row.sealCode}</td>
               <td><time dateTime={row.collectedAt}>{dateTime.format(new Date(row.collectedAt))}</time></td>
               <td className="text-end tabular-nums">{row.handoverCount}</td>
@@ -222,11 +224,21 @@ function SampleDetail({ sampleId, storageKey }: { sampleId: string; storageKey?:
   const canReadLabReports = useAuthStore(state =>
     state.user?.permissions.some(p => p === "lab.read" || p === "lab.write") ?? false,
   );
+  const canReadOrigin = useAuthStore(state =>
+    state.user?.permissions.some(p => p === "purchases.write" || p === "lots.read.tenant") ?? false,
+  );
   const titleId = useId();
   const historyId = useId();
   const reportsId = useId();
   const dateTime = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" });
   const query = useQuery({ queryKey: [...key, "detail", sampleId], queryFn: () => sampleEndpoints.getSample(sampleId) });
+  const row = query.data;
+  const sourceOrigin = useQuery({
+    queryKey: [...key, "origin", row?.sourceLotId],
+    queryFn: () => procurementEndpoints.getSourceLot(row!.sourceLotId),
+    enabled: Boolean(row?.sourceLotId && canReadOrigin),
+  });
+  const origin = sourceOrigin.data;
   const handovers = useQuery({
     queryKey: [...key, "handovers", sampleId],
     queryFn: () => collectPages(paging => sampleEndpoints.getSampleHandovers(sampleId, paging)),
@@ -236,14 +248,15 @@ function SampleDetail({ sampleId, storageKey }: { sampleId: string; storageKey?:
     queryFn: () => collectPages(paging => labReportEndpoints.getLabReports({ ...paging, sampleId })),
     enabled: canReadLabReports,
   });
-  const row = query.data;
   return <>
     <RecordFeedback error={query.error} pending={query.isPending} label={text("Đang tải chi tiết mẫu…", "Loading sample details…")} />
     {row && <>
       <section className="record-card rounded-xl" aria-labelledby={titleId}>
         <header className="record-card-header">
           <h2 id={titleId} className="record-card-title [overflow-wrap:anywhere]"><TestTube size={20} className="shrink-0 text-accent-primary" aria-hidden="true" />{row.code}</h2>
-          <Link className="record-link" to={sourceLotPath(row.sourceLotId)}>{text("Xem lô nguồn", "View source lot")}</Link>
+          <Link className="record-link font-mono" to={sourceLotPath(row.sourceLotId)}>
+            {origin?.lotCode ? `${text("Lô nguồn", "Source lot")}: ${origin.lotCode}` : text("Xem lô nguồn", "View source lot")}
+          </Link>
         </header>
         <div className="p-4 sm:p-5">
           <dl className="record-details [overflow-wrap:anywhere] sm:grid-cols-2">
@@ -252,6 +265,54 @@ function SampleDetail({ sampleId, storageKey }: { sampleId: string; storageKey?:
             {row.materialDescription && <div className="sm:col-span-2">
               <dt>{text("Mô tả mẫu", "Material description")}</dt><dd className="whitespace-pre-wrap">{row.materialDescription}</dd>
             </div>}
+            {origin && <>
+              <div>
+                <dt>{text("Phiếu thu mua", "Procurement receipt")}</dt>
+                <dd>
+                  <Link className="record-link font-mono" to={receiptPath(origin.procurementId)}>
+                    {origin.procurementCode}
+                  </Link>
+                </dd>
+              </div>
+              {(origin.farmerId || origin.farmerName || origin.farmerCode) && (
+                <div>
+                  <dt>{text("Nông hộ", "Farmer")}</dt>
+                  <dd>
+                    {origin.farmerId ? (
+                      <Link className="record-link" to={`${fieldPaths.farmers}?farmerId=${encodeURIComponent(origin.farmerId)}`}>
+                        {origin.farmerName ?? origin.farmerCode ?? origin.farmerId}
+                      </Link>
+                    ) : (
+                      <span>{origin.farmerName ?? origin.farmerCode}</span>
+                    )}
+                  </dd>
+                </div>
+              )}
+              {(origin.plotId || origin.plotCode) && (
+                <div>
+                  <dt>{text("Thửa ruộng", "Plot")}</dt>
+                  <dd>
+                    {origin.plotId ? (
+                      <Link className="record-link font-mono" to={`${fieldPaths.plots}?plotId=${encodeURIComponent(origin.plotId)}`}>
+                        {origin.plotCode ?? origin.plotId}
+                      </Link>
+                    ) : (
+                      <span className="font-mono">{origin.plotCode}</span>
+                    )}
+                  </dd>
+                </div>
+              )}
+              {(origin.seasonName || origin.riceVariety || origin.plotSeasonId) && (
+                <div>
+                  <dt>{text("Vụ mùa & Giống lúa", "Season & rice variety")}</dt>
+                  <dd>
+                    <Link className="record-link" to={`${fieldPaths.seasons}?plotSeasonId=${encodeURIComponent(origin.plotSeasonId)}`}>
+                      {[origin.seasonName ?? origin.plotSeasonId, origin.riceVariety].filter(Boolean).join(" · ")}
+                    </Link>
+                  </dd>
+                </div>
+              )}
+            </>}
           </dl>
         </div>
       </section>
