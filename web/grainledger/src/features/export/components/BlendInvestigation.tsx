@@ -365,8 +365,24 @@ export function BlendRatioEditor({
 
   const minVal = Number(ratioRange.minimumKg);
   const maxVal = Number(ratioRange.maximumKg);
+  const sliderMin = Number.isFinite(minVal) ? Math.ceil(minVal) : 0;
+  const sliderMax = Number.isFinite(maxVal) ? Math.floor(maxVal) : 0;
+  const hasIntegerRange = sliderMax >= sliderMin;
   const currentNum = Number(firstKg);
-  const step = Math.max(0.01, (maxVal - minVal) / 100);
+  const isWholeKg = (() => {
+    const trimmed = firstKg.trim();
+    if (!trimmed) return false;
+    try {
+      const dec = new Decimal(trimmed);
+      return (
+        dec.isInteger() &&
+        dec.gte(ratioRange.minimumKg) &&
+        dec.lte(ratioRange.maximumKg)
+      );
+    } catch {
+      return false;
+    }
+  })();
 
   function updateValue(next: string) {
     setEdited(next);
@@ -381,7 +397,8 @@ export function BlendRatioEditor({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onAssess(firstKg);
+        if (!isWholeKg) return;
+        onAssess(new Decimal(firstKg.trim()).toFixed(0));
       }}
       className="space-y-3 rounded-2xl border border-ink-tertiary/20 bg-surface-raised/50 p-4 text-xs"
     >
@@ -394,26 +411,34 @@ export function BlendRatioEditor({
         <input
           type="range"
           aria-label={text("Thanh trượt tỷ lệ lô thứ nhất", "First lot mass slider")}
-          min={minVal}
-          max={maxVal}
-          step={step}
-          value={Number.isFinite(currentNum) ? currentNum : minVal}
-          disabled={disabled}
-          onChange={(e) => updateValue(e.target.value)}
+          min={hasIntegerRange ? sliderMin : minVal}
+          max={hasIntegerRange ? sliderMax : maxVal}
+          step={1}
+          value={
+            Number.isFinite(currentNum)
+              ? Math.round(currentNum)
+              : hasIntegerRange
+                ? sliderMin
+                : minVal
+          }
+          disabled={disabled || !hasIntegerRange}
+          onChange={(e) => updateValue(String(Math.round(Number(e.target.value))))}
           className="w-full accent-accent-primary cursor-pointer"
         />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1">
             <span className="font-semibold text-ink-secondary">
-              {first.lotCode} (kg) · [{ratioRange.minimumKg} – {ratioRange.maximumKg}]
+              {first.lotCode} (kg) · [
+              {hasIntegerRange ? `${sliderMin} – ${sliderMax}` : `${ratioRange.minimumKg} – ${ratioRange.maximumKg}`}]
             </span>
             <input
               name="firstQuantityKg"
               type="number"
-              step="any"
-              min={ratioRange.minimumKg}
-              max={ratioRange.maximumKg}
+              step={1}
+              min={hasIntegerRange ? sliderMin : ratioRange.minimumKg}
+              max={hasIntegerRange ? sliderMax : ratioRange.maximumKg}
+              inputMode="numeric"
               required
               value={firstKg}
               disabled={disabled}
@@ -430,6 +455,14 @@ export function BlendRatioEditor({
             </span>
           </div>
         </div>
+        {edited && !isWholeKg && (
+          <p className="text-[11px] font-medium text-accent-danger">
+            {text(
+              "Khối lượng điều chỉnh phải là số nguyên kg trong phạm vi cho phép.",
+              "Adjustment quantity must be a whole integer (kg) within the allowed range.",
+            )}
+          </p>
+        )}
       </div>
 
       <button
@@ -437,6 +470,7 @@ export function BlendRatioEditor({
         disabled={
           disabled ||
           !edited ||
+          !isWholeKg ||
           (() => {
             try {
               return new Decimal(firstKg).eq(first.quantityKg);

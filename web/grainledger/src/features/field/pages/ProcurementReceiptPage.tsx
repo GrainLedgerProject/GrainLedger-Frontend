@@ -29,6 +29,7 @@ import {
 import { useUiStore } from "@/app/store/uiStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
+import { RecordPagination } from "@/shared/ui/RecordWorkspace";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import {
   Receipt,
@@ -44,7 +45,27 @@ import {
   Warehouse,
   CloudSlash,
   Plant,
+  Trash,
 } from "@phosphor-icons/react";
+
+const DEFAULT_MASS_UNITS = [
+  { code: "KG", name: "Kilogram", kgFactor: "1" },
+  { code: "G", name: "Gram", kgFactor: "0.001" },
+  { code: "T", name: "Tấn", kgFactor: "1000" },
+];
+
+function toLocalDateTimeInput(date = new Date()) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+interface ReceiptLineDraft {
+  key: string;
+  plotSeasonId: string;
+  measuredValue: string;
+  measuredUnit: string;
+  moisturePercent: string;
+}
 
 interface ProcurementReceiptItem {
   id: string;
@@ -69,17 +90,37 @@ interface ProcurementReceiptItem {
 export const ProcurementReceiptPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const canCapture = useAuthStore(state => state.user?.permissions.includes("purchases.write"));
+  const canCapture = useAuthStore((state) =>
+    state.user?.permissions.includes("purchases.write"),
+  );
   const isOnline = useUiStore((state) => state.isOnline);
   const procurementSyncMode = useUiStore((state) => state.procurementSyncMode);
   const setPendingOfflineCount = useUiStore(
     (state) => state.setPendingOfflineCount,
   );
   const [receipts, setReceipts] = useState<ProcurementReceiptItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [farmerFilter, setFarmerFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [sortBy, setSortBy] = useState<"receivedAt" | "code" | "status">(
+    "receivedAt",
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Concurrency and mount guards
   const isFetchingRef = useRef(false);
@@ -93,14 +134,20 @@ export const ProcurementReceiptPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    farmerId: string;
+    collectionSiteId: string;
+    receivingLocationId: string;
+    commodityId: string;
+    receivedAt: string;
+    items: ReceiptLineDraft[];
+  }>({
     farmerId: "",
     collectionSiteId: "",
     receivingLocationId: "",
     commodityId: "",
-    plotSeasonId: "",
-    measuredWeightKg: "5000.0",
-    moisturePercent: "24.5",
+    receivedAt: "",
+    items: [],
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -186,9 +233,20 @@ export const ProcurementReceiptPage: React.FC = () => {
 
       // 3. If online, fetch fresh server data
       if (isOnline) {
+        const receiptParams: Record<string, string | number> = {
+          page,
+          pageSize: 20,
+          sortBy,
+          sortDirection,
+        };
+        if (debouncedSearch) receiptParams.search = debouncedSearch;
+        if (farmerFilter) receiptParams.farmerId = farmerFilter;
+        if (fromDate) receiptParams.from = fromDate;
+        if (toDate) receiptParams.to = toDate;
+
         const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
           await Promise.all([
-            procurementEndpoints.getProcurements().catch(() => []),
+            procurementEndpoints.getProcurements(receiptParams).catch(() => []),
             procurementEndpoints
               .getFarmers({ pageSize: 100 })
               .catch(() => null),
@@ -208,8 +266,17 @@ export const ProcurementReceiptPage: React.FC = () => {
         )
           ? receiptsRes
           : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items || [];
+        const serverTotal = Array.isArray(receiptsRes)
+          ? serverReceipts.length
+          : ((receiptsRes as { totalCount?: number })?.totalCount ??
+            serverReceipts.length);
+        const serverHasMore = Array.isArray(receiptsRes)
+          ? false
+          : Boolean((receiptsRes as { hasMore?: boolean })?.hasMore);
 
-        setReceipts([...pendingItems, ...serverReceipts]);
+        setReceipts([...(page === 1 ? pendingItems : []), ...serverReceipts]);
+        setTotalCount(serverTotal);
+        setHasMore(serverHasMore);
 
         if (farmersRes) {
           const farmerList = Array.isArray(farmersRes)
@@ -268,7 +335,32 @@ export const ProcurementReceiptPage: React.FC = () => {
       }
       isFetchingRef.current = false;
     }
-  }, [canCapture, isOnline, t]);
+  }, [
+    canCapture,
+    debouncedSearch,
+    farmerFilter,
+    fromDate,
+    isOnline,
+    page,
+    sortBy,
+    sortDirection,
+    t,
+    toDate,
+  ]);
+
+  const loadDataRef = useRef(loadData);
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  }, [loadData]);
+
+  const filterInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!filterInitializedRef.current) {
+      filterInitializedRef.current = true;
+      return;
+    }
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -324,7 +416,14 @@ export const ProcurementReceiptPage: React.FC = () => {
         if (isOnline) {
           const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
             await Promise.all([
-              procurementEndpoints.getProcurements().catch(() => []),
+              procurementEndpoints
+                .getProcurements({
+                  page: 1,
+                  pageSize: 20,
+                  sortBy: "receivedAt",
+                  sortDirection: "desc",
+                })
+                .catch(() => []),
               procurementEndpoints
                 .getFarmers({ pageSize: 100 })
                 .catch(() => null),
@@ -342,8 +441,17 @@ export const ProcurementReceiptPage: React.FC = () => {
             ? receiptsRes
             : (receiptsRes as { items?: ProcurementReceiptItem[] })?.items ||
               [];
+          const serverTotal = Array.isArray(receiptsRes)
+            ? serverReceipts.length
+            : ((receiptsRes as { totalCount?: number })?.totalCount ??
+              serverReceipts.length);
+          const serverHasMore = Array.isArray(receiptsRes)
+            ? false
+            : Boolean((receiptsRes as { hasMore?: boolean })?.hasMore);
 
           setReceipts([...pendingItems, ...serverReceipts]);
+          setTotalCount(serverTotal);
+          setHasMore(serverHasMore);
 
           if (farmersRes) {
             const farmerList = Array.isArray(farmersRes)
@@ -406,7 +514,7 @@ export const ProcurementReceiptPage: React.FC = () => {
     void initData();
 
     const unsubQueue = onProcurementQueueChanged(() => {
-      void loadData();
+      void loadDataRef.current();
     });
 
     const unsubCache = onOfflineCacheUpdated(async () => {
@@ -431,7 +539,7 @@ export const ProcurementReceiptPage: React.FC = () => {
       unsubQueue();
       unsubCache();
     };
-  }, [isOnline, loadData, t]);
+  }, [isOnline, t]);
 
   // Filter plot-seasons for the currently selected farmer in formData
   const getAvailablePlotSeasons = useCallback(
@@ -447,6 +555,12 @@ export const ProcurementReceiptPage: React.FC = () => {
     },
     [allPlots, allPlotSeasons],
   );
+
+  const unitOptions =
+    refData?.massUnits && refData.massUnits.length > 0
+      ? refData.massUnits
+      : DEFAULT_MASS_UNITS;
+  const maxLines = Math.max(1, refData?.maxLinesPerReceipt ?? 20);
 
   const handleOpenCreate = () => {
     if (!canCapture) return;
@@ -467,31 +581,80 @@ export const ProcurementReceiptPage: React.FC = () => {
 
     const availablePlotSeasons = getAvailablePlotSeasons(farmerId);
     const defaultPlotSeasonId =
-      availablePlotSeasons[0]?.id ||
-      allPlotSeasons[0]?.id ||
-      crypto.randomUUID();
+      availablePlotSeasons[0]?.id || allPlotSeasons[0]?.id || "";
+    const defaultUnit = unitOptions[0]?.code || "KG";
 
     setFormData({
       farmerId,
       collectionSiteId: defaultSiteId,
       receivingLocationId: defaultLocId,
       commodityId: defaultCommId,
-      plotSeasonId: defaultPlotSeasonId,
-      measuredWeightKg: "5000.0",
-      moisturePercent: "24.5",
+      receivedAt: toLocalDateTimeInput(new Date()),
+      items: [
+        {
+          key: crypto.randomUUID(),
+          plotSeasonId: defaultPlotSeasonId,
+          measuredValue: "",
+          measuredUnit: defaultUnit,
+          moisturePercent: "",
+        },
+      ],
     });
     setIsModalOpen(true);
   };
 
   const handleFarmerChange = (farmerId: string) => {
     const availablePlotSeasons = getAvailablePlotSeasons(farmerId);
-    const newPlotSeasonId =
-      availablePlotSeasons[0]?.id || formData.plotSeasonId;
+    const allowedIds = new Set(availablePlotSeasons.map((ps) => ps.id));
+    const fallbackId = availablePlotSeasons[0]?.id || "";
     setFormData((prev) => ({
       ...prev,
       farmerId,
-      plotSeasonId: newPlotSeasonId,
+      items: prev.items.map((line) => ({
+        ...line,
+        plotSeasonId: allowedIds.has(line.plotSeasonId)
+          ? line.plotSeasonId
+          : fallbackId,
+      })),
     }));
+  };
+
+  const handleAddLine = () => {
+    if (formData.items.length >= maxLines) return;
+    const availablePlotSeasons = getAvailablePlotSeasons(formData.farmerId);
+    const defaultPlotSeasonId =
+      availablePlotSeasons[0]?.id || allPlotSeasons[0]?.id || "";
+    const defaultUnit = unitOptions[0]?.code || "KG";
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          key: crypto.randomUUID(),
+          plotSeasonId: defaultPlotSeasonId,
+          measuredValue: "",
+          measuredUnit: defaultUnit,
+          moisturePercent: "",
+        },
+      ],
+    }));
+  };
+
+  const handleUpdateLine = (key: string, patch: Partial<ReceiptLineDraft>) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((line) =>
+        line.key === key ? { ...line, ...patch } : line,
+      ),
+    }));
+  };
+
+  const handleRemoveLine = (key: string) => {
+    setFormData((prev) =>
+      prev.items.length <= 1
+        ? prev
+        : { ...prev, items: prev.items.filter((line) => line.key !== key) },
+    );
   };
 
   const handleCloseModal = useCallback(() => {
@@ -511,10 +674,40 @@ export const ProcurementReceiptPage: React.FC = () => {
       !formData.collectionSiteId ||
       !formData.receivingLocationId ||
       !selectedCommodityId ||
-      !formData.plotSeasonId
+      formData.items.length === 0
     ) {
       setError(
-        "Cần chọn đủ điểm thu mua, vị trí tiếp nhận, mặt hàng và vụ mùa trước khi lưu phiếu.",
+        "Cần chọn đủ điểm thu mua, vị trí tiếp nhận, mặt hàng và ít nhất một dòng cân trước khi lưu phiếu.",
+      );
+      return;
+    }
+
+    const parsedReceivedAt = formData.receivedAt
+      ? new Date(formData.receivedAt)
+      : new Date();
+    if (Number.isNaN(parsedReceivedAt.getTime())) {
+      setError("Thời điểm cân thu mua không hợp lệ.");
+      return;
+    }
+
+    const normalizedLines = formData.items.map((line) => ({
+      plotSeasonId: line.plotSeasonId,
+      measuredValue: line.measuredValue.trim().replace(",", "."),
+      measuredUnit: line.measuredUnit || "KG",
+      moisturePercent: line.moisturePercent.trim().replace(",", "."),
+    }));
+    const invalidLine = normalizedLines.find(
+      (line) =>
+        !line.plotSeasonId ||
+        !/^[0-9]+(?:\.[0-9]+)?$/.test(line.measuredValue) ||
+        Number(line.measuredValue) <= 0 ||
+        !/^[0-9]+(?:\.[0-9]+)?$/.test(line.moisturePercent) ||
+        Number(line.moisturePercent) < 0 ||
+        Number(line.moisturePercent) > 100,
+    );
+    if (invalidLine) {
+      setError(
+        "Vui lòng nhập đầy đủ thửa-vụ, khối lượng (> 0) và độ ẩm (0–100%) hợp lệ cho tất cả các dòng.",
       );
       return;
     }
@@ -525,24 +718,8 @@ export const ProcurementReceiptPage: React.FC = () => {
 
     let request: RegisterProcurementRequest | null = null;
     try {
-      // Normalize decimal format with dot for C# backend regex: ^[0-9]+(?:.[0-9]+)?$
-      const normalizedWeight = formData.measuredWeightKg
-        .trim()
-        .replace(",", ".");
-      const normalizedMoisture = formData.moisturePercent
-        .trim()
-        .replace(",", ".");
-
       const entityId = crypto.randomUUID();
       const clientOperationId = crypto.randomUUID();
-      const itemId = crypto.randomUUID();
-      const lotId = crypto.randomUUID();
-      const sourceLotId = crypto.randomUUID();
-
-      const finalCollectionSiteId = formData.collectionSiteId;
-      const finalReceivingLocationId = formData.receivingLocationId;
-      const finalCommodityId = selectedCommodityId;
-      const finalPlotSeasonId = formData.plotSeasonId;
 
       request = {
         deviceId: "grainledger-web",
@@ -552,22 +729,20 @@ export const ProcurementReceiptPage: React.FC = () => {
         payload: {
           entityId,
           farmerId: formData.farmerId,
-          collectionSiteId: finalCollectionSiteId,
-          receivingLocationId: finalReceivingLocationId,
-          commodityId: finalCommodityId,
-          receivedAt: new Date().toISOString(),
-          items: [
-            {
-              itemId,
-              lineNo: 1,
-              plotSeasonId: finalPlotSeasonId,
-              measuredValue: normalizedWeight,
-              measuredUnit: "KG",
-              moisturePercent: normalizedMoisture,
-              lotId,
-              sourceLotId,
-            },
-          ],
+          collectionSiteId: formData.collectionSiteId,
+          receivingLocationId: formData.receivingLocationId,
+          commodityId: selectedCommodityId,
+          receivedAt: parsedReceivedAt.toISOString(),
+          items: normalizedLines.map((line, index) => ({
+            itemId: crypto.randomUUID(),
+            lineNo: index + 1,
+            plotSeasonId: line.plotSeasonId,
+            measuredValue: line.measuredValue,
+            measuredUnit: line.measuredUnit,
+            moisturePercent: line.moisturePercent,
+            lotId: crypto.randomUUID(),
+            sourceLotId: crypto.randomUUID(),
+          })),
         },
       };
 
@@ -587,13 +762,16 @@ export const ProcurementReceiptPage: React.FC = () => {
       } else {
         const response =
           await procurementEndpoints.registerProcurement(request);
+        const summaryMass = normalizedLines
+          .map((line) => `${line.measuredValue} ${line.measuredUnit}`)
+          .join(" + ");
         setSuccessMsg(
           t(
             "field.receipt.successCreated",
-            "Đã lập thành công Phiếu thu mua {{code}} ({{weight}} kg lúa tươi)",
+            "Đã lập thành công Phiếu thu mua {{code}} ({{weight}})",
             {
               code: response?.code || "mới",
-              weight: normalizedWeight,
+              weight: summaryMass,
             },
           ),
         );
@@ -681,14 +859,18 @@ export const ProcurementReceiptPage: React.FC = () => {
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          {canCapture && <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <Plus size={16} weight="bold" />
-            <span>{t("field.receipt.createBtn", "Lập Phiếu Thu Mua mới")}</span>
-          </button>}
+          {canCapture && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            >
+              <Plus size={16} weight="bold" />
+              <span>
+                {t("field.receipt.createBtn", "Lập Phiếu Thu Mua mới")}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -742,37 +924,119 @@ export const ProcurementReceiptPage: React.FC = () => {
 
       {/* Filter bar */}
       <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
-        <div className="relative w-full sm:w-80">
-          <MagnifyingGlass
-            size={16}
-            aria-hidden="true"
-            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
+          <div className="relative lg:col-span-2">
+            <MagnifyingGlass
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+            />
+            <input
+              type="text"
+              placeholder={t(
+                "field.receipt.searchPlaceholder",
+                "Tìm theo mã phiếu hoặc nông hộ...",
+              )}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
+            />
+          </div>
+
+          <select
+            aria-label={t("field.receipt.farmer", "Nông hộ")}
+            value={farmerFilter}
+            onChange={(e) => {
+              setFarmerFilter(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+          >
+            <option value="">Tất cả nông hộ</option>
+            {farmers.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.code})
+              </option>
+            ))}
+          </select>
+
           <input
-            type="text"
-            placeholder={t(
-              "field.receipt.searchPlaceholder",
-              "Tìm theo mã phiếu hoặc nông hộ...",
-            )}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
+            type="date"
+            aria-label="Từ ngày"
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
           />
+
+          <input
+            type="date"
+            aria-label="Đến ngày"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+          />
+
+          <div className="flex items-center gap-2">
+            <select
+              aria-label="Sắp xếp theo"
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as typeof sortBy);
+                setPage(1);
+              }}
+              className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+            >
+              <option value="receivedAt">Ngày cân</option>
+              <option value="code">Mã phiếu</option>
+              <option value="status">Trạng thái</option>
+            </select>
+            <select
+              aria-label="Chiều sắp xếp"
+              value={sortDirection}
+              onChange={(e) => {
+                setSortDirection(e.target.value as "asc" | "desc");
+                setPage(1);
+              }}
+              className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+            >
+              <option value="desc">Giảm</option>
+              <option value="asc">Tăng</option>
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-ink-secondary">
-          <div>
-            {t("field.receipt.totalReceipts", "Tổng số phiếu thu mua:")}{" "}
-            <strong className="font-mono text-ink-primary font-bold">
-              {filteredReceipts.length}
-            </strong>
-          </div>
-          {farmers.length > 0 && (
-            <div className="text-ink-tertiary">
-              ({farmers.length}{" "}
-              {t("field.receipt.farmersCached", "nông hộ sẵn sàng")})
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-ink-secondary">
+          <div className="flex items-center gap-4">
+            <div>
+              {t("field.receipt.totalReceipts", "Tổng số phiếu thu mua:")}{" "}
+              <strong className="font-mono text-ink-primary font-bold">
+                {totalCount || filteredReceipts.length}
+              </strong>
             </div>
-          )}
+            {farmers.length > 0 && (
+              <div className="text-ink-tertiary">
+                ({farmers.length}{" "}
+                {t("field.receipt.farmersCached", "nông hộ sẵn sàng")})
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            className="inline-flex items-center gap-1 font-semibold text-accent-primary hover:underline"
+          >
+            <ArrowsClockwise size={13} />
+            <span>Áp dụng lọc</span>
+          </button>
         </div>
       </div>
 
@@ -832,7 +1096,8 @@ export const ProcurementReceiptPage: React.FC = () => {
                 {filteredReceipts.map((r) => {
                   const firstItem = r.items?.[0];
                   const displayWeight = r.totalNetMassKg ?? r.totalQuantityKg;
-                  const displayMoisture = r.items?.length === 1 ? firstItem?.moisturePercent : null;
+                  const displayMoisture =
+                    r.items?.length === 1 ? firstItem?.moisturePercent : null;
 
                   return (
                     <tr
@@ -840,8 +1105,16 @@ export const ProcurementReceiptPage: React.FC = () => {
                       className="hover:bg-surface-raised/60 dark:hover:bg-surface-overlay/40 transition-colors"
                     >
                       <td className="py-3 px-4 font-mono font-bold text-accent-primary">
-                        {r.isOfflinePending ? (r.code || r.id) :
-                          <Link className="underline underline-offset-2" to={receiptPath(r.id)}>{r.code || r.id}</Link>}
+                        {r.isOfflinePending ? (
+                          r.code || r.id
+                        ) : (
+                          <Link
+                            className="underline underline-offset-2"
+                            to={receiptPath(r.id)}
+                          >
+                            {r.code || r.id}
+                          </Link>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-ink-secondary">
                         <span className="inline-flex items-center gap-1 font-mono">
@@ -869,7 +1142,11 @@ export const ProcurementReceiptPage: React.FC = () => {
                       <td className="py-3 px-4 font-mono">
                         <span className="inline-flex items-center gap-1 text-accent-info font-semibold">
                           <Drop size={13} />
-                          <span>{displayMoisture == null ? "—" : `${displayMoisture}%`}</span>
+                          <span>
+                            {displayMoisture == null
+                              ? "—"
+                              : `${displayMoisture}%`}
+                          </span>
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -896,7 +1173,11 @@ export const ProcurementReceiptPage: React.FC = () => {
                           />
                         ) : (
                           <StatusBadge
-                            status={r.status?.startsWith("RECEIVED_") ? "BALANCED" : "PENDING"}
+                            status={
+                              r.status?.startsWith("RECEIVED_")
+                                ? "BALANCED"
+                                : "PENDING"
+                            }
                             label={r.status || "—"}
                           />
                         )}
@@ -908,6 +1189,18 @@ export const ProcurementReceiptPage: React.FC = () => {
             </table>
           </div>
         )}
+        <div className="border-t border-ink-tertiary/15 px-4">
+          <RecordPagination
+            page={page}
+            hasMore={hasMore}
+            count={totalCount}
+            onPage={(nextPage) => {
+              setPage(nextPage);
+              setTimeout(() => void loadData(), 0);
+            }}
+            label={t("field.receipt.title", "Phiếu Thu Mua")}
+          />
+        </div>
       </div>
 
       {/* Create Modal */}
@@ -919,7 +1212,7 @@ export const ProcurementReceiptPage: React.FC = () => {
           "Lập Phiếu Thu Mua Lúa Tươi Mới",
         )}
       >
-        <div className="w-full max-w-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl animate-ledger-in">
           <div className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-ink-primary">
               {t("field.receipt.modalTitle", "Lập Phiếu Thu Mua Lúa Tươi Mới")}
@@ -934,62 +1227,52 @@ export const ProcurementReceiptPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-            {/* 1. Farmer Selection */}
-            <div>
-              <label className="block font-semibold text-ink-secondary mb-1">
-                {t("field.receipt.farmerLabel", "Chọn Nông hộ bán lúa *")}
-              </label>
-              <select
-                required
-                value={formData.farmerId}
-                onChange={(e) => handleFarmerChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
-              >
-                <option value="">
-                  {t(
-                    "field.receipt.selectFarmerPlaceholder",
-                    "-- Chọn Nông hộ --",
-                  )}
-                </option>
-                {farmers.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 2. Plot Season Selection */}
-            {currentPlotSeasons.length > 0 && (
+            {/* 1. Farmer Selection & Received At */}
+            <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.receipt.plotSeasonLabel",
-                    "Thửa ruộng / Lô mùa vụ *",
-                  )}
+                  {t("field.receipt.farmerLabel", "Chọn Nông hộ bán lúa *")}
                 </label>
                 <select
                   required
-                  value={formData.plotSeasonId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      plotSeasonId: e.target.value,
-                    }))
-                  }
+                  value={formData.farmerId}
+                  onChange={(e) => handleFarmerChange(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                 >
-                  {currentPlotSeasons.map((ps) => (
-                    <option key={ps.id} value={ps.id}>
-                      {ps.plotCode || "Thửa"} · {ps.seasonName || "Vụ mùa"} (
-                      {ps.riceVariety || "Lúa tươi"})
+                  <option value="">
+                    {t(
+                      "field.receipt.selectFarmerPlaceholder",
+                      "-- Chọn Nông hộ --",
+                    )}
+                  </option>
+                  {farmers.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({f.code})
                     </option>
                   ))}
                 </select>
               </div>
-            )}
 
-            {/* 3. Collection Site & Receiving Location Selection */}
+              <div>
+                <label className="block font-semibold text-ink-secondary mb-1">
+                  {t("field.receipt.weighedAt", "Thời điểm cân")} *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.receivedAt}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      receivedAt: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 2. Collection Site & Receiving Location Selection */}
             {receivingOptions.length > 0 && (
               <div>
                 <label className="block font-semibold text-ink-secondary mb-1">
@@ -1024,7 +1307,7 @@ export const ProcurementReceiptPage: React.FC = () => {
               </div>
             )}
 
-            {/* 4. Commodity Info */}
+            {/* 3. Commodity Info */}
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/15 text-xs">
               <span className="text-ink-secondary flex items-center gap-1.5 font-medium">
                 <Plant size={14} className="text-accent-primary" />
@@ -1035,64 +1318,147 @@ export const ProcurementReceiptPage: React.FC = () => {
               </span>
             </div>
 
-            {/* 5. Measured Weight & Moisture */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
+            {/* 4. Weighing Lines */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-ink-secondary">
                   {t(
-                    "field.receipt.weightLabel",
-                    "Khối lượng cân thực tế (kg) *",
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    value={formData.measuredWeightKg}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((prev) => ({
-                        ...prev,
-                        measuredWeightKg: val,
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono font-bold"
-                  />
-                  <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
-                    KG
-                  </span>
-                </div>
+                    "field.receipt.linesTitle",
+                    "Danh sách dòng cân & thửa-vụ",
+                  )}{" "}
+                  ({formData.items.length}/{maxLines})
+                </span>
+                <button
+                  type="button"
+                  disabled={formData.items.length >= maxLines}
+                  onClick={handleAddLine}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-accent-primary/30 bg-accent-primary/10 text-accent-primary font-semibold hover:bg-accent-primary/20 disabled:opacity-50"
+                >
+                  <Plus size={13} weight="bold" />
+                  <span>{t("field.receipt.addLine", "Thêm dòng")}</span>
+                </button>
               </div>
 
-              <div>
-                <label className="block font-semibold text-ink-secondary mb-1">
-                  {t(
-                    "field.receipt.moistureLabel",
-                    "Độ ẩm đo tại điểm cân (%) *",
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    required
-                    value={formData.moisturePercent}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((prev) => ({
-                        ...prev,
-                        moisturePercent: val,
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg font-mono text-accent-info font-bold"
-                  />
-                  <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
-                    %
-                  </span>
-                </div>
+              <div className="space-y-3">
+                {formData.items.map((line, index) => (
+                  <div
+                    key={line.key}
+                    className="p-3 rounded-xl border border-ink-tertiary/20 bg-surface-raised/60 dark:bg-surface-overlay/40 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-semibold text-ink-primary">
+                        Dòng #{index + 1}
+                      </span>
+                      {formData.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLine(line.key)}
+                          className="inline-flex items-center gap-1 text-accent-danger hover:underline"
+                        >
+                          <Trash size={13} />
+                          <span>Xóa dòng</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-ink-secondary mb-1">
+                        {t(
+                          "field.receipt.plotSeasonLabel",
+                          "Thửa ruộng / Lô mùa vụ *",
+                        )}
+                      </label>
+                      <select
+                        required
+                        value={line.plotSeasonId}
+                        onChange={(e) =>
+                          handleUpdateLine(line.key, {
+                            plotSeasonId: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none"
+                      >
+                        <option value="">-- Chọn thửa ruộng / vụ mùa --</option>
+                        {currentPlotSeasons.map((ps) => (
+                          <option key={ps.id} value={ps.id}>
+                            {ps.plotCode || "Thửa"} ·{" "}
+                            {ps.seasonName || "Vụ mùa"} (
+                            {ps.riceVariety || "Lúa tươi"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block font-semibold text-ink-secondary mb-1">
+                          {t("field.receipt.weightLabel", "Khối lượng cân *")}
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          required
+                          placeholder="VD: 5000"
+                          value={line.measuredValue}
+                          onChange={(e) =>
+                            handleUpdateLine(line.key, {
+                              measuredValue: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-ink-secondary mb-1">
+                          {t("field.receipt.unitLabel", "Đơn vị *")}
+                        </label>
+                        <select
+                          required
+                          value={line.measuredUnit}
+                          onChange={(e) =>
+                            handleUpdateLine(line.key, {
+                              measuredUnit: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono font-semibold"
+                        >
+                          {unitOptions.map((u) => (
+                            <option key={u.code} value={u.code}>
+                              {u.code} ({u.name})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-ink-secondary mb-1">
+                          {t("field.receipt.moistureLabel", "Độ ẩm (%) *")}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            required
+                            placeholder="VD: 24.5"
+                            value={line.moisturePercent}
+                            onChange={(e) =>
+                              handleUpdateLine(line.key, {
+                                moisturePercent: e.target.value,
+                              })
+                            }
+                            className="w-full px-3 py-2 pe-8 rounded-lg bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none font-mono text-accent-info font-bold"
+                          />
+                          <span className="absolute right-3 top-2 text-ink-tertiary font-bold">
+                            %
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

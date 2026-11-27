@@ -43,6 +43,8 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
     setSearch,
     marketFilter,
     setMarketFilter,
+    commodityFilter,
+    setCommodityFilter,
     lookupOpen,
     setLookupOpen,
     viewMode,
@@ -216,7 +218,7 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
         className={`${panel} space-y-4 p-4 sm:p-5`}
         aria-label={t("apiAudit.mrl.filters")}
       >
-        <div className="grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
           <div>
             <label
               htmlFor="mrl-search"
@@ -292,6 +294,27 @@ export function MrlVersionList(props: MrlWorkspaceModel["list"]) {
                 ))}
               </select>
             </span>
+          </div>
+          <div>
+            <label
+              htmlFor="mrl-commodity-filter"
+              className="mb-1.5 block text-xs font-semibold text-ink-secondary"
+            >
+              {t("apiAudit.mrl.commodity", "Hàng hóa")}
+            </label>
+            <select
+              id="mrl-commodity-filter"
+              className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
+              value={commodityFilter}
+              onChange={(event) => setCommodityFilter(event.target.value)}
+            >
+              <option value="">{t("apiAudit.mrl.allCommodities", "Tất cả hàng hóa")}</option>
+              {data?.commodities.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-tertiary/15 pt-3">

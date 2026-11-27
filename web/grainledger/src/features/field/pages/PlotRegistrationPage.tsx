@@ -10,6 +10,7 @@ import {
 } from "@/api/procurement";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
+import { RecordPagination } from "@/shared/ui/RecordWorkspace";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useAuthStore } from "@/app/store/authStore";
@@ -103,20 +104,27 @@ function nearbyPlotRequest(coordinates: string, id?: string) {
 export const PlotRegistrationPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const text = useWorkflowText();
+  const canWrite = useAuthStore((s) => s.user?.permissions.includes("farms.write") ?? false);
   const owner = useAuthStore(selectSessionOwner);
   const storageKey = owner ? `grainledger:plot:${owner}` : "";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFarmerId, setSelectedFarmerId] = useState(
     () => new URLSearchParams(window.location.search).get("farmerId") ?? "",
   );
+  const [page, setPage] = useState(1);
   const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal State for Create/Edit
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(
+    () =>
+      canWrite &&
+      new URLSearchParams(window.location.search).get("create") === "1",
+  );
   const [editingPlot, setEditingPlot] = useState<PlotRecord | null>(null);
   const [formData, setFormData] = useState({
-    farmerId: "",
+    farmerId:
+      new URLSearchParams(window.location.search).get("farmerId") ?? "",
     areaHa: 1.5,
     coordinates: "",
   });
@@ -131,9 +139,9 @@ export const PlotRegistrationPage: React.FC = () => {
   const [viewingMapPlot, setViewingMapPlot] = useState<PlotRecord | null>(null);
 
   const plotsQuery = useQuery({
-    queryKey: ["field-plots", searchQuery, selectedFarmerId, i18n.language],
+    queryKey: ["field-plots", searchQuery, selectedFarmerId, page, i18n.language],
     queryFn: async () => {
-      const plotParams: Record<string, string | number> = { pageSize: 50 };
+      const plotParams: Record<string, string | number> = { page, pageSize: 20 };
       if (searchQuery) plotParams.search = searchQuery;
       if (selectedFarmerId) plotParams.farmerId = selectedFarmerId;
 
@@ -143,6 +151,10 @@ export const PlotRegistrationPage: React.FC = () => {
       ]);
 
       const plotItems = pageItems<PlotRecord>(plotsRes);
+      const totalCount = Array.isArray(plotsRes)
+        ? plotItems.length
+        : (plotsRes.totalCount ?? plotItems.length);
+      const hasMore = !Array.isArray(plotsRes) && Boolean(plotsRes.hasMore);
       const farmerItems = pageItems<FarmerOption>(farmersRes);
 
       // Map farmer names to plots
@@ -153,10 +165,15 @@ export const PlotRegistrationPage: React.FC = () => {
           farmerMap.get(p.farmerId) ||
           t("field.plot.unknownFarmer", "Nông hộ chưa rõ"),
       }));
-      return { plots: enrichedPlots, farmers: farmerItems };
+      return { plots: enrichedPlots, farmers: farmerItems, totalCount, hasMore };
     },
   });
-  const { plots = [], farmers = [] } = plotsQuery.data ?? {};
+  const {
+    plots = [],
+    farmers = [],
+    totalCount = 0,
+    hasMore = false,
+  } = plotsQuery.data ?? {};
   const loading = plotsQuery.isFetching;
   const error = actionError ?? plotsQuery.error?.message;
   const loadData = () => {
@@ -382,14 +399,16 @@ export const PlotRegistrationPage: React.FC = () => {
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs cursor-pointer"
-          >
-            <Plus size={16} weight="bold" />
-            <span>{t("field.plot.btnAddPlot", "Thêm Thửa ruộng mới")}</span>
-          </button>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs cursor-pointer"
+            >
+              <Plus size={16} weight="bold" />
+              <span>{t("field.plot.btnAddPlot", "Thêm Thửa ruộng mới")}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -425,6 +444,7 @@ export const PlotRegistrationPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
+                setPage(1);
               }}
               className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 dark:bg-surface-base"
             />
@@ -434,6 +454,7 @@ export const PlotRegistrationPage: React.FC = () => {
               value={selectedFarmerId}
               onChange={(e) => {
                 setSelectedFarmerId(e.target.value);
+                setPage(1);
               }}
               className="filter-control border-ink-tertiary/20 bg-surface-base font-semibold dark:bg-surface-base"
             >
@@ -453,7 +474,7 @@ export const PlotRegistrationPage: React.FC = () => {
           <div>
             {t("field.plot.totalPlots", "Số thửa ruộng:")}{" "}
             <strong className="font-mono text-ink-primary font-bold">
-              {plots.length}
+              {totalCount || plots.length}
             </strong>
           </div>
           <div>
@@ -573,25 +594,29 @@ export const PlotRegistrationPage: React.FC = () => {
                       >
                         <Eye size={15} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => openDetail(plot, true)}
-                        disabled={
-                          plotDetail.isPending || plot.canEdit === false
-                        }
-                        className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
-                        title={t("field.plot.editPlot", "Chỉnh sửa thửa ruộng")}
-                      >
-                        <PencilSimple size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(plot)}
-                        className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors cursor-pointer"
-                        title={t("field.plot.deletePlot", "Xoá thửa ruộng")}
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canWrite && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => openDetail(plot, true)}
+                            disabled={
+                              plotDetail.isPending || plot.canEdit === false
+                            }
+                            className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
+                            title={t("field.plot.editPlot", "Chỉnh sửa thửa ruộng")}
+                          >
+                            <PencilSimple size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(plot)}
+                            className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors cursor-pointer"
+                            title={t("field.plot.deletePlot", "Xoá thửa ruộng")}
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -599,6 +624,15 @@ export const PlotRegistrationPage: React.FC = () => {
             </table>
           </div>
         )}
+        <div className="border-t border-ink-tertiary/15 px-4">
+          <RecordPagination
+            page={page}
+            hasMore={hasMore}
+            count={totalCount}
+            onPage={setPage}
+            label={t("field.plot.title", "Thửa ruộng")}
+          />
+        </div>
       </div>
 
       {/* Create / Edit Plot Modal with Interactive Map Picker */}
@@ -853,21 +887,23 @@ export const PlotRegistrationPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  disabled={viewingMapPlot.canEdit === false}
-                  onClick={() => {
-                    const plotToEdit = viewingMapPlot;
-                    setViewingMapPlot(null);
-                    handleOpenEdit(plotToEdit);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-colors cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <PencilSimple size={14} />
-                  <span>{t("field.plot.editPlot", "Chỉnh sửa thửa này")}</span>
-                </button>
-              </div>
+              {canWrite && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    disabled={viewingMapPlot.canEdit === false}
+                    onClick={() => {
+                      const plotToEdit = viewingMapPlot;
+                      setViewingMapPlot(null);
+                      handleOpenEdit(plotToEdit);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <PencilSimple size={14} />
+                    <span>{t("field.plot.editPlot", "Chỉnh sửa thửa này")}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

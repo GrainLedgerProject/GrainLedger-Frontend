@@ -17,13 +17,32 @@ const residueProfilesPage = lazyScreen(() =>
 const companyResiduePoliciesPage = lazyScreen(() =>
   import("./pages/CompanyResiduePoliciesPage").then(module => ({ default: module.CompanyResiduePoliciesPage })),
 );
+const byproductVarietyPolicyPage = lazyScreen(() =>
+  import("./pages/ByproductVarietyPolicyPage").then(module => ({ default: module.ByproductVarietyPolicyPage })),
+);
 
 export const complianceRoutes = [
-  screenRoute(compliancePaths.samples, createElement(labSampleRegistrationPage, { defaultTab: "LIST" }), { roles: ["CUSTOMER_MANAGER"] }),
-  screenRoute(compliancePaths.newSample, createElement(labSampleRegistrationPage, { defaultTab: "CREATE" }), { roles: ["CUSTOMER_MANAGER"] }),
-  screenRoute(compliancePaths.results, mrlComplianceCheckPage, { roles: ["CUSTOMER_MANAGER"] }),
-  screenRoute(compliancePaths.result, mrlComplianceCheckPage, { roles: ["CUSTOMER_MANAGER"] }),
+  screenRoute(compliancePaths.samples, createElement(labSampleRegistrationPage, { defaultTab: "LIST" }), {
+    roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["lab.read", "lab.write"],
+  }),
+  screenRoute(compliancePaths.newSample, createElement(labSampleRegistrationPage, { defaultTab: "CREATE" }), {
+    roles: ["CUSTOMER_MANAGER"],
+    permission: "lab.write",
+  }),
+  screenRoute(compliancePaths.results, mrlComplianceCheckPage, {
+    roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["lab.read", "lab.write"],
+  }),
+  screenRoute(compliancePaths.result, mrlComplianceCheckPage, {
+    roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["lab.read", "lab.write"],
+  }),
   screenRoute(compliancePaths.safetyMargin, safetyMarginPolicyPage, { roles: ["CUSTOMER_MANAGER"] }),
+  screenRoute(compliancePaths.byproductMixing, byproductVarietyPolicyPage, {
+    roles: ["CUSTOMER_MANAGER"],
+    permission: "byproduct.variety-policy.manage",
+  }),
   screenRoute(compliancePaths.profiles, residueProfilesPage, {
     roles: ["MILL_ADMIN", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER", "MILL_MANAGER", "MILL_OPERATOR"],
     anyPermissions: [

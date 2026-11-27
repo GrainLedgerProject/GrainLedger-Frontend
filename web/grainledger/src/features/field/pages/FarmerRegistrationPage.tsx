@@ -3,10 +3,17 @@ import React, { useEffect, useState, useCallback, useId } from "react";
 import { selectSessionOwner } from "@/app/store/sessionOwner";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { DuplicateWarning } from "../components/DuplicateWarning";
-import { captureWasRejected, loadPendingCapture, submitPendingCapture } from "../offline/pendingCapture";
+import {
+  captureWasRejected,
+  loadPendingCapture,
+  submitPendingCapture,
+} from "../offline/pendingCapture";
 import { fieldPaths } from "../paths";
 import { useTranslation } from "react-i18next";
-import { procurementEndpoints, type RegisterFarmerRequest } from "@/api/procurement";
+import {
+  procurementEndpoints,
+  type RegisterFarmerRequest,
+} from "@/api/procurement";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import {
@@ -17,6 +24,7 @@ import {
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
+import { RecordPagination } from "@/shared/ui/RecordWorkspace";
 import { Feedback } from "@/shared/ui/Workflow";
 import {
   UserPlus,
@@ -31,30 +39,52 @@ import {
   WarningCircle,
   X,
   CloudSlash,
+  Eye,
 } from "@phosphor-icons/react";
+import { Link, useInRouterContext } from "react-router-dom";
 
 interface FarmerRecord {
   id: string;
   code: string;
   name: string;
   contact?: string;
+  createdAt?: string;
   version?: number;
   totalPlots?: number;
   totalAreaHa?: number;
 }
 
+interface FarmerPlotSummary {
+  id: string;
+  code: string;
+  areaHa: number;
+}
+
 export const FarmerRegistrationPage: React.FC = () => {
   const { t } = useTranslation();
+  const inRouter = useInRouterContext();
   const { user } = useAuthStore();
+  const canWrite = user?.permissions.includes("farms.write") ?? false;
   const text = useWorkflowText();
   const owner = selectSessionOwner({ user });
   const storageKey = owner ? `grainledger:farmer:${owner}` : "";
   const isOnline = useUiStore((state) => state.isOnline);
   const [farmers, setFarmers] = useState<FarmerRecord[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Farmer detail modal state
+  const [viewingFarmer, setViewingFarmer] = useState<FarmerRecord | null>(null);
+  const [farmerPlots, setFarmerPlots] = useState<FarmerPlotSummary[]>([]);
+  const [farmerPlotsPage, setFarmerPlotsPage] = useState(1);
+  const [farmerPlotsHasMore, setFarmerPlotsHasMore] = useState(false);
+  const [farmerPlotsTotal, setFarmerPlotsTotal] = useState(0);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,7 +96,8 @@ export const FarmerRegistrationPage: React.FC = () => {
   });
   const [formError, setFormError] = useState<Error | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [pendingRegistration, setPendingRegistration] = useState<RegisterFarmerRequest | null>(null);
+  const [pendingRegistration, setPendingRegistration] =
+    useState<RegisterFarmerRequest | null>(null);
 
   // Manual reload / refresh handler used by user actions (reload button, submit, delete)
   const loadFarmers = useCallback(async () => {
@@ -79,13 +110,21 @@ export const FarmerRegistrationPage: React.FC = () => {
       }
 
       if (isOnline) {
-        const params: Record<string, string | number> = { pageSize: 50 };
+        const params: Record<string, string | number> = { page, pageSize: 20 };
         if (searchQuery) params.search = searchQuery;
         const res = await procurementEndpoints.getFarmers(params);
         const items = Array.isArray(res)
           ? res
           : (res as { items?: FarmerRecord[] })?.items || [];
+        const total = Array.isArray(res)
+          ? res.length
+          : ((res as { totalCount?: number })?.totalCount ?? items.length);
+        const more = Array.isArray(res)
+          ? false
+          : Boolean((res as { hasMore?: boolean })?.hasMore);
         setFarmers(items as FarmerRecord[]);
+        setTotalCount(total);
+        setHasMore(more);
         if (items.length > 0) {
           void saveCachedFarmers(items as CachedFarmer[], false);
         }
@@ -104,7 +143,7 @@ export const FarmerRegistrationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isOnline, searchQuery, t]);
+  }, [isOnline, page, searchQuery, t]);
 
   // Synchronize effect with external system (network / cache) using active cancellation flag
   useEffect(() => {
@@ -115,20 +154,31 @@ export const FarmerRegistrationPage: React.FC = () => {
         // 1. Immediately read cached farmers
         const cached = await getCachedFarmers();
         if (!active) return;
-        if (cached && cached.length > 0) {
+        if (cached && cached.length > 0 && page === 1 && !searchQuery) {
           setFarmers(cached as FarmerRecord[]);
         }
 
         // 2. If online, fetch fresh farmers from server
         if (isOnline) {
-          const params: Record<string, string | number> = { pageSize: 50 };
+          const params: Record<string, string | number> = {
+            page,
+            pageSize: 20,
+          };
           if (searchQuery) params.search = searchQuery;
           const res = await procurementEndpoints.getFarmers(params);
           if (!active) return;
           const items = Array.isArray(res)
             ? res
             : (res as { items?: FarmerRecord[] })?.items || [];
+          const total = Array.isArray(res)
+            ? res.length
+            : ((res as { totalCount?: number })?.totalCount ?? items.length);
+          const more = Array.isArray(res)
+            ? false
+            : Boolean((res as { hasMore?: boolean })?.hasMore);
           setFarmers(items as FarmerRecord[]);
+          setTotalCount(total);
+          setHasMore(more);
           if (items.length > 0) {
             void saveCachedFarmers(items as CachedFarmer[], false);
           }
@@ -157,14 +207,60 @@ export const FarmerRegistrationPage: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [searchQuery, isOnline, t]);
+  }, [isOnline, page, searchQuery, t]);
+
+  const openFarmerDetail = useCallback(
+    async (farmer: FarmerRecord, targetPage = 1) => {
+      setViewingFarmer(farmer);
+      setFarmerPlotsPage(targetPage);
+      setLoadingDetail(true);
+      try {
+        const [detailRes, plotsRes] = await Promise.all([
+          procurementEndpoints.getFarmer(farmer.id).catch(() => null),
+          procurementEndpoints
+            .getPlots({ farmerId: farmer.id, page: targetPage, pageSize: 10 })
+            .catch(() => null),
+        ]);
+        if (detailRes && typeof detailRes === "object") {
+          setViewingFarmer((prev) => ({
+            ...(prev ?? farmer),
+            ...(detailRes as Partial<FarmerRecord>),
+          }));
+        }
+        const plotItems = Array.isArray(plotsRes)
+          ? plotsRes
+          : ((plotsRes as { items?: FarmerPlotSummary[] } | null)?.items ?? []);
+        setFarmerPlots(plotItems as FarmerPlotSummary[]);
+        setFarmerPlotsTotal(
+          Array.isArray(plotsRes)
+            ? plotItems.length
+            : ((plotsRes as { totalCount?: number } | null)?.totalCount ??
+                plotItems.length),
+        );
+        setFarmerPlotsHasMore(
+          Array.isArray(plotsRes)
+            ? false
+            : Boolean((plotsRes as { hasMore?: boolean } | null)?.hasMore),
+        );
+      } finally {
+        setLoadingDetail(false);
+      }
+    },
+    [],
+  );
 
   const handleOpenCreate = () => {
     setEditingFarmer(null);
     setFormError(null);
-    const pending = storageKey ? loadPendingCapture<RegisterFarmerRequest>(storageKey) ?? pendingRegistration : pendingRegistration;
+    const pending = storageKey
+      ? (loadPendingCapture<RegisterFarmerRequest>(storageKey) ??
+        pendingRegistration)
+      : pendingRegistration;
     setPendingRegistration(pending);
-    setFormData({ name: pending?.payload?.name ?? "", contact: pending?.payload?.contact ?? "" });
+    setFormData({
+      name: pending?.payload?.name ?? "",
+      contact: pending?.payload?.contact ?? "",
+    });
     setIsModalOpen(true);
   };
 
@@ -184,7 +280,11 @@ export const FarmerRegistrationPage: React.FC = () => {
     const name = formData.name.trim();
     const contact = formData.contact.trim() || null;
     if (!name) {
-      setFormError(new Error(t("field.farmer.nameRequired", "Vui lòng nhập họ và tên nông dân.")));
+      setFormError(
+        new Error(
+          t("field.farmer.nameRequired", "Vui lòng nhập họ và tên nông dân."),
+        ),
+      );
       return;
     }
 
@@ -196,7 +296,12 @@ export const FarmerRegistrationPage: React.FC = () => {
       if (editingFarmer) {
         const version = editingFarmer.version;
         if (version === undefined || version < 1) {
-          throw new Error(t("field.farmer.reloadBeforeEditing", "Tải lại danh sách nông hộ trước khi chỉnh sửa."));
+          throw new Error(
+            t(
+              "field.farmer.reloadBeforeEditing",
+              "Tải lại danh sách nông hộ trước khi chỉnh sửa.",
+            ),
+          );
         }
         await procurementEndpoints.updateFarmer(editingFarmer.id, {
           code: null,
@@ -215,14 +320,20 @@ export const FarmerRegistrationPage: React.FC = () => {
         );
       } else {
         const request = pendingRegistration ?? {
-              deviceId: "grainledger-web",
-              clientOperationId: crypto.randomUUID(),
-              capturedAt: new Date().toISOString(),
-              payloadSchemaVersion: 2,
-              payload: { entityId: crypto.randomUUID(), code: null, name, contact },
-            };
+          deviceId: "grainledger-web",
+          clientOperationId: crypto.randomUUID(),
+          capturedAt: new Date().toISOString(),
+          payloadSchemaVersion: 2,
+          payload: { entityId: crypto.randomUUID(), code: null, name, contact },
+        };
         setPendingRegistration(request);
-        const farmer = await (storageKey ? submitPendingCapture(storageKey, request, procurementEndpoints.createFarmer) : procurementEndpoints.createFarmer(request));
+        const farmer = await (storageKey
+          ? submitPendingCapture(
+              storageKey,
+              request,
+              procurementEndpoints.createFarmer,
+            )
+          : procurementEndpoints.createFarmer(request));
         setPendingRegistration(null);
         setSuccessMsg(
           t(
@@ -239,8 +350,15 @@ export const FarmerRegistrationPage: React.FC = () => {
       setIsModalOpen(false);
       await loadFarmers();
     } catch (err: unknown) {
-      if (!editingFarmer && captureWasRejected(err)) setPendingRegistration(null);
-      setFormError(err instanceof Error ? err : new Error(t("field.farmer.errAction", "Thao tác không thành công.")));
+      if (!editingFarmer && captureWasRejected(err))
+        setPendingRegistration(null);
+      setFormError(
+        err instanceof Error
+          ? err
+          : new Error(
+              t("field.farmer.errAction", "Thao tác không thành công."),
+            ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -317,14 +435,16 @@ export const FarmerRegistrationPage: React.FC = () => {
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <UserPlus size={16} weight="bold" />
-            <span>{t("field.farmer.btnAddFarmer", "Thêm Nông hộ mới")}</span>
-          </button>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            >
+              <UserPlus size={16} weight="bold" />
+              <span>{t("field.farmer.btnAddFarmer", "Thêm Nông hộ mới")}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -375,7 +495,10 @@ export const FarmerRegistrationPage: React.FC = () => {
               "Tìm theo tên nông hộ hoặc mã số...",
             )}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
             className="filter-control border-ink-tertiary/20 bg-surface-base ps-10 font-body dark:bg-surface-base"
           />
         </div>
@@ -384,7 +507,7 @@ export const FarmerRegistrationPage: React.FC = () => {
           <div>
             {t("field.farmer.totalFarmers", "Tổng số nông hộ:")}{" "}
             <strong className="font-mono text-ink-primary font-bold">
-              {farmers.length}
+              {totalCount || farmers.length}
             </strong>
           </div>
           <div className="hidden md:block">
@@ -456,7 +579,13 @@ export const FarmerRegistrationPage: React.FC = () => {
                       {farmer.code || "N/A"}
                     </td>
                     <td className="py-3 px-4 font-semibold text-ink-primary">
-                      {farmer.name}
+                      <button
+                        type="button"
+                        onClick={() => void openFarmerDetail(farmer, 1)}
+                        className="text-left hover:text-accent-primary hover:underline cursor-pointer"
+                      >
+                        {farmer.name}
+                      </button>
                     </td>
                     <td className="py-3 px-4 font-mono text-ink-secondary">
                       {farmer.contact ? (
@@ -473,10 +602,15 @@ export const FarmerRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <span className="inline-flex items-center gap-1 font-mono text-xs">
                         <MapPin size={13} className="text-accent-primary" />
-                        <a className="underline underline-offset-2"
-                          href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}>
-                          {farmer.totalPlots == null ? text("Xem thửa ruộng", "View plots") :
-                            t("field.farmer.plotsUnit", "{{count}} thửa", { count: farmer.totalPlots })}
+                        <a
+                          className="underline underline-offset-2"
+                          href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}
+                        >
+                          {farmer.totalPlots == null
+                            ? text("Xem thửa ruộng", "View plots")
+                            : t("field.farmer.plotsUnit", "{{count}} thửa", {
+                                count: farmer.totalPlots,
+                              })}
                         </a>
                       </span>
                     </td>
@@ -489,23 +623,38 @@ export const FarmerRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         type="button"
-                        onClick={() => handleOpenEdit(farmer)}
-                        className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
-                        title={t(
-                          "field.farmer.editFarmer",
-                          "Chỉnh sửa nông hộ",
-                        )}
+                        onClick={() => void openFarmerDetail(farmer, 1)}
+                        className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-accent-primary transition-colors"
+                        title={text("Xem hồ sơ nông hộ", "View farmer profile")}
                       >
-                        <PencilSimple size={15} />
+                        <Eye size={15} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(farmer)}
-                        className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
-                        title={t("field.farmer.deleteFarmer", "Xoá nông hộ")}
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canWrite && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(farmer)}
+                            className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
+                            title={t(
+                              "field.farmer.editFarmer",
+                              "Chỉnh sửa nông hộ",
+                            )}
+                          >
+                            <PencilSimple size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(farmer)}
+                            className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
+                            title={t(
+                              "field.farmer.deleteFarmer",
+                              "Xoá nông hộ",
+                            )}
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -513,7 +662,156 @@ export const FarmerRegistrationPage: React.FC = () => {
             </table>
           </div>
         )}
+        <div className="border-t border-ink-tertiary/15 px-4">
+          <RecordPagination
+            page={page}
+            hasMore={hasMore}
+            count={totalCount}
+            onPage={setPage}
+            label={t("field.farmer.title", "Nông hộ")}
+          />
+        </div>
       </div>
+
+      {/* Farmer Profile & Linked Plots Detail Modal */}
+      <Modal
+        isOpen={Boolean(viewingFarmer)}
+        onClose={() => setViewingFarmer(null)}
+        ariaLabel={text("Hồ sơ chi tiết nông hộ", "Farmer profile details")}
+      >
+        {viewingFarmer && (
+          <div className="w-[calc(100vw-2rem)] max-w-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+            <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+              <div>
+                <span className="font-mono text-xs font-bold text-accent-primary">
+                  {viewingFarmer.code}
+                </span>
+                <h3 className="font-display text-lg font-bold text-ink-primary">
+                  {viewingFarmer.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingFarmer(null)}
+                aria-label={t("common.close", "Đóng")}
+                className="p-1 rounded-md text-ink-tertiary hover:text-ink-primary"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="p-5 space-y-4 text-xs">
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-surface-raised/60 dark:bg-surface-overlay/40 border border-ink-tertiary/15">
+                <div>
+                  <dt className="text-ink-tertiary">
+                    {text("Mã nông hộ", "Farmer code")}
+                  </dt>
+                  <dd className="font-mono font-bold text-ink-primary mt-0.5">
+                    {viewingFarmer.code}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ink-tertiary">
+                    {text("Liên hệ", "Contact")}
+                  </dt>
+                  <dd className="text-ink-primary mt-0.5">
+                    {viewingFarmer.contact || "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ink-tertiary">
+                    {text("Ngày đăng ký", "Registered at")}
+                  </dt>
+                  <dd className="font-mono text-ink-primary mt-0.5">
+                    {viewingFarmer.createdAt
+                      ? new Date(viewingFarmer.createdAt).toLocaleString(
+                          "vi-VN",
+                        )
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="font-bold text-sm text-ink-primary">
+                  {text("Thửa ruộng liên kết", "Linked plots")} (
+                  {farmerPlotsTotal})
+                </h4>
+                {canWrite &&
+                  (inRouter ? (
+                    <Link
+                      to={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}&create=1`}
+                      onClick={() => setViewingFarmer(null)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent-primary px-3 py-1.5 font-semibold text-white hover:bg-accent-primary-dim"
+                    >
+                      <MapPin size={14} weight="bold" />
+                      <span>
+                        {text("Thêm thửa cho nông hộ", "Add plot for farmer")}
+                      </span>
+                    </Link>
+                  ) : (
+                    <a
+                      href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}&create=1`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent-primary px-3 py-1.5 font-semibold text-white hover:bg-accent-primary-dim"
+                    >
+                      <MapPin size={14} weight="bold" />
+                      <span>
+                        {text("Thêm thửa cho nông hộ", "Add plot for farmer")}
+                      </span>
+                    </a>
+                  ))}
+              </div>
+
+              {loadingDetail ? (
+                <div className="py-6 flex justify-center">
+                  <GrainLoader
+                    label={text(
+                      "Đang tải thửa ruộng liên kết...",
+                      "Loading linked plots...",
+                    )}
+                  />
+                </div>
+              ) : farmerPlots.length === 0 ? (
+                <p className="py-6 text-center text-ink-secondary border border-dashed border-ink-tertiary/20 rounded-xl">
+                  {text(
+                    "Nông hộ chưa có thửa ruộng nào được đăng ký.",
+                    "No plots registered for this farmer yet.",
+                  )}
+                </p>
+              ) : (
+                <ul className="divide-y divide-ink-tertiary/15 rounded-xl border border-ink-tertiary/15 bg-surface-raised/30">
+                  {farmerPlots.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between px-3.5 py-2.5"
+                    >
+                      <a
+                        href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(viewingFarmer.id)}`}
+                        className="font-mono font-bold text-accent-primary hover:underline"
+                      >
+                        {p.code}
+                      </a>
+                      <span className="font-mono text-ink-primary">
+                        {Number(p.areaHa).toFixed(2)} ha
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <RecordPagination
+                page={farmerPlotsPage}
+                hasMore={farmerPlotsHasMore}
+                count={farmerPlotsTotal}
+                onPage={(nextPage) =>
+                  void openFarmerDetail(viewingFarmer, nextPage)
+                }
+                label={text("Thửa ruộng liên kết", "Linked plots")}
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Create / Edit Farmer Modal */}
       <Modal
@@ -548,16 +846,24 @@ export const FarmerRegistrationPage: React.FC = () => {
                 {t("field.farmer.farmerCodeLabel", "Mã nông hộ")}
               </p>
               {editingFarmer ? (
-                <p className="font-mono text-ink-primary">{editingFarmer.code}</p>
+                <p className="font-mono text-ink-primary">
+                  {editingFarmer.code}
+                </p>
               ) : (
                 <p className="text-ink-secondary">
-                  {t("field.farmer.farmerCodeAssigned", "Hệ thống sẽ cấp mã sau khi đăng ký.")}
+                  {t(
+                    "field.farmer.farmerCodeAssigned",
+                    "Hệ thống sẽ cấp mã sau khi đăng ký.",
+                  )}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor={`${formId}-name`} className="block font-semibold text-ink-secondary mb-1">
+              <label
+                htmlFor={`${formId}-name`}
+                className="block font-semibold text-ink-secondary mb-1"
+              >
                 {t("field.farmer.farmerNameLabel", "Họ và tên Nông dân *")}
               </label>
               <input
@@ -565,7 +871,9 @@ export const FarmerRegistrationPage: React.FC = () => {
                 type="text"
                 required
                 value={formData.name}
-                disabled={submitting || (!editingFarmer && Boolean(pendingRegistration))}
+                disabled={
+                  submitting || (!editingFarmer && Boolean(pendingRegistration))
+                }
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
@@ -575,7 +883,10 @@ export const FarmerRegistrationPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor={`${formId}-contact`} className="block font-semibold text-ink-secondary mb-1">
+              <label
+                htmlFor={`${formId}-contact`}
+                className="block font-semibold text-ink-secondary mb-1"
+              >
                 {t(
                   "field.farmer.farmerContactLabel",
                   "Số điện thoại / Thông tin liên hệ",
@@ -585,7 +896,9 @@ export const FarmerRegistrationPage: React.FC = () => {
                 id={`${formId}-contact`}
                 type="text"
                 value={formData.contact}
-                disabled={submitting || (!editingFarmer && Boolean(pendingRegistration))}
+                disabled={
+                  submitting || (!editingFarmer && Boolean(pendingRegistration))
+                }
                 onChange={(e) =>
                   setFormData({ ...formData, contact: e.target.value })
                 }
@@ -594,9 +907,29 @@ export const FarmerRegistrationPage: React.FC = () => {
               />
             </div>
 
-            <DuplicateWarning request={isModalOpen && isOnline && !submitting && (editingFarmer || !pendingRegistration) && formData.name.trim().length >= 2
-              ? { name: formData.name.trim(), contact: formData.contact.trim() || null, excludeId: editingFarmer?.id ?? null } : null} />
-            {!editingFarmer && pendingRegistration && !submitting && <p role="status">{text("Lưu lại để gửi đúng yêu cầu đang chờ.", "Save again to retry the pending request.")}</p>}
+            <DuplicateWarning
+              request={
+                isModalOpen &&
+                isOnline &&
+                !submitting &&
+                (editingFarmer || !pendingRegistration) &&
+                formData.name.trim().length >= 2
+                  ? {
+                      name: formData.name.trim(),
+                      contact: formData.contact.trim() || null,
+                      excludeId: editingFarmer?.id ?? null,
+                    }
+                  : null
+              }
+            />
+            {!editingFarmer && pendingRegistration && !submitting && (
+              <p role="status">
+                {text(
+                  "Lưu lại để gửi đúng yêu cầu đang chờ.",
+                  "Save again to retry the pending request.",
+                )}
+              </p>
+            )}
             <Feedback error={formError} />
             <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
               <button

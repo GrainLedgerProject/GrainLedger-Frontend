@@ -55,23 +55,27 @@ export function classifyDocumentOrigin(
   doc: ContainerDocument,
   containerId?: string,
 ): DocumentOriginKind {
-  const explicit = (doc.origin ?? doc.source ?? "").toUpperCase();
+  const explicit = (doc.origin ?? doc.source ?? "").trim().toUpperCase();
+  if (explicit === "UPLOADED") {
+    return "UPLOADED";
+  }
   if (
     explicit === "GENERATED" ||
     explicit === "SYSTEM_GENERATED" ||
-    explicit === "SYSTEM" ||
-    doc.reason.startsWith(SYSTEM_GENERATED_TAG)
+    explicit === "SYSTEM"
   ) {
     return "SYSTEM_GENERATED";
   }
-  if (
-    explicit === "LEGACY_UNKNOWN" ||
-    explicit === "LEGACY" ||
-    doc.reason.startsWith(LEGACY_TAG)
-  ) {
+  if (explicit === "LEGACY_UNKNOWN" || explicit === "LEGACY") {
     return "LEGACY_UNKNOWN";
   }
-  if (explicit === "UPLOADED" || doc.reason.startsWith(UPLOADED_TAG)) {
+  if (doc.reason.startsWith(SYSTEM_GENERATED_TAG)) {
+    return "SYSTEM_GENERATED";
+  }
+  if (doc.reason.startsWith(LEGACY_TAG)) {
+    return "LEGACY_UNKNOWN";
+  }
+  if (doc.reason.startsWith(UPLOADED_TAG)) {
     return "UPLOADED";
   }
   if (containerId) {

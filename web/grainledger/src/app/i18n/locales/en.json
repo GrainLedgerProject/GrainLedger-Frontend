@@ -266,6 +266,7 @@
       "labSamples": "Lab Samples",
       "labResults": "Lab Test Results",
       "safetyMargin": "MRL Safety Margin",
+      "byproductMixing": "Byproduct Variety Mixing",
       "mrlVersions": "MRL Limit Tables",
       "residueProfiles": "Residue profiles"
     },
@@ -746,6 +747,7 @@
       "syncSuccess": "All records synchronized successfully"
     },
     "farmer": {
+      "title": "Farmers",
       "errLoad": "Unable to load farmers from the server.",
       "updatedSuccess": "Updated farmer {{name}}",
       "registeredSuccess": "Registered farmer {{name}} (code {{code}})",
@@ -812,6 +814,7 @@
       "modalHandoverTitle": "Sample Handover Record (Chain of Custody)"
     },
     "plot": {
+      "title": "Plots",
       "unknownFarmer": "Unknown farmer",
       "errLoad": "Unable to load plots from the server.",
       "errSelectFarmer": "Select the farmer who owns this plot.",
@@ -862,6 +865,9 @@
       "previewBadge": "GIS LOCATION"
     },
     "receipt": {
+      "linesTitle": "Weighing lines & plot-seasons",
+      "addLine": "Add line",
+      "unitLabel": "Unit *",
       "offlineFarmer": "Farmer (pending sync)",
       "errorLoad": "Unable to load procurement receipts.",
       "errorSelectFarmer": "Select the supplying farmer.",
@@ -1927,6 +1933,7 @@
       "search": "Find MRL versions",
       "searchPlaceholder": "Market, commodity, or regulatory source",
       "allMarkets": "All markets",
+      "allCommodities": "All commodities",
       "emptyFiltered": "Try another keyword, status, or applicable market.",
       "lookup": "Find applicable MRL",
       "market": "Market",
@@ -1988,6 +1995,49 @@
       "noHistory": "No published policy settings yet.",
       "saved": "All policy settings published. Previous history is preserved.",
       "sourceChanged": "The scientific source or policy history changed. Your text is preserved for comparison; select and review the profiles again before publication."
+    }
+  },
+  "byproductPolicy": {
+    "eyebrow": "COMPANY SETTINGS",
+    "title": "Byproduct Variety Mixing",
+    "subtitle": "Configure whether rice varieties may be mixed during BRAN and HUSK handling. Changes affect future mixing only.",
+    "denied": "Customer Manager role, valid company assignment, and byproduct.variety-policy.manage permission are required.",
+    "reload": "Reload",
+    "loading": "Loading byproduct mixing policies...",
+    "scopeNote": "Paddy and finished milled rice lots keep strict variety identity. These overrides apply independently to future BRAN and HUSK byproduct pools for your company.",
+    "currentSource": "Current source:",
+    "sourceDefault": "System default",
+    "sourceOverride": "Company override",
+    "effectiveAllow": "Allow different varieties",
+    "effectiveSeparate": "Keep varieties separate",
+    "revisionLabel": "Revision",
+    "noOverrideRevision": "No company override yet",
+    "policyModeLegend": "{{stage}} mixing rule",
+    "reasonLabel": "Reason for change",
+    "reasonHint": "1–500 characters explaining why this policy rule applies or resets to default.",
+    "reasonPlaceholder": "e.g., Separate jasmine bran lots for export customer traceability",
+    "reasonRequired": "Enter a reason (1–500 characters) before saving.",
+    "reasonTooLong": "Reason must not exceed 500 characters.",
+    "saveStage": "Save {{stage}} policy",
+    "savedStage": "{{stage}} policy updated: {{status}} ({{source}}).",
+    "conflictReloaded": "{{stage}} policy changed on the server. Reloaded current settings; review before saving again.",
+    "stages": {
+      "BRAN": {
+        "name": "Bran (BRAN)",
+        "description": "Governs whether bran outputs and pools from different rice varieties can be combined."
+      },
+      "HUSK": {
+        "name": "Husk (HUSK)",
+        "description": "Governs whether husk outputs and pools from different rice varieties can be combined."
+      }
+    },
+    "choices": {
+      "defaultTitle": "Use system default (Allow cross-variety mixing)",
+      "defaultDetail": "Removes any company override and falls back to the platform default.",
+      "allowTitle": "Allow cross-variety mixing",
+      "allowDetail": "Permits combining this byproduct across different rice varieties as a company override.",
+      "separateTitle": "Keep rice varieties separate",
+      "separateDetail": "Blocks mixing different rice varieties in operations targeting this byproduct stage."
     }
   }
 }

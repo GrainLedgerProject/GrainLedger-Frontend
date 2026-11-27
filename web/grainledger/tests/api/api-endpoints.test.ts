@@ -114,4 +114,19 @@ it('loads paginated notifications and sends the required JSON object when markin
   expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/notifications?page=2&pageSize=20&status=UNREAD&sortBy=createdAt&sortDirection=desc', { signal });
   await ledgerEndpoints.readNotification('notice/1');
   expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/notifications/notice%2F1/read', { method: 'POST', body: '{}' });
+  await ledgerEndpoints.getByproductVarietyPolicy();
+  expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/byproduct-variety-policy');
+  await ledgerEndpoints.updateByproductVarietyPolicy('BRAN', {
+    allowCrossVariety: false,
+    expectedRevision: null,
+    reason: 'Segregate bran lots',
+  });
+  expect(apiFetch).toHaveBeenLastCalledWith('/api/ledger/byproduct-variety-policy/BRAN', {
+    method: 'PUT',
+    body: JSON.stringify({
+      allowCrossVariety: false,
+      expectedRevision: null,
+      reason: 'Segregate bran lots',
+    }),
+  });
 });

@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import i18n from "@/app/i18n";
 import { procurementEndpoints, type PlotGeometry } from "@/api/procurement";
+import { useAuthStore } from "@/app/store/authStore";
 import { PlotRegistrationPage } from "@/features/field/pages/PlotRegistrationPage";
 
 vi.mock("@/features/field/components/MapLocationPicker", () => ({
@@ -24,10 +25,25 @@ function mount() {
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
+  useAuthStore.setState({
+    isAuthenticated: true,
+    accessToken: "mock",
+    user: {
+      id: "purchasing-1",
+      email: "purchasing@grainledger.test",
+      displayName: "Purchaser",
+      role: "CUSTOMER_PROCUREMENT_OFFICER",
+      permissions: ["farms.write", "purchases.write"],
+      isActive: true,
+    },
+  });
   vi.spyOn(procurementEndpoints, "getPlots").mockResolvedValue({ items: [plot] });
   vi.spyOn(procurementEndpoints, "getFarmers").mockResolvedValue({ items: [{ id: "farmer", code: "FRM-0042", name: "Example farmer" }] });
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  useAuthStore.setState({ user: null, isAuthenticated: false, accessToken: null });
+});
 
 it("uses schema v2 and displays the server-assigned plot code", async () => {
   const point: PlotGeometry = { type: "Point", coordinates: [106.0125, 10.3541] };

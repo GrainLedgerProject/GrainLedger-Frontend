@@ -210,9 +210,27 @@ function CompanySeasons({ userId, companyId, scope, canConfigure, canReadLinks, 
                     <SprayBottle aria-hidden="true" size={16} />
                     <span>{text("Lịch sử phun", "Spray history")}</span>
                   </button>
-                  {canLink && link.canEdit && <button type="button" title={t("field.seasons.edit")} aria-label={t("field.seasons.editPlotLabel", { name: link.plotCode })} className="record-row-action" onClick={() => setAction({ type: "editLink", season, link })}><PencilSimple aria-hidden="true" size={16} /></button>}
+                  {canLink && (link.canEdit || link.canAssignRiceVariety) && (
+                    <button
+                      type="button"
+                      title={
+                        !link.canEdit && link.canAssignRiceVariety
+                          ? text("Gán giống lúa", "Assign rice variety")
+                          : t("field.seasons.edit")
+                      }
+                      aria-label={
+                        !link.canEdit && link.canAssignRiceVariety
+                          ? `${text("Gán giống lúa", "Assign rice variety")}: ${link.plotCode}`
+                          : t("field.seasons.editPlotLabel", { name: link.plotCode })
+                      }
+                      className="record-row-action"
+                      onClick={() => setAction({ type: "editLink", season, link })}
+                    >
+                      <PencilSimple aria-hidden="true" size={16} />
+                    </button>
+                  )}
                   {canLink && link.canDelete && <button type="button" title={t("field.seasons.unlink")} aria-label={t("field.seasons.unlinkPlotLabel", { name: link.plotCode })} className="record-row-action text-accent-danger hover:bg-accent-danger/10 hover:text-accent-danger dark:hover:bg-accent-danger/10" onClick={() => setAction({ type: "deleteLink", link })}><LinkSimpleBreak aria-hidden="true" size={16} /></button>}
-                  {canLink && !link.canEdit && !link.canDelete && <span className="text-xs text-ink-secondary">{t("field.seasons.readOnly")}</span>}
+                  {canLink && !link.canEdit && !link.canAssignRiceVariety && !link.canDelete && <span className="text-xs text-ink-secondary">{t("field.seasons.readOnly")}</span>}
                 </div></td>
               </tr>)}</tbody>
             </RecordTable> : <RecordEmpty icon={<MapPin size={40} />}>{t("field.seasons.emptyPlots")}</RecordEmpty>}

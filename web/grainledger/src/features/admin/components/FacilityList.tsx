@@ -7,6 +7,7 @@ import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 
 export function FacilityList(props: FacilityConfigModel["facilities"]) {
   const {
+    canConfigure,
     locations,
     equipment,
     policies,
@@ -129,44 +130,46 @@ export function FacilityList(props: FacilityConfigModel["facilities"]) {
                   </div>
 
                   {/* Facility Quick Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenAdd("LOCATION", fac.id)}
-                      className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay text-ink-primary border border-ink-tertiary/20 text-xs font-medium inline-flex items-center gap-1 transition-colors"
-                    >
-                      <Plus size={13} weight="bold" />
-                      <span>Thêm Silo/Kho</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenAdd("EQUIPMENT", fac.id)}
-                      className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay text-ink-primary border border-ink-tertiary/20 text-xs font-medium inline-flex items-center gap-1 transition-colors"
-                    >
-                      <Plus size={13} weight="bold" />
-                      <span>Thêm Thiết bị</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditFacility(fac)}
-                      className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-primary transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
-                      title="Sửa tên cơ sở nhà máy"
-                    >
-                      <PencilSimple size={14} />
-                      <span className="hidden sm:inline">Sửa</span>
-                    </button>
-                    {fac.canDelete !== false && (
+                  {canConfigure && (
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => handleDeleteFacility(fac)}
-                        className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-danger transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
-                        title="Xóa nhà máy nếu chưa phát sinh giao dịch"
+                        onClick={() => handleOpenAdd("LOCATION", fac.id)}
+                        className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay text-ink-primary border border-ink-tertiary/20 text-xs font-medium inline-flex items-center gap-1 transition-colors"
                       >
-                        <Trash size={14} />
-                        <span className="hidden sm:inline">Xóa</span>
+                        <Plus size={13} weight="bold" />
+                        <span>Thêm Silo/Kho</span>
                       </button>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAdd("EQUIPMENT", fac.id)}
+                        className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay text-ink-primary border border-ink-tertiary/20 text-xs font-medium inline-flex items-center gap-1 transition-colors"
+                      >
+                        <Plus size={13} weight="bold" />
+                        <span>Thêm Thiết bị</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditFacility(fac)}
+                        className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-primary transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
+                        title="Sửa tên cơ sở nhà máy"
+                      >
+                        <PencilSimple size={14} />
+                        <span className="hidden sm:inline">Sửa</span>
+                      </button>
+                      {fac.canDelete !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFacility(fac)}
+                          className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-danger transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
+                          title="Xóa nhà máy nếu chưa phát sinh giao dịch"
+                        >
+                          <Trash size={14} />
+                          <span className="hidden sm:inline">Xóa</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Inner Facility Navigation Tabs */}
@@ -265,7 +268,29 @@ export function FacilityList(props: FacilityConfigModel["facilities"]) {
                             : "text-ink-secondary hover:text-ink-primary"
                         }`}
                       >
-                        Kho/Silo
+                        Kho chứa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLocationKindFilter("SILO")}
+                        className={`px-2 py-0.5 rounded transition-colors ${
+                          locationKindFilter === "SILO"
+                            ? "font-bold text-accent-primary underline"
+                            : "text-ink-secondary hover:text-ink-primary"
+                        }`}
+                      >
+                        Silo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLocationKindFilter("COMPARTMENT")}
+                        className={`px-2 py-0.5 rounded transition-colors ${
+                          locationKindFilter === "COMPARTMENT"
+                            ? "font-bold text-accent-primary underline"
+                            : "text-ink-secondary hover:text-ink-primary"
+                        }`}
+                      >
+                        Ngăn chứa
                       </button>
                       <button
                         type="button"
@@ -284,12 +309,12 @@ export function FacilityList(props: FacilityConfigModel["facilities"]) {
 
                 {/* TAB 1: LOCATIONS */}
                 {activeTab === "locations" && (
-                  <FacilityLocations displayLocations={displayLocations} handleOpenEditLocation={handleOpenEditLocation} handleDeleteLocation={handleDeleteLocation} handleOpenClearance={handleOpenClearance} handleCopyId={handleCopyId} />
+                  <FacilityLocations canConfigure={canConfigure} displayLocations={displayLocations} handleOpenEditLocation={handleOpenEditLocation} handleDeleteLocation={handleDeleteLocation} handleOpenClearance={handleOpenClearance} handleCopyId={handleCopyId} />
                 )}
 
                 {/* TAB 2: EQUIPMENT */}
                 {activeTab === "equipment" && (
-                  <FacilityEquipment displayEquipment={displayEquipment} handleOpenEditEquipment={handleOpenEditEquipment} handleDeleteEquipment={handleDeleteEquipment} handleRetireEquipment={handleRetireEquipment} handleCopyId={handleCopyId} />
+                  <FacilityEquipment canConfigure={canConfigure} displayEquipment={displayEquipment} handleOpenEditEquipment={handleOpenEditEquipment} handleDeleteEquipment={handleDeleteEquipment} handleRetireEquipment={handleRetireEquipment} handleCopyId={handleCopyId} />
                 )}
 
                 {/* TAB 3: POLICIES */}

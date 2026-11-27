@@ -1,14 +1,18 @@
 import { ledgerEndpoints } from "@/api/ledger";
+import { useAuthStore } from "@/app/store/authStore";
 import { confirmAction, toast } from "@/app/store/feedbackStore";
 import { useQuery } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { FacilityDto, LocationDto, EquipmentDto } from "@/api/ledger";
+import type { FacilityDto, LocationDto, EquipmentDto, LocationKind } from "@/api/ledger";
 
 const emptySetup = { facilities: [], locations: [], equipment: [], policies: [] };
 
 export function useFacilityConfig() {
   const { t } = useTranslation();
+  const canConfigure = useAuthStore(
+    (s) => s.user?.permissions.includes("platform.configure") ?? false,
+  );
 
   const setup = useQuery({
     queryKey: ["ledger-facility-setup"],
@@ -33,7 +37,7 @@ export function useFacilityConfig() {
     "locations" | "equipment" | "policies"
   >("locations");
   const [locationKindFilter, setLocationKindFilter] = useState<
-    "ALL" | "STORE" | "ISOLATION"
+    "ALL" | LocationKind
   >("ALL");
 
   // Modal States
@@ -50,7 +54,7 @@ export function useFacilityConfig() {
   // Form Fields
   const [formName, setFormName] = useState("");
   const [formFacilityId, setFormFacilityId] = useState("");
-  const [formKind, setFormKind] = useState<"STORE" | "ISOLATION">("STORE");
+  const [formKind, setFormKind] = useState<LocationKind>("STORE");
   const [formMixedBulk, setFormMixedBulk] = useState(false);
 
   // Clearance Modal State
@@ -141,7 +145,13 @@ export function useFacilityConfig() {
     setModalError(null);
     setFormName(location.name);
     setFormFacilityId(location.facilityId);
-    setFormKind(location.kind === "ISOLATION" ? "ISOLATION" : "STORE");
+    const normalizedKind: LocationKind =
+      location.kind === "SILO" ||
+      location.kind === "COMPARTMENT" ||
+      location.kind === "ISOLATION"
+        ? location.kind
+        : "STORE";
+    setFormKind(normalizedKind);
     setFormMixedBulk(location.mixedBulk);
     setIsModalOpen(true);
   };
@@ -369,6 +379,7 @@ export function useFacilityConfig() {
   return {
     overview: {
       t,
+      canConfigure,
       facilities,
       loading,
       error,
@@ -381,6 +392,7 @@ export function useFacilityConfig() {
       handleOpenAdd,
     },
     facilities: {
+      canConfigure,
       locations,
       equipment,
       policies,

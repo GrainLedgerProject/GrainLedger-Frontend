@@ -1,9 +1,10 @@
-﻿import { useId, useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { ArrowLeft, ClockCounterClockwise, Handshake, MagnifyingGlass, Plus, TestTube } from "@phosphor-icons/react";
 import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
-import { sampleEndpoints, type CaptureSampleRequest, type RecordSampleHandoverRequest } from "@/api/compliance";
+import { labReportEndpoints, sampleEndpoints, type CaptureSampleRequest, type RecordSampleHandoverRequest } from "@/api/compliance";
+import { compliancePaths, labResultPath } from "@/features/compliance/paths";
 import { procurementEndpoints, type ProcurementListResponse } from "@/api/procurement";
 import { collectPages } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
@@ -218,13 +219,22 @@ function localDateTime(value?: string) {
 function SampleDetail({ sampleId, storageKey }: { sampleId: string; storageKey?: string }) {
   const { i18n } = useTranslation();
   const text = useWorkflowText();
+  const canReadLabReports = useAuthStore(state =>
+    state.user?.permissions.some(p => p === "lab.read" || p === "lab.write") ?? false,
+  );
   const titleId = useId();
   const historyId = useId();
+  const reportsId = useId();
   const dateTime = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" });
   const query = useQuery({ queryKey: [...key, "detail", sampleId], queryFn: () => sampleEndpoints.getSample(sampleId) });
   const handovers = useQuery({
     queryKey: [...key, "handovers", sampleId],
     queryFn: () => collectPages(paging => sampleEndpoints.getSampleHandovers(sampleId, paging)),
+  });
+  const labReports = useQuery({
+    queryKey: [...key, "lab-reports", sampleId],
+    queryFn: () => collectPages(paging => labReportEndpoints.getLabReports({ ...paging, sampleId })),
+    enabled: canReadLabReports,
   });
   const row = query.data;
   return <>
@@ -266,6 +276,39 @@ function SampleDetail({ sampleId, storageKey }: { sampleId: string; storageKey?:
           })}
         </ol> : <RecordEmpty icon={<Handshake size={40} />}>{text("Chưa có bàn giao.", "No handovers recorded.")}</RecordEmpty>)}
       </section>
+      {canReadLabReports && (
+        <section className="record-card rounded-xl" aria-labelledby={reportsId}>
+          <header className="record-card-header">
+            <h2 id={reportsId} className="record-card-title">
+              <TestTube size={20} className="text-accent-primary" aria-hidden="true" />
+              {text("Báo cáo xét nghiệm liên kết", "Linked lab reports")}
+            </h2>
+            <Link className="record-link" to={compliancePaths.results}>
+              {text("Mở danh sách báo cáo", "All lab reports")}
+            </Link>
+          </header>
+          <RecordFeedback error={labReports.error} pending={labReports.isPending} label={text("Đang tải báo cáo xét nghiệm…", "Loading lab reports…")} />
+          {labReports.data && (labReports.data.length ? (
+            <ul className="divide-y divide-ink-tertiary/15">
+              {labReports.data.map(rep => (
+                <li key={rep.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm sm:px-5">
+                  <div>
+                    <Link className="record-link font-mono font-bold" to={labResultPath(rep.id)}>
+                      {rep.reportNumber}
+                    </Link>
+                    <span className="ml-2 text-xs text-ink-secondary">{rep.laboratoryName}</span>
+                  </div>
+                  <span className="font-mono text-xs text-ink-secondary">{rep.status} · {rep.assessmentStatus}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <RecordEmpty icon={<TestTube size={36} />}>
+              {text("Chưa có báo cáo lab cho mẫu này.", "No lab reports linked to this sample yet.")}
+            </RecordEmpty>
+          ))}
+        </section>
+      )}
     </>}
     {row && storageKey && <HandoverEditor sampleId={sampleId} storageKey={storageKey} />}
   </>;

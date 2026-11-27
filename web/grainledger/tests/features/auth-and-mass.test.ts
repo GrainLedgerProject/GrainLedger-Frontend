@@ -32,7 +32,8 @@ describe("Xác thực dữ liệu tài khoản", () => {
 
   it("kiểm tra giới hạn tên và định dạng điện thoại", () => {
     expect(editProfileSchema.safeParse({ displayName: "A", language: "vi", phoneNumber: "0901234567" }).success).toBe(false);
-    expect(editProfileSchema.safeParse({ displayName: "Nguyễn An", language: "vi", phoneNumber: "abc" }).success).toBe(false);
+    expect(editProfileSchema.safeParse({ displayName: "Nguyễn An", language: "vi", phoneNumber: "123456789012345678901234567890123" }).success).toBe(false);
+    expect(editProfileSchema.safeParse({ displayName: "Nguyễn An", language: "vi", phoneNumber: "ext 123" }).success).toBe(true);
     expect(editProfileSchema.safeParse({ displayName: "Nguyễn An", language: "en", phoneNumber: "+84 901 234 567" }).success).toBe(true);
   });
 });

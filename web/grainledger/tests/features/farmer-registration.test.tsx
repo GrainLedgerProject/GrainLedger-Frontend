@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import i18n from "@/app/i18n";
+import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { FarmerRegistrationPage } from "@/features/field/pages/FarmerRegistrationPage";
 
@@ -21,6 +22,18 @@ const request = vi.fn<typeof fetch>();
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
+  useAuthStore.setState({
+    isAuthenticated: true,
+    accessToken: "mock",
+    user: {
+      id: "purchaser-1",
+      email: "purchaser@grainledger.test",
+      displayName: "Purchaser",
+      role: "CUSTOMER_PROCUREMENT_OFFICER",
+      permissions: ["farms.write", "purchases.write"],
+      isActive: true,
+    },
+  });
   useUiStore.setState({ isOnline: true });
   request.mockReset();
   vi.stubGlobal("fetch", request);
@@ -29,6 +42,7 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  useAuthStore.setState({ user: null, isAuthenticated: false, accessToken: null });
 });
 
 describe("Farmer registration modal", () => {
