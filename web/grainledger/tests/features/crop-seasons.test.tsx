@@ -184,3 +184,65 @@ it("opens spray history in a modal for a plot link and loads declaration details
   fireEvent.click(dialog.getAllByRole("button", { name: "Close" })[0]);
   expect(screen.queryByRole("dialog", { name: "Spray history" })).toBeNull();
 });
+
+it("filters catalog rice varieties in the link-plot selector by name or code and submits the chosen variety", async () => {
+  const varieties = [
+    { id: "var-1", code: "ST25", name: "Gạo ST25" },
+    { id: "var-2", code: "DT8", name: "Đài Thơm 8" },
+    { id: "var-3", code: "OM18", name: "OM 18" },
+  ];
+  calls.mockImplementation(async (input, init) => {
+    const endpoint = url(input);
+    if (endpoint.pathname === "/api/plots") return page([plot]);
+    if (endpoint.pathname === "/api/rice-varieties") return page(varieties);
+    if (endpoint.pathname === `/api/crop-seasons/${season.id}`) return Response.json(season);
+    if (endpoint.pathname === "/api/plot-seasons") {
+      if (init?.method === "POST") {
+        return Response.json({ id: "link-var", ...JSON.parse(String(init.body)).payload }, { status: 201 });
+      }
+      return page([]);
+    }
+    return page([season]);
+  });
+
+  openAs("CUSTOMER_PROCUREMENT_OFFICER", ["farms.write"]);
+  fireEvent.click(await screen.findByRole("button", { name: season.name }));
+  fireEvent.click(await screen.findByRole("button", { name: "Link plot" }));
+  const dialog = within(screen.getByRole("dialog", { name: "Link plot" }));
+  await dialog.findByRole("option", { name: plot.code });
+  await dialog.findByRole("option", { name: "Gạo ST25 (ST25)" });
+
+  const searchInput = dialog.getByLabelText("Search by rice variety name or code");
+  fireEvent.change(searchInput, { target: { value: "dai thom" } });
+  expect(dialog.queryByRole("option", { name: "Đài Thơm 8 (DT8)" })).not.toBeNull();
+  expect(dialog.queryByRole("option", { name: "Gạo ST25 (ST25)" })).toBeNull();
+  expect(dialog.queryByRole("option", { name: "OM 18 (OM18)" })).toBeNull();
+
+  fireEvent.keyDown(searchInput, { key: "Enter" });
+  expect(requests("POST")).toHaveLength(0);
+
+  fireEvent.change(searchInput, { target: { value: "OM18" } });
+  expect(dialog.queryByRole("option", { name: "OM 18 (OM18)" })).not.toBeNull();
+  expect(dialog.queryByRole("option", { name: "Đài Thơm 8 (DT8)" })).toBeNull();
+
+  fireEvent.change(searchInput, { target: { value: "unknown-variety" } });
+  expect(dialog.getByText("No matching rice varieties were found.")).toBeTruthy();
+
+  fireEvent.change(searchInput, { target: { value: "dai thom" } });
+  fireEvent.change(dialog.getByLabelText("Plot code"), { target: { value: plot.id } });
+  const varietySelect = dialog.getByLabelText("Rice variety") as HTMLSelectElement;
+  fireEvent.change(varietySelect, { target: { value: "var-2" } });
+
+  fireEvent.change(searchInput, { target: { value: "OM18" } });
+  expect(varietySelect.value).toBe("var-2");
+  expect(dialog.queryByRole("option", { name: "Đài Thơm 8 (DT8)" })).not.toBeNull();
+
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByText("Plot linked to the season.")).toBeTruthy();
+  expect(JSON.parse(String(requests("POST")[0][1]?.body)).payload).toMatchObject({
+    plotId: plot.id,
+    seasonId: season.id,
+    riceVariety: "Đài Thơm 8",
+    riceVarietyId: "var-2",
+  });
+});

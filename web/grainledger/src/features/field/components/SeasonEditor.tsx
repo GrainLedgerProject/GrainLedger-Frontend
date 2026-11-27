@@ -60,6 +60,7 @@ export function SeasonEditor({
     link?.riceVarietyId ?? null,
   );
   const [customVariety, setCustomVariety] = useState(link?.riceVariety ?? "");
+  const [varietySearch, setVarietySearch] = useState("");
   const pendingLink = useRef<RegisterPlotSeasonRequest | null>(null);
   const varietiesQuery = useQuery({
     queryKey: ["season-rice-varieties", userId],
@@ -91,6 +92,17 @@ export function SeasonEditor({
   const effectiveVarietyId = varietyIdChoice ?? matchedCatalogVariety?.id ?? "";
   const effectiveVarietyName =
     matchedCatalogVariety?.name ?? customVariety.trim();
+  const varietySearchTerm = normalizeVarietySearch(varietySearch);
+  const filteredVarietyOptions = varietySearchTerm
+    ? varietyOptions.filter(
+        (v) =>
+          normalizeVarietySearch(v.name).includes(varietySearchTerm) ||
+          normalizeVarietySearch(v.code).includes(varietySearchTerm),
+      )
+    : varietyOptions;
+  const selectedVariety = effectiveVarietyId
+    ? varietyOptions.find((v) => v.id === effectiveVarietyId)
+    : undefined;
   const seasonChoices = season
     ? [
         season,
@@ -320,11 +332,38 @@ export function SeasonEditor({
                   disabled={assignOnly}
                 />
                 <div>
-                  <label htmlFor={`${id}-variety`}>
-                    {t("field.seasons.variety")}
-                  </label>
                   {varietyOptions.length > 0 ? (
-                    <>
+                    <div className="record-filter space-y-2">
+                      <label htmlFor={`${id}-variety-search`}>
+                        {t("field.seasons.searchVarieties")}
+                      </label>
+                      <div className="relative">
+                        <MagnifyingGlass
+                          aria-hidden="true"
+                          size={18}
+                          className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+                        />
+                        <input
+                          id={`${id}-variety-search`}
+                          type="search"
+                          name="varietySearch"
+                          value={varietySearch}
+                          maxLength={100}
+                          onChange={(event) =>
+                            setVarietySearch(event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (
+                              event.key === "Enter" &&
+                              !event.nativeEvent.isComposing
+                            )
+                              event.preventDefault();
+                          }}
+                        />
+                      </div>
+                      <label htmlFor={`${id}-variety`}>
+                        {t("field.seasons.variety")}
+                      </label>
                       <select
                         id={`${id}-variety`}
                         name="riceVarietyId"
@@ -339,7 +378,6 @@ export function SeasonEditor({
                           if (chosen) setCustomVariety(chosen.name);
                           event.currentTarget.setCustomValidity("");
                         }}
-                        className="mt-1.5"
                       >
                         <option value="">
                           {text(
@@ -347,14 +385,25 @@ export function SeasonEditor({
                             "-- Choose rice variety --",
                           )}
                         </option>
-                        {varietyOptions.map((variety) => (
+                        {selectedVariety &&
+                          !filteredVarietyOptions.some(
+                            (v) => v.id === selectedVariety.id,
+                          ) && (
+                            <option value={selectedVariety.id}>
+                              {formatVarietyOption(selectedVariety)}
+                            </option>
+                          )}
+                        {filteredVarietyOptions.map((variety) => (
                           <option key={variety.id} value={variety.id}>
-                            {variety.code
-                              ? `${variety.name} (${variety.code})`
-                              : variety.name}
+                            {formatVarietyOption(variety)}
                           </option>
                         ))}
                       </select>
+                      {filteredVarietyOptions.length === 0 && (
+                        <p className="text-sm text-ink-secondary">
+                          {t("field.seasons.noVarietiesFound")}
+                        </p>
+                      )}
                       {link?.riceVariety && !effectiveVarietyId && (
                         <p className="mt-1 text-xs text-accent-warning">
                           {text(
@@ -363,9 +412,12 @@ export function SeasonEditor({
                           )}
                         </p>
                       )}
-                    </>
+                    </div>
                   ) : (
                     <>
+                      <label htmlFor={`${id}-variety`}>
+                        {t("field.seasons.variety")}
+                      </label>
                       <input
                         id={`${id}-variety`}
                         name="riceVariety"
@@ -485,6 +537,19 @@ export function SeasonEditor({
       </form>
     </RecordDialog>
   );
+}
+
+function normalizeVarietySearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/đ/gi, "d")
+    .trim()
+    .toLowerCase();
+}
+
+function formatVarietyOption(variety: { code: string; name: string }): string {
+  return variety.code ? `${variety.name} (${variety.code})` : variety.name;
 }
 
 function PlotPicker({

@@ -547,6 +547,8 @@
       "searchPlots": "Search by plot code",
       "choosePlot": "Select a plot",
       "noPlotsFound": "No plots were found.",
+      "searchVarieties": "Search by rice variety name or code",
+      "noVarietiesFound": "No matching rice varieties were found.",
       "pageStatus": "Page {{page}} · {{count}} total",
       "prev": "Previous page",
       "next": "Next page",

@@ -547,6 +547,8 @@
       "searchPlots": "Tìm thửa theo mã",
       "choosePlot": "Chọn thửa ruộng",
       "noPlotsFound": "Không tìm thấy thửa ruộng.",
+      "searchVarieties": "Tìm giống lúa theo tên hoặc mã",
+      "noVarietiesFound": "Không tìm thấy giống lúa phù hợp.",
       "pageStatus": "Trang {{page}} · Tổng {{count}}",
       "prev": "Trang trước",
       "next": "Trang sau",
