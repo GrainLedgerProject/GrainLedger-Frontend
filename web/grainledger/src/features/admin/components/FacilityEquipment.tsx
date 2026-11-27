@@ -2,7 +2,8 @@ import { Copy, PencilSimple, Power, Trash, Wrench } from "@phosphor-icons/react"
 import type { EquipmentDto } from "@/api/ledger";
 import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 
-export function FacilityEquipment({ displayEquipment, handleOpenEditEquipment, handleDeleteEquipment, handleRetireEquipment, handleCopyId }: {
+export function FacilityEquipment({ canConfigure = true, displayEquipment, handleOpenEditEquipment, handleDeleteEquipment, handleRetireEquipment, handleCopyId }: {
+  canConfigure?: boolean;
   displayEquipment: EquipmentDto[];
   handleOpenEditEquipment: FacilityConfigModel["facilities"]["handleOpenEditEquipment"];
   handleDeleteEquipment: FacilityConfigModel["facilities"]["handleDeleteEquipment"];
@@ -70,41 +71,43 @@ export function FacilityEquipment({ displayEquipment, handleOpenEditEquipment, h
                 </div>
 
                 {/* Equipment Actions Footer */}
-                <div className="pt-2 border-t border-ink-tertiary/10 flex items-center justify-between text-xs">
-                  {isActive && (
-                    <button
-                      type="button"
-                      onClick={() => handleRetireEquipment(eq)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 hover:text-amber-800 p-1 rounded hover:bg-amber-50"
-                      title="Ngừng vận hành thiết bị"
-                    >
-                      <Power size={13} />
-                      <span>Ngừng vận hành</span>
-                    </button>
-                  )}
-                  {!isActive && <div />}
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditEquipment(eq)}
-                      className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
-                      title="Sửa thiết bị"
-                    >
-                      <PencilSimple size={14} />
-                    </button>
-                    {eq.canDelete !== false && (
+                {canConfigure && (
+                  <div className="pt-2 border-t border-ink-tertiary/10 flex items-center justify-between text-xs">
+                    {isActive && (
                       <button
                         type="button"
-                        onClick={() => handleDeleteEquipment(eq)}
-                        className="p-1 rounded text-ink-tertiary hover:text-accent-danger hover:bg-surface-base transition-colors"
-                        title="Xóa thiết bị"
+                        onClick={() => handleRetireEquipment(eq)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 hover:text-amber-800 p-1 rounded hover:bg-amber-50"
+                        title="Ngừng vận hành thiết bị"
                       >
-                        <Trash size={14} />
+                        <Power size={13} />
+                        <span>Ngừng vận hành</span>
                       </button>
                     )}
+                    {!isActive && <div />}
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditEquipment(eq)}
+                        className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
+                        title="Sửa thiết bị"
+                      >
+                        <PencilSimple size={14} />
+                      </button>
+                      {eq.canDelete !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEquipment(eq)}
+                          className="p-1 rounded text-ink-tertiary hover:text-accent-danger hover:bg-surface-base transition-colors"
+                          title="Xóa thiết bị"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             );
           })}

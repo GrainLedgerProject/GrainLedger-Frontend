@@ -2,9 +2,19 @@ import type { ApiPage, PageQuery } from "./query";
 import { apiFetch, apiFetchResource } from "./client";
 import { withApiQuery } from "./query";
 
+export interface ExportOrderQuery extends PageQuery {
+  q?: string;
+  marketId?: string;
+  commodityId?: string;
+  from?: string;
+  to?: string;
+  sortBy?: "createdAt" | "code" | "shippingFrom";
+  sortDirection?: "asc" | "desc";
+}
+
 export const exportEndpoints = {
   getAvailability: () => apiFetch<unknown>("/api/export-availability"),
-  getOrders: (query?: PageQuery) =>
+  getOrders: (query?: ExportOrderQuery) =>
     apiFetch<ApiPage<ExportOrderSummary>>(
       withApiQuery("/api/export-orders", query),
     ),

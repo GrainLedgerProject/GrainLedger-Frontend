@@ -15,7 +15,10 @@ import { Link, useInRouterContext } from "react-router-dom";
 import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
 import type { ApiPage } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
-import { detailValue, eventLabel } from "@/features/audit/model/eventPresentation";
+import {
+  detailValue,
+  eventLabel,
+} from "@/features/audit/model/eventPresentation";
 import { ResidueBounds } from "@/features/risk/components/ResidueBounds";
 import { riskPaths } from "@/features/risk/paths";
 import { MassValue } from "@/shared/ui/MassValue";
@@ -23,6 +26,7 @@ import {
   RecordDialog,
   RecordEmpty,
   RecordFeedback,
+  RecordPagination,
   RecordTable,
 } from "@/shared/ui/RecordWorkspace";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -84,7 +88,9 @@ export function StockLotDetailModal({
   const inRouter = useInRouterContext();
   const titleId = useId();
   const positionsHeadingId = useId();
-  const [drillStack, setDrillStack] = useState<{ id: string; code?: string }[]>([]);
+  const [drillStack, setDrillStack] = useState<{ id: string; code?: string }[]>(
+    [],
+  );
 
   const activeEntry = drillStack[drillStack.length - 1];
   const activeLotId = activeEntry?.id ?? lotId;
@@ -110,7 +116,8 @@ export function StockLotDetailModal({
 
   const lookups = useQuery({
     queryKey: ["stock-overview", "lookups"],
-    queryFn: async () => (await ledgerEndpoints.getLookups()) as SetupApiResponse,
+    queryFn: async () =>
+      (await ledgerEndpoints.getLookups()) as SetupApiResponse,
     enabled: !references,
     retry: false,
   });
@@ -118,7 +125,8 @@ export function StockLotDetailModal({
 
   const query = useQuery({
     queryKey: ["stock-overview", "detail", activeLotId],
-    queryFn: async () => (await ledgerEndpoints.getLot(activeLotId)) as StockLot,
+    queryFn: async () =>
+      (await ledgerEndpoints.getLot(activeLotId)) as StockLot,
   });
 
   const lot = query.data;
@@ -127,13 +135,13 @@ export function StockLotDetailModal({
     ? detailValue("productIdentity", lot.productIdentity, i18n.language)
     : "";
   const commodityName = lot
-    ? resolvedRefs?.commodities?.find((row) => row.id === lot.commodityId)?.name ??
-      lot.commodityId
+    ? (resolvedRefs?.commodities?.find((row) => row.id === lot.commodityId)
+        ?.name ?? lot.commodityId)
     : "";
   const ownerName = lot
-    ? lot.ownerName ??
+    ? (lot.ownerName ??
       resolvedRefs?.owners?.find((row) => row.id === lot.ownerId)?.name ??
-      lot.ownerId
+      lot.ownerId)
     : "";
 
   const totalOnHand = lot
@@ -143,18 +151,25 @@ export function StockLotDetailModal({
     ? lot.positions.reduce((sum, p) => sum.plus(p.availableKg), new Exact(0))
     : new Exact(0);
 
-  const stockRoute = millPaths.lot.replace(":lotId", encodeURIComponent(activeLotId));
+  const stockRoute = millPaths.lot.replace(
+    ":lotId",
+    encodeURIComponent(activeLotId),
+  );
   const traceRoute = `${riskPaths.traceback}?lotId=${encodeURIComponent(activeLotId)}${
     canSources ? "&direction=backward" : "&direction=forward"
   }`;
 
   return (
     <RecordDialog
-      title={lot?.code ?? activeInitialCode ?? text("Tồn kho sổ cái", "Ledger stock")}
+      title={
+        lot?.code ?? activeInitialCode ?? text("Tồn kho sổ cái", "Ledger stock")
+      }
       titleId={titleId}
       subtitle={
         lot
-          ? [stageLabel, productLabel, commodityName].filter(Boolean).join(" · ")
+          ? [stageLabel, productLabel, commodityName]
+              .filter(Boolean)
+              .join(" · ")
           : text("Chi tiết lô tồn kho sổ cái", "Ledger stock lot details")
       }
       icon={<Package size={22} />}
@@ -178,7 +193,10 @@ export function StockLotDetailModal({
       <RecordFeedback
         error={query.error}
         pending={query.isPending}
-        label={text("Đang tải chi tiết lô tồn kho…", "Loading stock lot details…")}
+        label={text(
+          "Đang tải chi tiết lô tồn kho…",
+          "Loading stock lot details…",
+        )}
       />
 
       {lot && (
@@ -218,7 +236,10 @@ export function StockLotDetailModal({
                   }`}
                   className="font-semibold text-accent-danger underline"
                 >
-                  {text("Mở phiếu cách ly (ISOLATION) →", "Open ISOLATION transfer →")}
+                  {text(
+                    "Mở phiếu cách ly (ISOLATION) →",
+                    "Open ISOLATION transfer →",
+                  )}
                 </Link>
               )}
             </div>
@@ -326,7 +347,9 @@ export function StockLotDetailModal({
                     className="text-accent-primary"
                     aria-hidden="true"
                   />
-                  <span>{text("Thành phần lô nguồn", "Source-lot composition")}</span>
+                  <span>
+                    {text("Thành phần lô nguồn", "Source-lot composition")}
+                  </span>
                 </span>
                 <span className="text-xs font-normal text-ink-secondary">
                   {lot.sourceComposition.length} {text("lô", "lots")}
@@ -357,46 +380,11 @@ export function StockLotDetailModal({
             </details>
           ) : null}
 
-          {lot.history?.items.length ? (
-            <details className="record-card rounded-xl p-3.5 sm:p-4">
-              <summary className="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ink-primary">
-                <span className="inline-flex items-center gap-2">
-                  <ClockCounterClockwise
-                    size={16}
-                    className="text-accent-primary"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    {text("Lịch sử bút toán gần đây", "Recent ledger postings")}
-                  </span>
-                </span>
-                <span className="text-xs font-normal text-ink-secondary">
-                  {lot.history.items.length} {text("mục", "entries")}
-                </span>
-              </summary>
-              <ul className="mt-3 divide-y divide-ink-tertiary/15 rounded-lg border border-ink-tertiary/15 bg-surface-raised/40 text-xs dark:bg-surface-overlay/20">
-                {lot.history.items.map((row) => (
-                  <li
-                    key={row.postingId || row.id}
-                    className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
-                  >
-                    <div className="min-w-0 space-y-0.5">
-                      <span className="block font-semibold text-ink-primary">
-                        {eventLabel(row.kind, i18n.language)}
-                      </span>
-                      <time
-                        dateTime={row.occurredAt}
-                        className="block text-[11px] text-ink-secondary"
-                      >
-                        {new Date(row.occurredAt).toLocaleString(i18n.language)}
-                      </time>
-                    </div>
-                    {row.quantityKg && <MassValue value={row.quantityKg} />}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : null}
+          <LotHistorySection
+            key={activeLotId}
+            lotId={activeLotId}
+            initialHistory={lot.history}
+          />
 
           <ResidueBounds lotId={activeLotId} />
         </div>
@@ -441,5 +429,170 @@ export function StockLotDetailModal({
         </button>
       </footer>
     </RecordDialog>
+  );
+}
+
+function LotHistorySection({
+  lotId,
+  initialHistory,
+}: {
+  lotId: string;
+  initialHistory?: StockLot["history"];
+}) {
+  const { i18n } = useTranslation();
+  const text = useWorkflowText();
+  const [expanded, setExpanded] = useState(false);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"occurredAt" | "kind" | "quantity">(
+    "occurredAt",
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const historyQuery = useQuery({
+    queryKey: ["stock-lot-history", lotId, page, search, sortBy, sortDirection],
+    queryFn: () =>
+      ledgerEndpoints.getHistory({
+        lotId,
+        page,
+        pageSize: 10,
+        search: search || undefined,
+        sortBy,
+        sortDirection,
+      }),
+    enabled: expanded,
+  });
+
+  const rows =
+    historyQuery.data?.items ??
+    (page === 1 && !search ? (initialHistory?.items ?? []) : []);
+  const totalCount =
+    historyQuery.data?.totalCount ?? initialHistory?.totalCount ?? rows.length;
+  const hasMore =
+    historyQuery.data?.hasMore ?? initialHistory?.hasMore ?? false;
+
+  if (!expanded && !initialHistory?.items.length) {
+    return null;
+  }
+
+  return (
+    <details
+      open={expanded}
+      onToggle={(e) => setExpanded(e.currentTarget.open)}
+      className="record-card rounded-xl p-3.5 sm:p-4"
+    >
+      <summary className="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ink-primary">
+        <span className="inline-flex items-center gap-2">
+          <ClockCounterClockwise
+            size={16}
+            className="text-accent-primary"
+            aria-hidden="true"
+          />
+          <span>{text("Lịch sử bút toán theo lô", "Lot ledger history")}</span>
+        </span>
+        <span className="text-xs font-normal text-ink-secondary">
+          {totalCount} {text("mục", "entries")}
+        </span>
+      </summary>
+
+      <div className="mt-3 space-y-3">
+        <form
+          className="grid gap-2 sm:grid-cols-4 text-xs"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSearch(searchInput.trim());
+            setPage(1);
+          }}
+        >
+          <input
+            type="search"
+            aria-label={text("Tìm lịch sử lô", "Search lot history")}
+            placeholder={text(
+              "Tìm sự kiện, loại...",
+              "Search posting or kind...",
+            )}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="sm:col-span-2 rounded-lg border border-ink-tertiary/20 bg-surface-base px-2.5 py-1.5 text-xs"
+          />
+          <select
+            aria-label={text("Sắp xếp", "Sort by")}
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value as typeof sortBy);
+              setPage(1);
+            }}
+            className="rounded-lg border border-ink-tertiary/20 bg-surface-base px-2 py-1.5 text-xs"
+          >
+            <option value="occurredAt">
+              {text("Thời gian", "Occurred at")}
+            </option>
+            <option value="kind">{text("Loại bút toán", "Kind")}</option>
+            <option value="quantity">{text("Khối lượng", "Quantity")}</option>
+          </select>
+          <select
+            aria-label={text("Thứ tự", "Direction")}
+            value={sortDirection}
+            onChange={(e) => {
+              setSortDirection(e.target.value as typeof sortDirection);
+              setPage(1);
+            }}
+            className="rounded-lg border border-ink-tertiary/20 bg-surface-base px-2 py-1.5 text-xs"
+          >
+            <option value="desc">{text("Mới / Cao trước", "Desc")}</option>
+            <option value="asc">{text("Cũ / Thấp trước", "Asc")}</option>
+          </select>
+        </form>
+
+        <RecordFeedback
+          error={historyQuery.error}
+          pending={historyQuery.isFetching}
+          label={text(
+            "Đang tải lịch sử bút toán...",
+            "Loading lot ledger history...",
+          )}
+        />
+
+        <ul className="divide-y divide-ink-tertiary/15 rounded-lg border border-ink-tertiary/15 bg-surface-raised/40 text-xs dark:bg-surface-overlay/20">
+          {rows.length === 0 ? (
+            <li className="px-3 py-4 text-center text-ink-secondary">
+              {text(
+                "Chưa có bút toán khớp bộ lọc.",
+                "No matching history entries.",
+              )}
+            </li>
+          ) : (
+            rows.map((row) => (
+              <li
+                key={row.postingId || row.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+              >
+                <div className="min-w-0 space-y-0.5">
+                  <span className="block font-semibold text-ink-primary">
+                    {eventLabel(row.kind, i18n.language)}
+                  </span>
+                  <time
+                    dateTime={row.occurredAt}
+                    className="block text-[11px] text-ink-secondary"
+                  >
+                    {new Date(row.occurredAt).toLocaleString(i18n.language)}
+                  </time>
+                </div>
+                {row.quantityKg && <MassValue value={row.quantityKg} />}
+              </li>
+            ))
+          )}
+        </ul>
+
+        <RecordPagination
+          page={page}
+          hasMore={hasMore}
+          count={totalCount}
+          onPage={setPage}
+          label={text("Lịch sử bút toán theo lô", "Lot ledger history")}
+        />
+      </div>
+    </details>
   );
 }

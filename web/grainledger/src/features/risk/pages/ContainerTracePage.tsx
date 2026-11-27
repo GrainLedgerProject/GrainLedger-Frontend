@@ -93,14 +93,6 @@ export function ContainerTracePage() {
           ),
         );
       }
-      if (!next.complete) {
-        throw new Error(
-          text(
-            `Truy vết container chưa hoàn tất (${next.findings?.join(", ") || "complete=false"}).`,
-            `Container trace is incomplete (${next.findings?.join(", ") || "complete=false"}).`,
-          ),
-        );
-      }
       return next;
     },
     enabled: Boolean(allowed && containerIdPattern.test(containerId)),
@@ -475,6 +467,28 @@ export function ContainerTracePage() {
 
           {record && (
             <div className="space-y-6">
+              {!record.complete && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-xl border border-accent-warning/40 bg-functional-stale-bg p-3.5 text-xs text-accent-warning"
+                >
+                  <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">
+                      {text(
+                        "Truy vết container chưa đầy đủ (dữ liệu hiện có vẫn được hiển thị bên dưới).",
+                        "Container trace is incomplete (available partial data is still shown below).",
+                      )}
+                    </p>
+                    {record.findings && record.findings.length > 0 && (
+                      <p className="font-mono text-[11px]">
+                        {record.findings.join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Summary KPI cards */}
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">

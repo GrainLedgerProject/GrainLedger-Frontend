@@ -4,6 +4,7 @@ export const compliancePaths = {
   results: "/compliance/lab-results",
   result: "/compliance/lab-results/:id",
   safetyMargin: "/compliance/safety-margin",
+  byproductMixing: "/compliance/byproduct-mixing",
   profiles: "/compliance/residue-profiles",
   residueEvidence: "/compliance/residue-evidence",
   companyPolicies: "/compliance/company-policies",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/app/store/authStore";
+import { ledgerEndpoints } from "@/api/ledger";
 import { riskPaths } from "@/features/risk/paths";
 import { containerExecutionEndpoints } from "@/api/containerExecution";
 import { planningEndpoints } from "@/api/planning";
@@ -27,6 +28,7 @@ import {
   planReviewPath,
 } from "../paths";
 import { BlendPlanRequestModalContent } from "./BlendPlanRequestPage";
+import { saveExportFile } from "../model/saveExportFile";
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,6 +37,7 @@ import {
   CaretRight,
   ChartPieSlice,
   ClockCounterClockwise,
+  DownloadSimple,
   FileText,
   LockSimple,
   ShieldCheck,
@@ -131,6 +134,25 @@ export function ContainerWorkflowContent({
     queryFn: () => collectPages((q) => planningEndpoints.getBlendPlans(id, q)),
     enabled: Boolean(execution.data),
   });
+  const [downloadingEvidenceId, setDownloadingEvidenceId] = useState<string | null>(null);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
+  async function handleDownloadEvidence(evidenceId: string) {
+    setEvidenceError(null);
+    setDownloadingEvidenceId(evidenceId);
+    try {
+      const blob = await ledgerEndpoints.getEvidence(evidenceId);
+      saveExportFile(blob, `hold-evidence-${evidenceId}.bin`);
+    } catch (err) {
+      setEvidenceError(
+        err instanceof Error
+          ? err.message
+          : text("Không thể tải chứng cứ HOLD.", "Unable to download HOLD evidence."),
+      );
+    } finally {
+      setDownloadingEvidenceId(null);
+    }
+  }
 
   const title =
     step === "plan"
@@ -345,11 +367,36 @@ export function ContainerWorkflowContent({
                     )}
                   </strong>
                 </div>
-                <ul className="list-disc list-inside space-y-1">
+                <ul className="space-y-1.5">
                   {c.holds.map((h) => (
-                    <li key={h.id}>{h.reason}</li>
+                    <li
+                      key={h.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface-base/70 px-2.5 py-1.5"
+                    >
+                      <span>{h.reason}</span>
+                      {h.evidenceId && (
+                        <button
+                          type="button"
+                          disabled={downloadingEvidenceId === h.evidenceId}
+                          onClick={() => void handleDownloadEvidence(h.evidenceId!)}
+                          className="inline-flex items-center gap-1 rounded-md border border-functional-rejected-border bg-surface-base px-2 py-1 text-[11px] font-semibold text-accent-danger hover:bg-functional-rejected-bg/70 disabled:opacity-50"
+                        >
+                          <DownloadSimple size={13} />
+                          <span>
+                            {downloadingEvidenceId === h.evidenceId
+                              ? text("Đang tải...", "Loading...")
+                              : text("Xem chứng cứ", "View evidence")}
+                          </span>
+                        </button>
+                      )}
+                    </li>
                   ))}
                 </ul>
+                {evidenceError && (
+                  <p className="text-[11px] font-medium text-accent-danger">
+                    {evidenceError}
+                  </p>
+                )}
               </div>
             )}
 

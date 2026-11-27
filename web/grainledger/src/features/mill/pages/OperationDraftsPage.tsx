@@ -155,6 +155,17 @@ export function OperationDraftsPage() {
   const [id, setId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [serverSearch, setServerSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "DRAFT" | "COMMITTED" | "CORRECTED" | "ALL"
+  >("DRAFT");
+  const [kindFilter, setKindFilter] = useState("");
+  const [facilityFilter, setFacilityFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [sortBy, setSortBy] = useState<
+    "occurredAt" | "kind" | "owner" | "status" | ""
+  >("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const setup = useQuery({
@@ -162,10 +173,28 @@ export function OperationDraftsPage() {
     queryFn: ledgerEndpoints.getSetup,
   });
   const drafts = useQuery({
-    queryKey: [...scope, "queue", page],
+    queryKey: [
+      ...scope,
+      "queue",
+      {
+        statusFilter,
+        kindFilter,
+        facilityFilter,
+        ownerFilter,
+        serverSearch,
+        sortBy,
+        sortDirection: sortBy ? sortDirection : "",
+        page,
+      },
+    ],
     queryFn: async () =>
       (await ledgerEndpoints.getOperations({
-        status: "DRAFT",
+        ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+        ...(kindFilter ? { kind: kindFilter } : {}),
+        ...(facilityFilter ? { facilityId: facilityFilter } : {}),
+        ...(ownerFilter ? { ownerId: ownerFilter } : {}),
+        ...(serverSearch ? { search: serverSearch } : {}),
+        ...(sortBy ? { sortBy, sortDirection } : {}),
         page,
         pageSize: 20,
       })) as ApiPage<CorrectionOperation>,
@@ -445,7 +474,9 @@ export function OperationDraftsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-display text-base font-bold text-ink-primary">
-                    {text("Bản nháp chế biến", "Processing drafts")}
+                    {statusFilter === "DRAFT"
+                      ? text("Bản nháp chế biến", "Processing drafts")
+                      : text("Danh sách công đoạn", "Ledger operations")}
                   </h2>
                   <StatusBadge
                     status="ACTIVE"
@@ -455,8 +486,8 @@ export function OperationDraftsPage() {
                 </div>
                 <p className="mt-0.5 text-xs text-ink-secondary">
                   {text(
-                    "Chọn bản nháp để xem chi tiết hoặc chỉnh sửa.",
-                    "Select a draft to inspect or edit.",
+                    "Chọn bản ghi để xem chi tiết, hoặc lọc công đoạn đã chốt / hiệu chỉnh.",
+                    "Select an operation to inspect details, or filter committed/corrected records.",
                   )}
                 </p>
               </div>
@@ -464,6 +495,125 @@ export function OperationDraftsPage() {
           </div>
 
           <div className="space-y-3 p-4">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <select
+                aria-label={text("Trạng thái công đoạn", "Operation status")}
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as typeof statusFilter);
+                  setPage(1);
+                }}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay font-semibold"
+              >
+                <option value="DRAFT">
+                  {text("Bản nháp (DRAFT)", "Drafts (DRAFT)")}
+                </option>
+                <option value="COMMITTED">
+                  {text("Đã chốt (COMMITTED)", "Committed (COMMITTED)")}
+                </option>
+                <option value="CORRECTED">
+                  {text("Đã hiệu chỉnh (CORRECTED)", "Corrected (CORRECTED)")}
+                </option>
+                <option value="ALL">
+                  {text("Tất cả trạng thái", "All statuses")}
+                </option>
+              </select>
+
+              <select
+                aria-label={text("Loại công đoạn", "Operation kind")}
+                value={kindFilter}
+                onChange={(e) => {
+                  setKindFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+              >
+                <option value="">{text("Tất cả loại", "All kinds")}</option>
+                {kinds.map((k) => (
+                  <option key={k} value={k}>
+                    {formatCodeLabel(OPERATION_LABELS, k, text)}
+                  </option>
+                ))}
+              </select>
+
+              {!!setup.data?.facilities?.length && (
+                <select
+                  aria-label={text("Cơ sở nhà máy", "Facility")}
+                  value={facilityFilter}
+                  onChange={(e) => {
+                    setFacilityFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="">
+                    {text("Tất cả cơ sở", "All facilities")}
+                  </option>
+                  {setup.data.facilities.map((fac) => (
+                    <option key={fac.id} value={fac.id}>
+                      {fac.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {!!setup.data?.owners?.length && (
+                <select
+                  aria-label={text("Chủ sở hữu", "Owner")}
+                  value={ownerFilter}
+                  onChange={(e) => {
+                    setOwnerFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="">
+                    {text("Tất cả chủ sở hữu", "All owners")}
+                  </option>
+                  {setup.data.owners.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <select
+                aria-label={text("Sắp xếp công đoạn", "Sort operations")}
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as typeof sortBy);
+                  setPage(1);
+                }}
+                className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+              >
+                <option value="">
+                  {text("Sắp xếp: Mặc định", "Sort: Default")}
+                </option>
+                <option value="occurredAt">
+                  {text("Thời gian thực hiện", "Occurred at")}
+                </option>
+                <option value="kind">{text("Loại công đoạn", "Kind")}</option>
+                <option value="owner">{text("Chủ sở hữu", "Owner")}</option>
+                <option value="status">{text("Trạng thái", "Status")}</option>
+              </select>
+
+              {sortBy && (
+                <select
+                  aria-label={text("Chiều sắp xếp", "Direction")}
+                  value={sortDirection}
+                  onChange={(e) => {
+                    setSortDirection(e.target.value as typeof sortDirection);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="desc">{text("Giảm dần", "Descending")}</option>
+                  <option value="asc">{text("Tăng dần", "Ascending")}</option>
+                </select>
+              )}
+            </div>
+
             <div className="relative">
               <MagnifyingGlass
                 size={16}
@@ -473,10 +623,20 @@ export function OperationDraftsPage() {
               <input
                 type="search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value.trim()) setServerSearch("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setServerSearch(searchQuery.trim());
+                    setPage(1);
+                  }
+                }}
                 aria-label={text(
-                  "Tìm bản nháp chế biến",
-                  "Search processing drafts",
+                  "Tìm công đoạn chế biến",
+                  "Search processing operations",
                 )}
                 placeholder={text(
                   "Tìm mã lô đầu ra, công đoạn, cơ sở...",
@@ -844,10 +1004,20 @@ export function OperationDraftsPage() {
                             aria-hidden="true"
                           />
                           <span>
-                            {text(
-                              "Bản nháp thuộc một nhân viên khác.",
-                              "This draft belongs to another operator.",
-                            )}
+                            {selected.status === "COMMITTED"
+                              ? text(
+                                  "Công đoạn đã chốt sổ cái (chế độ chỉ đọc).",
+                                  "Committed ledger operation (read-only view).",
+                                )
+                              : selected.status === "CORRECTED"
+                                ? text(
+                                    "Công đoạn đã được hiệu chỉnh (chế độ chỉ đọc).",
+                                    "Corrected ledger operation (read-only view).",
+                                  )
+                                : text(
+                                    "Bản nháp thuộc một nhân viên khác.",
+                                    "This draft belongs to another operator.",
+                                  )}
                           </span>
                         </div>
                       )}

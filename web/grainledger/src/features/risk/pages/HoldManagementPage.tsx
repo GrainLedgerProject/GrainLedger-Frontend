@@ -4,10 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowsClockwiseIcon,
+  ArrowsLeftRight,
   CalendarIcon,
   CheckCircleIcon,
   DownloadSimpleIcon,
   LockSimpleIcon,
+  MagnifyingGlass,
   ShieldWarningIcon,
   UploadSimpleIcon,
   WarningCircleIcon,
@@ -21,6 +23,7 @@ import { millPaths } from "@/features/mill/paths";
 import { useCommand } from "@/shared/hooks/useCommand";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
+import { RecordPagination } from "@/shared/ui/RecordWorkspace";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { Feedback } from "@/shared/ui/Workflow";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
@@ -54,18 +57,31 @@ interface LotPositionInfo {
   }[];
 }
 
-async function readAllHolds(): Promise<HoldOrder[]> {
-  const records: HoldOrder[] = [];
-  for (let page = 1; ; page++) {
-    const response = await ledgerEndpoints.getHolds({ page, pageSize: 100 });
-    if (Array.isArray(response)) return [...records, ...response];
-    const result = response as { items: HoldOrder[]; hasMore?: boolean };
-    if (!Array.isArray(result?.items))
-      throw new Error("Invalid HOLD list response");
-    records.push(...result.items);
-    if (!result.hasMore) return records;
-    if (!result.items.length) throw new Error("Invalid HOLD pagination");
+function parseHoldPage(response: unknown): {
+  items: HoldOrder[];
+  totalCount: number;
+  hasMore: boolean;
+} {
+  if (Array.isArray(response)) {
+    return {
+      items: response as HoldOrder[],
+      totalCount: response.length,
+      hasMore: false,
+    };
   }
+  const result = response as {
+    items?: HoldOrder[];
+    totalCount?: number;
+    hasMore?: boolean;
+  };
+  if (!Array.isArray(result?.items)) {
+    throw new Error("Invalid HOLD list response");
+  }
+  return {
+    items: result.items,
+    totalCount: result.totalCount ?? result.items.length,
+    hasMore: Boolean(result.hasMore),
+  };
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -91,58 +107,79 @@ export const HoldManagementPage: React.FC = () => {
   const canRespond =
     user?.role === "MILL_MANAGER" && user.permissions.includes("holds.process");
 
-  const [holds, setHolds] = useState<HoldOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [actionError, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"createdAt" | "status" | "owner">(
+    "createdAt",
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeHold, setActiveHold] = useState<HoldOrder | null>(null);
 
   const requestedLotId = params.get("lotId") ?? "";
 
-  const loadHolds = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const rows = await readAllHolds();
-      setHolds(rows);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD."));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
   useEffect(() => {
-    let active = true;
-    async function initHolds() {
-      try {
-        const items = await readAllHolds();
-        if (!active) return;
-        setHolds(items);
-      } catch (err: unknown) {
-        if (!active) return;
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError(
-            t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD."),
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    void initHolds();
-    return () => {
-      active = false;
-    };
-  }, [t]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const lookups = useQuery({
+    queryKey: ["hold-owner-lookups", user?.id],
+    queryFn: () =>
+      typeof ledgerEndpoints.getLookups === "function"
+        ? (ledgerEndpoints.getLookups() as Promise<SetupApiResponse>)
+        : Promise.resolve({} as SetupApiResponse),
+    enabled: Boolean(user),
+    retry: false,
+  });
+
+  const holdsQuery = useQuery({
+    queryKey: [
+      "hold-management-list",
+      page,
+      statusFilter,
+      debouncedSearch,
+      ownerFilter,
+      sortBy,
+      sortDirection,
+    ],
+    queryFn: async () =>
+      parseHoldPage(
+        await ledgerEndpoints.getHolds({
+          page,
+          pageSize: 20,
+          status: statusFilter === "ALL" ? undefined : statusFilter,
+          search: debouncedSearch || undefined,
+          ownerId: ownerFilter || undefined,
+          sortBy,
+          sortDirection,
+        }),
+      ),
+  });
+
+  const holds = holdsQuery.data?.items ?? [];
+  const totalCount = holdsQuery.data?.totalCount ?? 0;
+  const hasMore = holdsQuery.data?.hasMore ?? false;
+  const loading = holdsQuery.isFetching;
+  const error =
+    actionError ??
+    (holdsQuery.error instanceof Error
+      ? holdsQuery.error.message
+      : holdsQuery.error
+        ? t("risk.hold.errLoad", "Không thể tải danh sách lệnh HOLD.")
+        : null);
+
+  const loadHolds = useCallback(async () => {
+    setError(null);
+    await holdsQuery.refetch();
+  }, [holdsQuery]);
 
   const requestedLot = useQuery({
     queryKey: ["hold-prefill-lot", requestedLotId],
@@ -152,10 +189,8 @@ export const HoldManagementPage: React.FC = () => {
     retry: false,
   });
 
-  const filteredHolds = useMemo(() => {
-    if (statusFilter === "ALL") return holds;
-    return holds.filter((h) => h.status === statusFilter);
-  }, [holds, statusFilter]);
+  const filteredHolds = holds;
+  const ownerOptions = lookups.data?.owners ?? [];
 
   async function downloadHoldEvidence(evidenceId: string) {
     try {
@@ -193,21 +228,6 @@ export const HoldManagementPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label={text("Lọc trạng thái HOLD", "Filter HOLD status")}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="filter-control w-auto border-ink-tertiary/20 bg-surface-base font-semibold"
-          >
-            <option value="ALL">
-              {text("Tất cả trạng thái", "All statuses")}
-            </option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
-            <option value="ISOLATED">ISOLATED</option>
-            <option value="RESPONDED">RESPONDED</option>
-            <option value="RELEASED">RELEASED</option>
-          </select>
           <button
             type="button"
             onClick={() => void loadHolds()}
@@ -226,6 +246,104 @@ export const HoldManagementPage: React.FC = () => {
               <span>{t("risk.hold.newHold", "Ban hành Lệnh HOLD mới")}</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Filters Bar */}
+      <div className="p-4 rounded-xl border border-ink-tertiary/20 bg-surface-base dark:bg-surface-raised shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <div className="relative lg:col-span-2">
+          <MagnifyingGlass
+            size={15}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
+          />
+          <input
+            type="search"
+            aria-label={text("Tìm lệnh HOLD", "Search HOLD orders")}
+            placeholder={text(
+              "Tìm mã lô, lý do, chủ sở hữu...",
+              "Search lot code, reason, owner...",
+            )}
+            value={searchInput}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised ps-9 dark:bg-surface-overlay"
+          />
+        </div>
+
+        <select
+          aria-label={text("Lọc trạng thái HOLD", "Filter HOLD status")}
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-overlay"
+        >
+          <option value="ALL">
+            {text("Tất cả trạng thái", "All statuses")}
+          </option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+          <option value="ISOLATED">ISOLATED</option>
+          <option value="RESPONDED">RESPONDED</option>
+          <option value="RELEASED">RELEASED</option>
+        </select>
+
+        {ownerOptions.length > 0 ? (
+          <select
+            aria-label={text("Lọc chủ sở hữu", "Filter by owner")}
+            value={ownerFilter}
+            onChange={(e) => {
+              setOwnerFilter(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+          >
+            <option value="">{text("Tất cả chủ sở hữu", "All owners")}</option>
+            {ownerOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div />
+        )}
+
+        <div className="flex items-center gap-2">
+          <select
+            aria-label={text("Sắp xếp HOLD theo", "Sort HOLD by")}
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value as typeof sortBy);
+              setPage(1);
+            }}
+            className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+          >
+            <option value="createdAt">
+              {text("Ngày tạo", "Created date")}
+            </option>
+            <option value="status">{text("Trạng thái", "Status")}</option>
+            <option value="owner">{text("Chủ sở hữu", "Owner")}</option>
+          </select>
+          <button
+            type="button"
+            aria-label={text("Đổi chiều sắp xếp", "Toggle sort direction")}
+            onClick={() => {
+              setSortDirection((d) => (d === "desc" ? "asc" : "desc"));
+              setPage(1);
+            }}
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-ink-tertiary/20 bg-surface-raised px-2.5 text-ink-secondary hover:text-ink-primary"
+            title={sortDirection === "desc" ? "Mới/cao trước" : "Cũ/thấp trước"}
+          >
+            <ArrowsLeftRight size={14} />
+            <span className="ml-1 font-mono text-[11px] uppercase">
+              {sortDirection}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -397,6 +515,15 @@ export const HoldManagementPage: React.FC = () => {
             </table>
           </div>
         )}
+        <div className="border-t border-ink-tertiary/15 px-4">
+          <RecordPagination
+            page={page}
+            hasMore={hasMore}
+            count={totalCount}
+            onPage={setPage}
+            label={t("risk.hold.title", "Lệnh HOLD")}
+          />
+        </div>
       </div>
 
       {/* Issue HOLD Modal (uses real searchable lotId & file evidence) */}

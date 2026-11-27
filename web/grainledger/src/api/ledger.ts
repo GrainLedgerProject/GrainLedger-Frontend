@@ -12,11 +12,13 @@ export interface FacilityDto {
   createdBy?: string;
 }
 
+export type LocationKind = "STORE" | "SILO" | "COMPARTMENT" | "ISOLATION";
+
 export interface LocationDto {
   id: string;
   facilityId: string;
   name: string;
-  kind: "STORE" | "ISOLATION" | string;
+  kind: LocationKind | string;
   cleared: boolean;
   mixedBulk: boolean;
   ownerId: string | null;
@@ -129,6 +131,8 @@ export interface LedgerNotification {
 
 export interface NotificationQuery extends PageQuery {
   status?: "READ" | "UNREAD";
+  search?: string;
+  ownerId?: string;
   sortBy?: "createdAt" | "readAt";
   sortDirection?: "asc" | "desc";
 }
@@ -397,7 +401,20 @@ export const ledgerEndpoints = {
     ),
 
   // Operations
-  getOperations: (query?: PageQuery & { status?: string; ownerId?: string; facilityId?: string; ids?: string; queueOnly?: boolean }) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
+  getOperations: (
+    query?: PageQuery & {
+      status?: string;
+      kind?: string;
+      ownerId?: string;
+      facilityId?: string;
+      lotId?: string;
+      search?: string;
+      sortBy?: string;
+      sortDirection?: "asc" | "desc";
+      ids?: string;
+      queueOnly?: boolean;
+    },
+  ) => apiFetch<unknown>(withApiQuery("/api/ledger/operations", query)),
   recordOperation: (req: object) =>
     apiFetch<unknown>("/api/ledger/operations", {
       method: "POST",
@@ -433,7 +450,15 @@ export const ledgerEndpoints = {
     ),
 
   // Quarantine Holds
-  getHolds: (query?: PageQuery) => apiFetch<unknown>(withApiQuery("/api/ledger/holds", query)),
+  getHolds: (
+    query?: PageQuery & {
+      search?: string;
+      ownerId?: string;
+      status?: string;
+      sortBy?: string;
+      sortDirection?: "asc" | "desc";
+    },
+  ) => apiFetch<unknown>(withApiQuery("/api/ledger/holds", query)),
   createHold: (req: object) =>
     apiFetch<unknown>("/api/ledger/holds", {
       method: "POST",
@@ -653,7 +678,44 @@ export const ledgerEndpoints = {
         body: req ? JSON.stringify(req) : undefined,
       },
     ),
+
+  // Byproduct Variety Mixing Policy
+  getByproductVarietyPolicy: () =>
+    apiFetch<ByproductVarietyPolicyResponse>("/api/ledger/byproduct-variety-policy"),
+  updateByproductVarietyPolicy: (
+    stage: ByproductStage,
+    req: UpdateByproductVarietyPolicyRequest,
+  ) =>
+    apiFetch<ByproductVarietyPolicyItem>(
+      `/api/ledger/byproduct-variety-policy/${encodeURIComponent(stage)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(req),
+      },
+    ),
 };
+
+export type ByproductStage = "BRAN" | "HUSK";
+
+export type ByproductVarietyPolicySource = "SYSTEM_DEFAULT" | "COMPANY_OVERRIDE";
+
+export interface ByproductVarietyPolicyItem {
+  stage: ByproductStage;
+  allowCrossVariety: boolean;
+  source: ByproductVarietyPolicySource;
+  revision: string | null;
+}
+
+export interface ByproductVarietyPolicyResponse {
+  companyId: string;
+  items: ByproductVarietyPolicyItem[];
+}
+
+export interface UpdateByproductVarietyPolicyRequest {
+  allowCrossVariety: boolean | null;
+  expectedRevision: string | null;
+  reason: string;
+}
 
 export interface EvidenceRequest {
   id: string;

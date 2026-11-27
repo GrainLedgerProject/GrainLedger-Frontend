@@ -87,8 +87,9 @@ export function TraceFlowchart({
   function fitGraph() {
     if (layout.status !== "ready" || !viewportRef.current) return;
     const vw = viewportRef.current.clientWidth || 720;
-    const fitted = Math.max(0.45, Math.min(1.15, (vw - 16) / layout.width));
-    setZoom(Number(fitted.toFixed(2)));
+    const rawFit = (vw - 16) / layout.width;
+    const fitted = Math.max(0.1, Math.min(1.15, Math.floor(rawFit * 100) / 100));
+    setZoom(fitted);
     viewportRef.current.scrollTo({ left: 0, top: 0, behavior: "smooth" });
   }
 
@@ -181,7 +182,7 @@ export function TraceFlowchart({
             type="button"
             aria-label={text("Thu nhỏ sơ đồ", "Zoom out")}
             onClick={() =>
-              setZoom((z) => Math.max(0.4, Number((z - 0.15).toFixed(2))))
+              setZoom((z) => Math.max(0.1, Number((z - 0.15).toFixed(2))))
             }
             className="inline-flex items-center justify-center rounded-lg border border-ink-tertiary/25 bg-surface-raised px-2 py-1.5 hover:bg-surface-overlay"
           >

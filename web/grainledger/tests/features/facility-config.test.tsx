@@ -14,6 +14,18 @@ afterEach(() => {
 });
 
 it("submits the selected facility's version and keeps a rejected edit in its dialog", async () => {
+  useAuthStore.setState({
+    isAuthenticated: true,
+    accessToken: "mock",
+    user: {
+      id: "admin-1",
+      email: "admin@grainledger.test",
+      displayName: "Admin",
+      role: "MILL_ADMIN",
+      permissions: ["platform.configure"],
+      isActive: true,
+    },
+  });
   vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
     facilities: [{ id: "mill-a", name: "Nhà máy A", version: "revision-12", canEdit: true }],
   });

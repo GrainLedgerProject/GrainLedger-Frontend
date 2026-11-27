@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import { exportEndpoints, type ExportOrderSummary } from "@/api/exports";
 import { Feedback } from "@/shared/ui/Workflow";
+import { RecordPagination } from "@/shared/ui/RecordWorkspace";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 import { Decimal } from "@/shared/utils/decimalMass";
@@ -50,18 +51,31 @@ export function ExportOrdersWorkspace({
 }) {
   const text = useWorkflowText();
   const locale = text("vi", "en");
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("shippingFrom");
+  const filters = data.orderFilters;
+  const search = filters.q;
+  const sort = filters.sortBy;
+  const sortDirection = filters.sortDirection;
   const id = useId();
   const open = useExportAction();
   const orders = data.orders.data ?? [];
   const rows = orders
-    .filter((o) => o.code.toLowerCase().includes(search.trim().toLowerCase()))
-    .sort((a, b) =>
-      sort === "code"
-        ? a.code.localeCompare(b.code)
-        : a.shippingFrom.localeCompare(b.shippingFrom),
-    );
+    .filter((o) => {
+      if (search.trim() && !o.code.toLowerCase().includes(search.trim().toLowerCase())) {
+        return false;
+      }
+      if (filters.marketId && o.marketId !== filters.marketId) return false;
+      if (filters.commodityId && o.commodityId !== filters.commodityId) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const cmp =
+        sort === "code"
+          ? a.code.localeCompare(b.code)
+          : sort === "createdAt"
+            ? a.createdAt.localeCompare(b.createdAt)
+            : a.shippingFrom.localeCompare(b.shippingFrom);
+      return sortDirection === "desc" ? -cmp : cmp;
+    });
   return (
     <div className="space-y-5">
       <div className="min-w-0 space-y-5">
@@ -110,88 +124,181 @@ export function ExportOrdersWorkspace({
             "Select a contract to inspect its specifications and container allocations.",
           )}
         >
-          <div className="flex flex-wrap items-center gap-3">
-            <ExportSearch
-              label={text("Tìm mã đơn hàng", "Search order code")}
-              value={search}
-              onChange={setSearch}
-            />
-            <div className="w-full sm:w-52">
-              <label htmlFor={id} className="sr-only">
-                {text("Sắp xếp đơn hàng", "Sort orders")}
-              </label>
-              <ExportIconField icon={SortAscendingIcon}>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <ExportSearch
+                label={text("Tìm mã đơn hàng", "Search order code")}
+                value={search}
+                onChange={(val) => data.updateOrderFilters({ q: val })}
+              />
+              <div className="w-full sm:w-48">
+                <label htmlFor={`${id}-market`} className="sr-only">
+                  {text("Thị trường", "Market")}
+                </label>
                 <select
-                className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
-                id={id}
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="shippingFrom">
-                  {text("Ngày bắt đầu giao hàng", "Shipping start date")}
-                </option>
-                <option value="code">
-                  {text("Mã đơn hàng", "Order code")}
-                </option>
-              </select>
-              </ExportIconField>
-              
+                  id={`${id}-market`}
+                  aria-label={text("Thị trường", "Market")}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
+                  value={filters.marketId}
+                  onChange={(e) => data.updateOrderFilters({ marketId: e.target.value })}
+                >
+                  <option value="">{text("Tất cả thị trường", "All markets")}</option>
+                  {data.markets.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-full sm:w-48">
+                <label htmlFor={`${id}-commodity`} className="sr-only">
+                  {text("Hàng hóa", "Commodity")}
+                </label>
+                <select
+                  id={`${id}-commodity`}
+                  aria-label={text("Hàng hóa", "Commodity")}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
+                  value={filters.commodityId}
+                  onChange={(e) => data.updateOrderFilters({ commodityId: e.target.value })}
+                >
+                  <option value="">{text("Tất cả hàng hóa", "All commodities")}</option>
+                  {data.commodities.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <p className="ml-auto text-xs text-ink-secondary">
-              {rows.length} / {orders.length} {text("đơn hàng", "orders")}
-            </p>
+
+            <div className="flex flex-wrap items-end gap-3 text-xs">
+              <label className="space-y-1">
+                <span className="text-ink-secondary font-semibold">{text("Giao từ ngày", "Shipping from")}</span>
+                <input
+                  type="date"
+                  aria-label={text("Giao từ ngày", "Shipping from")}
+                  value={filters.from}
+                  onChange={(e) => data.updateOrderFilters({ from: e.target.value })}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-ink-secondary font-semibold">{text("Đến ngày", "Shipping to")}</span>
+                <input
+                  type="date"
+                  aria-label={text("Đến ngày", "Shipping to")}
+                  value={filters.to}
+                  onChange={(e) => data.updateOrderFilters({ to: e.target.value })}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-base"
+                />
+              </label>
+              <div className="w-full sm:w-52">
+                <label htmlFor={id} className="sr-only">
+                  {text("Sắp xếp đơn hàng", "Sort orders")}
+                </label>
+                <ExportIconField icon={SortAscendingIcon}>
+                  <select
+                    className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-base"
+                    id={id}
+                    value={sort}
+                    onChange={(e) =>
+                      data.updateOrderFilters({
+                        sortBy: e.target.value as "createdAt" | "code" | "shippingFrom",
+                      })
+                    }
+                  >
+                    <option value="shippingFrom">
+                      {text("Ngày bắt đầu giao hàng", "Shipping start date")}
+                    </option>
+                    <option value="code">
+                      {text("Mã đơn hàng", "Order code")}
+                    </option>
+                    <option value="createdAt">
+                      {text("Ngày tạo đơn", "Created date")}
+                    </option>
+                  </select>
+                </ExportIconField>
+              </div>
+              <div className="w-full sm:w-36">
+                <select
+                  aria-label={text("Chiều sắp xếp", "Sort direction")}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised font-semibold dark:bg-surface-base"
+                  value={sortDirection}
+                  onChange={(e) =>
+                    data.updateOrderFilters({
+                      sortDirection: e.target.value as "asc" | "desc",
+                    })
+                  }
+                >
+                  <option value="asc">{text("Tăng dần", "Ascending")}</option>
+                  <option value="desc">{text("Giảm dần", "Descending")}</option>
+                </select>
+              </div>
+              <p className="ml-auto text-xs text-ink-secondary">
+                {rows.length} / {data.orders.totalCount || orders.length} {text("đơn hàng", "orders")}
+              </p>
+            </div>
           </div>
           {rows.length ? (
-            <ExportTable
-              caption={text("Danh sách hợp đồng xuất khẩu", "Export contracts")}
-              columns={[
-                text("Đơn hàng", "Order"),
-                text("Lịch giao hàng", "Shipping window"),
-                text("Khối lượng hợp đồng", "Contract mass"),
-                text("Chi tiết", "Details"),
-              ]}
-            >
-              {rows.map((o) => (
-                <tr
-                  key={o.id}
-                  className="cursor-pointer hover:bg-surface-raised/40 transition-colors"
-                  onClick={(e) => {
-                    if ((e.target as HTMLElement).closest("button, a")) return;
-                    if (open) open({ kind: "order", orderId: o.id });
-                    else data.selectOrder(o.id);
-                  }}
-                >
-                  <th scope="row">
-                    <span className="font-mono font-bold">{o.code}</span>
-                  </th>
-                  <td>
-                    <div className="flex items-center gap-2 whitespace-nowrap text-ink-secondary">
-                      <Calendar size={14} aria-hidden="true" />
-                      {shippingDate(o.shippingFrom, locale)} –{" "}
-                      {shippingDate(o.shippingTo, locale)}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap font-mono">
-                    {massLabel(o.requiredMassKg, locale)} kg
-                  </td>
-                  <td>
-                    <button
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
-                      type="button"
-                      aria-haspopup="dialog"
-                      onClick={() => {
-                        if (open) open({ kind: "order", orderId: o.id });
-                        else data.selectOrder(o.id);
-                      }}
-                    >
-                      {text("Xem đơn", "View order")}
-                      <span className="sr-only"> · {o.code}</span>
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </ExportTable>
+            <>
+              <ExportTable
+                caption={text("Danh sách hợp đồng xuất khẩu", "Export contracts")}
+                columns={[
+                  text("Đơn hàng", "Order"),
+                  text("Lịch giao hàng", "Shipping window"),
+                  text("Khối lượng hợp đồng", "Contract mass"),
+                  text("Chi tiết", "Details"),
+                ]}
+              >
+                {rows.map((o) => (
+                  <tr
+                    key={o.id}
+                    className="cursor-pointer hover:bg-surface-raised/40 transition-colors"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button, a")) return;
+                      if (open) open({ kind: "order", orderId: o.id });
+                      else data.selectOrder(o.id);
+                    }}
+                  >
+                    <th scope="row">
+                      <span className="font-mono font-bold">{o.code}</span>
+                    </th>
+                    <td>
+                      <div className="flex items-center gap-2 whitespace-nowrap text-ink-secondary">
+                        <Calendar size={14} aria-hidden="true" />
+                        {shippingDate(o.shippingFrom, locale)} –{" "}
+                        {shippingDate(o.shippingTo, locale)}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap font-mono">
+                      {massLabel(o.requiredMassKg, locale)} kg
+                    </td>
+                    <td>
+                      <button
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+                        type="button"
+                        aria-haspopup="dialog"
+                        onClick={() => {
+                          if (open) open({ kind: "order", orderId: o.id });
+                          else data.selectOrder(o.id);
+                        }}
+                      >
+                        {text("Xem đơn", "View order")}
+                        <span className="sr-only"> · {o.code}</span>
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </ExportTable>
+              <RecordPagination
+                page={filters.page}
+                hasMore={data.orders.hasMore}
+                count={data.orders.totalCount}
+                onPage={(nextPage) => data.updateOrderFilters({ page: nextPage })}
+                label={text("Đơn hàng xuất khẩu", "Export orders")}
+              />
+            </>
           ) : (
             <ExportEmpty
               title={text(

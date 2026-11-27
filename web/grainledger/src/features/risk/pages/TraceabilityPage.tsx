@@ -8,6 +8,7 @@ import {
   Play,
   ShieldWarning,
   Table as TableIcon,
+  WarningCircle,
   X,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
@@ -349,14 +350,6 @@ export function TraceabilityPage() {
           text(
             `Phiên bản lược đồ truy vết không được hỗ trợ (v${next.schemaVersion}).`,
             `Unsupported trace schema version (v${next.schemaVersion}).`,
-          ),
-        );
-      }
-      if (!next.complete) {
-        throw new Error(
-          text(
-            "Dữ liệu truy vết chưa đầy đủ (complete=false). Vui lòng thử lại hoặc thu hẹp phạm vi.",
-            "Trace response is incomplete (complete=false). Please review scope or retry.",
           ),
         );
       }
@@ -993,6 +986,25 @@ export function TraceabilityPage() {
                         )}
                       </div>
                     </div>
+
+                    {!r.complete && (
+                      <div
+                        role="alert"
+                        className="flex items-start gap-2.5 rounded-xl border border-accent-warning/40 bg-functional-stale-bg p-3.5 text-xs text-accent-warning"
+                      >
+                        <WarningCircle
+                          size={18}
+                          weight="fill"
+                          className="mt-0.5 shrink-0"
+                        />
+                        <p>
+                          {text(
+                            "Dữ liệu truy vết hiện chỉ đầy đủ một phần (complete=false). Các lô, nguồn và phương án hiện có vẫn được hiển thị bên dưới.",
+                            "Trace data is currently incomplete (complete=false). Available lots, sources, and plans are still displayed below.",
+                          )}
+                        </p>
+                      </div>
+                    )}
 
                     {r.labOrigin && (
                       <p className="text-sm">
@@ -1709,10 +1721,38 @@ export function TraceabilityPage() {
                       }}
                       traceId={r.traceId}
                       selectableLots={holdSelectableLots}
-                      selectableContainers={r.actualContainers?.map((c) => ({
-                        containerId: c.containerId,
-                        code: c.code,
-                      }))}
+                      selectableContainers={Array.from(
+                        new Map<string, { containerId: string; code: string }>([
+                          ...(r.affectedPlans ?? []).map(
+                            (
+                              plan,
+                            ): [
+                              string,
+                              { containerId: string; code: string },
+                            ] => [
+                              plan.containerId,
+                              {
+                                containerId: plan.containerId,
+                                code: `${plan.containerCode} (${plan.status})`,
+                              },
+                            ],
+                          ),
+                          ...(r.actualContainers ?? []).map(
+                            (
+                              c,
+                            ): [
+                              string,
+                              { containerId: string; code: string },
+                            ] => [
+                              c.containerId,
+                              {
+                                containerId: c.containerId,
+                                code: c.code,
+                              },
+                            ],
+                          ),
+                        ]).values(),
+                      )}
                       initialLot={
                         holdSelectableLots.find(
                           (item) => item.id === effectiveResidueLotId,
