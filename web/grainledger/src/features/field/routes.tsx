@@ -24,8 +24,14 @@ const offlineSyncQueuePage = lazyScreen(() =>
 );
 
 export const fieldRoutes = [
-  screenRoute(fieldPaths.farmers, farmerRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER"], permission: "farms.write" }),
-  screenRoute(fieldPaths.plots, plotRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER"], permission: "farms.write" }),
+  screenRoute(fieldPaths.farmers, farmerRegistrationPage, {
+    roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"],
+    anyPermissions: ["farms.read", "farms.write"],
+  }),
+  screenRoute(fieldPaths.plots, plotRegistrationPage, {
+    roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"],
+    anyPermissions: ["farms.read", "farms.write"],
+  }),
   screenRoute(fieldPaths.seasons, cropSeasonsPage, {
     roles: ["MILL_ADMIN", "CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"],
     anyPermissions: ["platform.configure", "farms.write", "farms.read"],

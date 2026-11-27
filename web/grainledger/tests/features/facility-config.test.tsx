@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@/app/i18n";
 import { adminEndpoints } from "@/api/admin";
@@ -14,6 +14,18 @@ afterEach(() => {
 });
 
 it("submits the selected facility's version and keeps a rejected edit in its dialog", async () => {
+  useAuthStore.setState({
+    isAuthenticated: true,
+    accessToken: "mock",
+    user: {
+      id: "admin-1",
+      email: "admin@grainledger.test",
+      displayName: "Admin",
+      role: "MILL_ADMIN",
+      permissions: ["platform.configure"],
+      isActive: true,
+    },
+  });
   vi.spyOn(ledgerEndpoints, "getSetup").mockResolvedValue({
     facilities: [{ id: "mill-a", name: "Nhà máy A", version: "revision-12", canEdit: true }],
   });
@@ -85,21 +97,31 @@ it("renders synchronized FacilityAssignments panel, creates and updates staff as
   );
 
   expect(await screen.findByText("Phân công nhân sự theo cơ sở")).toBeTruthy();
-  expect(await screen.findByText("Nguyễn Văn Vận Hành")).toBeTruthy();
-  expect(screen.getByText("MillOperator")).toBeTruthy();
-
-  fireEvent.click(screen.getByRole("button", { name: "Sửa" }));
-  expect(screen.getByText("Đang chỉnh sửa")).toBeTruthy();
-
-  fireEvent.change(screen.getByLabelText(/Nhân sự đang hoạt động/), {
-    target: { value: "mgr-1" },
+  const assignmentsSection = screen.getByRole("region", {
+    name: "Phân công nhân sự theo cơ sở",
   });
-  fireEvent.click(screen.getByRole("button", { name: /Lưu phân công/ }));
+  expect(
+    await within(assignmentsSection).findByText("Nguyễn Văn Vận Hành"),
+  ).toBeTruthy();
+  expect(within(assignmentsSection).getByText("MillOperator")).toBeTruthy();
 
-  expect(updateAssign).toHaveBeenCalledWith("op-1", "fac-1", {
-    version: "a-v1",
-    newUserId: "mgr-1",
-    newFacilityId: "fac-1",
-  });
-  expect(await screen.findByText("Đã cập nhật phân công.")).toBeTruthy();
+  fireEvent.click(within(assignmentsSection).getByRole("button", { name: "Sửa" }));
+  expect(within(assignmentsSection).getByText("Đang chỉnh sửa")).toBeTruthy();
+
+  const staffSelect = within(assignmentsSection).getByLabelText(
+    /Nhân sự đang hoạt động/,
+  );
+  fireEvent.change(staffSelect, { target: { value: "mgr-1" } });
+  fireEvent.submit(staffSelect.closest("form")!);
+
+  await waitFor(() =>
+    expect(updateAssign).toHaveBeenCalledWith("op-1", "fac-1", {
+      version: "a-v1",
+      newUserId: "mgr-1",
+      newFacilityId: "fac-1",
+    }),
+  );
+  expect(
+    await within(assignmentsSection).findByText("Đã cập nhật phân công."),
+  ).toBeTruthy();
 });

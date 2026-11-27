@@ -73,20 +73,76 @@ export function ContainerProductionPanel({
       <Feedback pending={production.isPending} error={production.error} />
 
       {production.data && (
-        <div className="p-3.5 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 text-xs">
-          <p className="font-medium text-ink-primary flex items-center gap-2">
-            <span>
-              {text("Trạng thái sản xuất", "Production state")}:
-            </span>
-            <span className="font-mono font-bold text-accent-primary">
-              {production.data.state}
-            </span>
-            {production.data.outputCode && (
-              <span className="font-mono text-ink-secondary">
-                · {production.data.outputCode}
+        <div className="p-3.5 rounded-xl bg-surface-raised/40 dark:bg-surface-overlay/20 border border-ink-tertiary/15 text-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium text-ink-primary flex flex-wrap items-center gap-2">
+              <span>
+                {text("Trạng thái sản xuất", "Production state")}:
+              </span>
+              <span className="font-mono font-bold text-accent-primary">
+                {production.data.state}
+              </span>
+              {production.data.outputCode && (
+                <span className="font-mono text-ink-secondary">
+                  · {production.data.outputCode}
+                </span>
+              )}
+            </p>
+            {production.data.operationId && (
+              <span className="font-mono text-[11px] text-ink-secondary">
+                {text("Mã công đoạn", "Operation")}:{" "}
+                <strong className="text-ink-primary">{production.data.operationId}</strong>
               </span>
             )}
-          </p>
+          </div>
+
+          {(production.data.targetKg || production.data.plannedKg || production.data.remainingProductionKg) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(production.data.targetKg || production.data.plannedKg) && (
+                <div className="rounded-lg border border-ink-tertiary/15 bg-surface-base px-2.5 py-1.5">
+                  <span className="block text-[11px] text-ink-tertiary">
+                    {text("Khối lượng đầu ra mục tiêu", "Target output")}
+                  </span>
+                  <span className="font-mono font-bold text-ink-primary">
+                    {production.data.targetKg ?? production.data.plannedKg} kg
+                  </span>
+                </div>
+              )}
+              {production.data.remainingProductionKg && (
+                <div className="rounded-lg border border-ink-tertiary/15 bg-surface-base px-2.5 py-1.5">
+                  <span className="block text-[11px] text-ink-tertiary">
+                    {text("Khối lượng còn cần sản xuất", "Remaining to produce")}
+                  </span>
+                  <span className="font-mono font-bold text-ink-primary">
+                    {production.data.remainingProductionKg} kg
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {production.data.inputs && production.data.inputs.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-secondary">
+                {text("Các dòng lô đầu vào đã duyệt", "Approved input lines")} ({production.data.inputs.length})
+              </p>
+              <ul className="divide-y divide-ink-tertiary/10 rounded-lg border border-ink-tertiary/15 bg-surface-base">
+                {production.data.inputs.map((inp, idx) => (
+                  <li
+                    key={`${inp.lotId}:${inp.locationId}:${idx}`}
+                    className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                  >
+                    <span className="font-mono font-semibold text-ink-primary">
+                      {inp.lotCode || inp.lotId}
+                    </span>
+                    <span className="font-mono text-ink-secondary">
+                      {inp.approvedKg ?? inp.quantityKg} kg
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

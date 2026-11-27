@@ -4,6 +4,7 @@ import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 export function FacilityOverview(props: FacilityConfigModel["overview"]) {
   const {
     t,
+    canConfigure,
     facilities,
     loading,
     error,
@@ -50,14 +51,21 @@ export function FacilityOverview(props: FacilityConfigModel["overview"]) {
               className={loading ? "animate-spin text-accent-primary" : ""}
             />
           </button>
-          <button
-            type="button"
-            onClick={() => handleOpenAdd("FACILITY")}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-50"
-          >
-            <Buildings size={15} />
-            <span>Thêm Nhà máy</span>
-          </button>
+          {!canConfigure && (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full border border-ink-tertiary/20 bg-surface-raised text-ink-secondary font-semibold text-xs">
+              Chế độ chỉ đọc (platform.read)
+            </span>
+          )}
+          {canConfigure && (
+            <button
+              type="button"
+              onClick={() => handleOpenAdd("FACILITY")}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs disabled:opacity-50"
+            >
+              <Buildings size={15} />
+              <span>Thêm Nhà máy</span>
+            </button>
+          )}
           {/* <button
             type="button"
             onClick={() => handleOpenAdd("LOCATION")}

@@ -266,6 +266,7 @@
       "labSamples": "Mẫu xét nghiệm",
       "labResults": "Kết quả xét nghiệm",
       "safetyMargin": "Biên an toàn",
+      "byproductMixing": "Trộn phụ phẩm theo giống",
       "mrlVersions": "Phiên bản MRL",
       "residueProfiles": "Hồ sơ dư lượng"
     },
@@ -546,6 +547,8 @@
       "searchPlots": "Tìm thửa theo mã",
       "choosePlot": "Chọn thửa ruộng",
       "noPlotsFound": "Không tìm thấy thửa ruộng.",
+      "searchVarieties": "Tìm giống lúa theo tên hoặc mã",
+      "noVarietiesFound": "Không tìm thấy giống lúa phù hợp.",
       "pageStatus": "Trang {{page}} · Tổng {{count}}",
       "prev": "Trang trước",
       "next": "Trang sau",
@@ -746,6 +749,7 @@
       "syncSuccess": "Đã đồng bộ thành công tất cả bản ghi"
     },
     "farmer": {
+      "title": "Nông hộ",
       "errLoad": "Không thể tải danh sách nông hộ từ máy chủ.",
       "updatedSuccess": "Đã cập nhật thông tin nông hộ {{name}}",
       "registeredSuccess": "Đã đăng ký nông hộ {{name}} (mã {{code}})",
@@ -812,6 +816,7 @@
       "modalHandoverTitle": "Biên Bản Bàn Giao Mẫu (Chain of Custody)"
     },
     "plot": {
+      "title": "Thửa ruộng",
       "unknownFarmer": "Nông hộ chưa rõ",
       "errLoad": "Không thể tải danh sách thửa ruộng từ máy chủ.",
       "errSelectFarmer": "Vui lòng chọn Nông hộ sở hữu thửa ruộng.",
@@ -862,6 +867,9 @@
       "previewBadge": "ĐỊNH VỊ GIS"
     },
     "receipt": {
+      "linesTitle": "Danh sách dòng cân & thửa-vụ",
+      "addLine": "Thêm dòng",
+      "unitLabel": "Đơn vị *",
       "offlineFarmer": "Nông hộ (Chờ đồng bộ)",
       "errorLoad": "Không thể tải danh sách phiếu thu mua.",
       "errorSelectFarmer": "Vui lòng chọn Nông hộ thu mua.",
@@ -1927,6 +1935,7 @@
       "search": "Tìm phiên bản MRL",
       "searchPlaceholder": "Thị trường, hàng hóa hoặc căn cứ pháp lý",
       "allMarkets": "Tất cả thị trường",
+      "allCommodities": "Tất cả hàng hóa",
       "emptyFiltered": "Thử thay đổi từ khóa, trạng thái hoặc thị trường áp dụng.",
       "lookup": "Tra cứu MRL áp dụng",
       "market": "Thị trường",
@@ -1988,6 +1997,49 @@
       "noHistory": "Chưa có thiết lập chính sách được công bố.",
       "saved": "Đã công bố toàn bộ thiết lập chính sách. Lịch sử được giữ nguyên.",
       "sourceChanged": "Nguồn hồ sơ hoặc lịch sử chính sách đã thay đổi. Nội dung nhập được giữ lại để đối chiếu; hãy chọn và rà soát lại trước khi công bố."
+    }
+  },
+  "byproductPolicy": {
+    "eyebrow": "THIẾT LẬP DOANH NGHIỆP",
+    "title": "Chính sách trộn phụ phẩm theo giống lúa",
+    "subtitle": "Quyết định việc cho phép trộn lẫn nhiều giống lúa đối với từng phụ phẩm CÁM (BRAN) và TRẤU (HUSK). Thay đổi chỉ áp dụng cho công đoạn phát sinh về sau.",
+    "denied": "Cần vai trò Quản lý khách hàng, doanh nghiệp sở hữu hợp lệ và quyền byproduct.variety-policy.manage để truy cập màn hình này.",
+    "reload": "Tải lại",
+    "loading": "Đang tải chính sách trộn phụ phẩm...",
+    "scopeNote": "Các lô lúa nguyên liệu và gạo thành phẩm luôn tách biệt nghiêm ngặt theo giống. Thiết lập tại đây chỉ chi phối độc lập việc trộn giống cho từng phụ phẩm CÁM và TRẤU về sau.",
+    "currentSource": "Nguồn áp dụng:",
+    "sourceDefault": "Mặc định hệ thống",
+    "sourceOverride": "Quy tắc riêng doanh nghiệp",
+    "effectiveAllow": "Cho phép trộn giống",
+    "effectiveSeparate": "Giữ tách riêng từng giống",
+    "revisionLabel": "Phiên bản",
+    "noOverrideRevision": "Chưa có quy tắc riêng",
+    "policyModeLegend": "Quy tắc trộn cho {{stage}}",
+    "reasonLabel": "Lý do thay đổi",
+    "reasonHint": "Nhập 1–500 ký tự giải thích lý do áp dụng quy tắc mới hoặc đặt lại mặc định.",
+    "reasonPlaceholder": "Ví dụ: Tách riêng cám theo từng giống lúa phục vụ truy xuất lô xuất khẩu",
+    "reasonRequired": "Vui lòng nhập lý do thay đổi (1–500 ký tự).",
+    "reasonTooLong": "Lý do không được vượt quá 500 ký tự.",
+    "saveStage": "Lưu chính sách {{stage}}",
+    "savedStage": "Đã cập nhật {{stage}}: {{status}} ({{source}}).",
+    "conflictReloaded": "Chính sách {{stage}} đã thay đổi bởi phiên khác. Hệ thống đã tải lại dữ liệu mới nhất; vui lòng kiểm tra trước khi lưu lại.",
+    "stages": {
+      "BRAN": {
+        "name": "Cám (BRAN)",
+        "description": "Áp dụng cho toàn bộ lô và công đoạn phát sinh phụ phẩm cám của doanh nghiệp."
+      },
+      "HUSK": {
+        "name": "Trấu (HUSK)",
+        "description": "Áp dụng cho toàn bộ lô và công đoạn phát sinh phụ phẩm trấu của doanh nghiệp."
+      }
+    },
+    "choices": {
+      "defaultTitle": "Dùng mặc định hệ thống (Cho phép trộn giống)",
+      "defaultDetail": "Gỡ bỏ ghi đè riêng của doanh nghiệp và quay về cấu hình mặc định.",
+      "allowTitle": "Cho phép trộn khác giống lúa",
+      "allowDetail": "Ghi đè mức doanh nghiệp để cho phép trộn phụ phẩm từ nhiều giống lúa.",
+      "separateTitle": "Giữ tách riêng từng giống lúa",
+      "separateDetail": "Ngăn trộn lẫn các giống lúa khác nhau trong công đoạn phụ phẩm này."
     }
   }
 }

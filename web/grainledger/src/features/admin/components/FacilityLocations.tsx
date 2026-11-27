@@ -2,7 +2,8 @@ import { Broom, CheckCircle, Copy, PencilSimple, ShieldWarning, Trash, Warehouse
 import type { LocationDto } from "@/api/ledger";
 import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 
-export function FacilityLocations({ displayLocations, handleOpenEditLocation, handleDeleteLocation, handleOpenClearance, handleCopyId }: {
+export function FacilityLocations({ canConfigure = true, displayLocations, handleOpenEditLocation, handleDeleteLocation, handleOpenClearance, handleCopyId }: {
+  canConfigure?: boolean;
   displayLocations: LocationDto[];
   handleOpenEditLocation: FacilityConfigModel["facilities"]["handleOpenEditLocation"];
   handleDeleteLocation: FacilityConfigModel["facilities"]["handleDeleteLocation"];
@@ -77,10 +78,20 @@ export function FacilityLocations({ displayLocations, handleOpenEditLocation, ha
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border shrink-0 ${
                         isIsolation
                           ? "bg-rose-100 text-rose-800 border-rose-200"
-                          : "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
+                          : loc.kind === "SILO"
+                            ? "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800"
+                            : loc.kind === "COMPARTMENT"
+                              ? "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
+                              : "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
                       }`}
                     >
-                      {isIsolation ? "CÁCH LY" : "KHO/SILO"}
+                      {isIsolation
+                        ? "CÁCH LY"
+                        : loc.kind === "SILO"
+                          ? "SILO"
+                          : loc.kind === "COMPARTMENT"
+                            ? "NGĂN CHỨA"
+                            : "KHO CHỨA"}
                     </span>
                   </div>
 
@@ -126,38 +137,40 @@ export function FacilityLocations({ displayLocations, handleOpenEditLocation, ha
                 </div>
 
                 {/* Card Actions Footer */}
-                <div className="pt-3 mt-3 border-t border-ink-tertiary/10 flex items-center justify-between text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenClearance(loc)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-primary hover:underline p-1 rounded hover:bg-surface-base"
-                    title="Thực hiện quy trình kiểm tra vệ sinh và giải phóng mặt bằng Silo"
-                  >
-                    <Broom size={13} />
-                    <span>Vệ sinh Silo</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
+                {canConfigure && (
+                  <div className="pt-3 mt-3 border-t border-ink-tertiary/10 flex items-center justify-between text-xs">
                     <button
                       type="button"
-                      onClick={() => handleOpenEditLocation(loc)}
-                      className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
-                      title="Chỉnh sửa vị trí"
+                      onClick={() => handleOpenClearance(loc)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-primary hover:underline p-1 rounded hover:bg-surface-base"
+                      title="Thực hiện quy trình kiểm tra vệ sinh và giải phóng mặt bằng Silo"
                     >
-                      <PencilSimple size={14} />
+                      <Broom size={13} />
+                      <span>Vệ sinh Silo</span>
                     </button>
-                    {loc.canDelete !== false && (
+
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => handleDeleteLocation(loc)}
-                        className="p-1 rounded text-ink-tertiary hover:text-accent-danger hover:bg-surface-base transition-colors"
-                        title="Xóa vị trí"
+                        onClick={() => handleOpenEditLocation(loc)}
+                        className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
+                        title="Chỉnh sửa vị trí"
                       >
-                        <Trash size={14} />
+                        <PencilSimple size={14} />
                       </button>
-                    )}
+                      {loc.canDelete !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLocation(loc)}
+                          className="p-1 rounded text-ink-tertiary hover:text-accent-danger hover:bg-surface-base transition-colors"
+                          title="Xóa vị trí"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             );
           })}

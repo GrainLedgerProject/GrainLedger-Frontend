@@ -36,11 +36,15 @@ it("registers and resends verification before submitting the same email and a le
   const resend = vi.spyOn(authEndpoints, "resendVerification").mockResolvedValue(pending);
   const verify = vi.spyOn(authEndpoints, "verifyEmail").mockResolvedValue({ id: "new", email: pending.email, displayName: "New user", phoneNumber: null, organizationId: null, organizationName: null, role: null, permissions: [], isActive: false });
   mount(<RegisterPage />);
+  expect(screen.getByText("Step 1 / 2")).toBeTruthy();
+  const googleLink = screen.getByRole("link", { name: "Continue with Google" });
+  expect(googleLink.querySelector("svg")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "New user" } });
   fireEvent.change(screen.getByLabelText("Email address"), { target: { value: pending.email } });
   fireEvent.change(screen.getByLabelText("New password"), { target: { value: "LongPassword#42" } });
   fireEvent.click(screen.getByRole("button", { name: "Create account" }));
   await screen.findByRole("heading", { name: "Verify email" });
+  expect(screen.getByText("Step 2 / 2")).toBeTruthy();
   expect(register).toHaveBeenCalledWith({ email: pending.email, displayName: "New user", password: "LongPassword#42" });
   fireEvent.click(screen.getByRole("button", { name: "Resend code" }));
   await screen.findByText("A new verification code was sent.");
@@ -48,6 +52,7 @@ it("registers and resends verification before submitting the same email and a le
   fireEvent.change(screen.getByLabelText("Six-digit verification code"), { target: { value: "012345" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify email" }));
   await screen.findByRole("heading", { name: "Email verified" });
+  expect(screen.getByText("Completed")).toBeTruthy();
   expect(verify).toHaveBeenCalledWith({ email: pending.email, registrationId: pending.registrationId, otp: "012345" });
 });
 

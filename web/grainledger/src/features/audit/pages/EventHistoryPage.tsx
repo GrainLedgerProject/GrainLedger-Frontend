@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { ledgerHistoryKinds } from "@/api/history";
-import { ledgerEndpoints } from "@/api/ledger";
+import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
 import { eventLabel } from "../model/eventPresentation";
 import {
@@ -46,6 +46,7 @@ export const EventHistoryPage: React.FC = () => {
   );
   const [businessCategory, setBusinessCategory] =
     useState<BusinessCategory>("ALL");
+  const [businessEventType, setBusinessEventType] = useState("");
   const [businessRef, setBusinessRef] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -58,6 +59,20 @@ export const EventHistoryPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [reload, setReload] = useState(0);
+  const [ledgerFacilityId, setLedgerFacilityId] = useState("");
+  const [ledgerLotId, setLedgerLotId] = useState("");
+  const [ledgerSortBy, setLedgerSortBy] = useState<
+    "occurredAt" | "kind" | "quantity"
+  >("occurredAt");
+  const [ledgerSortDirection, setLedgerSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
+  const [ledgerFacilities, setLedgerFacilities] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [ledgerLots, setLedgerLots] = useState<{ id: string; code: string }[]>(
+    [],
+  );
 
   // Filters apply to the displayed page.
   const searchTerm = searchParams.get("search") ?? "";
@@ -107,7 +122,8 @@ export const EventHistoryPage: React.FC = () => {
   // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
   const trimmedBusinessRef = businessRef.trim();
-  const currentBusinessKey = `${businessCategory}:${trimmedBusinessRef}:${fromDate}:${toDate}:${businessPage}:${reload}`;
+  const trimmedBusinessEventType = businessEventType.trim();
+  const currentBusinessKey = `${businessCategory}:${trimmedBusinessEventType}:${trimmedBusinessRef}:${fromDate}:${toDate}:${businessPage}:${reload}`;
   const [businessState, setBusinessState] = useState<{
     key: string;
     data?: BusinessHistoryPageResult;
@@ -126,6 +142,7 @@ export const EventHistoryPage: React.FC = () => {
     void fetchBusinessHistory(
       {
         category: businessCategory === "ALL" ? undefined : businessCategory,
+        eventType: trimmedBusinessEventType || undefined,
         search: trimmedBusinessRef || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
@@ -157,6 +174,7 @@ export const EventHistoryPage: React.FC = () => {
   }, [
     historyMode,
     businessCategory,
+    trimmedBusinessEventType,
     trimmedBusinessRef,
     fromDate,
     toDate,
@@ -218,6 +236,29 @@ export const EventHistoryPage: React.FC = () => {
   useEffect(() => {
     if (historyMode !== "ledger") return;
     const controller = new AbortController();
+    void Promise.all([
+      typeof ledgerEndpoints.getLookups === "function"
+        ? ledgerEndpoints.getLookups().catch(() => null)
+        : Promise.resolve(null),
+      typeof ledgerEndpoints.getLots === "function"
+        ? ledgerEndpoints.getLots({ pageSize: 50 }).catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([lookupRes, lotRes]) => {
+      if (controller.signal.aborted) return;
+      const setup = lookupRes as SetupApiResponse | null;
+      if (setup?.facilities) setLedgerFacilities(setup.facilities);
+      const lotItems = Array.isArray(lotRes)
+        ? (lotRes as { id: string; code: string }[])
+        : ((lotRes as { items?: { id: string; code: string }[] } | null)
+            ?.items ?? []);
+      setLedgerLots(lotItems);
+    });
+    return () => controller.abort();
+  }, [historyMode]);
+
+  useEffect(() => {
+    if (historyMode !== "ledger") return;
+    const controller = new AbortController();
     async function loadEvents() {
       try {
         const result = await ledgerEndpoints.getHistory(
@@ -225,8 +266,11 @@ export const EventHistoryPage: React.FC = () => {
             page,
             pageSize: 25,
             search: searchTerm || undefined,
-            sortBy: "occurredAt",
-            sortDirection: "desc",
+            ...(ledgerLotId.trim() ? { lotId: ledgerLotId.trim() } : {}),
+            ...(ledgerFacilityId ? { facilityId: ledgerFacilityId } : {}),
+            ...(eventTypeFilter !== "ALL" ? { kind: eventTypeFilter } : {}),
+            sortBy: ledgerSortBy,
+            sortDirection: ledgerSortDirection,
           },
           { signal: controller.signal },
         );
@@ -250,7 +294,18 @@ export const EventHistoryPage: React.FC = () => {
     }
     void loadEvents();
     return () => controller.abort();
-  }, [historyMode, page, reload, searchTerm, t]);
+  }, [
+    historyMode,
+    page,
+    reload,
+    searchTerm,
+    ledgerLotId,
+    ledgerFacilityId,
+    eventTypeFilter,
+    ledgerSortBy,
+    ledgerSortDirection,
+    t,
+  ]);
 
   const entityLabels: Record<AuditEvent["entityType"], string> = {
     Lot: t("audit.events.filterLot", "Lô hàng"),
@@ -379,7 +434,7 @@ export const EventHistoryPage: React.FC = () => {
             </div>
           )}
           <div className="p-4 rounded-2xl bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 shadow-xs space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
               <label className="space-y-1">
                 <span className="font-semibold text-ink-secondary">
                   {text("Nhóm nghiệp vụ", "Business group")}
@@ -402,6 +457,37 @@ export const EventHistoryPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Loại sự kiện", "Event type")}
+                </span>
+                <input
+                  type="text"
+                  list="business-event-type-options"
+                  aria-label={text("Loại sự kiện", "Event type")}
+                  placeholder={text(
+                    "VD: TRACEBACK, CLOSE...",
+                    "e.g. TRACEBACK, CLOSE...",
+                  )}
+                  value={businessEventType}
+                  onChange={(e) => {
+                    setBusinessEventType(e.target.value);
+                    setBusinessPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                />
+                <datalist id="business-event-type-options">
+                  <option value="TRACEBACK" />
+                  <option value="CLOSE" />
+                  <option value="HOLD_PLACED" />
+                  <option value="HOLD_ISOLATED" />
+                  <option value="HOLD_RELEASED" />
+                  <option value="OPERATION_COMMITTED" />
+                  <option value="CORRECTION_APPROVED" />
+                  <option value="LAB_REPORT_RECORDED" />
+                </datalist>
               </label>
 
               <label className="space-y-1">
@@ -495,7 +581,9 @@ export const EventHistoryPage: React.FC = () => {
                       <th className="py-3.5 px-4">
                         {text("Thời gian", "Time")}
                       </th>
-                      <th className="py-3.5 px-4">{text("Nhóm", "Category")}</th>
+                      <th className="py-3.5 px-4">
+                        {text("Nhóm", "Category")}
+                      </th>
                       <th className="py-3.5 px-4">
                         {text("Mã tham chiếu", "Reference")}
                       </th>
@@ -668,7 +756,10 @@ export const EventHistoryPage: React.FC = () => {
                 <select
                   id={eventTypeFilterId}
                   value={eventTypeFilter}
-                  onChange={(e) => setEventTypeFilter(e.target.value)}
+                  onChange={(e) => {
+                    setEventTypeFilter(e.target.value);
+                    setPage(1);
+                  }}
                   className="filter-control border-ink-tertiary/20 bg-surface-raised ps-10 font-semibold dark:bg-surface-overlay"
                 >
                   <option value="ALL">
@@ -681,6 +772,104 @@ export const EventHistoryPage: React.FC = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-2 border-t border-ink-tertiary/10">
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Cơ sở nhà máy", "Facility")}
+                </span>
+                <select
+                  aria-label={text("Lọc theo cơ sở", "Filter by facility")}
+                  value={ledgerFacilityId}
+                  onChange={(e) => {
+                    setLedgerFacilityId(e.target.value);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="">
+                    {text("Tất cả cơ sở", "All facilities")}
+                  </option>
+                  {ledgerFacilities.map((fac) => (
+                    <option key={fac.id} value={fac.id}>
+                      {fac.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Lô hàng (Lot)", "Lot")}
+                </span>
+                <select
+                  aria-label={text("Lọc theo lô hàng", "Filter by lot")}
+                  value={ledgerLotId}
+                  onChange={(e) => {
+                    setLedgerLotId(e.target.value);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay font-mono"
+                >
+                  <option value="">{text("Tất cả lô hàng", "All lots")}</option>
+                  {ledgerLots.map((lot) => (
+                    <option key={lot.id} value={lot.id}>
+                      {lot.code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Sắp xếp theo", "Sort by")}
+                </span>
+                <select
+                  aria-label={text(
+                    "Sắp xếp lịch sử sổ cái",
+                    "Sort ledger history",
+                  )}
+                  value={ledgerSortBy}
+                  onChange={(e) => {
+                    setLedgerSortBy(e.target.value as typeof ledgerSortBy);
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="occurredAt">
+                    {text("Thời gian ghi nhận", "Occurred at")}
+                  </option>
+                  <option value="kind">{text("Loại sự kiện", "Kind")}</option>
+                  <option value="quantity">
+                    {text("Khối lượng", "Quantity")}
+                  </option>
+                </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="font-semibold text-ink-secondary">
+                  {text("Chiều sắp xếp", "Direction")}
+                </span>
+                <select
+                  aria-label={text("Chiều sắp xếp", "Sort direction")}
+                  value={ledgerSortDirection}
+                  onChange={(e) => {
+                    setLedgerSortDirection(
+                      e.target.value as typeof ledgerSortDirection,
+                    );
+                    setPage(1);
+                  }}
+                  className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
+                >
+                  <option value="desc">
+                    {text("Mới / Giảm dần", "Descending")}
+                  </option>
+                  <option value="asc">
+                    {text("Cũ / Tăng dần", "Ascending")}
+                  </option>
+                </select>
+              </label>
             </div>
 
             <div className="text-xs text-ink-secondary flex items-center justify-between pt-2.5 border-t border-ink-tertiary/10">

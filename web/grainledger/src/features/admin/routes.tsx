@@ -20,7 +20,10 @@ const receivingThresholdsPage = lazyScreen(() =>
 export const adminRoutes = [
   screenRoute(adminPaths.customers, customerOrganizationsPage, { roles: ["MILL_ADMIN"] }),
   screenRoute(adminPaths.access, userAccessManagementPage, { roles: ["MILL_ADMIN"] }),
-  screenRoute(adminPaths.facilities, facilityConfigPage, { roles: ["MILL_ADMIN"] }),
+  screenRoute(adminPaths.facilities, facilityConfigPage, {
+    roles: ["MILL_ADMIN", "MILL_MANAGER", "MILL_OPERATOR"],
+    anyPermissions: ["platform.configure", "platform.read"],
+  }),
   screenRoute(adminPaths.balancePolicy, balancePolicyPage, { roles: ["MILL_ADMIN", "MILL_MANAGER"] }),
   screenRoute(adminPaths.receivingThresholds, receivingThresholdsPage, { roles: ["MILL_ADMIN"] }),
   screenRoute(adminPaths.receivingThresholdHistory, lazyScreen(() => import("./pages/ReceivingThresholdReadPages").then(module => ({ default: module.ReceivingThresholdHistoryPage }))), { roles: ["MILL_ADMIN"], permission: "platform.configure" }),

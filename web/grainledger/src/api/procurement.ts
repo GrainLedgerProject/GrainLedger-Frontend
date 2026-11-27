@@ -19,7 +19,9 @@ export interface PlotSeason {
   id: string;
   plotId: string;
   seasonId: string;
+  riceVarietyId?: string | null;
   riceVariety: string;
+  canAssignRiceVariety?: boolean;
 }
 
 export interface PlotSeasonReference extends PlotSeason, ReferenceVersion {
@@ -402,6 +404,7 @@ export interface PlotSeasonInput {
   entityId: string;
   plotId: string;
   seasonId: string;
+  riceVarietyId?: null | string;
   riceVariety: null | string;
 }
 
@@ -506,6 +509,7 @@ export interface UpdatePlotRequest {
 export interface UpdatePlotSeasonRequest {
   plotId: string;
   seasonId: string;
+  riceVarietyId?: null | string;
   riceVariety: null | string;
   expectedVersion: number | string;
 }

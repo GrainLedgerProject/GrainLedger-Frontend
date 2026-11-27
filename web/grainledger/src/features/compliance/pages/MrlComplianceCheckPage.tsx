@@ -5,6 +5,8 @@ import { useAuthStore } from "@/app/store/authStore";
 import { LabReportEditor } from "../components/LabReportEditor";
 import { DeleteLabReportDialog, LabReportConfirmation } from "../components/LabReportDraftActions";
 import { compliancePaths, labResultPath } from "../paths";
+import { fieldPaths, sourceLotPath } from "@/features/field/paths";
+import { millPaths } from "@/features/mill/paths";
 import { riskPaths } from "@/features/risk/paths";
 import {
   labReportEndpoints,
@@ -64,6 +66,12 @@ export const MrlComplianceCheckPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const canWrite = useAuthStore(state => state.user?.permissions.includes("lab.write") ?? false);
+  const canReadFarms = useAuthStore(state =>
+    state.user?.permissions.some(p => p === "farms.read" || p === "farms.write") ?? false,
+  );
+  const canReadStock = useAuthStore(state =>
+    state.user?.permissions.some(p => p === "lots.read.tenant" || p === "lots.read.all" || p === "lots.read.facility") ?? false,
+  );
   const canSelectEvidence = useAuthStore(state => state.user?.permissions.includes("residue.evidence.manage") ?? false);
   const canTrace = useAuthStore(state =>
     state.user?.permissions.some(p => p === "trace.read.tenant" || p === "trace.read.all") ?? false,
@@ -792,72 +800,151 @@ export const MrlComplianceCheckPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-ink-tertiary/15 overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase text-[11px]">
-                        <th className="py-2.5 px-3">Hoạt chất / Chỉ tiêu</th>
-                        <th className="py-2.5 px-3">Nồng độ đo được</th>
-                        <th className="py-2.5 px-3">Giới hạn LOQ</th>
-                        <th className="py-2.5 px-3">Phương pháp thử</th>
-                        {canTrace && <th className="py-2.5 px-3 text-right">Truy vết</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-ink-tertiary/10">
-                      {selectedReport.resultSets &&
-                      selectedReport.resultSets.length > 0 ? (
-                        selectedReport.resultSets.flatMap((rs, rsIdx) =>
-                          (rs.results || []).map((res, resIdx) => (
-                            <tr
-                              key={`${rsIdx}-${resIdx}`}
-                              className="hover:bg-surface-raised/40 transition-colors"
-                            >
-                              <td className="py-2.5 px-3 font-semibold text-ink-primary">
-                                {res.testLabel || "Chưa có tên chỉ tiêu"}
-                              </td>
-                              <td className="py-2.5 px-3 font-mono font-bold text-accent-primary">
-                                {res.numericValue
-                                  ? `${res.numericValue} ${res.unit ?? ""}`
-                                  : res.originalResultText || "Chưa có kết quả"}
-                              </td>
-                              <td className="py-2.5 px-3 font-mono text-ink-secondary">
-                                {res.loq ?? "Chưa có dữ liệu"}
-                              </td>
-                              <td className="py-2.5 px-3 text-ink-tertiary">
-                                {res.method || "Chưa có dữ liệu"}
-                              </td>
-                              {canTrace && (
-                                <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                                  {isConfirmed(selectedReport) &&
-                                  rs.confirmedSampleId ? (
-                                    <Link
-                                      to={`${riskPaths.traceback}?reportId=${encodeURIComponent(selectedReport.id)}&resultId=${encodeURIComponent(res.id)}`}
-                                      onClick={() => setSelectedReport(null)}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary hover:bg-accent-primary/20 transition-colors"
-                                    >
-                                      <span>Truy xuôi từ kết quả</span>
-                                    </Link>
-                                  ) : (
-                                    <span className="text-ink-tertiary">—</span>
-                                  )}
-                                </td>
+                <div className="space-y-3">
+                  {selectedReport.resultSets && selectedReport.resultSets.length > 0 ? (
+                    selectedReport.resultSets.map((rs, rsIdx) => {
+                      const sampleTargetPath = canReadFarms
+                        ? `${fieldPaths.samples}?sampleId=${encodeURIComponent(rs.confirmedSampleId ?? rs.sampleId ?? "")}`
+                        : compliancePaths.samples;
+                      const sourceLotTargetPath = canReadFarms
+                        ? sourceLotPath(rs.sourceLotId ?? "")
+                        : millPaths.lot.replace(":lotId", encodeURIComponent(rs.sourceLotId ?? ""));
+                      return (
+                        <div
+                          key={rs.id || rsIdx}
+                          className="rounded-xl border border-ink-tertiary/15 overflow-hidden bg-surface-base dark:bg-surface-raised"
+                        >
+                          <div className="p-3 bg-surface-raised/60 dark:bg-surface-overlay/40 border-b border-ink-tertiary/15 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                            <div className="space-y-1">
+                              <div className="font-bold text-ink-primary">
+                                Phần mẫu #{rsIdx + 1} · {rs.sectionReference || "Bảng phân tích chính"}
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-ink-secondary">
+                                <span>
+                                  Mã mẫu in: <strong className="font-mono text-ink-primary">{rs.statedSampleCode?.trim() || "—"}</strong>
+                                </span>
+                                <span>·</span>
+                                <span>
+                                  Niêm chì: <strong className="font-mono text-ink-primary">{rs.statedSealCode?.trim() || "—"}</strong>
+                                </span>
+                                <span>·</span>
+                                <span>
+                                  Mã Lab: <strong className="font-mono text-ink-primary">{rs.laboratorySampleReference?.trim() || "—"}</strong>
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {rs.confirmedSampleId ? (
+                                <Link
+                                  to={sampleTargetPath}
+                                  onClick={() => setSelectedReport(null)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 font-semibold text-accent-primary hover:bg-accent-primary/20"
+                                >
+                                  ✓ Mẫu xác nhận {rs.statedSampleCode?.trim() || rs.confirmedSampleId.slice(0, 8)} ↗
+                                </Link>
+                              ) : (
+                                <span className="rounded-full bg-functional-stale-bg px-2.5 py-0.5 font-semibold text-accent-warning">
+                                  Chưa gán mẫu · {rs.statedSampleCode?.trim() || rs.sampleId || "chưa ghi"}
+                                </span>
                               )}
-                            </tr>
-                          )),
-                        )
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={canTrace ? 5 : 4}
-                            className="py-4 px-3 text-ink-secondary"
-                          >
-                            Báo cáo chưa có bộ kết quả xét nghiệm.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                              {rs.sourceLotId && (canReadFarms || canReadStock) && (
+                                <Link
+                                  to={sourceLotTargetPath}
+                                  onClick={() => setSelectedReport(null)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-ink-tertiary/20 bg-surface-base px-2.5 py-1 font-semibold text-ink-primary hover:bg-surface-raised"
+                                >
+                                  Lô nguồn ↗
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-surface-raised dark:bg-surface-overlay border-b border-ink-tertiary/15 text-ink-secondary font-semibold uppercase text-[11px]">
+                                  <th className="py-2.5 px-3">Hoạt chất / Chỉ tiêu</th>
+                                  <th className="py-2.5 px-3">Nồng độ đo được</th>
+                                  <th className="py-2.5 px-3">Giới hạn LOQ</th>
+                                  <th className="py-2.5 px-3">Phương pháp thử</th>
+                                  {canTrace && <th className="py-2.5 px-3 text-right">Truy vết</th>}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-ink-tertiary/10">
+                                {(rs.results || []).map((res, resIdx) => (
+                                  <tr
+                                    key={`${rsIdx}-${resIdx}`}
+                                    className="hover:bg-surface-raised/40 transition-colors"
+                                  >
+                                    <td className="py-2.5 px-3 font-semibold text-ink-primary">
+                                      {res.testLabel || "Chưa có tên chỉ tiêu"}
+                                    </td>
+                                    <td className="py-2.5 px-3 font-mono font-bold text-accent-primary">
+                                      {res.numericValue
+                                        ? `${res.numericValue} ${res.unit ?? ""}`
+                                        : res.originalResultText || "Chưa có kết quả"}
+                                    </td>
+                                    <td className="py-2.5 px-3 font-mono text-ink-secondary">
+                                      {res.loq ?? "Chưa có dữ liệu"}
+                                    </td>
+                                    <td className="py-2.5 px-3 text-ink-tertiary">
+                                      {res.method || "Chưa có dữ liệu"}
+                                    </td>
+                                    {canTrace && (
+                                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                        {isConfirmed(selectedReport) &&
+                                        rs.confirmedSampleId ? (
+                                          <Link
+                                            to={`${riskPaths.traceback}?reportId=${encodeURIComponent(selectedReport.id)}&resultId=${encodeURIComponent(res.id)}`}
+                                            onClick={() => setSelectedReport(null)}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary hover:bg-accent-primary/20 transition-colors"
+                                          >
+                                            <span>Truy xuôi từ kết quả</span>
+                                          </Link>
+                                        ) : (
+                                          <span className="text-ink-tertiary">—</span>
+                                        )}
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-xl border border-ink-tertiary/15 py-4 px-3 text-ink-secondary">
+                      Báo cáo chưa có bộ kết quả xét nghiệm.
+                    </div>
+                  )}
                 </div>
+
+                {selectedReport.relatedReports && selectedReport.relatedReports.length > 0 && (
+                  <div className="mt-3 p-3.5 rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 space-y-1.5 text-xs">
+                    <div className="font-bold text-ink-primary">
+                      Báo cáo liên quan ({selectedReport.relatedReports.length})
+                    </div>
+                    <ul className="space-y-1">
+                      {selectedReport.relatedReports.map((rel) => (
+                        <li key={rel.id} className="flex flex-wrap items-center gap-2">
+                          <Link
+                            to={labResultPath(rel.id)}
+                            className="font-mono font-semibold text-accent-primary underline"
+                          >
+                            {rel.reportKind} · {rel.id}
+                          </Link>
+                          {rel.relationshipReason && (
+                            <span className="text-ink-secondary">
+                              — {rel.relationshipReason}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {canWrite && !isConfirmed(selectedReport) && ["UNRESOLVED", "PENDING_REVIEW"].includes(selectedReport.status) && <>

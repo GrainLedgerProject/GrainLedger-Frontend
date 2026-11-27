@@ -163,6 +163,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             icon: CheckSquare,
           },
           {
+            label: t("nav.admin.facilities", "Cơ sở & Thiết bị"),
+            path: adminPaths.facilities,
+            permission: "platform.read",
+            icon: Factory,
+          },
+          {
             label: t("nav.events", "Tìm sự kiện"),
             path: auditPaths.events,
             icon: MagnifyingGlass,
@@ -201,6 +207,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             label: t("nav.admin.balancePolicy", "Chính sách cân bằng"),
             path: adminPaths.balancePolicy,
             icon: Scales,
+          },
+          {
+            label: t("nav.admin.facilities", "Cơ sở & Thiết bị"),
+            path: adminPaths.facilities,
+            permission: "platform.read",
+            icon: Factory,
           },
           {
             label: t("nav.mill.operations", "Ghi bước chế biến"),
@@ -291,6 +303,18 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             isPrimary: true,
           },
           {
+            label: t("nav.field.farmers", "Nông hộ"),
+            path: fieldPaths.farmers,
+            permission: "farms.read",
+            icon: Users,
+          },
+          {
+            label: t("nav.field.plots", "Thửa ruộng"),
+            path: fieldPaths.plots,
+            permission: "farms.read",
+            icon: MapPin,
+          },
+          {
             label: t("nav.field.seasons"),
             path: fieldPaths.seasons,
             permission: "farms.read",
@@ -315,6 +339,12 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             label: t("nav.compliance.safetyMargin", "Biên an toàn MRL"),
             path: compliancePaths.safetyMargin,
             icon: ShieldCheck,
+          },
+          {
+            label: t("nav.compliance.byproductMixing", "Trộn phụ phẩm theo giống"),
+            path: compliancePaths.byproductMixing,
+            permission: "byproduct.variety-policy.manage",
+            icon: Scales,
           },
           {
             label: t("nav.export.plansPending"),
@@ -368,6 +398,18 @@ function roleNavigation(role: UserRole, t: TFunction, pendingOfflineCount: numbe
             path: catalogsPaths.mrlVersions,
             permission: "mrl.read",
             icon: BookOpen,
+          },
+          {
+            label: t("nav.compliance.labSamples", "Mẫu xét nghiệm"),
+            path: compliancePaths.samples,
+            permission: "lab.read",
+            icon: Flask,
+          },
+          {
+            label: t("nav.compliance.labResults", "Kết quả xét nghiệm"),
+            path: compliancePaths.results,
+            permission: "lab.read",
+            icon: TestTube,
           },
           {
             label: t("nav.events", "Tìm sự kiện"),

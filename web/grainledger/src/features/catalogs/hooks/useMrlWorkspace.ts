@@ -27,6 +27,7 @@ export function useMrlWorkspace(
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
   const [marketFilter, setMarketFilter] = useState("");
+  const [commodityFilter, setCommodityFilter] = useState("");
   const [lookupOpen, setLookupOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [form, setForm] = useState({
@@ -229,17 +230,19 @@ export function useMrlWorkspace(
     (version) =>
       (!filter || version.status === filter) &&
       (!marketFilter || version.marketId === marketFilter) &&
+      (!commodityFilter || version.commodityId === commodityFilter) &&
       (!searchTerm ||
         [label(version), version.sourceRef, `v${version.versionNo}`]
           .join(" ")
           .toLocaleLowerCase(i18n.language)
           .includes(searchTerm)),
   );
-  const filtered = Boolean(searchTerm || filter || marketFilter);
+  const filtered = Boolean(searchTerm || filter || marketFilter || commodityFilter);
   const clearFilters = () => {
     setSearch("");
     setFilter("");
     setMarketFilter("");
+    setCommodityFilter("");
   };
   const openDetail = (version: MrlVersionDto) => {
     setLookupOpen(false);
@@ -342,6 +345,8 @@ export function useMrlWorkspace(
       setSearch,
       marketFilter,
       setMarketFilter,
+      commodityFilter,
+      setCommodityFilter,
       lookupOpen,
       setLookupOpen,
       viewMode,

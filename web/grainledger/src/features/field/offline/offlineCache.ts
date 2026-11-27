@@ -44,6 +44,7 @@ export interface CachedReferenceData {
   receivingOptions?: ProcurementReceivingOption[];
   commodity?: ProcurementCommodity;
   massUnits?: ProcurementMassUnit[];
+  maxLinesPerReceipt?: number;
   plotSeasons?: CachedPlotSeason[];
   plots?: CachedPlot[];
   // Backwards compatibility for legacy views

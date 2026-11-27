@@ -1,6 +1,6 @@
 import { adminEndpoints, type OrganizationDto } from "@/api/admin";
 import { ledgerEndpoints } from "@/api/ledger";
-import { confirmAction, toast } from "@/app/store/feedbackStore";
+import { toast } from "@/app/store/feedbackStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -61,6 +61,8 @@ export const ReceivingThresholdsPage = () => {
   const [companyId, setCompanyId] = useState("");
   const [percentage, setPercentage] = useState("");
   const [reason, setReason] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<CompanyThreshold | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -201,28 +203,39 @@ export const ReceivingThresholdsPage = () => {
     }
   };
 
-  const removeCompany = async (item: CompanyThreshold) => {
-    if (
-      !(await confirmAction({
-        title: "Xóa ngưỡng riêng",
-        description: `Áp dụng ngưỡng mặc định cho ${item.companyName}?`,
-        confirmLabel: "Xóa ngưỡng",
-        variant: "danger",
-      }))
-    )
+  const removeCompany = (item: CompanyThreshold) => {
+    setDeleteTarget(item);
+    setDeleteReason("");
+    setError(null);
+  };
+
+  const handleConfirmDelete = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!deleteTarget) return;
+    if (!deleteReason.trim()) {
+      setError("Vui lòng nhập lý do xóa ngưỡng riêng.");
       return;
+    }
+    setSaving(true);
     setError(null);
     try {
-      await ledgerEndpoints.deleteCompanyReceivingThreshold(item.companyId, {
-        version: item.version,
-        reason: "Xóa ngưỡng riêng theo yêu cầu quản trị viên",
-      });
+      await ledgerEndpoints.deleteCompanyReceivingThreshold(
+        deleteTarget.companyId,
+        {
+          version: deleteTarget.version,
+          reason: deleteReason.trim(),
+        },
+      );
       toast.success("Đã xóa ngưỡng riêng.");
+      setDeleteTarget(null);
+      setDeleteReason("");
       await loadData();
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Không thể xóa ngưỡng riêng.",
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -557,6 +570,87 @@ export const ReceivingThresholdsPage = () => {
                   <FloppyDisk size={16} aria-hidden="true" />
                 )}
                 {saving ? "Đang lưu..." : "Lưu ngưỡng"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => !saving && setDeleteTarget(null)}
+        ariaLabel="Xóa ngưỡng riêng"
+      >
+        <div className="w-full max-w-md bg-surface-base dark:bg-surface-raised border border-ink-tertiary/20 rounded-2xl shadow-xl overflow-hidden animate-ledger-in">
+          <header className="p-5 border-b border-ink-tertiary/15 flex items-center justify-between bg-surface-raised">
+            <div>
+              <h2 className="font-display font-bold text-base text-ink-primary">
+                Xóa ngưỡng riêng
+              </h2>
+              <p className="text-xs text-ink-secondary mt-0.5">
+                {deleteTarget
+                  ? `Áp dụng ngưỡng mặc định trở lại cho ${deleteTarget.companyName}`
+                  : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={saving}
+              aria-label="Đóng"
+              className="p-2 rounded-md text-ink-tertiary hover:text-ink-primary transition-colors disabled:opacity-50"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </header>
+
+          <form onSubmit={handleConfirmDelete} className="p-5 space-y-4 text-xs">
+            {error && (
+              <div
+                role="alert"
+                className="p-3 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger flex items-center gap-2"
+              >
+                <WarningCircle size={16} weight="fill" aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="threshold-delete-reason"
+                className="block font-semibold text-ink-secondary mb-1"
+              >
+                Lý do xóa ngưỡng riêng *
+              </label>
+              <textarea
+                id="threshold-delete-reason"
+                required
+                disabled={saving}
+                maxLength={4000}
+                rows={3}
+                value={deleteReason}
+                onChange={(event) => setDeleteReason(event.target.value)}
+                placeholder="Nhập lý do áp dụng lại ngưỡng mặc định..."
+                className="w-full px-3 py-2 rounded-xl bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none disabled:opacity-60"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-ink-tertiary/15 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={saving}
+                className="min-h-11 px-4 py-2 rounded-lg border border-ink-tertiary/20 hover:bg-surface-raised font-semibold text-ink-secondary text-xs transition-colors disabled:opacity-60"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !deleteReason.trim()}
+                className="inline-flex min-h-11 items-center justify-center gap-2 px-5 py-2 rounded-full bg-accent-danger text-white font-semibold hover:bg-accent-danger/90 transition-colors disabled:opacity-60 text-xs shadow-xs"
+              >
+                <Trash size={15} aria-hidden="true" />
+                <span>{saving ? "Đang xóa..." : "Xóa ngưỡng"}</span>
               </button>
             </div>
           </form>

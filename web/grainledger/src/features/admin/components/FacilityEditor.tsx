@@ -1,4 +1,5 @@
 import { Modal } from "@/shared/ui/Modal";
+import type { LocationKind } from "@/api/ledger";
 import { Buildings, Warehouse, WarningCircle, Wrench, X } from "@phosphor-icons/react";
 import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 
@@ -160,12 +161,18 @@ export function FacilityEditor(props: FacilityConfigModel["editor"]) {
                   required
                   value={formKind}
                   onChange={(e) =>
-                    setFormKind(e.target.value as "STORE" | "ISOLATION")
+                    setFormKind(e.target.value as LocationKind)
                   }
                   className="w-full px-3 py-2 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary text-xs focus:border-accent-primary focus:outline-none"
                 >
                   <option value="STORE">
-                    Kho chứa thông thường / Silo lưu trữ (STORE)
+                    Kho chứa thông thường (STORE)
+                  </option>
+                  <option value="SILO">
+                    Silo lưu trữ hạt (SILO)
+                  </option>
+                  <option value="COMPARTMENT">
+                    Ngăn chứa / Ô kho phân lô (COMPARTMENT)
                   </option>
                   <option value="ISOLATION">
                     Khu vực cách ly kiểm định / Hàng lỗi (ISOLATION)

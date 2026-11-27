@@ -2,10 +2,14 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
+  labReportEndpoints,
   sampleEndpoints,
   type CaptureSampleRequest,
+  type LabReportResponse,
   type RecordSampleHandoverRequest,
 } from "@/api/compliance";
+import { useAuthStore } from "@/app/store/authStore";
+import { labResultPath } from "../paths";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -91,6 +95,13 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
   defaultTab = "LIST",
 }) => {
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
+  const canMutateSamples = Boolean(
+    user?.permissions.some((p) => p === "purchases.write" || p === "lab.write"),
+  );
+  const canReadLabReports = Boolean(
+    user?.permissions.some((p) => p === "lab.read" || p === "lab.write"),
+  );
   const [samples, setSamples] = useState<SampleSummary[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -119,6 +130,8 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
   );
   const [handovers, setHandovers] = useState<HandoverRecord[]>([]);
   const [loadingHandovers, setLoadingHandovers] = useState(false);
+  const [linkedReports, setLinkedReports] = useState<LabReportResponse[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
 
   // Create Modal
   const [isCreateOpen, setIsCreateOpen] = useState(defaultTab === "CREATE");
@@ -398,14 +411,16 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
               className={loading ? "motion-safe:animate-spin" : undefined}
             />
           </button>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
-          >
-            <Plus size={16} weight="bold" />
-            <span>{t("compliance.lab.newSample", "Đăng Ký Mẫu Mới")}</span>
-          </button>
+          {canMutateSamples && (
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent-primary text-white font-semibold text-xs hover:bg-accent-primary-dim transition-all shadow-xs"
+            >
+              <Plus size={16} weight="bold" />
+              <span>{t("compliance.lab.newSample", "Đăng Ký Mẫu Mới")}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -684,7 +699,21 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                             onClick={() => {
                               setHandovers([]);
                               setLoadingHandovers(true);
+                              setLinkedReports([]);
+                              setLoadingReports(canReadLabReports);
                               setSelectedSample(sample);
+                              if (canReadLabReports) {
+                                void labReportEndpoints
+                                  .getLabReports({ sampleId: sample.id, pageSize: 20 })
+                                  .then((res) => {
+                                    const items = Array.isArray(res)
+                                      ? res
+                                      : ((res as { items?: LabReportResponse[] })?.items ?? []);
+                                    setLinkedReports(items);
+                                  })
+                                  .catch(() => setLinkedReports([]))
+                                  .finally(() => setLoadingReports(false));
+                              }
                             }}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink-tertiary/20 bg-surface-base hover:bg-surface-raised text-ink-primary text-xs font-semibold transition-colors"
                             title="Xem chi tiết & lịch sử bàn giao"
@@ -692,17 +721,19 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                             <Eye size={14} />
                             <span>{t("common.details", "Chi tiết")}</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenHandover(sample)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary text-xs font-semibold transition-colors"
-                            title="Ghi nhận bàn giao mẫu tới phòng Lab"
-                          >
-                            <Truck size={14} />
-                            <span>
-                              {t("compliance.lab.handoverBtn", "Bàn giao")}
-                            </span>
-                          </button>
+                          {canMutateSamples && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenHandover(sample)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary text-xs font-semibold transition-colors"
+                              title="Ghi nhận bàn giao mẫu tới phòng Lab"
+                            >
+                              <Truck size={14} />
+                              <span>
+                                {t("compliance.lab.handoverBtn", "Bàn giao")}
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -811,6 +842,45 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                   </span>
                 </div>
               </div>
+
+              {canReadLabReports && (
+                <div className="p-3.5 rounded-xl border border-ink-tertiary/15 bg-surface-raised/60 dark:bg-surface-overlay/40 space-y-2">
+                  <h4 className="font-semibold text-ink-primary">
+                    Báo cáo xét nghiệm liên quan
+                  </h4>
+                  {loadingReports ? (
+                    <p className="text-ink-secondary">Đang tải báo cáo lab liên kết...</p>
+                  ) : linkedReports.length === 0 ? (
+                    <p className="text-ink-tertiary">
+                      Chưa có báo cáo lab nào gắn trực tiếp với mẫu này.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {linkedReports.map((rep) => (
+                        <li
+                          key={rep.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-tertiary/15 bg-surface-base px-3 py-2"
+                        >
+                          <div>
+                            <Link
+                              to={labResultPath(rep.id)}
+                              className="font-mono font-bold text-accent-primary underline"
+                            >
+                              {rep.reportNumber}
+                            </Link>
+                            <span className="ml-2 text-ink-secondary">
+                              {rep.laboratoryName}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[11px] text-ink-secondary">
+                            {rep.status}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {/* Handover Timeline */}
               <div className="space-y-3">

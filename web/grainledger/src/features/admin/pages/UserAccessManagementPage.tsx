@@ -4,6 +4,7 @@ import {
   type AdminUserDto,
   type OrganizationDto,
 } from "@/api/admin";
+import { useAuthStore } from "@/app/store/authStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
 import { RoleChip } from "@/shared/ui/RoleChip";
@@ -27,6 +28,7 @@ import { useTranslation } from "react-i18next";
 export const UserAccessManagementPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const text = useWorkflowText();
+  const currentUser = useAuthStore((s) => s.user);
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationDto[]>([]);
   const [roles, setRoles] = useState<AdminRoleDto[]>([]);
@@ -43,6 +45,9 @@ export const UserAccessManagementPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [reloadCount, setReloadCount] = useState(0);
+  const isEditingSelf = Boolean(
+    selectedUser && currentUser && selectedUser.id === currentUser.id,
+  );
   const organizationKind = organizations.find(org => org.id === organizationId)?.kind;
   const availableRoles = roles.filter(entry => entry.organizationKind === organizationKind);
 
@@ -91,7 +96,12 @@ export const UserAccessManagementPage: React.FC = () => {
 
   const handleSaveAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser || (organizationId && !availableRoles.some(entry => entry.name === role))) return;
+    if (
+      !selectedUser ||
+      isEditingSelf ||
+      (organizationId && !availableRoles.some((entry) => entry.name === role))
+    )
+      return;
 
     setSubmitting(true);
     setError(null);
@@ -359,6 +369,21 @@ export const UserAccessManagementPage: React.FC = () => {
             </header>
 
             <form onSubmit={handleSaveAccess} className="p-5 space-y-4 text-xs">
+              {isEditingSelf && (
+                <div
+                  role="alert"
+                  className="p-3 rounded-lg bg-functional-stale-bg border border-accent-warning/40 text-accent-warning flex items-start gap-2"
+                >
+                  <WarningCircle size={16} weight="fill" className="shrink-0 mt-0.5" />
+                  <span>
+                    {text(
+                      "Bạn không thể tự thay đổi tổ chức, vai trò hoặc trạng thái hoạt động của chính tài khoản đang đăng nhập.",
+                      "You cannot change the organization, role, or active status of your own signed-in account.",
+                    )}
+                  </span>
+                </div>
+              )}
+
               <div>
                 <label htmlFor="access-role" className="block font-semibold text-ink-secondary mb-1">
                   {t("admin.users.roleLabel", "Vai trò nghiệp vụ (Role) *")}
@@ -367,10 +392,10 @@ export const UserAccessManagementPage: React.FC = () => {
                   id="access-role"
                   name="role"
                   required={Boolean(organizationId)}
-                  disabled={!organizationId}
+                  disabled={isEditingSelf || !organizationId}
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg disabled:opacity-60"
                 >
                   <option value="" disabled={Boolean(organizationId)}>{text("Chọn vai trò", "Choose a role")}</option>
                   {availableRoles.map(entry => {
@@ -389,12 +414,13 @@ export const UserAccessManagementPage: React.FC = () => {
                 <select
                   id="access-org"
                   name="organizationId"
+                  disabled={isEditingSelf}
                   value={organizationId}
                   onChange={(e) => {
                     setOrganizationId(e.target.value);
                     setRole("");
                   }}
-                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg disabled:opacity-60"
                 >
                   <option value="">
                     {t("admin.users.noOrgSelect", "-- Chưa gán tổ chức --")}
@@ -415,9 +441,10 @@ export const UserAccessManagementPage: React.FC = () => {
                 <input
                   type="checkbox"
                   id="userActiveCheck"
+                  disabled={isEditingSelf}
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 rounded text-accent-primary focus:ring-accent-primary"
+                  className="w-4 h-4 rounded text-accent-primary focus:ring-accent-primary disabled:opacity-60"
                 />
                 <label
                   htmlFor="userActiveCheck"
@@ -440,7 +467,7 @@ export const UserAccessManagementPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || isEditingSelf}
                   className="px-5 py-2 rounded-lg bg-accent-primary text-white font-semibold hover:bg-accent-primary-dim transition-colors disabled:opacity-60"
                 >
                   {submitting

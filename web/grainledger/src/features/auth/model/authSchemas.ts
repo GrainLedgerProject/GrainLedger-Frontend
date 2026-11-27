@@ -64,8 +64,8 @@ export const editProfileSchema = z.object({
     .string()
     .optional()
     .refine(
-      (val) => !val || /^[0-9+() -]{9,15}$/.test(val),
-      'Số điện thoại không đúng định dạng.'
+      (val) => !val || val.trim().length <= 32,
+      'Số điện thoại tối đa 32 ký tự.'
     ),
 });
 

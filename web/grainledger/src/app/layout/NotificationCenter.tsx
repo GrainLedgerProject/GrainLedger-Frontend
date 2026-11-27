@@ -8,7 +8,7 @@ import {
 import { BellIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { Link, useInRouterContext } from "react-router-dom";
-import { ledgerEndpoints } from "@/api/ledger";
+import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { millPaths } from "@/features/mill/paths";
@@ -31,6 +31,10 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
   const open = useUiStore((s) => s.isNotificationsOpen);
   const setOpen = useUiStore((s) => s.setNotificationsOpen);
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [ownerIdFilter, setOwnerIdFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"createdAt" | "readAt">("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const cache = useQueryClient();
   const scope = [
     "notifications",
@@ -39,6 +43,16 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
     user?.role,
     [...(user?.permissions ?? [])].sort().join("|"),
   ];
+  const lookups = useQuery({
+    queryKey: [...scope, "owners"],
+    queryFn: () =>
+      typeof ledgerEndpoints.getLookups === "function"
+        ? (ledgerEndpoints.getLookups() as Promise<SetupApiResponse>)
+        : Promise.resolve({} as SetupApiResponse),
+    enabled: Boolean(user) && open,
+    retry: false,
+    staleTime: 60_000,
+  });
   const unread = useQuery({
     queryKey: [...scope, "count"],
     queryFn: ({ signal }) =>
@@ -53,16 +67,26 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
     gcTime: 0,
   });
   const list = useInfiniteQuery({
-    queryKey: [...scope, "list", unreadOnly],
+    queryKey: [
+      ...scope,
+      "list",
+      unreadOnly,
+      searchTerm.trim(),
+      ownerIdFilter,
+      sortBy,
+      sortDirection,
+    ],
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
       ledgerEndpoints.getNotifications(
         {
           page: pageParam,
           pageSize: 20,
-          sortBy: "createdAt",
-          sortDirection: "desc",
+          sortBy,
+          sortDirection,
           status: unreadOnly ? "UNREAD" : undefined,
+          search: searchTerm.trim() || undefined,
+          ownerId: ownerIdFilter || undefined,
         },
         { signal },
       ),
@@ -78,6 +102,7 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
   });
   const count = unread.data?.totalCount;
   const items = list.data?.pages.flatMap((page) => page.items) ?? [];
+  const ownerOptions = lookups.data?.owners ?? [];
   const button =
     "rounded-xl px-3 py-2 text-xs font-medium hover:bg-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary disabled:opacity-50";
   return (
@@ -129,17 +154,68 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
               <ArrowClockwiseIcon size={18} />
             </button>
           </div>
-          <label className="my-3 flex items-center gap-2 text-sm text-ink-secondary">
+          <div className="my-3 space-y-2 text-xs">
             <input
-              type="checkbox"
-              checked={unreadOnly}
-              onChange={(e) => {
-                setUnreadOnly(e.target.checked);
-                mark.reset();
-              }}
+              type="search"
+              aria-label={i18n.language.startsWith("en") ? "Search notifications" : "Tìm thông báo"}
+              placeholder={i18n.language.startsWith("en") ? "Search message, lot..." : "Tìm nội dung thông báo..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-2.5 py-1.5 text-xs text-ink-primary focus:border-accent-primary focus:outline-none"
             />
-            {t("notifications.onlyUnread")}
-          </label>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                aria-label={i18n.language.startsWith("en") ? "Sort field" : "Sắp xếp theo"}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "createdAt" | "readAt")}
+                className="rounded-lg border border-ink-tertiary/20 bg-surface-raised px-2 py-1.5 text-xs text-ink-primary"
+              >
+                <option value="createdAt">
+                  {i18n.language.startsWith("en") ? "Created at" : "Thời gian tạo"}
+                </option>
+                <option value="readAt">
+                  {i18n.language.startsWith("en") ? "Read at" : "Thời gian đọc"}
+                </option>
+              </select>
+              <select
+                aria-label={i18n.language.startsWith("en") ? "Sort direction" : "Chiều sắp xếp"}
+                value={sortDirection}
+                onChange={(e) => setSortDirection(e.target.value as "asc" | "desc")}
+                className="rounded-lg border border-ink-tertiary/20 bg-surface-raised px-2 py-1.5 text-xs text-ink-primary"
+              >
+                <option value="desc">{i18n.language.startsWith("en") ? "Newest" : "Mới nhất"}</option>
+                <option value="asc">{i18n.language.startsWith("en") ? "Oldest" : "Cũ nhất"}</option>
+              </select>
+            </div>
+            {ownerOptions.length > 1 && (
+              <select
+                aria-label={i18n.language.startsWith("en") ? "Owner" : "Chủ sở hữu"}
+                value={ownerIdFilter}
+                onChange={(e) => setOwnerIdFilter(e.target.value)}
+                className="w-full rounded-lg border border-ink-tertiary/20 bg-surface-raised px-2 py-1.5 text-xs text-ink-primary"
+              >
+                <option value="">
+                  {i18n.language.startsWith("en") ? "All owners" : "Tất cả chủ sở hữu"}
+                </option>
+                {ownerOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <label className="flex items-center gap-2 text-sm text-ink-secondary">
+              <input
+                type="checkbox"
+                checked={unreadOnly}
+                onChange={(e) => {
+                  setUnreadOnly(e.target.checked);
+                  mark.reset();
+                }}
+              />
+              {t("notifications.onlyUnread")}
+            </label>
+          </div>
           {(list.isError || unread.isError) && (
             <p role="alert" className="mb-3 text-sm text-accent-danger">
               {t("notifications.loadError")}

@@ -65,13 +65,19 @@ export function StockOverviewPage() {
   const locationId = params.get("locationId") ?? "";
   const ownerId = params.get("ownerId") ?? "";
   const stage = params.get("stage") ?? "";
+  const sortBy = params.get("sortBy") ?? "";
+  const sortDirection = params.get("sortDirection") === "asc" ? "asc" : "desc";
 
   const lookups = useQuery({
     queryKey: [...scope, "lookups"],
     queryFn: async () => (await ledgerEndpoints.getLookups()) as SetupApiResponse,
   });
   const lots = useQuery({
-    queryKey: [...scope, "list", { search, facilityId, locationId, ownerId, stage }],
+    queryKey: [
+      ...scope,
+      "list",
+      { search, facilityId, locationId, ownerId, stage, sortBy, sortDirection: sortBy ? sortDirection : "" },
+    ],
     queryFn: () =>
       collectPages<StockLot>(
         async (paging) =>
@@ -82,6 +88,7 @@ export function StockOverviewPage() {
             locationId,
             ownerId,
             stage,
+            ...(sortBy ? { sortBy, sortDirection } : {}),
           })) as ApiPage<StockLot>,
       ),
   });
@@ -230,6 +237,38 @@ export function StockOverviewPage() {
                 ))}
               </select>
             </label>
+            <label className="space-y-1.5 text-xs font-semibold text-ink-secondary">
+              <span>{text("Sắp xếp theo", "Sort by")}</span>
+              <select
+                aria-label={text("Sắp xếp theo", "Sort by")}
+                value={sortBy}
+                onChange={(e) =>
+                  change({
+                    sortBy: e.target.value,
+                    sortDirection: e.target.value ? sortDirection : "",
+                  })
+                }
+              >
+                <option value="">{text("Mặc định", "Default")}</option>
+                <option value="code">{text("Mã lô", "Lot code")}</option>
+                <option value="stage">{text("Công đoạn", "Stage")}</option>
+                <option value="owner">{text("Chủ sở hữu", "Owner")}</option>
+                <option value="quantity">{text("Khối lượng", "Quantity")}</option>
+              </select>
+            </label>
+            {sortBy && (
+              <label className="space-y-1.5 text-xs font-semibold text-ink-secondary">
+                <span>{text("Thứ tự", "Direction")}</span>
+                <select
+                  aria-label={text("Thứ tự sắp xếp", "Sort direction")}
+                  value={sortDirection}
+                  onChange={(e) => change({ sortDirection: e.target.value })}
+                >
+                  <option value="asc">{text("Tăng dần", "Ascending")}</option>
+                  <option value="desc">{text("Giảm dần", "Descending")}</option>
+                </select>
+              </label>
+            )}
             <form
               className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-4"
               onSubmit={(e) => {
