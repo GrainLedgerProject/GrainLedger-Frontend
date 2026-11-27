@@ -106,6 +106,9 @@ function BlendPlanRequestContent({
   const canPropose = useAuthStore((s) =>
     s.user?.permissions.includes("blend.propose"),
   );
+  const isCustomerManager = useAuthStore(
+    (s) => s.user?.role === "CUSTOMER_MANAGER",
+  );
 
   const container = useQuery({
     queryKey: ["export-container", containerId],
@@ -543,6 +546,9 @@ function PreviewPlan({
 }) {
   const text = useWorkflowText();
   const cache = useQueryClient();
+  const isCustomerManager = useAuthStore(
+    (s) => s.user?.role === "CUSTOMER_MANAGER",
+  );
   const [page, setPage] = useState(1);
   const [includeExcluded, setIncludeExcluded] = useState(false);
   const [includeOther, setIncludeOther] = useState(false);
@@ -758,14 +764,16 @@ function PreviewPlan({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to={compliancePaths.safetyMargin}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:bg-surface-raised hover:text-ink-primary transition-colors"
-          >
-            <span>
-              {text("Căn cứ đánh giá xuất khẩu", "Export assessment setup")}
-            </span>
-          </Link>
+          {isCustomerManager && (
+            <Link
+              to={compliancePaths.safetyMargin}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-ink-tertiary/20 bg-surface-base px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:bg-surface-raised hover:text-ink-primary transition-colors"
+            >
+              <span>
+                {text("Căn cứ đánh giá xuất khẩu", "Export assessment setup")}
+              </span>
+            </Link>
+          )}
           <button
             type="button"
             disabled={
@@ -852,7 +860,7 @@ function PreviewPlan({
                       `Preview valid within 10-minute window (until ${new Date(result.expiresAt).toLocaleTimeString()}).`,
                     )}
               </span>
-              {missingAssessmentSetup && (
+              {missingAssessmentSetup && isCustomerManager && (
                 <Link
                   to={compliancePaths.safetyMargin}
                   className="font-semibold text-accent-primary underline"

@@ -180,7 +180,8 @@ export const EventHistoryPage: React.FC = () => {
     toDate,
     businessPage,
     currentBusinessKey,
-    text,
+    // `text` is excluded: it is only used in the catch branch for error message
+    // formatting and must not trigger a re-fetch on every render.
   ]);
 
   const businessItems =

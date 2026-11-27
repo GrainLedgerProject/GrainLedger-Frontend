@@ -701,10 +701,16 @@ function ContainerControlForms({
             </span>
             <Link
               to={`${millPaths.stockTransfer}?${new URLSearchParams({
-                ...(holdId ? { holdId } : {}),
+                // Note: workflow.holds contains container-level hold IDs, NOT lot-level hold IDs.
+                // Passing them as holdId would pre-fill the wrong HOLD order in StockTransferPage.
+                // Only pass lotId so the operator can search for the correct lot hold themselves.
                 ...(affectedLotId ? { lotId: affectedLotId } : {}),
               })}`}
               className="inline-flex items-center gap-1 rounded-full border border-accent-primary/30 bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-primary transition-colors hover:bg-surface-raised dark:bg-surface-raised"
+              title={text(
+                "Mở trang điều chuyển kho — chọn lệnh HOLD lô phù hợp để cách ly",
+                "Open stock transfer — select the matching lot HOLD order to isolate",
+              )}
             >
               <span>{text("Chuyển kho cách ly (ISOLATION) lô bị HOLD →", "Transfer HOLD lot to ISOLATION →")}</span>
             </Link>

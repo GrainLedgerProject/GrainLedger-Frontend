@@ -136,6 +136,11 @@ export function ContainerTracePage() {
     [orderedAncestryLots],
   );
 
+  /** Number of HOLD orders placed directly on the container (not on ancestor lots). */
+  const containerHoldCount = record?.holds?.length ?? 0;
+  /** Combined scope: container-direct holds + held ancestor lots. */
+  const totalHoldScope = heldLotCount + containerHoldCount;
+
   const plotTotals = useMemo(() => {
     if (!record) return [];
     const totalLoaded = new Decimal(record.loadedKg || "0");
@@ -532,22 +537,41 @@ export function ContainerTracePage() {
                     <span className="text-xs font-medium">{text("Lệnh HOLD liên quan", "Active HOLD scope")}</span>
                     <ShieldWarning
                       size={16}
-                      className={heldLotCount > 0 ? "text-accent-danger" : "text-accent-primary"}
+                      className={totalHoldScope > 0 ? "text-accent-danger" : "text-accent-primary"}
                       aria-hidden="true"
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="font-display text-2xl font-bold text-ink-primary">{heldLotCount}</span>
+                    <span className="font-display text-2xl font-bold text-ink-primary">{totalHoldScope}</span>
                     <StatusBadge
-                      status={heldLotCount > 0 ? "HOLD" : "COMPLIANT"}
+                      status={totalHoldScope > 0 ? "HOLD" : "COMPLIANT"}
                       size="sm"
-                      label={heldLotCount > 0 ? text("Có lô HOLD", "Has HOLD") : text("An toàn", "Clear")}
+                      label={totalHoldScope > 0 ? text("Có HOLD", "Has HOLD") : text("An toàn", "Clear")}
                     />
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {heldLotCount > 0
-                      ? text("Kiểm tra bảng lô tổ tiên bên dưới", "Review held lots in ancestry table")
-                      : text("Không phát hiện lô bị HOLD", "No held lots in lineage")}
+                    {totalHoldScope > 0 ? (
+                      <>
+                        {containerHoldCount > 0 && (
+                          <span className="block font-semibold text-accent-danger">
+                            {text(
+                              `${containerHoldCount} HOLD trực tiếp trên container`,
+                              `${containerHoldCount} direct container HOLD${containerHoldCount > 1 ? "s" : ""}`,
+                            )}
+                          </span>
+                        )}
+                        {heldLotCount > 0 && (
+                          <span className="block">
+                            {text(
+                              `${heldLotCount} lô nguồn bị HOLD — kiểm tra bảng bên dưới`,
+                              `${heldLotCount} held source lot${heldLotCount > 1 ? "s" : ""} — review ancestry table`,
+                            )}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      text("Không phát hiện HOLD trực tiếp hay lô bị HOLD", "No direct or lineage HOLDs detected")
+                    )}
                   </p>
                 </div>
               </div>

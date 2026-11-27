@@ -301,6 +301,8 @@ export interface ContainerTrace {
   loadedKg: string;
   complete: boolean;
   findings: string[];
+  /** Direct HOLD orders placed on this container (not on ancestor lots). */
+  holds?: { id: string; reason: string; recordedAt: string; evidenceId?: string | null }[];
   sourceContributions: {
     sourceLotId: string;
     quantityKg: string;

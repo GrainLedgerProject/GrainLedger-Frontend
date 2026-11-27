@@ -60,6 +60,9 @@ export function ContainerPreparationPage() {
   const canWrite =
     user?.role === "CUSTOMER_EXPORT_OFFICER" &&
     user.permissions.includes("containers.write");
+  const canAccessExportContainers =
+    user?.role === "CUSTOMER_EXPORT_OFFICER" ||
+    user?.role === "CUSTOMER_MANAGER";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState("");
@@ -100,10 +103,12 @@ export function ContainerPreparationPage() {
         refreshing={refreshing}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Link to={exportPaths.containers} className={secondaryButtonClass}>
-              <Truck size={15} aria-hidden="true" />
-              <span>{text("Container xuất khẩu", "Export containers")}</span>
-            </Link>
+            {canAccessExportContainers && (
+              <Link to={exportPaths.containers} className={secondaryButtonClass}>
+                <Truck size={15} aria-hidden="true" />
+                <span>{text("Container xuất khẩu", "Export containers")}</span>
+              </Link>
+            )}
             {canWrite && (
               <button
                 type="button"
