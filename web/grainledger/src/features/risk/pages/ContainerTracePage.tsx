@@ -130,7 +130,7 @@ export function ContainerTracePage() {
     [record],
   );
 
-  const heldLotCount = useMemo(
+  const heldLineageLots = useMemo(
     () =>
       orderedAncestryLots.filter(
         (lot) =>
@@ -139,13 +139,59 @@ export function ContainerTracePage() {
           Boolean(lot.effectiveHold) ||
           Boolean(lot.directHoldIds?.length) ||
           Boolean(lot.effectiveHoldIds?.length),
-      ).length,
+      ),
     [orderedAncestryLots],
+  );
+  const heldLotCount = heldLineageLots.length;
+
+  const sourceLotIdSet = useMemo(
+    () => new Set(record?.sourceContributions.map((s) => s.sourceLotId) ?? []),
+    [record?.sourceContributions],
+  );
+  const heldSourceLotCount = useMemo(
+    () => heldLineageLots.filter((lot) => sourceLotIdSet.has(lot.id)).length,
+    [heldLineageLots, sourceLotIdSet],
+  );
+  const inheritedHeldLotCount = useMemo(
+    () =>
+      heldLineageLots.filter(
+        (lot) =>
+          !lot.directHold &&
+          !lot.directHoldIds?.length &&
+          (Boolean(lot.effectiveHold) ||
+            Boolean(lot.effectiveHoldIds?.length)),
+      ).length,
+    [heldLineageLots],
   );
 
   /** Number of HOLD orders placed directly on the container (not on ancestor lots). */
   const containerHoldCount = record?.holds?.length ?? 0;
-  /** Combined scope: container-direct holds + held ancestor lots. */
+  /** Unique HOLD order count when hold IDs are present on both container & lineage lots. */
+  const uniqueHoldSummary = useMemo(() => {
+    const ids = new Set<string>();
+    for (const h of record?.holds ?? []) {
+      if (h.id) ids.add(h.id);
+    }
+    let allHeldLotsHaveIds = true;
+    for (const lot of heldLineageLots) {
+      const lotHoldIds = [
+        ...(lot.directHoldIds ?? []),
+        ...(lot.effectiveHoldIds ?? []),
+      ];
+      if (lotHoldIds.length === 0) {
+        allHeldLotsHaveIds = false;
+      } else {
+        for (const id of lotHoldIds) ids.add(id);
+      }
+    }
+    const exactOrderCountAvailable = allHeldLotsHaveIds;
+    return {
+      uniqueOrderCount: ids.size,
+      exactOrderCountAvailable,
+      hasAnyHold: containerHoldCount > 0 || heldLineageLots.length > 0,
+    };
+  }, [record?.holds, heldLineageLots, containerHoldCount]);
+  /** Combined fallback scope when held lots omit individual hold IDs. */
   const totalHoldScope = heldLotCount + containerHoldCount;
 
   const plotTotals = useMemo(() => {
@@ -173,7 +219,10 @@ export function ContainerTracePage() {
           ? `${plotCode} (${prov.plotId.slice(0, 8)})`
           : (plotCode ??
             prov?.plotId ??
-            text("Chưa gán thửa ruộng", "Unspecified plot"));
+            text(
+              "Chưa gán thửa ruộng (thiếu dữ liệu nguồn)",
+              "Unassigned plot (provenance unavailable)",
+            ));
       const entry = groups.get(plotKey) ?? {
         plotKey,
         plotLabel,
@@ -205,6 +254,50 @@ export function ContainerTracePage() {
       .sort((a, b) => new Decimal(b.totalKg).cmp(a.totalKg));
   }, [record, text]);
 
+  const identifiedPlotCount = useMemo(() => {
+    if (!record) return 0;
+    if (Array.isArray(record.plotContributions)) {
+      return record.plotContributions.length;
+    }
+    return plotTotals.filter((p) => p.plotKey !== "__UNSPECIFIED__").length;
+  }, [record, plotTotals]);
+
+  const unassignedPlotMassKg = useMemo(
+    () => plotTotals.find((p) => p.plotKey === "__UNSPECIFIED__")?.totalKg ?? null,
+    [plotTotals],
+  );
+
+  const actualContainerSummaries = useMemo(() => {
+    if (!record) return [];
+    if (record.graph?.actualContainers?.length) {
+      return record.graph.actualContainers.map((c) => ({
+        ...c,
+        code: c.code || (c.containerId === containerId ? record.code || input || containerId : c.containerId),
+        status: c.status || (c.containerId === containerId ? record.status : undefined),
+        held: Boolean(
+          c.held || (c.containerId === containerId && containerHoldCount > 0),
+        ),
+      }));
+    }
+    return [
+      {
+        containerId,
+        code: record.code || input || containerId,
+        status: record.status,
+        linkedLoadedKg: record.loadedKg,
+        held: containerHoldCount > 0,
+      },
+    ];
+  }, [record, containerId, input, containerHoldCount]);
+
+  const focusContainerSummary = actualContainerSummaries.find(
+    (c) => c.containerId === containerId,
+  );
+  const focusContainerCode =
+    focusContainerSummary?.code || record?.code || input || containerId;
+  const focusContainerStatus = focusContainerSummary?.status || record?.status;
+  const effectiveAsOf = record?.asOf ?? record?.graph?.asOf;
+
   const flowLayout = useMemo(() => {
     if (!record?.graph) return null;
     return buildTraceFlowGraph({
@@ -213,13 +306,22 @@ export function ContainerTracePage() {
       operations: record.graph.operations ?? [],
       custodyEvents: record.graph.custodyEvents ?? [],
       loadingEdges: record.graph.loadingEdges ?? [],
+      actualContainers: actualContainerSummaries,
       focusContainerId: containerId,
-      containerLabel: input || containerId,
+      containerLabel: focusContainerCode,
       facilityNames,
       locationNames,
       locale,
     });
-  }, [record, containerId, input, facilityNames, locationNames, locale]);
+  }, [
+    record,
+    actualContainerSummaries,
+    containerId,
+    focusContainerCode,
+    facilityNames,
+    locationNames,
+    locale,
+  ]);
 
   const holdSelectableLots = useMemo<HoldSelectableLot[]>(() => {
     if (!record) return [];
@@ -576,10 +678,15 @@ export function ContainerTracePage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {text(
-                      "Tổng khối lượng thực xếp ghi nhận",
-                      "Recorded actual loaded weight",
-                    )}
+                    {record.targetKg
+                      ? text(
+                          `Mục tiêu: ${record.targetKg} kg · Còn lại: ${record.remainingKg ?? "0"} kg`,
+                          `Target: ${record.targetKg} kg · Remaining: ${record.remainingKg ?? "0"} kg`,
+                        )
+                      : text(
+                          "Tổng khối lượng thực xếp ghi nhận",
+                          "Recorded actual loaded weight",
+                        )}
                   </p>
                 </div>
 
@@ -595,13 +702,18 @@ export function ContainerTracePage() {
                     />
                   </div>
                   <div className="font-display text-2xl font-bold text-ink-primary">
-                    {plotTotals.length}
+                    {identifiedPlotCount}
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
                     {text(
                       `${record.sourceContributions.length} lô nguồn đóng góp`,
                       `${record.sourceContributions.length} contributing source lots`,
                     )}
+                    {unassignedPlotMassKg &&
+                      ` · ${text(
+                        `${unassignedPlotMassKg} kg chưa gán thửa`,
+                        `${unassignedPlotMassKg} kg unassigned plot`,
+                      )}`}
                   </p>
                 </div>
 
@@ -630,12 +742,17 @@ export function ContainerTracePage() {
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">
                   <div className="flex items-center justify-between text-ink-secondary">
                     <span className="text-xs font-medium">
-                      {text("Lệnh HOLD liên quan", "Active HOLD scope")}
+                      {uniqueHoldSummary.exactOrderCountAvailable
+                        ? text("Lệnh HOLD liên quan", "Related HOLD orders")
+                        : text(
+                            "Phạm vi HOLD liên quan",
+                            "Related HOLD scope",
+                          )}
                     </span>
                     <ShieldWarning
                       size={16}
                       className={
-                        totalHoldScope > 0
+                        uniqueHoldSummary.hasAnyHold
                           ? "text-accent-danger"
                           : "text-accent-primary"
                       }
@@ -644,34 +761,38 @@ export function ContainerTracePage() {
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-0.5">
                     <span className="font-display text-2xl font-bold text-ink-primary">
-                      {totalHoldScope}
+                      {uniqueHoldSummary.exactOrderCountAvailable
+                        ? uniqueHoldSummary.uniqueOrderCount
+                        : totalHoldScope}
                     </span>
                     <StatusBadge
-                      status={totalHoldScope > 0 ? "HOLD" : "COMPLIANT"}
+                      status={
+                        uniqueHoldSummary.hasAnyHold ? "HOLD" : "COMPLIANT"
+                      }
                       size="sm"
                       label={
-                        totalHoldScope > 0
+                        uniqueHoldSummary.hasAnyHold
                           ? text("Có HOLD", "Has HOLD")
                           : text("An toàn", "Clear")
                       }
                     />
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {totalHoldScope > 0 ? (
+                    {uniqueHoldSummary.hasAnyHold ? (
                       <>
                         {containerHoldCount > 0 && (
                           <span className="block font-semibold text-accent-danger">
                             {text(
-                              `${containerHoldCount} HOLD trực tiếp trên container`,
-                              `${containerHoldCount} direct container HOLD${containerHoldCount > 1 ? "s" : ""}`,
+                              `${containerHoldCount} lệnh HOLD trên container`,
+                              `${containerHoldCount} container HOLD order${containerHoldCount > 1 ? "s" : ""}`,
                             )}
                           </span>
                         )}
                         {heldLotCount > 0 && (
                           <span className="block">
                             {text(
-                              `${heldLotCount} lô nguồn bị HOLD — kiểm tra bảng bên dưới`,
-                              `${heldLotCount} held source lot${heldLotCount > 1 ? "s" : ""} — review ancestry table`,
+                              `${heldLotCount} lô trong phả hệ bị HOLD (${heldSourceLotCount} lô nguồn đóng góp${inheritedHeldLotCount > 0 ? `, ${inheritedHeldLotCount} lô kế thừa` : ""})`,
+                              `${heldLotCount} lineage lot${heldLotCount > 1 ? "s" : ""} held (${heldSourceLotCount} contributing source${inheritedHeldLotCount > 0 ? `, ${inheritedHeldLotCount} inherited` : ""})`,
                             )}
                           </span>
                         )}
@@ -741,15 +862,33 @@ export function ContainerTracePage() {
                         )}
                       </h2>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
+                        {focusContainerCode && (
+                          <span className="rounded-full border border-accent-primary/25 bg-functional-balanced-bg px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent-primary">
+                            {focusContainerCode}
+                          </span>
+                        )}
+                        {focusContainerStatus && (
+                          <StatusBadge
+                            status={
+                              containerHoldCount > 0
+                                ? "HOLD"
+                                : focusContainerStatus === "CLOSED"
+                                  ? "COMPLIANT"
+                                  : "PENDING"
+                            }
+                            size="sm"
+                            label={focusContainerStatus}
+                          />
+                        )}
                         {record.traceId && (
                           <span className="rounded-full border border-ink-tertiary/20 bg-surface-raised px-2.5 py-0.5 font-mono text-[11px] font-semibold text-ink-primary dark:bg-surface-overlay">
                             Trace ID: {record.traceId}
                           </span>
                         )}
-                        {record.asOf && (
+                        {effectiveAsOf && (
                           <span>
                             {text("Tại thời điểm:", "As of:")}{" "}
-                            {new Date(record.asOf).toLocaleString()}
+                            {new Date(effectiveAsOf).toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -893,7 +1032,25 @@ export function ContainerTracePage() {
                         text("Chứng cứ nguồn", "Source evidence"),
                       ]}
                     >
-                      {record.sourceContributions.map((source) => {
+                      {record.sourceContributions.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="py-6 text-center text-xs text-ink-secondary"
+                          >
+                            {record.findings?.includes("NO_ACTUAL_LOADING")
+                              ? text(
+                                  "Container chưa có dữ liệu thực xếp nên chưa phát sinh đóng góp từ lô nguồn.",
+                                  "No actual loading has been recorded for this container yet.",
+                                )
+                              : text(
+                                  "Không có đóng góp lô nguồn được ghi nhận.",
+                                  "No source lot contributions recorded.",
+                                )}
+                          </td>
+                        </tr>
+                      ) : (
+                        record.sourceContributions.map((source) => {
                         const sourceRecordId =
                           source.provenance?.sourceRecordId;
                         const isOpen =
@@ -968,7 +1125,7 @@ export function ContainerTracePage() {
                             </td>
                           </tr>
                         );
-                      })}
+                      }))}
                     </ExportTable>
 
                     {expandedSourceLotId &&
@@ -1008,17 +1165,7 @@ export function ContainerTracePage() {
                   edges={record.graph.loadingEdges}
                   names={lots}
                   locations={locationNames}
-                  containers={
-                    record.graph.actualContainers?.length
-                      ? record.graph.actualContainers
-                      : [
-                          {
-                            containerId,
-                            code: input || containerId,
-                            linkedLoadedKg: record.loadedKg,
-                          },
-                        ]
-                  }
+                  containers={actualContainerSummaries}
                 />
               )}
 
@@ -1311,7 +1458,12 @@ export function ContainerTracePage() {
                 }
                 containerContext={{
                   containerId,
-                  containerCode: input || containerId,
+                  containerCode:
+                    actualContainerSummaries.find(
+                      (c) => c.containerId === containerId,
+                    )?.code ||
+                    input ||
+                    containerId,
                 }}
               />
             </div>

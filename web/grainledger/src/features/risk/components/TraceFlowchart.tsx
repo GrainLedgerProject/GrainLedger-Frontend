@@ -26,15 +26,20 @@ export function TraceFlowchart({
   const viewportRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [manualNodeId, setManualNodeId] = useState<string | null>(null);
+  const [prevSelectedLotId, setPrevSelectedLotId] = useState(selectedLotId);
+  if (selectedLotId !== prevSelectedLotId) {
+    setPrevSelectedLotId(selectedLotId);
+    setManualNodeId(selectedLotId ? `lot:${selectedLotId}` : null);
+  }
 
   const selectedNodeId = useMemo(() => {
     if (layout.status !== "ready") return null;
+    if (manualNodeId && layout.nodes.some((n) => n.id === manualNodeId)) {
+      return manualNodeId;
+    }
     if (selectedLotId) {
       const matched = layout.nodes.find((n) => n.lotId === selectedLotId);
       if (matched) return matched.id;
-    }
-    if (manualNodeId && layout.nodes.some((n) => n.id === manualNodeId)) {
-      return manualNodeId;
     }
     return layout.nodes.find((n) => n.isFocus)?.id ?? layout.nodes[0]?.id ?? null;
   }, [layout, selectedLotId, manualNodeId]);
@@ -357,13 +362,18 @@ export function TraceFlowchart({
       {selectedNode && (
         <div className="rounded-xl border border-ink-tertiary/20 bg-surface-raised/50 p-3.5 text-xs space-y-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono font-bold text-ink-primary">
                 {selectedNode.label}
               </span>
-              <span className="ml-2 text-ink-secondary">
+              <span className="text-ink-secondary">
                 ({selectedNode.sublabel})
               </span>
+              {selectedNode.badge && (
+                <span className="inline-flex items-center rounded-full border border-functional-rejected-border bg-functional-rejected-bg px-2 py-0.5 text-[10px] font-bold text-accent-danger">
+                  {selectedNode.badge}
+                </span>
+              )}
             </div>
             {selectedNode.lotId && onSelectLot && (
               <button

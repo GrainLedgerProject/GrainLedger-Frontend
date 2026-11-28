@@ -138,6 +138,60 @@ function formatKg(value: string | undefined): string {
   }
 }
 
+function buildContainerFlowNode({
+  containerId,
+  info,
+  lineCount,
+  proposals = [],
+  focusContainerId,
+  containerLabel,
+  locale,
+}: {
+  containerId: string;
+  info?: {
+    containerId: string;
+    code: string;
+    linkedLoadedKg?: string;
+    sourceLoadedKg?: string | null;
+    status?: string;
+    held?: boolean;
+    restricted?: boolean;
+  };
+  lineCount?: number;
+  proposals?: string[];
+  focusContainerId?: string;
+  containerLabel?: string;
+  locale: "vi" | "en";
+}): Omit<FlowNode, "rank" | "x" | "y" | "width" | "height"> {
+  const meta: string[] = [];
+  if (lineCount != null) {
+    meta.push(`${locale === "vi" ? "Dòng loading" : "Loading lines"}: ${lineCount}`);
+  }
+  if (info?.linkedLoadedKg != null) {
+    meta.push(`${locale === "vi" ? "Thực xếp liên kết" : "Linked loaded"}: ${formatKg(info.linkedLoadedKg)} kg`);
+  }
+  if (info?.sourceLoadedKg != null) {
+    meta.push(`${locale === "vi" ? "Quy thuộc nguồn gốc" : "Source attributed"}: ${formatKg(info.sourceLoadedKg)} kg`);
+  }
+  if (info?.restricted && !info?.held) {
+    meta.push(locale === "vi" ? "Lô đã nạp đang bị hạn chế" : "Loaded lot restricted");
+  }
+  if (proposals.length) {
+    meta.push(`${locale === "vi" ? "Phương án" : "Proposal"}: ${proposals.join(", ")}`);
+  }
+  return {
+    id: `container:${containerId}`,
+    kind: "container",
+    label: info?.code || (containerId === focusContainerId ? containerLabel : undefined) || containerId.slice(0, 12),
+    sublabel: info?.status || "CONTAINER",
+    badge: info?.held ? "HOLD container" : info?.restricted ? (locale === "vi" ? "Lô hạn chế" : "Restricted lot") : undefined,
+    meta,
+    containerId,
+    restricted: Boolean(info?.held || info?.restricted),
+    isFocus: containerId === focusContainerId,
+  };
+}
+
 export function traceLotOrder<T extends { id: string }>(
   lots: T[],
   edges: { inputLotId: string; outputLotId: string }[],
@@ -370,35 +424,21 @@ export function buildTraceFlowGraph({
         lotId: edge.lotId,
       });
     }
+    const info = containerMetaMap.get(edge.containerId);
     if (!nodesMap.has(containerKey)) {
-      const info = containerMetaMap.get(edge.containerId);
       const proposals = Array.from(new Set(edge.lines.map((l) => l.proposalId).filter(Boolean)));
-      const meta: string[] = [
-        `${locale === "vi" ? "Dòng loading" : "Loading lines"}: ${edge.lines.length}`,
-      ];
-      if (info?.linkedLoadedKg) {
-        meta.push(`${locale === "vi" ? "Thực xếp liên kết" : "Linked loaded"}: ${formatKg(info.linkedLoadedKg)} kg`);
-      }
-      if (info?.sourceLoadedKg != null) {
-        meta.push(`${locale === "vi" ? "Quy thuộc nguồn gốc" : "Source attributed"}: ${formatKg(info.sourceLoadedKg)} kg`);
-      }
-      if (info?.restricted && !info?.held) {
-        meta.push(locale === "vi" ? "Lô đã nạp đang bị hạn chế" : "Loaded lot restricted");
-      }
-      if (proposals.length) {
-        meta.push(`${locale === "vi" ? "Phương án" : "Proposal"}: ${proposals.join(", ")}`);
-      }
-      nodesMap.set(containerKey, {
-        id: containerKey,
-        kind: "container",
-        label: info?.code || (edge.containerId === focusContainerId ? containerLabel : undefined) || edge.containerId.slice(0, 12),
-        sublabel: info?.status || "CONTAINER",
-        badge: info?.held ? "HOLD container" : info?.restricted ? (locale === "vi" ? "Lô hạn chế" : "Restricted lot") : undefined,
-        meta,
-        containerId: edge.containerId,
-        restricted: Boolean(info?.held || info?.restricted),
-        isFocus: edge.containerId === focusContainerId,
-      });
+      nodesMap.set(
+        containerKey,
+        buildContainerFlowNode({
+          containerId: edge.containerId,
+          info,
+          lineCount: edge.lines.length,
+          proposals,
+          focusContainerId,
+          containerLabel,
+          locale,
+        }),
+      );
     }
     rawEdges.push({
       id: `${fromLotKey}->${containerKey}`,
@@ -406,6 +446,21 @@ export function buildTraceFlowGraph({
       to: containerKey,
       label: `${formatKg(edge.quantityKg)} kg`,
     });
+  }
+
+  for (const info of actualContainers) {
+    const containerKey = `container:${info.containerId}`;
+    if (nodesMap.has(containerKey)) continue;
+    nodesMap.set(
+      containerKey,
+      buildContainerFlowNode({
+        containerId: info.containerId,
+        info,
+        focusContainerId,
+        containerLabel,
+        locale,
+      }),
+    );
   }
 
   if (nodesMap.size > MAX_NODES || rawEdges.length > MAX_EDGES) {

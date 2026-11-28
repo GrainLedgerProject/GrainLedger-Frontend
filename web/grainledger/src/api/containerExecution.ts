@@ -293,6 +293,16 @@ export interface TraceSourceProvenance {
 }
 
 export interface ContainerTrace {
+  id?: string;
+  code?: string;
+  status?: string;
+  targetKg?: string;
+  remainingKg?: string;
+  companyId?: string;
+  facilityId?: string | null;
+  containerNumber?: string | null;
+  sealNumber?: string | null;
+  basis?: string;
   traceId?: string;
   asOf?: string;
   direction?: string;
@@ -303,6 +313,14 @@ export interface ContainerTrace {
   findings: string[];
   /** Direct HOLD orders placed on this container (not on ancestor lots). */
   holds?: { id: string; reason: string; recordedAt: string; evidenceId?: string | null }[];
+  /** Aggregated plot-level contributions returned by ContainerTraceEndpoints. */
+  plotContributions?: {
+    plotId: string;
+    plotCode?: string | null;
+    quantityKg: string;
+    percentage?: string;
+    sourceCount: number;
+  }[];
   sourceContributions: {
     sourceLotId: string;
     quantityKg: string;
@@ -311,6 +329,7 @@ export interface ContainerTrace {
     provenance?: TraceSourceProvenance | null;
   }[];
   graph?: {
+    asOf?: string;
     lots: {
       id: string;
       code: string;
