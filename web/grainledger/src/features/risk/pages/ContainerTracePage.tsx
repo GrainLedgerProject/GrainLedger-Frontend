@@ -1171,7 +1171,7 @@ export function ContainerTracePage() {
 
               {allResidueLotIds.length > 0 && (
                 <LoadedLotResidue
-                  key={`${containerId}:${selectedResidueLotId}`}
+                  key={containerId}
                   lots={lots}
                   lotIds={allResidueLotIds}
                   selectedId={selectedResidueLotId}
@@ -1537,7 +1537,10 @@ function LoadedLotResidue({
             ))}
           </select>
         </label>
-        <ResidueBounds key={effectiveId} lotId={effectiveId} />
+        <ResidueBounds
+          lotId={effectiveId}
+          lotLabel={lots.get(effectiveId) ?? effectiveId}
+        />
       </div>
     </section>
   );

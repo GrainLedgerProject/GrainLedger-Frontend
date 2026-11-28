@@ -11,6 +11,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
+import { ApiError } from "@/api/client";
 import { catalogsEndpoints } from "@/api/catalogs";
 import { ledgerEndpoints, type ResidueEvaluation } from "@/api/ledger";
 import { collectPages } from "@/api/query";
@@ -24,6 +25,8 @@ import { riskPaths } from "../paths";
 function mapResidueStatus(status: string): StatusType {
   const upper = status.toUpperCase();
   if (
+    upper === "COMPLETE" ||
+    upper === "COMPLETED" ||
     upper.includes("PASS") ||
     upper.includes("COMPLIANT") ||
     upper === "OK" ||
@@ -45,7 +48,13 @@ function mapResidueStatus(status: string): StatusType {
   return "PENDING";
 }
 
-export function ResidueBounds({ lotId }: { lotId: string }) {
+export function ResidueBounds({
+  lotId,
+  lotLabel,
+}: {
+  lotId: string;
+  lotLabel?: string;
+}) {
   const text = useWorkflowText();
   const allowed = useAuthStore((state) =>
     state.user?.permissions.includes("residue.evaluate"),
@@ -71,12 +80,19 @@ export function ResidueBounds({ lotId }: { lotId: string }) {
             <Flask size={18} weight="bold" />
           </span>
           <div className="min-w-0">
-            <span className="block font-display text-sm font-bold text-ink-primary">
-              {text(
-                "Khoảng dư lượng và lịch sử đánh giá",
-                "Residue bounds and evaluation history",
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-display text-sm font-bold text-ink-primary">
+                {text(
+                  "Khoảng dư lượng và lịch sử đánh giá",
+                  "Residue bounds and evaluation history",
+                )}
+              </span>
+              {lotLabel && (
+                <span className="rounded-md border border-ink-tertiary/20 bg-surface-raised px-2 py-0.5 font-mono text-[11px] font-semibold text-accent-primary dark:bg-surface-overlay">
+                  {lotLabel}
+                </span>
               )}
-            </span>
+            </div>
             <span className="block text-[11px] text-ink-secondary">
               {text(
                 "Xem trước hoặc lưu kết quả tính toán cận dư lượng MRL và truy vết nguồn lab.",
@@ -142,6 +158,11 @@ function ResidueEvaluationPanel({ lotId }: { lotId: string }) {
           onSuccess: () => {
             requestId.current = null;
             void client.invalidateQueries({ queryKey: historyKey });
+          },
+          onError: (err) => {
+            if (err instanceof ApiError && err.status < 500) {
+              requestId.current = null;
+            }
           },
         },
       );
@@ -395,7 +416,8 @@ function ResidueEvaluationPanel({ lotId }: { lotId: string }) {
                         {label}
                       </span>
                       <span className="block font-mono text-[11px] text-ink-secondary">
-                        {row.lower ?? "—"} – {row.upper ?? "—"} {row.unit}
+                        {row.lower ?? "—"} – {row.upper ?? "—"}
+                        {row.unit ? ` ${row.unit}` : ""}
                       </span>
                     </div>
                     <StatusBadge
@@ -427,8 +449,10 @@ function ResidueEvaluationPanel({ lotId }: { lotId: string }) {
                         <ul className="mt-1 list-disc space-y-1 ps-5">
                           {row.provenance.map((source, index) => (
                             <li key={index} className="font-mono">
-                              {source.kind} · {source.sourceLotId}{" "}
-                              {source.groupVersionId}
+                              {source.kind} · {source.sourceLotId}
+                              {source.groupVersionId || source.selectionId
+                                ? ` ${source.groupVersionId ?? source.selectionId}`
+                                : ""}
                               {source.reportId && source.resultId && (
                                 <>
                                   {" · "}

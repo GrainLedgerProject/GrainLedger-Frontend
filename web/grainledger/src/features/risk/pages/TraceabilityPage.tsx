@@ -236,6 +236,9 @@ export function TraceabilityPage() {
       ),
     );
   const canOpenPlan = Boolean(user?.permissions.includes("export-orders.read"));
+  const canEvaluateResidue = Boolean(
+    user?.permissions.includes("residue.evaluate"),
+  );
   const canOpenStock = Boolean(
     user?.permissions.some(
       (p) =>
@@ -265,7 +268,6 @@ export function TraceabilityPage() {
   const [page, setPage] = useState(1);
   const [runLabKey, setRunLabKey] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "flowchart">("flowchart");
-  const [selectedResidueLotId, setSelectedResidueLotId] = useState("");
   const [expandedSourceLotId, setExpandedSourceLotId] = useState<string | null>(
     null,
   );
@@ -287,6 +289,15 @@ export function TraceabilityPage() {
         ? "backward"
         : "forward";
   const view = params.get("view") === "history" ? "history" : "current";
+  const traceScopeKey = `${lot}:${labSelectionKey ?? ""}:${direction}:${view}`;
+  const [residueSelection, setResidueSelection] = useState<{
+    traceKey: string;
+    lotId: string;
+  }>({ traceKey: "", lotId: "" });
+  const selectedResidueLotId =
+    residueSelection.traceKey === traceScopeKey ? residueSelection.lotId : "";
+  const setSelectedResidueLotId = (lotId: string) =>
+    setResidueSelection({ traceKey: traceScopeKey, lotId });
 
   const setup = useQuery({
     queryKey: ["trace-lookups"],
@@ -381,14 +392,27 @@ export function TraceabilityPage() {
   }, [setup.data?.locations, facilityId]);
 
   const effectiveResidueLotId = useMemo(() => {
+    const lotsList = r?.lots ?? [];
+    if (!lotsList.length) return "";
     if (
       selectedResidueLotId &&
-      r?.lots.some((item) => item.id === selectedResidueLotId)
+      lotsList.some((item) => item.id === selectedResidueLotId)
     ) {
       return selectedResidueLotId;
     }
-    return r?.root?.id || lot || r?.lots[0]?.id || "";
-  }, [selectedResidueLotId, r?.lots, r?.root?.id, lot]);
+    if (r?.root?.id && lotsList.some((item) => item.id === r.root!.id)) {
+      return r.root.id;
+    }
+    if (lot && lotsList.some((item) => item.id === lot)) {
+      return lot;
+    }
+    return lotsList[0].id;
+  }, [selectedResidueLotId, r?.lots, r?.root, lot]);
+
+  const selectedResidueLot = useMemo(
+    () => r?.lots.find((item) => item.id === effectiveResidueLotId) ?? null,
+    [r?.lots, effectiveResidueLotId],
+  );
 
   const flowLayout = useMemo(() => {
     if (!r) return null;
@@ -1058,7 +1082,7 @@ export function TraceabilityPage() {
                       />
                     )}
 
-                    {effectiveResidueLotId && (
+                    {canEvaluateResidue && effectiveResidueLotId && (
                       <div className="space-y-2">
                         {r.lots.length > 1 && (
                           <label className="block space-y-1 text-xs">
@@ -1084,8 +1108,13 @@ export function TraceabilityPage() {
                           </label>
                         )}
                         <ResidueBounds
-                          key={effectiveResidueLotId}
+                          key={r.traceId || traceScopeKey}
                           lotId={effectiveResidueLotId}
+                          lotLabel={
+                            selectedResidueLot
+                              ? `${selectedResidueLot.code} (${selectedResidueLot.stage})`
+                              : undefined
+                          }
                         />
                       </div>
                     )}

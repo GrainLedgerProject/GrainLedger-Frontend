@@ -1338,4 +1338,129 @@ describe("Tracing & Container HOLD checklist", () => {
       screen.getByRole("link", { name: /Truy vết kết quả lab/ }).getAttribute("href"),
     ).toContain("reportId=rep-1&resultId=res-1");
   });
+
+  it("keeps ResidueBounds open when switching lots in trace chain, saves evaluation on selected lot, and hides selector without residue.evaluate", async () => {
+    const lotA = "11111111-1111-4111-8111-111111111111";
+    const lotB = "22222222-2222-4222-8222-222222222222";
+    const tracePayload = {
+      traceId: "trace-residue-switch",
+      schemaVersion: 2,
+      complete: true,
+      asOf: "2026-11-28T08:00:00Z",
+      root: { id: lotA },
+      lots: [
+        {
+          id: lotA,
+          code: "LOT-RAW-01",
+          stage: "RAW_PADDY",
+          producedKg: "100",
+          restrictions: [],
+          positions: [],
+        },
+        {
+          id: lotB,
+          code: "LOT-MILLED-02",
+          stage: "MILLED_RICE",
+          producedKg: "80",
+          restrictions: [],
+          positions: [],
+        },
+      ],
+      edges: [
+        {
+          inputLotId: lotA,
+          outputLotId: lotB,
+          operationId: "op-mill-1",
+          inputConsumedKg: "100",
+          outputProducedKg: "80",
+        },
+      ],
+      sources: [],
+    };
+
+    signIn("CUSTOMER_MANAGER", ["trace.read.all", "residue.evaluate"]);
+    vi.spyOn(ledgerEndpoints, "getLookups").mockResolvedValue({
+      facilities: [],
+      locations: [],
+      commodities: [],
+    });
+    vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue(page([]));
+    vi.spyOn(ledgerEndpoints, "traceLot").mockResolvedValue(tracePayload);
+    const evalHistorySpy = vi
+      .spyOn(ledgerEndpoints, "getResidueEvaluations")
+      .mockResolvedValue({ items: [] });
+    vi.spyOn(catalogsEndpoints, "getActiveSubstances").mockResolvedValue(
+      page([
+        {
+          id: "sub-1",
+          code: "TRICYCLAZOLE",
+          name: "Tricyclazole",
+          isActive: true,
+        },
+      ]),
+    );
+    const createEvalSpy = vi
+      .spyOn(ledgerEndpoints, "createResidueEvaluation")
+      .mockResolvedValue({
+        id: "eval-saved-b",
+        snapshotAt: "2026-11-28T08:05:00Z",
+        engineVersion: "residue-flow-as-received-3",
+        results: [
+          {
+            substanceId: "sub-1",
+            status: "COMPLETE",
+            lower: "0.002",
+            upper: "0.008",
+            unit: "mg/kg",
+            reasons: [],
+            provenance: [
+              {
+                kind: "LAB_SELECTION",
+                sourceLotId: lotA,
+                selectionId: "sel-1",
+              },
+            ],
+            rules: [],
+          },
+        ],
+      });
+
+    mount(<TraceabilityPage />, `/risk/trace?lotId=${lotA}`);
+
+    const lotSelect = await screen.findByLabelText(
+      /Chọn lô trong chuỗi để xem\/lưu đánh giá dư lượng/,
+    );
+    fireEvent.click(screen.getByText("Khoảng dư lượng và lịch sử đánh giá"));
+    await waitFor(() =>
+      expect(evalHistorySpy).toHaveBeenCalledWith(lotA),
+    );
+
+    fireEvent.change(lotSelect, { target: { value: lotB } });
+    await waitFor(() =>
+      expect(evalHistorySpy).toHaveBeenCalledWith(lotB),
+    );
+    const detailsEl = screen
+      .getByText("Khoảng dư lượng và lịch sử đánh giá")
+      .closest("details")!;
+    expect(detailsEl.open).toBe(true);
+    expect(await screen.findByText(/TRICYCLAZOLE/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+    await waitFor(() =>
+      expect(createEvalSpy).toHaveBeenCalledWith(lotB, {
+        id: expect.any(String),
+        substanceIds: ["sub-1"],
+      }),
+    );
+    expect(await screen.findByText("COMPLETE")).toBeTruthy();
+
+    cleanup();
+    signIn("AUDITOR", ["trace.read.all"]);
+    mount(<TraceabilityPage />, `/risk/trace?lotId=${lotA}`);
+    expect((await screen.findAllByText("LOT-RAW-01")).length).toBeGreaterThan(0);
+    expect(
+      screen.queryByLabelText(/Chọn lô trong chuỗi để xem\/lưu đánh giá dư lượng/),
+    ).toBeNull();
+  });
 });

@@ -774,7 +774,7 @@ export interface ResidueEvaluation {
     upper: string | null;
     unit: string | null;
     reasons: string[];
-    provenance: { kind: string; sourceLotId: string; reportId?: string; resultId?: string; groupVersionId?: string }[];
+    provenance: { kind: string; sourceLotId: string; reportId?: string; resultId?: string; groupVersionId?: string; selectionId?: string }[];
     rules: { id: string; version: number; kind: string; evidenceReference: string }[];
   }[];
 }
