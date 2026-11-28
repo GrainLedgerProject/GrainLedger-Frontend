@@ -106,9 +106,6 @@ function BlendPlanRequestContent({
   const canPropose = useAuthStore((s) =>
     s.user?.permissions.includes("blend.propose"),
   );
-  const isCustomerManager = useAuthStore(
-    (s) => s.user?.role === "CUSTOMER_MANAGER",
-  );
 
   const container = useQuery({
     queryKey: ["export-container", containerId],
@@ -148,8 +145,8 @@ function BlendPlanRequestContent({
   );
 
   const cancel = useExportCommand(
-    (operationId, planId: string) =>
-      planningEndpoints.cancelDraft(planId, { operationId }),
+    (operationId, { planId, version }: { planId: string; version: number }) =>
+      planningEndpoints.cancelDraft(planId, { operationId }, `"${version}"`),
     async () => {
       await plans.refetch();
     },
@@ -426,7 +423,12 @@ function BlendPlanRequestContent({
                     <button
                       type="button"
                       disabled={cancel.isPending}
-                      onClick={() => cancel.submit(selected.id)}
+                      onClick={() =>
+                        cancel.submit({
+                          planId: selected.id,
+                          version: selected.version,
+                        })
+                      }
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-functional-rejected-bg hover:bg-functional-rejected-bg/80 border border-functional-rejected-border text-accent-danger text-xs font-semibold transition-all"
                     >
                       <Trash size={14} />
@@ -583,14 +585,21 @@ function PreviewPlan({
     queryFn: () => exportEndpoints.getOrder(plan.orderId),
     enabled: objective === "MIN_MOISTURE",
   });
+  const [lastValidPreview, setLastValidPreview] = useState<{
+    scopeRevision: string;
+    data: NonNullable<typeof preview.data>;
+  } | null>(null);
   const preview = useMutation({
     mutationFn: (request: Omit<PreviewBlendPlanRequest, "facilityId">) =>
       planningEndpoints.previewPlan(plan.id, {
         ...request,
         facilityId: facility,
       }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       setRatioDirty(false);
+      if (data.canPropose && data.previewReference) {
+        setLastValidPreview({ scopeRevision: variables.scopeRevision, data });
+      }
     },
   });
 
@@ -608,10 +617,20 @@ function PreviewPlan({
     { persistKey: `blend-plan:${plan.id}:propose` },
   );
 
-  const result = preview.data;
+  const isRatioFailureFallback = Boolean(
+    preview.data &&
+    !preview.data.canPropose &&
+    preview.variables?.adjustment &&
+    lastValidPreview &&
+    lastValidPreview.scopeRevision === candidates.data?.scopeRevision,
+  );
+  const result = isRatioFailureFallback ? lastValidPreview!.data : preview.data;
   const previewCurrent = Boolean(
     candidates.data &&
-    preview.variables?.scopeRevision === candidates.data.scopeRevision,
+    result &&
+    (isRatioFailureFallback
+      ? lastValidPreview!.scopeRevision === candidates.data.scopeRevision
+      : preview.variables?.scopeRevision === candidates.data.scopeRevision),
   );
   const [expiredPreviewRef, setExpiredPreviewRef] = useState<string | null>(
     null,
@@ -986,6 +1005,22 @@ function PreviewPlan({
             )}
 
           <BlendDiagnostics result={result} />
+          {isRatioFailureFallback && preview.data && (
+            <div
+              role="alert"
+              className="rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3 text-xs text-accent-danger space-y-1"
+            >
+              <p className="font-semibold">
+                {text(
+                  "Tỷ lệ vừa chỉnh không đạt điều kiện đề xuất; đang giữ lại bản xem trước hợp lệ gần nhất.",
+                  "Adjusted ratio is not eligible to propose; keeping the last valid preview.",
+                )}
+              </p>
+              {preview.data.reasons?.length ? (
+                <p className="font-mono">{preview.data.reasons.join(" · ")}</p>
+              ) : null}
+            </div>
+          )}
           {previewCurrent && result.previewReference && (
             <BlendRatioEditor
               key={result.previewReference}
@@ -1004,15 +1039,6 @@ function PreviewPlan({
           {/* Submit Proposal CTA */}
           {result.canPropose && result.previewReference && (
             <div className="pt-3 border-t border-ink-tertiary/15 space-y-3">
-              <ContainerCommandFeedback
-                error={propose.error}
-                uncertain={propose.uncertain}
-                retry={propose.retry}
-                success={propose.isSuccess}
-                isPending={propose.isPending}
-                restoredPending={propose.restoredPending}
-                discardPending={propose.discardPending}
-              />
               <div className="flex justify-end">
                 <button
                   disabled={
@@ -1037,6 +1063,22 @@ function PreviewPlan({
             </div>
           )}
         </div>
+      )}
+
+      {(propose.error ||
+        propose.uncertain ||
+        propose.isSuccess ||
+        propose.isPending ||
+        propose.restoredPending) && (
+        <ContainerCommandFeedback
+          error={propose.error}
+          uncertain={propose.uncertain}
+          retry={propose.retry}
+          success={propose.isSuccess}
+          isPending={propose.isPending}
+          restoredPending={propose.restoredPending}
+          discardPending={propose.discardPending}
+        />
       )}
     </div>
   );

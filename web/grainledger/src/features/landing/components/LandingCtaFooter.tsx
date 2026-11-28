@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "@/app/store/authStore";
 import { ArrowRight } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
 export const LandingCtaFooter: React.FC = () => {
+  const text = useWorkflowText();
   const { isAuthenticated } = useAuthStore();
   return (
     <>
@@ -15,11 +17,16 @@ export const LandingCtaFooter: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
           <h2 className="font-sans text-3xl sm:text-5xl font-extrabold tracking-[-0.035em] max-w-2xl mx-auto leading-tight">
-            Sẵn sàng chuẩn hóa chuỗi cung ứng lúa gạo của bạn?
+            {text(
+              "Sẵn sàng chuẩn hóa chuỗi cung ứng lúa gạo của bạn?",
+              "Ready to standardize your rice supply chain custody?",
+            )}
           </h2>
-          <p className="text-base text-white/70 max-w-xl mx-auto leading-relaxed font-normal">
-            Tham gia chương trình thí điểm tại Tiền Giang và trải nghiệm nền
-            tảng sổ cái cân bằng khối lượng đầu tiên tại Việt Nam.
+          <p className="text-base text-ink-secondary max-w-xl mx-auto leading-relaxed font-normal">
+            {text(
+              "Tham gia chương trình thí điểm tại Tiền Giang và trải nghiệm nền tảng sổ cái cân bằng khối lượng đầu tiên tại Việt Nam.",
+              "Join our Tiền Giang pilot program and experience Vietnam's first mass-balance custody ledger platform.",
+            )}
           </p>
           <div className="pt-3 flex flex-wrap items-center justify-center gap-4">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -28,7 +35,9 @@ export const LandingCtaFooter: React.FC = () => {
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-ink-primary hover:bg-white/95 shadow-lg transition-all"
               >
                 <span className="text-black">
-                  {isAuthenticated ? "Vào Home" : "Đăng nhập vào hệ thống"}
+                  {isAuthenticated
+                    ? text("Vào Home", "Go to Home")
+                    : text("Đăng nhập vào hệ thống", "Sign in to GrainLedger")}
                 </span>
                 <ArrowRight className="text-black" size={15} weight="bold" />
               </Link>
@@ -51,19 +60,20 @@ export const LandingCtaFooter: React.FC = () => {
                 />
               </div>
               <p className="text-xs text-ink-tertiary leading-relaxed">
-                Nền tảng sổ cái lưu giữ theo cân bằng khối lượng (Mass-Balance
-                Custody Ledger) phục vụ xuất khẩu lúa gạo sang các thị trường
-                cao cấp.
+                {text(
+                  "Nền tảng sổ cái lưu giữ theo cân bằng khối lượng (Mass-Balance Custody Ledger) phục vụ xuất khẩu lúa gạo sang các thị trường cao cấp.",
+                  "Mass-Balance Custody Ledger platform built for compliant rice exports to strict international markets.",
+                )}
               </p>
               <div className="text-xs font-mono text-ink-tertiary">
-                Đề tài FA26SE272 · Nhóm GFA26SE137
+                {text("Đề tài FA26SE272 · Nhóm GFA26SE137", "Project FA26SE272 · Team GFA26SE137")}
               </div>
             </div>
 
             {/* Col 2: Nền tảng */}
             <div className="space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
-                Công nghệ
+                {text("Công nghệ", "Technology")}
               </h4>
               <ul className="space-y-2 text-xs">
                 <li>
@@ -71,7 +81,7 @@ export const LandingCtaFooter: React.FC = () => {
                     href="#tech"
                     className="hover:text-ink-primary dark:hover:text-white transition-colors"
                   >
-                    Sổ cái Cân bằng Khối lượng
+                    {text("Sổ cái Cân bằng Khối lượng", "Mass Balance Ledger")}
                   </a>
                 </li>
                 <li>
@@ -79,7 +89,7 @@ export const LandingCtaFooter: React.FC = () => {
                     href="#tech"
                     className="hover:text-ink-primary dark:hover:text-white transition-colors"
                   >
-                    Động cơ MRL & An toàn
+                    {text("Động cơ MRL & An toàn", "MRL Safety Engine")}
                   </a>
                 </li>
                 <li>
@@ -87,7 +97,7 @@ export const LandingCtaFooter: React.FC = () => {
                     href="#tech"
                     className="hover:text-ink-primary dark:hover:text-white transition-colors"
                   >
-                    Thu mua Ngoại tuyến Mobile
+                    {text("Thu mua Ngoại tuyến Mobile", "Offline Field Procurement")}
                   </a>
                 </li>
                 <li>
@@ -95,7 +105,7 @@ export const LandingCtaFooter: React.FC = () => {
                     href="#tech"
                     className="hover:text-ink-primary dark:hover:text-white transition-colors"
                   >
-                    Truy vết Hai chiều Đồ thị
+                    {text("Truy vết Hai chiều Đồ thị", "Bidirectional Graph Trace")}
                   </a>
                 </li>
               </ul>
@@ -104,7 +114,7 @@ export const LandingCtaFooter: React.FC = () => {
             {/* Col 3: Chuẩn mực */}
             <div className="space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
-                Tiêu chuẩn Xuất khẩu
+                {text("Tiêu chuẩn Xuất khẩu", "Export Standards")}
               </h4>
               <ul className="space-y-2 text-xs">
                 <li>
@@ -133,20 +143,29 @@ export const LandingCtaFooter: React.FC = () => {
             {/* Col 4: Cơ sở */}
             <div className="space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-ink-primary">
-                Cơ sở Thí điểm
+                {text("Cơ sở Thí điểm", "Pilot Facility")}
               </h4>
               <p className="text-xs text-ink-tertiary leading-relaxed">
-                Nhà máy Xay xát Lúa gạo Tiền Giang, Đồng bằng sông Cửu Long,
-                Việt Nam.
+                {text(
+                  "Nhà máy Xay xát Lúa gạo Tiền Giang, Đồng bằng sông Cửu Long, Việt Nam.",
+                  "Tiền Giang Rice Milling Plant, Mekong Delta, Vietnam.",
+                )}
               </p>
             </div>
           </div>
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-tertiary">
-            <div>GrainLedger © 2026 GFA26SE137. Mọi quyền được bảo lưu.</div>
             <div>
-              Tuân thủ nghiêm ngặt tiêu chuẩn bảo toàn khối lượng ISO
-              22095:2020.
+              {text(
+                "GrainLedger © 2026 GFA26SE137. Mọi quyền được bảo lưu.",
+                "GrainLedger © 2026 GFA26SE137. All rights reserved.",
+              )}
+            </div>
+            <div>
+              {text(
+                "Tuân thủ nghiêm ngặt tiêu chuẩn bảo toàn khối lượng ISO 22095:2020.",
+                "Strict compliance with ISO 22095:2020 Mass Balance Chain of Custody.",
+              )}
             </div>
           </div>
         </div>

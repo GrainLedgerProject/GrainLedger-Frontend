@@ -19,7 +19,7 @@ function localNow() {
   const date = new Date();
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
     .toISOString()
-    .slice(0, 16);
+    .slice(0, 19);
 }
 
 const inputClass =
@@ -252,6 +252,7 @@ export function ContainerLoadingForm({
                   id={`${uid}-time`}
                   name="loadedAt"
                   type="datetime-local"
+                  step="1"
                   required
                   value={loadedAt}
                   onChange={(e) => setLoadedAt(e.target.value)}

@@ -13,7 +13,7 @@ export type OrderMaintenance = { type: "order" | "spec"; order: ExportOrderDetai
 type Change = { type: "order"; id: string; etag: string; body: Omit<UpdateExportOrderRequest, "operationId"> }
   | { type: "spec"; id: string; etag: string; limits: ExportLimitInput[] }
   | { type: "target"; id: string; etag: string; targetMass: string; unit: string };
-const decimal = String.raw`[0-9]{1,17}(\.[0-9]{1,9})?`;
+const decimal = String.raw`[0-9]{1,17}(\.[0-9]{1,6})?`;
 
 export function ExportOrderMaintenance({ action, onClose, onSaved }: { action: OrderMaintenance; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation();
@@ -78,7 +78,7 @@ function OrderEditorFields({ action, blocked, submit }: { action: OrderMaintenan
         </>}
         {action.type !== "spec" && <>
           <label htmlFor={`${uid}-mass`}>{t("workflows.export.mass")}<input id={`${uid}-mass`} name="mass" required inputMode="decimal" pattern={decimal} defaultValue={action.type === "order" ? action.order.originalMass ?? action.order.requiredMassKg : container?.originalMass} /></label>
-          <label htmlFor={`${uid}-unit`}>{t("workflows.export.unit")}<select id={`${uid}-unit`} name="unit" required defaultValue={action.type === "order" ? action.order.originalUnit ?? "KG" : container?.originalUnit}><option value="">{t("workflows.choose")}</option>{options.units.map(row => <option key={row.id} value={row.code}>{row.name} ({row.code})</option>)}</select></label>
+          <label htmlFor={`${uid}-unit`}>{t("workflows.export.unit")}<select id={`${uid}-unit`} name="unit" required defaultValue={action.type === "order" ? (action.order.originalUnit ?? "KG").toUpperCase() : container?.originalUnit?.toUpperCase()}><option value="">{t("workflows.choose")}</option>{options.units.map(row => <option key={row.id} value={row.code.toUpperCase()}>{row.name} ({row.code.toUpperCase()})</option>)}</select></label>
         </>}
         {action.type === "spec" && <div className="space-y-3 sm:col-span-2">
           {limits.map((line, index) => <fieldset key={line.key} className="grid gap-2 rounded-xl border border-ink-tertiary/20 p-3 sm:grid-cols-2"><legend>{t("workflows.export.limit", { number: index + 1 })}</legend>

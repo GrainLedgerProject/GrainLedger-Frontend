@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { Modal } from "@/shared/ui/Modal";
 import { MagnifyingGlass, Package, Scroll, X } from "@phosphor-icons/react";
@@ -26,9 +27,15 @@ export const GlobalSearchModal = () => {
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [setSearchOpen]);
 
+  const user = useAuthStore((state) => state.user);
+  const perms = user?.permissions ?? [];
   const destinations = [
-    { label: en ? "Search stock lots" : "Tìm trong kho lô", icon: Package, path: "/stock" },
-    { label: en ? "Search event history" : "Tìm trong lịch sử sự kiện", icon: Scroll, path: "/events" },
+    ...(user?.role && perms.some((p) => ["lots.read.tenant", "lots.read.facility", "lots.read.all"].includes(p))
+      ? [{ label: en ? "Search stock lots" : "Tìm trong kho lô", icon: Package, path: "/stock" }]
+      : []),
+    ...(user?.role && perms.some((p) => ["history.read", "identity.manage"].includes(p))
+      ? [{ label: en ? "Search event history" : "Tìm trong lịch sử sự kiện", icon: Scroll, path: "/events" }]
+      : []),
   ];
 
   const select = (path: string) => {
@@ -52,12 +59,14 @@ export const GlobalSearchModal = () => {
             value={query}
             onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
             onKeyDown={(event) => {
+              if (!destinations.length) return;
               if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => (index + 1) % destinations.length); }
               if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => (index - 1 + destinations.length) % destinations.length); }
               if (event.key === "Enter") {
                 event.preventDefault();
                 if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
-                select(destinations[activeIndex].path);
+                const target = destinations[activeIndex] ?? destinations[0];
+                if (target) select(target.path);
               }
             }}
             placeholder={en ? "Enter lot code or event ID…" : "Nhập mã lô hoặc mã sự kiện…"}
@@ -71,18 +80,26 @@ export const GlobalSearchModal = () => {
           {en ? "Choose where to search live data" : "Chọn nơi tìm trong dữ liệu thực"}
         </p>
         <div className="mt-2 space-y-1">
-          {destinations.map(({ label, icon: Icon, path }, index) => (
-            <button
-              key={path}
-              type="button"
-              onClick={() => select(path)}
-              onMouseEnter={() => setActiveIndex(index)}
-              className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent-primary ${index === activeIndex ? "bg-accent-primary/10 text-accent-primary" : "text-ink-primary hover:bg-surface-raised"}`}
-            >
-              <Icon size={19} aria-hidden="true" />
-              <span>{query.trim() ? `${label}: “${query.trim()}”` : label}</span>
-            </button>
-          ))}
+          {destinations.length === 0 ? (
+            <p className="px-2 py-2 text-xs text-ink-tertiary">
+              {en
+                ? "Your role does not have access to global search views."
+                : "Vai trò hiện tại chưa được cấp quyền tìm kiếm nhanh."}
+            </p>
+          ) : (
+            destinations.map(({ label, icon: Icon, path }, index) => (
+              <button
+                key={path}
+                type="button"
+                onClick={() => select(path)}
+                onMouseEnter={() => setActiveIndex(index)}
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent-primary ${index === activeIndex ? "bg-accent-primary/10 text-accent-primary" : "text-ink-primary hover:bg-surface-raised"}`}
+              >
+                <Icon size={19} aria-hidden="true" />
+                <span>{query.trim() ? `${label}: “${query.trim()}”` : label}</span>
+              </button>
+            ))
+          )}
         </div>
       </div>
     </Modal>

@@ -116,6 +116,8 @@ interface TraceResult {
     quantityKg?: string;
     availableKg?: string;
     restrictions: string[];
+    directHold?: boolean;
+    effectiveHold?: boolean;
     directHoldIds?: string[];
     effectiveHoldIds?: string[];
     positions: {
@@ -270,7 +272,9 @@ export function TraceabilityPage() {
   const [holdModalOpen, setHoldModalOpen] = useState(false);
 
   const resultRegion = useRef<HTMLDivElement>(null);
-  const lot = params.get("lotId") ?? "";
+  const rawLotParam = params.get("lotId") ?? "";
+  const invalidLotParam = Boolean(rawLotParam && !uuidRegex.test(rawLotParam));
+  const lot = invalidLotParam ? "" : rawLotParam;
   const report = params.get("reportId");
   const labResult = params.get("resultId");
   const incompleteLab = Boolean(report) !== Boolean(labResult);
@@ -508,6 +512,19 @@ export function TraceabilityPage() {
         />
       )}
 
+      {invalidLotParam && (
+        <Feedback
+          error={
+            new Error(
+              text(
+                "Tham số ?lotId trên URL không đúng định dạng UUID hợp lệ.",
+                "The ?lotId URL parameter is not a valid UUID.",
+              ),
+            )
+          }
+        />
+      )}
+
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <section
           aria-labelledby="trace-lots-heading"
@@ -534,6 +551,7 @@ export function TraceabilityPage() {
                 />
                 <input
                   type="text"
+                  maxLength={200}
                   aria-label={text("Tìm mã lô", "Search lot code")}
                   placeholder={text(
                     "Tìm theo mã lô...",
@@ -1313,12 +1331,13 @@ export function TraceabilityPage() {
                                     )
                                     .toFixed()
                                 : undefined);
-                            const directHold = Boolean(
-                              item.directHoldIds?.length,
-                            );
-                            const inheritedHold = Boolean(
-                              item.effectiveHoldIds?.length && !directHold,
-                            );
+                            const directHold =
+                              Boolean(item.directHold) ||
+                              Boolean(item.directHoldIds?.length);
+                            const inheritedHold =
+                              (Boolean(item.effectiveHold) ||
+                                Boolean(item.effectiveHoldIds?.length)) &&
+                              !directHold;
 
                             return (
                               <tr
@@ -1374,18 +1393,21 @@ export function TraceabilityPage() {
                                             )}
                                             size="sm"
                                           />
-                                          {canIsolateHold &&
-                                            item.effectiveHoldIds?.[0] && (
-                                              <Link
-                                                to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(item.id)}&holdId=${encodeURIComponent(item.effectiveHoldIds[0])}`}
-                                                className="font-semibold text-accent-danger hover:underline"
-                                              >
-                                                {text(
-                                                  "Mở cách ly lô →",
-                                                  "Isolate lot →",
-                                                )}
-                                              </Link>
-                                            )}
+                                          {canIsolateHold && (
+                                            <Link
+                                              to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(item.id)}&isolation=1${
+                                                item.effectiveHoldIds?.[0]
+                                                  ? `&holdId=${encodeURIComponent(item.effectiveHoldIds[0])}`
+                                                  : ""
+                                              }`}
+                                              className="font-semibold text-accent-danger hover:underline"
+                                            >
+                                              {text(
+                                                "Mở cách ly lô →",
+                                                "Isolate lot →",
+                                              )}
+                                            </Link>
+                                          )}
                                           {canOpenStock && (
                                             <Link
                                               to={millPaths.lot.replace(
@@ -1582,7 +1604,10 @@ export function TraceabilityPage() {
                         </h3>
                         <ul className="divide-y divide-ink-tertiary/15 rounded-xl border border-ink-tertiary/20 text-sm">
                           {r.sources.map(({ lotId, provenance }) => {
-                            const evidenceOpen = expandedSourceLotId === lotId;
+                            const sourceRecordId = provenance?.sourceRecordId;
+                            const evidenceOpen =
+                              Boolean(sourceRecordId) &&
+                              expandedSourceLotId === sourceRecordId;
                             return (
                               <li
                                 key={lotId}
@@ -1592,25 +1617,37 @@ export function TraceabilityPage() {
                                   <p className="break-all font-mono font-semibold">
                                     {names.get(lotId) ?? lotId}
                                   </p>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setExpandedSourceLotId(
-                                        evidenceOpen ? null : lotId,
-                                      )
-                                    }
-                                    className="text-xs font-semibold text-accent-primary hover:underline"
-                                  >
-                                    {evidenceOpen
-                                      ? text(
-                                          "Ẩn chứng cứ mẫu & lab",
-                                          "Hide sample & lab evidence",
+                                  {sourceRecordId &&
+                                    useAuthStore
+                                      .getState()
+                                      .user?.permissions.some((p) =>
+                                        [
+                                          "purchases.write",
+                                          "farms.read",
+                                          "lab.read",
+                                          "lab.write",
+                                        ].includes(p),
+                                      ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setExpandedSourceLotId(
+                                          evidenceOpen ? null : sourceRecordId,
                                         )
-                                      : text(
-                                          "Xem chứng cứ nguồn (mẫu & lab)",
-                                          "View source evidence",
-                                        )}
-                                  </button>
+                                      }
+                                      className="text-xs font-semibold text-accent-primary hover:underline"
+                                    >
+                                      {evidenceOpen
+                                        ? text(
+                                            "Ẩn chứng cứ mẫu & lab",
+                                            "Hide sample & lab evidence",
+                                          )
+                                        : text(
+                                            "Xem chứng cứ nguồn (mẫu & lab)",
+                                            "View source evidence",
+                                          )}
+                                    </button>
+                                  )}
                                 </div>
                                 {provenance && (
                                   <details className="mt-1 text-xs">
@@ -1689,9 +1726,9 @@ export function TraceabilityPage() {
                                         "Source details restricted",
                                       )}
                                 </p>
-                                {evidenceOpen && (
+                                {evidenceOpen && sourceRecordId && (
                                   <TraceSourceEvidence
-                                    sourceLotId={lotId}
+                                    sourceLotId={sourceRecordId}
                                     sourceLotCode={names.get(lotId)}
                                     onTraceFromLab={(rId, resId) => {
                                       setRunLabKey(null);

@@ -39,44 +39,27 @@ export const authApi = {
    */
   logout: async (allDevices = false): Promise<void> => {
     const { sessionVersion } = useAuthStore.getState();
-    await (allDevices ? authEndpoints.logoutAll() : authEndpoints.logout());
-    const current = useAuthStore.getState();
-    if (current.sessionVersion === sessionVersion) current.logout();
-  },
-
-  /**
-   * Validate Invitation Token
-   */
-  validateInvitationToken: async (token: string): Promise<{ email: string; name: string }> => {
-    void token;
-    throw new Error('Máy chủ chưa hỗ trợ xác nhận lời mời trên web. Vui lòng liên hệ quản trị viên.');
-  },
-
-  /**
-   * Accept Invitation and set password
-   */
-  acceptInvitation: async (token: string, password: string): Promise<void> => {
-    void token;
-    void password;
-    throw new Error('Máy chủ chưa hỗ trợ chấp nhận lời mời trên web.');
+    try {
+      await (allDevices ? authEndpoints.logoutAll() : authEndpoints.logout());
+    } catch (error) {
+      if (allDevices) {
+        throw error;
+      }
+      // Single-device logout always clears local state so offline/expired sessions are never trapped on the shell
+    } finally {
+      const current = useAuthStore.getState();
+      if (current.sessionVersion === sessionVersion) current.logout();
+    }
   },
 
   /**
    * Update Profile
    */
-  updateProfile: async (payload: { displayName: string; phoneNumber?: string }): Promise<void> => {
-    await profileEndpoints.updateProfile({
+  updateProfile: async (payload: { displayName: string; phoneNumber?: string }): Promise<UserProfile> => {
+    const updated = await profileEndpoints.updateProfile({
       displayName: payload.displayName,
       phoneNumber: payload.phoneNumber || null,
     });
-  },
-
-  /**
-   * Change Password
-   */
-  changePassword: async (currentPass: string, newPass: string): Promise<void> => {
-    void currentPass;
-    void newPass;
-    throw new Error('Máy chủ chưa hỗ trợ đổi mật khẩu khi đang đăng nhập. Hãy dùng chức năng quên mật khẩu.');
+    return toUserProfile(updated);
   },
 };

@@ -189,4 +189,26 @@ describe("API transport", () => {
       expect.objectContaining({ id: "user", role: "MILL_MANAGER" }),
     );
   });
+
+  it("reports expired session instead of session switched when reactive refresh fails", async () => {
+    const futureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validJwt = `eyJhbGciOiJIUzI1NiJ9.${btoa(JSON.stringify({ exp: futureExp }))}.sig`;
+    state.auth.accessToken = validJwt;
+    state.auth.refreshToken = "expired-refresh-token";
+    state.auth.logout.mockImplementationOnce(() => {
+      state.auth.sessionVersion++;
+      state.auth.accessToken = "";
+      state.auth.refreshToken = null;
+    });
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }));
+
+    await expect(apiFetch("/api/ledger/lots")).rejects.toMatchObject({
+      status: 401,
+      message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    });
+    expect(state.auth.logout).toHaveBeenCalledTimes(1);
+  });
 });

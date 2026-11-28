@@ -61,10 +61,15 @@ export function ContainerTracePage() {
   );
   const canPlaceHold = Boolean(
     user?.role === "CUSTOMER_MANAGER" &&
-      user.permissions.includes("holds.manage"),
+    user.permissions.includes("holds.manage"),
   );
 
   const [input, setInput] = useState(containerId);
+  const [prevContainerId, setPrevContainerId] = useState(containerId);
+  if (containerId !== prevContainerId) {
+    setPrevContainerId(containerId);
+    setInput(containerId);
+  }
   const [viewMode, setViewMode] = useState<"table" | "flowchart">("table");
   const [ancestryLotsPage, setAncestryLotsPage] = useState(1);
   const [ancestryEdgesPage, setAncestryEdgesPage] = useState(1);
@@ -130,6 +135,8 @@ export function ContainerTracePage() {
       orderedAncestryLots.filter(
         (lot) =>
           Boolean(lot.restrictions?.length) ||
+          Boolean(lot.directHold) ||
+          Boolean(lot.effectiveHold) ||
           Boolean(lot.directHoldIds?.length) ||
           Boolean(lot.effectiveHoldIds?.length),
       ).length,
@@ -272,7 +279,9 @@ export function ContainerTracePage() {
     currentEdgesPage * ancestryPageSize,
   );
 
-  const isValidParam = Boolean(containerId && containerIdPattern.test(containerId));
+  const isValidParam = Boolean(
+    containerId && containerIdPattern.test(containerId),
+  );
   const refreshing = trace.isFetching || setup.isFetching;
 
   return (
@@ -283,12 +292,18 @@ export function ContainerTracePage() {
             data-ui-detail="secondary"
             className="text-xs font-semibold uppercase tracking-wider text-accent-primary"
           >
-            {text("TRUY VẾT PHẢ HỆ & ĐÓNG GÓP NGUỒN", "PROVENANCE & CONTRIBUTION TRACE")}
+            {text(
+              "TRUY VẾT PHẢ HỆ & ĐÓNG GÓP NGUỒN",
+              "PROVENANCE & CONTRIBUTION TRACE",
+            )}
           </span>
           <h1 className="mt-1 font-display text-2xl font-bold text-ink-primary">
             {text("Truy xuất nguồn container", "Container source trace")}
           </h1>
-          <p data-ui-detail="secondary" className="mt-0.5 text-xs text-ink-secondary">
+          <p
+            data-ui-detail="secondary"
+            className="mt-0.5 text-xs text-ink-secondary"
+          >
             {text(
               "Truy ngược khối lượng thực xếp của container về các lô nguồn, thửa ruộng thu mua, chứng từ lab và ngưỡng dư lượng.",
               "Trace a container's actual loaded mass back to source lots, procurement plots, lab evidence, and residue bounds.",
@@ -304,13 +319,15 @@ export function ContainerTracePage() {
             <GitBranch size={15} aria-hidden="true" />
             <span>{text("Truy xuất lô hàng", "Trace lots")}</span>
           </Link>
-          <Link
-            to={riskPaths.holds}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
-          >
-            <ShieldWarning size={15} aria-hidden="true" />
-            <span>{text("Quản lý HOLD", "HOLD management")}</span>
-          </Link>
+          {user?.role !== "MILL_ADMIN" && (
+            <Link
+              to={riskPaths.holds}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink-tertiary/20 bg-surface-base px-3.5 py-2 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary dark:bg-surface-raised dark:hover:bg-surface-overlay"
+            >
+              <ShieldWarning size={15} aria-hidden="true" />
+              <span>{text("Quản lý HOLD", "HOLD management")}</span>
+            </Link>
+          )}
           {allowed && isValidParam && (
             <button
               type="button"
@@ -319,14 +336,24 @@ export function ContainerTracePage() {
                 void trace.refetch();
               }}
               disabled={refreshing}
-              aria-label={text("Tải lại truy vết container", "Reload container trace")}
-              title={text("Tải lại truy vết container", "Reload container trace")}
+              aria-label={text(
+                "Tải lại truy vết container",
+                "Reload container trace",
+              )}
+              title={text(
+                "Tải lại truy vết container",
+                "Reload container trace",
+              )}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-tertiary/20 bg-surface-base text-ink-secondary transition-colors hover:bg-surface-raised hover:text-ink-primary disabled:opacity-50 dark:bg-surface-raised dark:hover:bg-surface-overlay"
             >
               <ArrowsClockwise
                 size={16}
                 aria-hidden="true"
-                className={refreshing ? "motion-safe:animate-spin text-accent-primary" : undefined}
+                className={
+                  refreshing
+                    ? "motion-safe:animate-spin text-accent-primary"
+                    : undefined
+                }
               />
             </button>
           )}
@@ -373,7 +400,13 @@ export function ContainerTracePage() {
                 </div>
               </div>
               <StatusBadge
-                status={record ? "COMPLIANT" : trace.isFetching ? "IN_PROGRESS" : "STALE"}
+                status={
+                  record
+                    ? "COMPLIANT"
+                    : trace.isFetching
+                      ? "IN_PROGRESS"
+                      : "STALE"
+                }
                 size="sm"
                 label={
                   record
@@ -397,7 +430,9 @@ export function ContainerTracePage() {
                 }}
               >
                 <label>
-                  <span>{text("Định danh container (UUID)", "Container ID (UUID)")}</span>
+                  <span>
+                    {text("Định danh container (UUID)", "Container ID (UUID)")}
+                  </span>
                   <div className="relative">
                     <MagnifyingGlass
                       size={16}
@@ -415,7 +450,10 @@ export function ContainerTracePage() {
                     {input && (
                       <button
                         type="button"
-                        aria-label={text("Xóa mã container", "Clear container ID")}
+                        aria-label={text(
+                          "Xóa mã container",
+                          "Clear container ID",
+                        )}
                         onClick={() => setInput("")}
                         className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-ink-tertiary hover:bg-surface-overlay hover:text-ink-primary"
                       >
@@ -431,7 +469,11 @@ export function ContainerTracePage() {
                   className="record-button record-primary min-h-12 rounded-full px-6"
                 >
                   <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
-                  <span>{trace.isFetching ? text("Đang truy xuất...", "Tracing...") : text("Truy xuất", "Trace")}</span>
+                  <span>
+                    {trace.isFetching
+                      ? text("Đang truy xuất...", "Tracing...")
+                      : text("Truy xuất", "Trace")}
+                  </span>
                 </button>
               </form>
 
@@ -440,8 +482,18 @@ export function ContainerTracePage() {
                   role="alert"
                   className="flex items-center gap-2 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg px-3.5 py-2.5 text-xs text-accent-danger"
                 >
-                  <WarningCircle size={16} weight="fill" className="shrink-0" aria-hidden="true" />
-                  <span>{text("Định danh container không hợp lệ.", "The container ID is invalid.")}</span>
+                  <WarningCircle
+                    size={16}
+                    weight="fill"
+                    className="shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {text(
+                      "Định danh container không hợp lệ.",
+                      "The container ID is invalid.",
+                    )}
+                  </span>
                 </div>
               )}
             </div>
@@ -452,7 +504,12 @@ export function ContainerTracePage() {
               role="alert"
               className="flex items-start gap-2.5 rounded-xl border border-functional-rejected-border bg-functional-rejected-bg p-3.5 text-xs text-accent-danger"
             >
-              <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+              <WarningCircle
+                size={18}
+                weight="fill"
+                className="mt-0.5 shrink-0"
+                aria-hidden="true"
+              />
               <div className="min-w-0 flex-1 [&>div]:bg-transparent [&>div]:p-0">
                 <Feedback error={trace.error} />
               </div>
@@ -477,7 +534,12 @@ export function ContainerTracePage() {
                   role="alert"
                   className="flex items-start gap-2.5 rounded-xl border border-accent-warning/40 bg-functional-stale-bg p-3.5 text-xs text-accent-warning"
                 >
-                  <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <WarningCircle
+                    size={18}
+                    weight="fill"
+                    className="mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
                   <div className="space-y-1">
                     <p className="font-semibold">
                       {text(
@@ -498,55 +560,100 @@ export function ContainerTracePage() {
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">
                   <div className="flex items-center justify-between text-ink-secondary">
-                    <span className="text-xs font-medium">{text("Khối lượng thực xếp", "Actual loaded mass")}</span>
-                    <Scales size={16} className="text-accent-primary" aria-hidden="true" />
+                    <span className="text-xs font-medium">
+                      {text("Khối lượng thực xếp", "Actual loaded mass")}
+                    </span>
+                    <Scales
+                      size={16}
+                      className="text-accent-primary"
+                      aria-hidden="true"
+                    />
                   </div>
                   <div className="font-display text-2xl font-bold text-ink-primary">
                     <span className="font-mono">{record.loadedKg}</span>{" "}
-                    <span className="text-sm font-semibold text-ink-secondary">kg</span>
+                    <span className="text-sm font-semibold text-ink-secondary">
+                      kg
+                    </span>
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {text("Tổng khối lượng thực xếp ghi nhận", "Recorded actual loaded weight")}
+                    {text(
+                      "Tổng khối lượng thực xếp ghi nhận",
+                      "Recorded actual loaded weight",
+                    )}
                   </p>
                 </div>
 
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">
                   <div className="flex items-center justify-between text-ink-secondary">
-                    <span className="text-xs font-medium">{text("Thửa ruộng nguồn", "Source plots")}</span>
-                    <MapPin size={16} className="text-accent-primary" aria-hidden="true" />
+                    <span className="text-xs font-medium">
+                      {text("Thửa ruộng nguồn", "Source plots")}
+                    </span>
+                    <MapPin
+                      size={16}
+                      className="text-accent-primary"
+                      aria-hidden="true"
+                    />
                   </div>
-                  <div className="font-display text-2xl font-bold text-ink-primary">{plotTotals.length}</div>
+                  <div className="font-display text-2xl font-bold text-ink-primary">
+                    {plotTotals.length}
+                  </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {text(`${record.sourceContributions.length} lô nguồn đóng góp`, `${record.sourceContributions.length} contributing source lots`)}
+                    {text(
+                      `${record.sourceContributions.length} lô nguồn đóng góp`,
+                      `${record.sourceContributions.length} contributing source lots`,
+                    )}
                   </p>
                 </div>
 
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">
                   <div className="flex items-center justify-between text-ink-secondary">
-                    <span className="text-xs font-medium">{text("Lô trong phả hệ", "Ancestry lots")}</span>
-                    <GitBranch size={16} className="text-accent-primary" aria-hidden="true" />
+                    <span className="text-xs font-medium">
+                      {text("Lô trong phả hệ", "Ancestry lots")}
+                    </span>
+                    <GitBranch
+                      size={16}
+                      className="text-accent-primary"
+                      aria-hidden="true"
+                    />
                   </div>
-                  <div className="font-display text-2xl font-bold text-ink-primary">{orderedAncestryLots.length}</div>
+                  <div className="font-display text-2xl font-bold text-ink-primary">
+                    {orderedAncestryLots.length}
+                  </div>
                   <p className="text-[11px] text-ink-tertiary">
-                    {text(`${ancestryEdges.length} liên kết chuyển hóa`, `${ancestryEdges.length} material edges`)}
+                    {text(
+                      `${ancestryEdges.length} liên kết chuyển hóa`,
+                      `${ancestryEdges.length} material edges`,
+                    )}
                   </p>
                 </div>
 
                 <div className="space-y-1 rounded-2xl border border-ink-tertiary/20 bg-surface-base p-4 shadow-xs dark:bg-surface-raised">
                   <div className="flex items-center justify-between text-ink-secondary">
-                    <span className="text-xs font-medium">{text("Lệnh HOLD liên quan", "Active HOLD scope")}</span>
+                    <span className="text-xs font-medium">
+                      {text("Lệnh HOLD liên quan", "Active HOLD scope")}
+                    </span>
                     <ShieldWarning
                       size={16}
-                      className={totalHoldScope > 0 ? "text-accent-danger" : "text-accent-primary"}
+                      className={
+                        totalHoldScope > 0
+                          ? "text-accent-danger"
+                          : "text-accent-primary"
+                      }
                       aria-hidden="true"
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="font-display text-2xl font-bold text-ink-primary">{totalHoldScope}</span>
+                    <span className="font-display text-2xl font-bold text-ink-primary">
+                      {totalHoldScope}
+                    </span>
                     <StatusBadge
                       status={totalHoldScope > 0 ? "HOLD" : "COMPLIANT"}
                       size="sm"
-                      label={totalHoldScope > 0 ? text("Có HOLD", "Has HOLD") : text("An toàn", "Clear")}
+                      label={
+                        totalHoldScope > 0
+                          ? text("Có HOLD", "Has HOLD")
+                          : text("An toàn", "Clear")
+                      }
                     />
                   </div>
                   <p className="text-[11px] text-ink-tertiary">
@@ -570,11 +677,54 @@ export function ContainerTracePage() {
                         )}
                       </>
                     ) : (
-                      text("Không phát hiện HOLD trực tiếp hay lô bị HOLD", "No direct or lineage HOLDs detected")
+                      text(
+                        "Không phát hiện HOLD trực tiếp hay lô bị HOLD",
+                        "No direct or lineage HOLDs detected",
+                      )
                     )}
                   </p>
                 </div>
               </div>
+
+              {!!record.holds?.length && (
+                <section
+                  aria-label={text(
+                    "Chi tiết lệnh HOLD trên container",
+                    "Container HOLD details",
+                  )}
+                  className="rounded-2xl border border-functional-hold-border bg-functional-hold-bg/40 p-4 space-y-2.5"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-accent-danger uppercase tracking-wider">
+                    <ShieldWarning size={16} aria-hidden="true" />
+                    <span>
+                      {text(
+                        `Lệnh HOLD trực tiếp trên container (${record.holds.length})`,
+                        `Direct container HOLD orders (${record.holds.length})`,
+                      )}
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs">
+                    {record.holds.map((hold) => (
+                      <li
+                        key={hold.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-functional-hold-border/50 bg-surface-base px-3 py-2 dark:bg-surface-raised"
+                      >
+                        <span className="font-medium text-ink-primary">
+                          {hold.reason}
+                        </span>
+                        <span className="font-mono text-[11px] text-ink-secondary">
+                          {new Date(hold.recordedAt).toLocaleString(
+                            text("vi-VN", "en-GB"),
+                          )}
+                          {hold.evidenceId
+                            ? ` · evidence ${hold.evidenceId}`
+                            : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               {/* Main Trace Overview & Action Toolbar Card */}
               <section className="record-card">
@@ -585,7 +735,10 @@ export function ContainerTracePage() {
                     </span>
                     <div className="min-w-0">
                       <h2 className="font-display text-base font-bold text-ink-primary">
-                        {text("Nguồn từ khối lượng thực xếp", "Sources from actual loading")}
+                        {text(
+                          "Nguồn từ khối lượng thực xếp",
+                          "Sources from actual loading",
+                        )}
                       </h2>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
                         {record.traceId && (
@@ -595,7 +748,8 @@ export function ContainerTracePage() {
                         )}
                         {record.asOf && (
                           <span>
-                            {text("Tại thời điểm:", "As of:")} {new Date(record.asOf).toLocaleString()}
+                            {text("Tại thời điểm:", "As of:")}{" "}
+                            {new Date(record.asOf).toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -606,7 +760,10 @@ export function ContainerTracePage() {
                     {flowLayout && (
                       <div
                         role="tablist"
-                        aria-label={text("Chế độ hiển thị truy vết", "Trace display mode")}
+                        aria-label={text(
+                          "Chế độ hiển thị truy vết",
+                          "Trace display mode",
+                        )}
                         className="inline-flex rounded-full border border-ink-tertiary/20 bg-surface-raised p-1 dark:bg-surface-overlay"
                       >
                         <button
@@ -646,7 +803,11 @@ export function ContainerTracePage() {
                         onClick={() => setHoldModalOpen(true)}
                         className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-accent-danger px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-accent-danger/90"
                       >
-                        <ShieldWarning size={15} weight="fill" aria-hidden="true" />
+                        <ShieldWarning
+                          size={15}
+                          weight="fill"
+                          aria-hidden="true"
+                        />
                         <span>
                           {text(
                             "Đặt HOLD kèm chứng cứ",
@@ -702,7 +863,9 @@ export function ContainerTracePage() {
                                 ...plot.varieties,
                               ].join(" · ") || "—"}
                             </td>
-                            <td className="font-mono text-xs">{plot.sourceLotIds.length}</td>
+                            <td className="font-mono text-xs">
+                              {plot.sourceLotIds.length}
+                            </td>
                             <td className="font-mono text-xs font-semibold text-ink-primary">
                               {plot.totalKg}
                             </td>
@@ -731,15 +894,24 @@ export function ContainerTracePage() {
                       ]}
                     >
                       {record.sourceContributions.map((source) => {
-                        const isOpen = expandedSourceLotId === source.sourceLotId;
+                        const sourceRecordId =
+                          source.provenance?.sourceRecordId;
+                        const isOpen =
+                          Boolean(sourceRecordId) &&
+                          expandedSourceLotId === sourceRecordId;
                         return (
                           <tr key={source.sourceLotId}>
                             <td className="font-mono text-xs font-semibold text-ink-primary">
-                              {lots.get(source.sourceLotId) || source.sourceLotId}
+                              {lots.get(source.sourceLotId) ||
+                                source.sourceLotId}
                             </td>
-                            <td className="font-mono text-xs">{source.quantityKg}</td>
+                            <td className="font-mono text-xs">
+                              {source.quantityKg}
+                            </td>
                             <td className="font-mono text-xs font-semibold text-accent-primary">
-                              {source.percentage ? `${source.percentage}%` : "—"}
+                              {source.percentage
+                                ? `${source.percentage}%`
+                                : "—"}
                             </td>
                             <td className="text-xs text-ink-secondary">
                               {[
@@ -754,38 +926,70 @@ export function ContainerTracePage() {
                                 "—"}
                             </td>
                             <td>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setExpandedSourceLotId(
-                                    isOpen ? null : source.sourceLotId,
-                                  )
-                                }
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                                  isOpen
-                                    ? "border-accent-primary bg-accent-primary text-white"
-                                    : "border-ink-tertiary/20 bg-surface-raised text-accent-primary hover:border-accent-primary/40 hover:bg-surface-overlay"
-                                }`}
-                              >
-                                <Flask size={13} aria-hidden="true" />
-                                <span>
-                                  {isOpen
-                                    ? text("Ẩn chứng cứ", "Hide evidence")
-                                    : text("Mẫu & kết quả lab", "Samples & lab")}
+                              {sourceRecordId &&
+                              useAuthStore
+                                .getState()
+                                .user?.permissions.some((p) =>
+                                  [
+                                    "purchases.write",
+                                    "farms.read",
+                                    "lab.read",
+                                    "lab.write",
+                                  ].includes(p),
+                                ) ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedSourceLotId(
+                                      isOpen ? null : sourceRecordId,
+                                    )
+                                  }
+                                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                                    isOpen
+                                      ? "border-accent-primary bg-accent-primary text-white"
+                                      : "border-ink-tertiary/20 bg-surface-raised text-accent-primary hover:border-accent-primary/40 hover:bg-surface-overlay"
+                                  }`}
+                                >
+                                  <Flask size={13} aria-hidden="true" />
+                                  <span>
+                                    {isOpen
+                                      ? text("Ẩn chứng cứ", "Hide evidence")
+                                      : text(
+                                          "Mẫu & kết quả lab",
+                                          "Samples & lab",
+                                        )}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span className="text-xs text-ink-tertiary">
+                                  —
                                 </span>
-                              </button>
+                              )}
                             </td>
                           </tr>
                         );
                       })}
                     </ExportTable>
 
-                    {expandedSourceLotId && (
-                      <TraceSourceEvidence
-                        sourceLotId={expandedSourceLotId}
-                        sourceLotCode={lots.get(expandedSourceLotId)}
-                      />
-                    )}
+                    {expandedSourceLotId &&
+                      (() => {
+                        const activeSource = record.sourceContributions.find(
+                          (s) =>
+                            s.provenance?.sourceRecordId ===
+                            expandedSourceLotId,
+                        );
+                        return (
+                          <TraceSourceEvidence
+                            sourceLotId={expandedSourceLotId}
+                            sourceLotCode={
+                              (activeSource &&
+                                lots.get(activeSource.sourceLotId)) ??
+                              activeSource?.provenance?.procurementCode ??
+                              undefined
+                            }
+                          />
+                        );
+                      })()}
                   </div>
                 </div>
               </section>
@@ -804,13 +1008,17 @@ export function ContainerTracePage() {
                   edges={record.graph.loadingEdges}
                   names={lots}
                   locations={locationNames}
-                  containers={[
-                    {
-                      containerId,
-                      code: input || containerId,
-                      linkedLoadedKg: record.loadedKg,
-                    },
-                  ]}
+                  containers={
+                    record.graph.actualContainers?.length
+                      ? record.graph.actualContainers
+                      : [
+                          {
+                            containerId,
+                            code: input || containerId,
+                            linkedLoadedKg: record.loadedKg,
+                          },
+                        ]
+                  }
                 />
               )}
 
@@ -850,7 +1058,10 @@ export function ContainerTracePage() {
                     <div className="flex items-center gap-2 text-xs text-ink-secondary">
                       <button
                         type="button"
-                        aria-label={text("Trang trước lô tổ tiên", "Previous ancestry lots page")}
+                        aria-label={text(
+                          "Trang trước lô tổ tiên",
+                          "Previous ancestry lots page",
+                        )}
                         disabled={currentLotsPage <= 1}
                         onClick={() => setAncestryLotsPage(currentLotsPage - 1)}
                         className="inline-flex min-h-9 items-center gap-1 rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-1 font-semibold text-ink-primary transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-overlay"
@@ -863,7 +1074,10 @@ export function ContainerTracePage() {
                       </span>
                       <button
                         type="button"
-                        aria-label={text("Trang sau lô tổ tiên", "Next ancestry lots page")}
+                        aria-label={text(
+                          "Trang sau lô tổ tiên",
+                          "Next ancestry lots page",
+                        )}
                         disabled={currentLotsPage >= ancestryLotsTotalPages}
                         onClick={() => setAncestryLotsPage(currentLotsPage + 1)}
                         className="inline-flex min-h-9 items-center gap-1 rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-1 font-semibold text-ink-primary transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-overlay"
@@ -884,15 +1098,42 @@ export function ContainerTracePage() {
                         text("Mã lô", "Lot code"),
                         text("Công đoạn", "Stage"),
                         text("Sản lượng (kg)", "Produced (kg)"),
-                        text("Tồn / Khả dụng (kg)", "Physical / Available (kg)"),
+                        text(
+                          "Tồn / Khả dụng (kg)",
+                          "Physical / Available (kg)",
+                        ),
                         text("Trạng thái HOLD", "HOLD status"),
                       ]}
                     >
                       {visibleAncestryLots.map((lot) => {
                         const held =
                           Boolean(lot.restrictions?.length) ||
+                          Boolean(lot.directHold) ||
+                          Boolean(lot.effectiveHold) ||
                           Boolean(lot.directHoldIds?.length) ||
                           Boolean(lot.effectiveHoldIds?.length);
+                        const physicalKg =
+                          lot.quantityKg ??
+                          (lot.positions?.length
+                            ? lot.positions
+                                .reduce(
+                                  (sum, p) =>
+                                    sum.plus(new Decimal(p.quantityKg || "0")),
+                                  new Decimal(0),
+                                )
+                                .toString()
+                            : undefined);
+                        const availKg =
+                          lot.availableKg ??
+                          (lot.positions?.some((p) => p.availableKg != null)
+                            ? lot.positions
+                                .reduce(
+                                  (sum, p) =>
+                                    sum.plus(new Decimal(p.availableKg || "0")),
+                                  new Decimal(0),
+                                )
+                                .toString()
+                            : undefined);
                         return (
                           <tr key={lot.id}>
                             <th
@@ -908,9 +1149,11 @@ export function ContainerTracePage() {
                               </button>
                             </th>
                             <td className="text-xs">{lot.stage ?? "—"}</td>
-                            <td className="font-mono text-xs">{lot.producedKg}</td>
                             <td className="font-mono text-xs">
-                              {lot.quantityKg ?? "—"} / {lot.availableKg ?? "—"}
+                              {lot.producedKg}
+                            </td>
+                            <td className="font-mono text-xs">
+                              {physicalKg ?? "—"} / {availKg ?? "—"}
                             </td>
                             <td>
                               {held ? (
@@ -921,7 +1164,10 @@ export function ContainerTracePage() {
                                       lot.restrictions?.join(", ") ||
                                       (lot.directHoldIds?.length
                                         ? text("HOLD trực tiếp", "Direct HOLD")
-                                        : text("HOLD kế thừa", "Inherited HOLD"))
+                                        : text(
+                                            "HOLD kế thừa",
+                                            "Inherited HOLD",
+                                          ))
                                     }
                                     size="sm"
                                   />
@@ -933,7 +1179,9 @@ export function ContainerTracePage() {
                                   </Link>
                                 </div>
                               ) : (
-                                <span className="text-xs text-ink-tertiary">—</span>
+                                <span className="text-xs text-ink-tertiary">
+                                  —
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -970,9 +1218,14 @@ export function ContainerTracePage() {
                     <div className="flex items-center gap-2 text-xs text-ink-secondary">
                       <button
                         type="button"
-                        aria-label={text("Trang trước liên kết vật tư", "Previous material edges page")}
+                        aria-label={text(
+                          "Trang trước liên kết vật tư",
+                          "Previous material edges page",
+                        )}
                         disabled={currentEdgesPage <= 1}
-                        onClick={() => setAncestryEdgesPage(currentEdgesPage - 1)}
+                        onClick={() =>
+                          setAncestryEdgesPage(currentEdgesPage - 1)
+                        }
                         className="inline-flex min-h-9 items-center gap-1 rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-1 font-semibold text-ink-primary transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-overlay"
                       >
                         <CaretLeft size={13} aria-hidden="true" />
@@ -983,9 +1236,14 @@ export function ContainerTracePage() {
                       </span>
                       <button
                         type="button"
-                        aria-label={text("Trang sau liên kết vật tư", "Next material edges page")}
+                        aria-label={text(
+                          "Trang sau liên kết vật tư",
+                          "Next material edges page",
+                        )}
                         disabled={currentEdgesPage >= ancestryEdgesTotalPages}
-                        onClick={() => setAncestryEdgesPage(currentEdgesPage + 1)}
+                        onClick={() =>
+                          setAncestryEdgesPage(currentEdgesPage + 1)
+                        }
                         className="inline-flex min-h-9 items-center gap-1 rounded-full border border-ink-tertiary/20 bg-surface-base px-3 py-1 font-semibold text-ink-primary transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-overlay"
                       >
                         <span>{text("Sau", "Next")}</span>
@@ -1017,13 +1275,15 @@ export function ContainerTracePage() {
                           </td>
                           <td className="text-xs">
                             <span className="inline-flex items-center rounded-md border border-ink-tertiary/20 bg-surface-raised px-2 py-0.5 text-[11px] font-semibold text-ink-secondary dark:bg-surface-overlay">
-                              {traceRelationLabel(edge.kind, locale)}
+                              {traceRelationLabel(edge.relationType ?? edge.kind, locale)}
                             </span>
                           </td>
                           <td className="font-mono text-xs font-semibold text-accent-primary">
                             {lots.get(edge.outputLotId) || edge.outputLotId}
                           </td>
-                          <td className="font-mono text-xs">{edge.inputConsumedKg}</td>
+                          <td className="font-mono text-xs">
+                            {edge.inputConsumedKg}
+                          </td>
                           <td className="font-mono text-xs">
                             {edge.outputProducedKg || "—"}
                           </td>

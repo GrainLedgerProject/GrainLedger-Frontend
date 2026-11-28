@@ -69,18 +69,22 @@ export function ActualLoading({
           const proposals = Array.from(
             new Set(edge.lines.map((line) => line.proposalId).filter(Boolean)),
           );
-          const tracedContributionKg = tracedLotId
-            ? edge.lines
-                .reduce((acc, line) => {
-                  const matched =
-                    line.sourceContributions?.find(
-                      (s) => s.sourceLotId === tracedLotId,
-                    )?.quantityKg ?? "0";
-                  return acc.plus(matched);
-                }, new Decimal(0))
-                .toDecimalPlaces(6)
-                .toFixed()
-            : null;
+          const hasSourceContributions = edge.lines.some((line) =>
+            Boolean(line.sourceContributions?.length),
+          );
+          const tracedContributionKg =
+            tracedLotId && hasSourceContributions
+              ? edge.lines
+                  .reduce((acc, line) => {
+                    const matched =
+                      line.sourceContributions?.find(
+                        (s) => s.sourceLotId === tracedLotId,
+                      )?.quantityKg ?? "0";
+                    return acc.plus(matched);
+                  }, new Decimal(0))
+                  .toDecimalPlaces(6)
+                  .toFixed()
+              : null;
           const totalLineLoadedKg = edge.lines
             .reduce((acc, line) => acc.plus(line.quantityKg || "0"), new Decimal(0))
             .toDecimalPlaces(6)

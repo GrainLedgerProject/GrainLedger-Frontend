@@ -184,7 +184,7 @@ export async function apiFetch<T>(
     headers,
   };
 
-  const url = useCookie ? endpoint : getApiUrl(endpoint);
+  const url = getApiUrl(endpoint);
 
   let response: Response;
   try {
@@ -220,29 +220,34 @@ export async function apiFetch<T>(
       const newAccessToken = current.accessToken && current.accessToken !== accessToken
         ? current.accessToken
         : await requestTokenRefresh();
-      assertSameSession(session);
 
-      if (newAccessToken) {
-        // Retry original request with fresh access token and credentials
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-        try {
-          response = await fetch(url, {
-            ...requestOptions,
-            headers,
-            credentials: "include",
-          });
-        } catch (retryErr) {
-          if (options.signal?.aborted) throw retryErr;
-          logger.warn(`Retry failed after token refresh on ${url}:`, retryErr);
-          throw new ApiError(
-            0,
-            "Lỗi kết nối khi gửi lại yêu cầu sau khi cấp mới token.",
-          );
+      if (!newAccessToken) {
+        const after = apiSession.read();
+        if (after.ownerKey && after.ownerKey !== session.ownerKey) {
+          assertSameSession(session);
         }
-      } else {
         throw new ApiError(
           401,
           "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+        );
+      }
+
+      assertSameSession(session);
+
+      // Retry original request with fresh access token and credentials
+      headers.set("Authorization", `Bearer ${newAccessToken}`);
+      try {
+        response = await fetch(url, {
+          ...requestOptions,
+          headers,
+          credentials: "include",
+        });
+      } catch (retryErr) {
+        if (options.signal?.aborted) throw retryErr;
+        logger.warn(`Retry failed after token refresh on ${url}:`, retryErr);
+        throw new ApiError(
+          0,
+          "Lỗi kết nối khi gửi lại yêu cầu sau khi cấp mới token.",
         );
       }
     } else if (isMock) {

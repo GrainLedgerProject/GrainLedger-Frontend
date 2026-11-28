@@ -5,24 +5,34 @@ import { useAuthStore } from "@/app/store/authStore";
 import { useUiStore } from "@/app/store/uiStore";
 import { Sun, Moon, Globe, ArrowRight } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
-const navItems = [
-  { id: "problem", label: "Thách thức" },
-  { id: "tech", label: "Hệ thống lõi" },
-  { id: "comparison", label: "Đối chiếu" },
-  { id: "simulators", label: "Mô phỏng" },
-  { id: "ecosystem", label: "Hệ sinh thái" },
+const navSectionIds = [
+  "problem",
+  "tech",
+  "comparison",
+  "simulators",
+  "ecosystem",
 ] as const;
 
-type SectionId = (typeof navItems)[number]["id"];
+type SectionId = (typeof navSectionIds)[number];
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
+  const text = useWorkflowText();
   const { isAuthenticated } = useAuthStore();
   const { theme, toggleTheme, language, setLanguage } = useUiStore();
   const headerRef = useRef<HTMLElement>(null);
   const [activeSection, setActiveSection] = useState<SectionId | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const navItems: { id: SectionId; label: string }[] = [
+    { id: "problem", label: text("Thách thức", "Challenges") },
+    { id: "tech", label: text("Hệ thống lõi", "Core System") },
+    { id: "comparison", label: text("Đối chiếu", "Comparison") },
+    { id: "simulators", label: text("Mô phỏng", "Simulators") },
+    { id: "ecosystem", label: text("Hệ sinh thái", "Ecosystem") },
+  ];
 
   useEffect(() => {
     function updateActiveSection() {
@@ -35,7 +45,7 @@ export const Navbar: React.FC = () => {
       let currentSection: SectionId | null = null;
       let lastSection: SectionId | null = null;
 
-      for (const { id } of navItems) {
+      for (const id of navSectionIds) {
         const section = document.getElementById(id);
         if (!section) continue;
 
@@ -135,7 +145,7 @@ export const Navbar: React.FC = () => {
             >
               <span>
                 {isAuthenticated
-                  ? "Vào Home"
+                  ? text("Vào Home", "Go to Home")
                   : t("landing.ctaSignIn", "Đăng nhập")}
               </span>
               <ArrowRight size={13} weight="bold" />

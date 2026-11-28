@@ -198,10 +198,8 @@ describe("ProcurementDetailPages", () => {
     );
     expect(await stockDialog.findByText("Silo A1")).toBeTruthy();
     expect(
-      stockDialog
-        .getByRole("link", { name: /Mở Tồn kho sổ cái/ })
-        .getAttribute("href"),
-    ).toBe("/stock/lots/stock-lot-1");
+      stockDialog.queryByRole("link", { name: /Mở Tồn kho sổ cái/ }),
+    ).toBeNull();
     fireEvent.click(stockDialog.getAllByRole("button", { name: "Đóng" })[0]);
     expect(screen.queryByRole("dialog", { name: "STK-001" })).toBeNull();
 

@@ -14,6 +14,9 @@ const safetyMarginPolicyPage = lazyScreen(() =>
 const residueProfilesPage = lazyScreen(() =>
   import("./pages/ResidueProfilesPage").then(module => ({ default: module.ResidueProfilesPage })),
 );
+const residueRiskPage = lazyScreen(() =>
+  import("./pages/ResidueRiskPage").then(module => ({ default: module.ResidueRiskPage })),
+);
 const companyResiduePoliciesPage = lazyScreen(() =>
   import("./pages/CompanyResiduePoliciesPage").then(module => ({ default: module.CompanyResiduePoliciesPage })),
 );
@@ -51,6 +54,9 @@ export const complianceRoutes = [
       "residue.evaluate",
       "residue.evidence.manage",
     ],
+  }),
+  screenRoute(compliancePaths.residueRisk, residueRiskPage, {
+    roles: ["CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
   }),
   screenRoute(compliancePaths.residueEvidence, lazyScreen(() => import("./pages/ResidueEvidencePage").then(module => ({ default: module.ResidueEvidencePage }))), { roles: ["CUSTOMER_MANAGER"], permission: "residue.evidence.manage" }),
   screenRoute(compliancePaths.companyPolicies, companyResiduePoliciesPage, {

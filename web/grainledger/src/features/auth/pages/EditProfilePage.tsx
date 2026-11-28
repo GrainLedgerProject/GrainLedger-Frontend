@@ -46,7 +46,7 @@ export const EditProfilePage: React.FC = () => {
       variant: "danger",
     })) signOutAll.mutate();
   };
-  const { user, updateProfile } = useAuthStore();
+  const { user, setUser, updateProfile } = useAuthStore();
   const { language, setLanguage } = useUiStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,15 +84,15 @@ export const EditProfilePage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await authApi.updateProfile({
+      const updatedUser = await authApi.updateProfile({
         displayName: values.displayName,
         phoneNumber: values.phoneNumber,
       });
 
-      // Optimistic state update in Zustand
+      setUser(updatedUser);
       updateProfile({
-        displayName: values.displayName,
-        phoneNumber: values.phoneNumber,
+        displayName: updatedUser.displayName,
+        phoneNumber: updatedUser.phoneNumber,
       });
 
       // Apply language change
@@ -263,7 +263,13 @@ export const EditProfilePage: React.FC = () => {
                   {t("settings.assignedRoles", "Vai trò nghiệp vụ:")}
                 </span>
                 <div className="mt-1">
-                  {user && <RoleChip role={user.role} size="sm" showCode />}
+                  {user && user.hasAssignedRole !== false && user.role ? (
+                    <RoleChip role={user.role} size="sm" showCode />
+                  ) : user ? (
+                    <span className="inline-flex items-center rounded-full bg-functional-hold-bg px-2.5 py-1 text-xs font-medium text-accent-warning">
+                      {t("header.pendingAccess", "Chờ cấp quyền")}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -293,8 +299,9 @@ export const EditProfilePage: React.FC = () => {
                   <div className="flex items-center gap-1.5 font-medium text-ink-primary mt-0.5">
                     <Factory size={14} className="text-accent-primary" />
                     <span>
-                      {user.assignedFacilities?.join(", ") ||
-                        "Cụm Silo & Dây chuyền A - Tiền Giang"}
+                      {user.assignedFacilities?.length
+                        ? user.assignedFacilities.join(", ")
+                        : text("Chưa gán cơ sở cụ thể", "No assigned facility")}
                     </span>
                   </div>
                 </div>

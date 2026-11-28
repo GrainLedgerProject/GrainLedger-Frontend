@@ -1,4 +1,3 @@
-import { landingPaths } from "@/features/landing/paths";
 import { auditPaths } from "@/features/audit/paths";
 import { adminPaths } from "@/features/admin/paths";
 import { fieldPaths } from "@/features/field/paths";
@@ -488,7 +487,7 @@ export function getChart(
       }
     }
     return [...grouped].map(([label, value]) => ({
-      label: label.slice(8) + landingPaths.landing + label.slice(5, 7),
+      label: label.slice(8) + "/" + label.slice(5, 7),
       value: value.toString(),
       mass: true,
       tone: "primary",

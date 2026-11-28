@@ -6,7 +6,6 @@ import { LabReportEditor } from "../components/LabReportEditor";
 import { DeleteLabReportDialog, LabReportConfirmation } from "../components/LabReportDraftActions";
 import { compliancePaths, labResultPath } from "../paths";
 import { fieldPaths, sourceLotPath } from "@/features/field/paths";
-import { millPaths } from "@/features/mill/paths";
 import { riskPaths } from "@/features/risk/paths";
 import {
   labReportEndpoints,
@@ -831,12 +830,11 @@ export const MrlComplianceCheckPage: React.FC = () => {
                 <div className="space-y-3">
                   {selectedReport.resultSets && selectedReport.resultSets.length > 0 ? (
                     selectedReport.resultSets.map((rs, rsIdx) => {
+                      const sampleId = rs.confirmedSampleId ?? rs.sampleId ?? "";
                       const sampleTargetPath = canReadFarms
-                        ? `${fieldPaths.samples}?sampleId=${encodeURIComponent(rs.confirmedSampleId ?? rs.sampleId ?? "")}`
-                        : compliancePaths.samples;
-                      const sourceLotTargetPath = canReadFarms
-                        ? sourceLotPath(rs.sourceLotId ?? "")
-                        : millPaths.lot.replace(":lotId", encodeURIComponent(rs.sourceLotId ?? ""));
+                        ? `${fieldPaths.samples}?sampleId=${encodeURIComponent(sampleId)}`
+                        : `${compliancePaths.samples}?sampleId=${encodeURIComponent(sampleId)}`;
+                      const sourceLotTargetPath = sourceLotPath(rs.sourceLotId ?? "");
                       return (
                         <div
                           key={rs.id || rsIdx}
@@ -948,6 +946,52 @@ export const MrlComplianceCheckPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {selectedReport.replacementReportId && (
+                  <div className="mt-3 p-3 rounded-xl border border-functional-hold-border bg-functional-hold-bg/50 text-xs flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold text-ink-primary">
+                      Báo cáo thay thế cho chứng thư này:
+                    </span>
+                    <Link
+                      to={labResultPath(selectedReport.replacementReportId)}
+                      onClick={() => setSelectedReport(null)}
+                      className="font-mono font-bold text-accent-primary underline"
+                    >
+                      {selectedReport.replacementReportId}
+                    </Link>
+                  </div>
+                )}
+
+                {selectedReport.residueBindings &&
+                  selectedReport.residueBindings.length > 0 && (
+                    <div className="mt-3 p-3.5 rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 space-y-2 text-xs">
+                      <div className="font-bold text-ink-primary">
+                        Liên kết quy tắc dư lượng sau xác nhận ({selectedReport.residueBindings.length})
+                      </div>
+                      <ul className="space-y-1.5">
+                        {selectedReport.residueBindings.map((binding) => (
+                          <li
+                            key={`${binding.resultId}-${binding.sourceId}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-tertiary/15 bg-surface-base px-2.5 py-1.5"
+                          >
+                            <span className="font-mono text-[11px] text-ink-primary">
+                              Result: {binding.resultId.slice(0, 8)}… · Source:{" "}
+                              {binding.sourceId.slice(0, 8)}…
+                            </span>
+                            <StatusBadge
+                              status={binding.published ? "ACTIVE" : "PENDING"}
+                              size="sm"
+                              label={
+                                binding.published
+                                  ? "Đã áp dụng quy tắc"
+                                  : binding.reasons?.join(", ") || "Chưa áp dụng"
+                              }
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                 {selectedReport.relatedReports && selectedReport.relatedReports.length > 0 && (
                   <div className="mt-3 p-3.5 rounded-xl border border-ink-tertiary/15 bg-surface-raised/50 space-y-1.5 text-xs">

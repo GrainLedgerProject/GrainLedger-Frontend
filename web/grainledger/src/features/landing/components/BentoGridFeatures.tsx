@@ -1,42 +1,56 @@
 import React from "react";
 import { Scales, ShieldCheck, MapPin, Crosshair } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
 export const BentoGridFeatures: React.FC = () => {
+  const text = useWorkflowText();
   const shouldReduceMotion = useReducedMotion();
 
   const pillars = [
     {
       icon: Scales,
-      title: "Sổ cái Cân bằng Khối lượng",
-      desc: "Áp dụng mô hình Mass Balance ISO 22095. Tổng đầu ra cộng hao hụt phải bằng tổng đầu vào trong phạm vi dung sai (0,5%). Mọi vi phạm bị từ chối ở tầng dữ liệu.",
+      title: text("Sổ cái Cân bằng Khối lượng", "Mass-Balance Custody Ledger"),
+      desc: text(
+        "Áp dụng mô hình Mass Balance ISO 22095. Tổng đầu ra cộng hao hụt phải bằng tổng đầu vào trong phạm vi dung sai (0,5%). Mọi vi phạm bị từ chối ở tầng dữ liệu.",
+        "Built on ISO 22095 Mass Balance. Outputs plus declared loss must equal inputs within 0.5% tolerance; violations are rejected at data level.",
+      ),
       color: "text-accent-primary",
       bgGlow: "from-emerald-500/10 to-transparent",
-      tag: "Bất biến",
+      tag: text("Bất biến", "Immutable"),
     },
     {
       icon: ShieldCheck,
-      title: "Động cơ Dư lượng MRL",
-      desc: "Tự động gán cận bảo thủ 95% cho các lô chưa xét nghiệm, áp dụng hệ số chế biến phân đoạn (gạo nguyên, tấm, cám) và trừ biên an toàn 20% khi duyệt phương án.",
+      title: text("Động cơ Dư lượng MRL", "MRL Residue Engine"),
+      desc: text(
+        "Tự động gán cận bảo thủ 95% cho các lô chưa xét nghiệm, áp dụng hệ số chế biến phân đoạn (gạo nguyên, tấm, cám) và trừ biên an toàn 20% khi duyệt phương án.",
+        "Assigns conservative 95th-percentile bounds to untested lots, applies fractional processing factors, and enforces a 20% safety margin.",
+      ),
       color: "text-accent-info",
       bgGlow: "from-blue-500/10 to-transparent",
-      tag: "Toán học",
+      tag: text("Toán học", "Deterministic"),
     },
     {
       icon: MapPin,
-      title: "Thu mua Ngoại tuyến Hiện trường",
-      desc: "Ứng dụng web hoạt động hoàn hảo khi mất mạng tại bờ ruộng. Ghi toạ độ thửa đất, khai báo phun thuốc và đồng bộ chống trùng lặp (Idempotent) khi có sóng.",
+      title: text("Thu mua Ngoại tuyến Hiện trường", "Offline Field Procurement"),
+      desc: text(
+        "Ứng dụng web hoạt động hoàn hảo khi mất mạng tại bờ ruộng. Ghi toạ độ thửa đất, khai báo phun thuốc và đồng bộ chống trùng lặp (Idempotent) khi có sóng.",
+        "Works seamlessly offline at the field edge. Captures GPS plots, spray declarations, and syncs idempotently once back online.",
+      ),
       color: "text-accent-warning",
       bgGlow: "from-amber-500/10 to-transparent",
       tag: "Offline-First",
     },
     {
       icon: Crosshair,
-      title: "Truy vết & Khóa HOLD",
-      desc: "Ban hành lệnh HOLD tức thì để ngăn chặn xuất xưởng khi phát hiện nguy cơ. Truy vết đồ thị hai chiều và sinh Hồ sơ tuân thủ (Digital Dossier) tự động.",
+      title: text("Truy vết & Khóa HOLD", "Traceability & HOLD Isolation"),
+      desc: text(
+        "Ban hành lệnh HOLD tức thì để ngăn chặn xuất xưởng khi phát hiện nguy cơ. Truy vết đồ thị hai chiều và sinh Hồ sơ tuân thủ (Digital Dossier) tự động.",
+        "Issues instant HOLD freezes to block shipments when risks arise, traces graphs bidirectionally, and builds Digital Compliance Dossiers.",
+      ),
       color: "text-accent-danger",
       bgGlow: "from-red-500/10 to-transparent",
-      tag: "Cô lập rủi ro",
+      tag: text("Cô lập rủi ro", "Risk Isolation"),
     },
   ];
 
@@ -45,14 +59,16 @@ export const BentoGridFeatures: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-20 space-y-3">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-accent-primary">
-            Công nghệ độc quyền
+            {text("Công nghệ độc quyền", "Core Architecture")}
           </span>
           <h2 className="font-sans text-3xl sm:text-5xl font-extrabold tracking-[-0.03em] text-ink-primary">
-            Cách GrainLedger giải quyết bài toán
+            {text("Cách GrainLedger giải quyết bài toán", "How GrainLedger solves it")}
           </h2>
           <p className="text-base text-ink-secondary text-ink-tertiary">
-            Nền tảng số hoá khép kín từ mảnh ruộng của nông dân đến hồ sơ hải
-            quan của container xuất khẩu.
+            {text(
+              "Nền tảng số hoá khép kín từ mảnh ruộng của nông dân đến hồ sơ hải quan của container xuất khẩu.",
+              "End-to-end digital custody from farmer paddy fields to export container customs dossiers.",
+            )}
           </p>
         </div>
 

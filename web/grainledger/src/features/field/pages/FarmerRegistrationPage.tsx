@@ -52,6 +52,8 @@ interface FarmerRecord {
   version?: number;
   totalPlots?: number;
   totalAreaHa?: number;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 interface FarmerPlotSummary {
@@ -132,7 +134,7 @@ export const FarmerRegistrationPage: React.FC = () => {
         setFarmers(items as FarmerRecord[]);
         setTotalCount(total);
         setHasMore(more);
-        if (items.length > 0) {
+        if (!searchQuery && page === 1 && !more && items.length > 0) {
           void saveCachedFarmers(items as CachedFarmer[], false);
         }
       }
@@ -186,7 +188,7 @@ export const FarmerRegistrationPage: React.FC = () => {
           setFarmers(items as FarmerRecord[]);
           setTotalCount(total);
           setHasMore(more);
-          if (items.length > 0) {
+          if (!searchQuery && page === 1 && !more && items.length > 0) {
             void saveCachedFarmers(items as CachedFarmer[], false);
           }
         }
@@ -623,16 +625,29 @@ export const FarmerRegistrationPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <span className="inline-flex items-center gap-1 font-mono text-xs">
                         <MapPin size={13} className="text-accent-primary" />
-                        <a
-                          className="underline underline-offset-2"
-                          href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}
-                        >
-                          {farmer.totalPlots == null
-                            ? text("Xem thửa ruộng", "View plots")
-                            : t("field.farmer.plotsUnit", "{{count}} thửa", {
-                                count: farmer.totalPlots,
-                              })}
-                        </a>
+                        {inRouter ? (
+                          <Link
+                            className="underline underline-offset-2"
+                            to={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}
+                          >
+                            {farmer.totalPlots == null
+                              ? text("Xem thửa ruộng", "View plots")
+                              : t("field.farmer.plotsUnit", "{{count}} thửa", {
+                                  count: farmer.totalPlots,
+                                })}
+                          </Link>
+                        ) : (
+                          <a
+                            className="underline underline-offset-2"
+                            href={`${fieldPaths.plots}?farmerId=${encodeURIComponent(farmer.id)}`}
+                          >
+                            {farmer.totalPlots == null
+                              ? text("Xem thửa ruộng", "View plots")
+                              : t("field.farmer.plotsUnit", "{{count}} thửa", {
+                                  count: farmer.totalPlots,
+                                })}
+                          </a>
+                        )}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -652,28 +667,32 @@ export const FarmerRegistrationPage: React.FC = () => {
                       </button>
                       {canWrite && (
                         <>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(farmer)}
-                            className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
-                            title={t(
-                              "field.farmer.editFarmer",
-                              "Chỉnh sửa nông hộ",
-                            )}
-                          >
-                            <PencilSimple size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(farmer)}
-                            className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
-                            title={t(
-                              "field.farmer.deleteFarmer",
-                              "Xoá nông hộ",
-                            )}
-                          >
-                            <Trash size={15} />
-                          </button>
+                          {farmer.canEdit !== false && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(farmer)}
+                              className="p-1.5 rounded hover:bg-surface-overlay text-ink-secondary hover:text-ink-primary transition-colors"
+                              title={t(
+                                "field.farmer.editFarmer",
+                                "Chỉnh sửa nông hộ",
+                              )}
+                            >
+                              <PencilSimple size={15} />
+                            </button>
+                          )}
+                          {farmer.canDelete !== false && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(farmer)}
+                              className="p-1.5 rounded hover:bg-accent-danger/10 text-accent-danger transition-colors"
+                              title={t(
+                                "field.farmer.deleteFarmer",
+                                "Xoá nông hộ",
+                              )}
+                            >
+                              <Trash size={15} />
+                            </button>
+                          )}
                         </>
                       )}
                     </td>

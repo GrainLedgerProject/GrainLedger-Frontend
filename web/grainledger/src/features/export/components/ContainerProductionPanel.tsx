@@ -157,7 +157,7 @@ export function ContainerProductionPanel({
         ["NOT_REQUESTED", "APPROVAL_CHANGED"].includes(
           production.data?.state ?? "",
         ) &&
-        c.status === "PLANNED" &&
+        (c.status === "PLANNED" || c.status === "LOADING") &&
         c.approval &&
         c.holds.length === 0 && (
           <div className="flex justify-end pt-1">

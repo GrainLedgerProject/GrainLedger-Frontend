@@ -35,12 +35,18 @@ export function FacilityAssignments() {
   });
   const operation = useMutation({
     mutationFn: (command: () => Promise<unknown>) => command(),
+    onMutate: () => {
+      setMessage("");
+    },
     onSuccess: () => {
       setEditing(null);
       setMessage(
         text("Đã cập nhật phân công.", "Facility assignments updated."),
       );
       void client.invalidateQueries({ queryKey: setupKey });
+    },
+    onError: () => {
+      setMessage("");
     },
   });
   const staff =

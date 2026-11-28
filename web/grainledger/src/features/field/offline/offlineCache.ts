@@ -14,6 +14,7 @@ import {
 import { logger } from "@/shared/utils/logger";
 import { STORES, withStore } from "@/pwa/db";
 import { currentOfflineOwnerKey } from "@/app/store/sessionOwner";
+import { useAuthStore } from "@/app/store/authStore";
 
 export interface CachedFarmer {
   id: string;
@@ -226,11 +227,27 @@ export async function syncOfflineCache(): Promise<{ farmersCount: number; succes
       }
     };
 
+    const perms = useAuthStore.getState().user?.permissions ?? [];
+    const canReadFarms =
+      perms.includes("farms.read") || perms.includes("farms.write");
+    const canWritePurchases = perms.includes("purchases.write");
+    if (!canReadFarms && !canWritePurchases) {
+      return { farmersCount: 0, success: true };
+    }
+
     const [farmers, refRes, plotSeasonItems, plotItems] = await Promise.all([
-      fetchAllPages<CachedFarmer>((q) => procurementEndpoints.getFarmers(q)),
-      procurementEndpoints.getReferenceData(),
-      fetchAllPages<CachedPlotSeason>((q) => procurementEndpoints.getPlotSeasons(q)).catch(() => [] as CachedPlotSeason[]),
-      fetchAllPages<CachedPlot>((q) => procurementEndpoints.getPlots(q)).catch(() => [] as CachedPlot[]),
+      canReadFarms
+        ? fetchAllPages<CachedFarmer>((q) => procurementEndpoints.getFarmers(q))
+        : Promise.resolve([] as CachedFarmer[]),
+      canWritePurchases
+        ? procurementEndpoints.getReferenceData()
+        : Promise.resolve(null),
+      canReadFarms
+        ? fetchAllPages<CachedPlotSeason>((q) => procurementEndpoints.getPlotSeasons(q)).catch(() => [] as CachedPlotSeason[])
+        : Promise.resolve([] as CachedPlotSeason[]),
+      canReadFarms
+        ? fetchAllPages<CachedPlot>((q) => procurementEndpoints.getPlots(q)).catch(() => [] as CachedPlot[])
+        : Promise.resolve([] as CachedPlot[]),
     ]);
     if (currentOfflineOwnerKey() !== ownerKey) return { farmersCount: 0, success: false };
 

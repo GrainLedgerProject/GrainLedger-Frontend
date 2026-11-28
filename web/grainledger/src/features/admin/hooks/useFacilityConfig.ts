@@ -358,8 +358,16 @@ export function useFacilityConfig() {
   const handleConfirmClearance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clearanceTarget) return;
-    if (!clearanceReason.trim() || !clearanceEvidenceId.trim()) {
+    const trimmedReason = clearanceReason.trim();
+    const trimmedEvidenceId = clearanceEvidenceId.trim();
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!trimmedReason || !trimmedEvidenceId) {
       setClearanceError("Nhập lý do và mã biên bản nghiệm thu vệ sinh.");
+      return;
+    }
+    if (!uuidPattern.test(trimmedEvidenceId)) {
+      setClearanceError("Mã bằng chứng nghiệm thu (Evidence ID) phải là UUID hợp lệ.");
       return;
     }
 
@@ -367,8 +375,8 @@ export function useFacilityConfig() {
       setClearanceError("");
       setSubmittingClearance(true);
       await ledgerEndpoints.clearLocation(clearanceTarget.id, {
-        evidenceId: clearanceEvidenceId.trim(),
-        reason: clearanceReason.trim(),
+        evidenceId: trimmedEvidenceId,
+        reason: trimmedReason,
       });
       toast.success(
         `Đã xác nhận vệ sinh & giải phóng mặt bằng cho "${clearanceTarget.name}" thành công.`,

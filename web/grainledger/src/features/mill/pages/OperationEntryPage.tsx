@@ -5,8 +5,9 @@
  * @description Record drying, milling, physical blending or merge, bagging, or transfer of an unchanged lot between locations.
  * Validates mass balance conservation and double-spending prevention.
  */
+import { ApiError } from "@/api/client";
 import { ledgerEndpoints, type CorrectionOperation, type PolicyDto } from "@/api/ledger";
-import { pageItems } from "@/api/query";
+import { collectPages, pageItems, type ApiPage } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
 import { useDraftStore } from "@/app/store/draftStore";
 import { HoldBanner } from "@/features/risk/components/HoldBanner";
@@ -31,6 +32,15 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { millPaths } from "../paths";
 
+export interface LotPositionOption {
+  locationId: string;
+  locationName?: string;
+  facilityId?: string;
+  quantityKg?: string;
+  availableKg: string;
+  poolRevision?: string | number;
+}
+
 export interface LotOption {
   id: string;
   code: string;
@@ -38,11 +48,15 @@ export interface LotOption {
   commodityName?: string;
   commodityId?: string;
   productIdentity?: string;
+  riceVarietyId?: string | null;
+  riceVariety?: string | null;
+  varietyStatus?: string;
   poolRevision?: string | number;
   locationId?: string;
   locationName?: string;
   quantityKg: string;
   availableKg: string;
+  positions?: LotPositionOption[];
   isHold: boolean;
   holdReason?: string;
   restrictions?: string[];
@@ -66,6 +80,9 @@ interface RawLot {
   commodityId?: string;
   commodityName?: string;
   productIdentity?: string;
+  riceVarietyId?: string | null;
+  riceVariety?: string | null;
+  varietyStatus?: string;
   quantityKg?: string | number;
   currentMassKg?: string | number;
   availableKg?: string | number;
@@ -86,6 +103,7 @@ interface LookupItem {
   facilityId?: string;
   kind?: string;
   mixedBulk?: boolean;
+  cleared?: boolean;
   ownerId?: string | null;
 }
 
@@ -181,19 +199,44 @@ export const OperationEntryPage: React.FC = () => {
   const [blendCommodityId, setBlendCommodityId] = useState("");
   const attempt = useRef<{ fingerprint: string; body: object; id: string; draftSaved: boolean } | null>(null);
 
+  const [selectedPositionLocId, setSelectedPositionLocId] = useState<string>("");
+
   // Active chosen lot from fetched lots
-  const activeLot = useMemo(() => {
+  const rawActiveLot = useMemo(() => {
     return (
       lots.find(
         (l) => l.id === selectedInputLot || l.code === selectedInputLot,
       ) || lots[0]
     );
   }, [lots, selectedInputLot]);
+  const activePosition = useMemo(() => {
+    if (!rawActiveLot?.positions?.length) return null;
+    return (
+      rawActiveLot.positions.find(
+        (pos) => pos.locationId === selectedPositionLocId,
+      ) ?? rawActiveLot.positions[0]
+    );
+  }, [rawActiveLot, selectedPositionLocId]);
+  const activeLot = useMemo(() => {
+    if (!rawActiveLot) return undefined;
+    if (!activePosition) return rawActiveLot;
+    return {
+      ...rawActiveLot,
+      locationId: activePosition.locationId,
+      locationName: activePosition.locationName ?? rawActiveLot.locationName,
+      facilityId: activePosition.facilityId ?? rawActiveLot.facilityId,
+      availableKg: activePosition.availableKg,
+      poolRevision: activePosition.poolRevision,
+    };
+  }, [rawActiveLot, activePosition]);
   const equipment = reference.equipment?.filter(item => item.facilityId === activeLot?.facilityId) ?? [];
   const outputLocations = reference.locations?.filter(item => item.facilityId === activeLot?.facilityId &&
-    item.kind !== "ISOLATION" && (!item.ownerId || item.ownerId === activeLot?.ownerId)) ?? [];
+    item.kind !== "ISOLATION" &&
+    (item.kind !== "COMPARTMENT" || item.ownerId === activeLot?.ownerId || (!item.ownerId && item.cleared)) &&
+    (!item.ownerId || item.ownerId === activeLot?.ownerId)) ?? [];
   const compatibleCommodities = new Set(reference.compatibilities?.filter(item => item.facilityId === activeLot?.facilityId &&
-    Date.parse(item.effectiveFrom) <= referenceTime && activeLot?.productIdentity && item.inputProducts.includes(activeLot.productIdentity))
+    Date.parse(item.effectiveFrom) <= referenceTime && activeLot?.commodityId && activeLot?.productIdentity &&
+    item.inputProducts.includes(`${activeLot.commodityId}:${activeLot.productIdentity}`))
     .map(item => item.outputCommodityId));
   const blendCommodities = reference.commodities?.filter(item => compatibleCommodities.has(item.id)) ?? [];
   const policy = reference.policies?.filter(item => item.facilityId === activeLot?.facilityId &&
@@ -223,16 +266,17 @@ export const OperationEntryPage: React.FC = () => {
       setFetchLotsError(null);
     }
     try {
-      const [lotsRes, lookupsRes] = await Promise.all([
-        ledgerEndpoints.getLots({ pageSize: 100 }),
+      const [items, lookupsRes] = await Promise.all([
+        collectPages<RawLot>((paging) =>
+          ledgerEndpoints.getLots({
+            ...paging,
+            availableOnly: "true",
+          }) as Promise<ApiPage<RawLot>>,
+        ),
         ledgerEndpoints.getSetup(),
       ]);
       setReference(lookupsRes as LookupData);
       setReferenceTime(Date.now());
-
-      const items: RawLot[] = Array.isArray(lotsRes)
-        ? (lotsRes as RawLot[])
-        : (lotsRes as { items?: RawLot[] })?.items || [];
 
       if (items && items.length > 0) {
         const lookupsData = lookupsRes as LookupData | null;
@@ -254,29 +298,47 @@ export const OperationEntryPage: React.FC = () => {
         }
 
         const mappedLots: LotOption[] = items.map((lot: RawLot) => {
-          const firstPos =
-            lot.positions && lot.positions.length > 0 ? lot.positions[0] : null;
+          const allPositions = Array.isArray(lot.positions) ? lot.positions : [];
+          const positivePositions = allPositions.filter((p) =>
+            toDecimal(p.availableKg ?? p.quantityKg ?? "0").gt(0),
+          );
+          const effectivePositions =
+            positivePositions.length > 0 ? positivePositions : allPositions;
+          const firstPos = effectivePositions[0] ?? null;
           const locId = firstPos?.locationId || lot.locationId || "";
           const locName =
             locationsMap.get(locId) ||
             lot.locationName ||
             (locId ? `Vị trí Silo ${locId.slice(0, 8)}` : "Silo chính");
+          const mappedPositions: LotPositionOption[] = effectivePositions
+            .filter((p): p is RawPosition & { locationId: string } =>
+              Boolean(p.locationId),
+            )
+            .map((p) => ({
+              locationId: p.locationId,
+              locationName:
+                locationsMap.get(p.locationId) ||
+                `Vị trí ${p.locationId.slice(0, 8)}`,
+              facilityId: p.facilityId ?? lot.facilityId,
+              quantityKg:
+                p.quantityKg !== undefined ? String(p.quantityKg) : undefined,
+              availableKg: String(p.availableKg ?? p.quantityKg ?? "0"),
+              poolRevision: p.poolRevision,
+            }));
 
           let totalKg: string;
           let availableKg: string;
-          if (
-            lot.positions &&
-            Array.isArray(lot.positions) &&
-            lot.positions.length > 0
-          ) {
-            totalKg = lot.positions
+          if (allPositions.length > 0) {
+            totalKg = allPositions
               .reduce(
-                (sum: number, p: RawPosition) =>
-                  sum + (parseFloat(String(p.quantityKg)) || 0),
-                0,
+                (sum, p: RawPosition) =>
+                  sum.plus(toDecimal(p.quantityKg ?? "0")),
+                toDecimal(0),
               )
-              .toString();
-            availableKg = String(firstPos?.availableKg ?? firstPos?.quantityKg ?? "0");
+              .toFixed();
+            availableKg = String(
+              firstPos?.availableKg ?? firstPos?.quantityKg ?? "0",
+            );
           } else {
             totalKg = String(lot.quantityKg || lot.currentMassKg || "0");
             availableKg = String(lot.availableKg || lot.quantityKg || "0");
@@ -318,11 +380,15 @@ export const OperationEntryPage: React.FC = () => {
               "Lúa tươi",
             commodityId: lot.commodityId,
             productIdentity: lot.productIdentity,
+            riceVarietyId: lot.riceVarietyId ?? null,
+            riceVariety: lot.riceVariety ?? null,
+            varietyStatus: lot.varietyStatus,
             poolRevision: firstPos?.poolRevision,
             locationId: locId,
             locationName: locName,
             quantityKg: totalKg,
             availableKg: availableKg,
+            positions: mappedPositions,
             isHold,
             holdReason,
             restrictions,
@@ -376,6 +442,11 @@ export const OperationEntryPage: React.FC = () => {
   };
 
   const handleClearDraft = () => {
+    if (attempt.current?.draftSaved) {
+      const orphanId = attempt.current.id;
+      void ledgerEndpoints.deleteOperation(orphanId).catch(() => undefined);
+    }
+    attempt.current = null;
     clearDraft(DRAFT_KEY);
     setHasUnsavedDrafts(false);
     setInputMassKg("");
@@ -505,6 +576,17 @@ export const OperationEntryPage: React.FC = () => {
       // Re-fetch lots to synchronize available mass
       void fetchLots(true);
     } catch (err: unknown) {
+      if (
+        attempt.current?.draftSaved &&
+        err instanceof ApiError &&
+        err.status >= 400 &&
+        err.status < 500 &&
+        err.status !== 408
+      ) {
+        const orphanId = attempt.current.id;
+        attempt.current = null;
+        void ledgerEndpoints.deleteOperation(orphanId).catch(() => undefined);
+      }
       const msg =
         err instanceof Error
           ? err.message
@@ -790,13 +872,14 @@ export const OperationEntryPage: React.FC = () => {
                   onChange={(e) => {
                     const nextId = e.target.value;
                     setSelectedInputLot(nextId);
+                    setSelectedPositionLocId("");
                     const found = lots.find(
                       (l) => l.id === nextId || l.code === nextId,
                     );
                     if (
                       found &&
                       found.availableKg &&
-                      parseFloat(found.availableKg) > 0
+                      toDecimal(found.availableKg).gt(0)
                     ) {
                       setInputMassKg(found.availableKg);
                     }
@@ -811,9 +894,9 @@ export const OperationEntryPage: React.FC = () => {
                     <option key={lot.id} value={lot.id}>
                       {lot.code} — {lot.locationName || "Silo"} —{" "}
                       {lot.commodityName || lot.stage} — Khả dụng:{" "}
-                      {parseFloat(lot.availableKg || "0").toLocaleString(
-                        "vi-VN",
-                      )}{" "}
+                      {toDecimal(lot.availableKg || "0")
+                        .toNumber()
+                        .toLocaleString("vi-VN")}{" "}
                       kg {lot.isHold ? "⚠️ [PHONG TOẢ HOLD]" : ""}
                     </option>
                   ))}
@@ -867,6 +950,29 @@ export const OperationEntryPage: React.FC = () => {
                       {activeLot.locationName || "Silo chính"}
                     </span>
                   </span>
+                  {(activeLot.positions?.length ?? 0) > 1 && (
+                    <select
+                      aria-label={t("mill.operations.selectPosition", "Chọn vị trí xuất của lô")}
+                      value={activeLot.locationId || ""}
+                      onChange={(e) => {
+                        const locId = e.target.value;
+                        setSelectedPositionLocId(locId);
+                        const chosen = activeLot.positions?.find(
+                          (p) => p.locationId === locId,
+                        );
+                        if (chosen && toDecimal(chosen.availableKg).gt(0)) {
+                          setInputMassKg(chosen.availableKg);
+                        }
+                      }}
+                      className="mt-1 w-full rounded border border-ink-tertiary/25 bg-surface-raised px-2 py-1 text-[11px] font-mono text-ink-primary"
+                    >
+                      {activeLot.positions!.map((pos) => (
+                        <option key={pos.locationId} value={pos.locationId}>
+                          {pos.locationName || pos.locationId} ({pos.availableKg} kg)
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -878,6 +984,11 @@ export const OperationEntryPage: React.FC = () => {
                   </span>
                   <span className="font-semibold text-ink-primary block mt-0.5 truncate">
                     {activeLot.commodityName || activeLot.stage}
+                    {activeLot.riceVariety
+                      ? ` · ${activeLot.riceVariety}`
+                      : activeLot.varietyStatus === "MIXED"
+                        ? " · Hỗn hợp giống"
+                        : ""}
                   </span>
                 </div>
 

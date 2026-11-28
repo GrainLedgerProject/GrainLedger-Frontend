@@ -110,6 +110,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const suppressedSearchRef = useRef<string | null>(null);
 
   const [initialCoord] = useState(() => parseCoordinates(value));
   const [pickedCoord, setPickedCoord] = useState(initialCoord);
@@ -357,6 +358,10 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < 3) return;
+    if (suppressedSearchRef.current === q) {
+      suppressedSearchRef.current = null;
+      return;
+    }
 
     const timer = setTimeout(() => {
       void handleSearch(q);
@@ -385,7 +390,9 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       if (mapRef.current) {
         mapRef.current.setView([lat, lng], 15);
       }
-      setSearchQuery(item.display_name.split(",")[0]);
+      const nextLabel = item.display_name.split(",")[0];
+      suppressedSearchRef.current = nextLabel.trim();
+      setSearchQuery(nextLabel);
       setIsDropdownOpen(false);
     }
   };

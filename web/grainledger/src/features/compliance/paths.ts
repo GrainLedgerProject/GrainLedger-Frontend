@@ -6,6 +6,7 @@ export const compliancePaths = {
   safetyMargin: "/compliance/safety-margin",
   byproductMixing: "/compliance/byproduct-mixing",
   profiles: "/compliance/residue-profiles",
+  residueRisk: "/compliance/residue-risk",
   residueEvidence: "/compliance/residue-evidence",
   companyPolicies: "/compliance/company-policies",
 } as const;

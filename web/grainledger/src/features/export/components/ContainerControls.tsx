@@ -198,8 +198,6 @@ function ContainerControlForms({
   const [quantity, setQuantity] = useState("");
   const [occurredAt, setOccurredAt] = useState("");
   const [equipmentId, setEquipmentId] = useState("");
-  const [outputKg, setOutputKg] = useState("");
-  const [loss, setLoss] = useState("0");
   const [holdId, setHoldId] = useState(workflow.holds?.[0]?.id ?? "");
   const [responseAction, setResponseAction] =
     useState<ContainerHoldResponseRequest["responseAction"]>("ACKNOWLEDGE");
@@ -267,7 +265,11 @@ function ContainerControlForms({
           quantityKg: quantity,
           occurredAt: new Date(occurredAt).toISOString(),
           poolRevision: position.poolRevision ?? null,
-          ...(kind === "BAGGING" && { equipmentId, outputKg, declaredLossKg: loss }),
+          ...(kind === "BAGGING" && {
+            equipmentId,
+            outputKg: quantity,
+            declaredLossKg: "0",
+          }),
         },
       },
     });
@@ -383,10 +385,13 @@ function ContainerControlForms({
                 }
               >
                 <option value="OUTPUT_ONLY">
-                  {text("Chỉ phần chưa sản xuất", "Remaining production")}
+                  {text("Chỉ đầu ra hiện có", "Current outputs only")}
                 </option>
-                <option value="CONTAINER_OUTPUT">
-                  {text("Cả container", "Container scope")}
+                <option value="ALL_REMAINING">
+                  {text(
+                    "Toàn bộ phạm vi còn lại và đầu ra",
+                    "All remaining scope and outputs",
+                  )}
                 </option>
               </select>
             </label>
@@ -481,6 +486,10 @@ function ContainerControlForms({
                       location.facilityId === position?.facilityId &&
                       location.id !== position?.locationId &&
                       location.kind !== "ISOLATION" &&
+                      (location.kind !== "COMPARTMENT" ||
+                        location.ownerId === workflow.ownerId ||
+                        (!location.ownerId && location.cleared)) &&
+                      (kind !== "BAGGING" || !location.mixedBulk) &&
                       (!location.ownerId || location.ownerId === workflow.ownerId),
                   )
                   .map((location) => (
@@ -533,20 +542,18 @@ function ContainerControlForms({
                   {text("Khối lượng đóng bao (kg)", "Bagged mass (kg)")}
                   <input
                     inputMode="decimal"
-                    required
-                    value={outputKg}
-                    onChange={(event) => setOutputKg(event.target.value)}
-                    className="font-mono font-semibold"
+                    readOnly
+                    value={quantity}
+                    className="font-mono font-semibold bg-surface-raised/60"
                   />
                 </label>
                 <label>
                   {text("Hao hụt (kg)", "Declared loss (kg)")}
                   <input
                     inputMode="decimal"
-                    required
-                    value={loss}
-                    onChange={(event) => setLoss(event.target.value)}
-                    className="font-mono font-semibold"
+                    readOnly
+                    value="0"
+                    className="font-mono font-semibold bg-surface-raised/60"
                   />
                 </label>
               </>
@@ -704,6 +711,7 @@ function ContainerControlForms({
                 // Note: workflow.holds contains container-level hold IDs, NOT lot-level hold IDs.
                 // Passing them as holdId would pre-fill the wrong HOLD order in StockTransferPage.
                 // Only pass lotId so the operator can search for the correct lot hold themselves.
+                isolation: "1",
                 ...(affectedLotId ? { lotId: affectedLotId } : {}),
               })}`}
               className="inline-flex items-center gap-1 rounded-full border border-accent-primary/30 bg-surface-base px-3 py-1.5 text-xs font-semibold text-accent-primary transition-colors hover:bg-surface-raised dark:bg-surface-raised"

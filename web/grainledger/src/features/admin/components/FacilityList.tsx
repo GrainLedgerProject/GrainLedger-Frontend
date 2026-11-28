@@ -42,17 +42,20 @@ export function FacilityList(props: FacilityConfigModel["facilities"]) {
             Chưa có cơ sở nhà máy nào được ghi nhận
           </p>
           <p className="text-xs max-w-md mx-auto">
-            Hệ thống chưa tìm thấy cơ sở nhà máy nào trong cấu hình sổ cái. Bấm
-            nút &quot;Thêm Nhà máy&quot; phía trên để bắt đầu thiết lập.
+            {canConfigure
+              ? "Hệ thống chưa tìm thấy cơ sở nhà máy nào trong cấu hình sổ cái. Bấm nút \"Thêm Nhà máy\" phía trên để bắt đầu thiết lập."
+              : "Hệ thống chưa tìm thấy cơ sở nhà máy nào trong cấu hình sổ cái."}
           </p>
-          <button
-            type="button"
-            onClick={() => handleOpenAdd("FACILITY")}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
-          >
-            <Plus size={14} weight="bold" />
-            <span>Thêm Nhà máy Đầu tiên</span>
-          </button>
+          {canConfigure && (
+            <button
+              type="button"
+              onClick={() => handleOpenAdd("FACILITY")}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
+            >
+              <Plus size={14} weight="bold" />
+              <span>Thêm Nhà máy Đầu tiên</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -148,15 +151,17 @@ export function FacilityList(props: FacilityConfigModel["facilities"]) {
                         <Plus size={13} weight="bold" />
                         <span>Thêm Thiết bị</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditFacility(fac)}
-                        className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-primary transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
-                        title="Sửa tên cơ sở nhà máy"
-                      >
-                        <PencilSimple size={14} />
-                        <span className="hidden sm:inline">Sửa</span>
-                      </button>
+                      {fac.canEdit !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditFacility(fac)}
+                          className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-secondary hover:text-accent-primary transition-colors text-xs inline-flex items-center gap-1 border border-ink-tertiary/15"
+                          title="Sửa tên cơ sở nhà máy"
+                        >
+                          <PencilSimple size={14} />
+                          <span className="hidden sm:inline">Sửa</span>
+                        </button>
+                      )}
                       {fac.canDelete !== false && (
                         <button
                           type="button"

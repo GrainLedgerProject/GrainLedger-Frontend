@@ -98,7 +98,9 @@ export const HeroSection: React.FC = () => {
               >
                 <span>
                   {isAuthenticated
-                    ? "Vào Dashboard"
+                    ? language === "vi"
+                      ? "Vào Dashboard"
+                      : "Go to Dashboard"
                     : t("landing.ctaSignIn", "Đăng nhập vào hệ thống")}
                 </span>
                 <ArrowRight size={16} weight="bold" />
@@ -127,7 +129,9 @@ export const HeroSection: React.FC = () => {
         {/* Regulatory & Standards Bar (Apple Glass Chips) */}
         <div className="mt-16 pt-10 border-t border-ink-tertiary/20 dark:border-surface-overlay text-center">
           <span className="text-xs font-mono uppercase tracking-wider text-ink-tertiary text-ink-tertiary block mb-6 font-semibold">
-            Tuân thủ các quy định & tiêu chuẩn kiểm định quốc tế hàng đầu
+            {language === "vi"
+              ? "Tuân thủ các quy định & tiêu chuẩn kiểm định quốc tế hàng đầu"
+              : "Compliant with leading international testing standards & regulations"}
           </span>
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold">

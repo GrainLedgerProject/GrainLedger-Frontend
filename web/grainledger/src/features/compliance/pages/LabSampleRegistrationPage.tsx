@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   labReportEndpoints,
   sampleEndpoints,
@@ -165,8 +165,9 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
     setReloadCount((c) => c + 1);
   }, []);
 
+  const [searchParams] = useSearchParams();
+  const requestedSampleId = searchParams.get("sampleId");
   useEffect(() => {
-    const requestedSampleId = new URLSearchParams(window.location.search).get("sampleId");
     if (!requestedSampleId) return;
     let active = true;
     sampleEndpoints
@@ -202,7 +203,7 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
     return () => {
       active = false;
     };
-  }, [canReadLabReports]);
+  }, [canReadLabReports, requestedSampleId]);
 
   useEffect(() => {
     let active = true;
@@ -291,8 +292,13 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
   // Handle Create Sample
   const handleCreateSample = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createSealCode.trim() || !createSourceLotId.trim()) {
-      setError("Vui lòng điền đầy đủ mã niêm chì và mã lô nguyên liệu.");
+    const trimmedSourceLotId = createSourceLotId.trim();
+    if (!createSealCode.trim() || !trimmedSourceLotId) {
+      setError(t("compliance.lab.missingRequiredFields", "Vui lòng điền đầy đủ mã niêm chì và UUID lô nguyên liệu."));
+      return;
+    }
+    if (!/^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(trimmedSourceLotId)) {
+      setError(t("compliance.lab.invalidSourceLotUuid", "ID lô nguyên liệu nguồn phải đúng định dạng UUID (ví dụ: 550e8400-e29b-41d4-a716-446655440000)."));
       return;
     }
 
@@ -931,16 +937,18 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
                     />
                     <span>Lịch sử chuyển giao mẫu (Handovers)</span>
                   </h4>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleOpenHandover(selectedSample);
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
-                  >
-                    <Plus size={14} weight="bold" />
-                    <span>Thêm lượt bàn giao</span>
-                  </button>
+                  {canMutateSamples && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleOpenHandover(selectedSample);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
+                    >
+                      <Plus size={14} weight="bold" />
+                      <span>Thêm lượt bàn giao</span>
+                    </button>
+                  )}
                 </div>
 
                 {loadingHandovers ? (
@@ -1065,16 +1073,20 @@ export const LabSampleRegistrationPage: React.FC<Props> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-ink-secondary font-medium mb-1">
-                  Mã lô lúa nguyên liệu nguồn (Source Lot ID) *
+                  UUID lô nguyên liệu nguồn (Source Lot ID) *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: LOT-2026-DX-001"
+                  maxLength={36}
+                  placeholder="Ví dụ: 550e8400-e29b-41d4-a716-446655440000"
                   value={createSourceLotId}
                   onChange={(e) => setCreateSourceLotId(e.target.value)}
                   className="w-full py-2 px-3 rounded-lg bg-surface-raised dark:bg-surface-overlay border border-ink-tertiary/20 text-ink-primary font-mono focus:border-accent-primary focus:outline-none transition-colors"
                 />
+                <p className="text-[11px] text-ink-tertiary mt-1">
+                  Nhập định danh UUID của lô nguồn trong sổ cái để gắn mẫu niêm phong.
+                </p>
               </div>
 
               <div>

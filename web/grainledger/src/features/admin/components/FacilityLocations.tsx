@@ -150,14 +150,16 @@ export function FacilityLocations({ canConfigure = true, displayLocations, handl
                     </button>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditLocation(loc)}
-                        className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
-                        title="Chỉnh sửa vị trí"
-                      >
-                        <PencilSimple size={14} />
-                      </button>
+                      {loc.canEdit !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditLocation(loc)}
+                          className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
+                          title="Chỉnh sửa vị trí"
+                        >
+                          <PencilSimple size={14} />
+                        </button>
+                      )}
                       {loc.canDelete !== false && (
                         <button
                           type="button"

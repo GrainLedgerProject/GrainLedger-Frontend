@@ -22,6 +22,14 @@ const findings: Record<string, [string, string]> = {
   BLEND_OUTPUT_HANDOFF_REQUIRED: ["Cần thực hiện phối trộn và bàn giao đầu ra đã duyệt trước khi xếp.", "Produce the approved blend and hand off its reviewed output before loading."],
   APPROVED_PRODUCTION_PENDING: ["Đang chờ vận hành ghi nhận mẻ sản xuất đã yêu cầu.", "The requested production batch is awaiting the operator."],
   RESIDUE_EVALUATE_PERMISSION_REQUIRED: ["Tài khoản cần quyền đánh giá dư lượng để ghi nhận.", "Residue evaluation permission is required."],
+  ASSESSMENT_POLICY_MISSING: ["Chưa có chính sách biên an toàn đang hiệu lực.", "No active safety margin assessment policy."],
+  CLOSE_SCOPE_REVIEW_REQUIRED: ["Cần duyệt phạm vi đóng niêm container.", "Container close scope review is required."],
+  NO_ACTUAL_LOADING: ["Chưa có lần xếp hàng thực tế nào được ghi nhận.", "No actual loading has been recorded."],
+  OUTPUT_PRODUCT_IDENTITY_CHANGED: ["Định danh sản phẩm đầu ra đã thay đổi so với phương án duyệt.", "Output product identity changed from the approved plan."],
+  RESIDUE_ASSESSMENT_FAILED: ["Đánh giá dư lượng không đạt tiêu chuẩn.", "Residue assessment failed."],
+  RESIDUE_PROFILE_MISSING: ["Thiếu hồ sơ dư lượng áp dụng.", "Applicable residue profile is missing."],
+  RESIDUE_LIMIT_EXCEEDED: ["Nồng độ dư lượng ước tính vượt ngưỡng cho phép.", "Estimated residue exceeds the permitted limit."],
+  RESIDUE_INCOMPLETE: ["Chưa đủ dữ liệu đánh giá dư lượng.", "Residue evidence is incomplete."],
   QUALITY_LIMIT: ["Chỉ tiêu chất lượng chưa đạt giới hạn.", "A quality limit is not satisfied."],
 };
 

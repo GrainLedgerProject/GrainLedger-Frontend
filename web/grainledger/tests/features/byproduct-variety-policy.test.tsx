@@ -207,6 +207,8 @@ describe("ByproductVarietyPolicyPage (Gap 3.2)", () => {
     );
 
     expect(screen.getByTestId("path-echo").textContent).toBe(compliancePaths.byproductMixing);
-    expect(await screen.findByText("Không có quyền truy cập màn hình này")).toBeTruthy();
+    expect(
+      await screen.findByText(/Không có quyền truy cập màn hình này|Access denied for this screen/i),
+    ).toBeTruthy();
   });
 });

@@ -20,22 +20,29 @@ export function TraceSourceEvidence({
   onTraceFromLab?: (reportId: string, resultId: string) => void;
 }) {
   const text = useWorkflowText();
-  const canTrace = useAuthStore((s) =>
-    s.user?.permissions.some((p) =>
-      ["trace.read.tenant", "trace.read.all"].includes(p),
-    ),
+  const permissions = useAuthStore((s) => s.user?.permissions ?? []);
+  const canTrace = permissions.some((p) =>
+    ["trace.read.tenant", "trace.read.all"].includes(p),
+  );
+  const canReadSamples = permissions.some((p) =>
+    ["purchases.write", "farms.read", "lab.read", "lab.write"].includes(p),
+  );
+  const canReadLab = permissions.some((p) =>
+    ["lab.read", "lab.write"].includes(p),
   );
 
   const samples = useQuery({
     queryKey: ["trace-source-samples", sourceLotId],
     queryFn: () =>
       sampleEndpoints.getSamples({ sourceLotId, pageSize: 25 }),
+    enabled: canReadSamples,
   });
 
   const reports = useQuery({
     queryKey: ["trace-source-lab-reports", sourceLotId],
     queryFn: () =>
       labReportEndpoints.getLabReports({ sourceLotId, pageSize: 25 }),
+    enabled: canReadLab,
   });
 
   const downloadFile = useMutation({

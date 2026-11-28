@@ -1,42 +1,56 @@
 import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
 export const ProblemSection: React.FC = () => {
+  const text = useWorkflowText();
   const shouldReduceMotion = useReducedMotion();
 
   const cards = [
     {
       metric: "8,06M",
-      title: "Tấn gạo xuất khẩu / năm",
-      desc: "Giá trị kim ngạch hơn 4,1 tỷ USD của Việt Nam đòi hỏi chứng minh nguồn gốc minh bạch với đối tác toàn cầu.",
+      title: text("Tấn gạo xuất khẩu / năm", "Million tonnes exported / year"),
+      desc: text(
+        "Giá trị kim ngạch hơn 4,1 tỷ USD của Việt Nam đòi hỏi chứng minh nguồn gốc minh bạch với đối tác toàn cầu.",
+        "Over $4.1B in annual export value demands verifiable origin proof for global buyers.",
+      ),
       color: "text-ink-primary",
       accent: "border-ink-tertiary/20 dark:border-surface-overlay",
-      badge: "Sản lượng",
+      badge: text("Sản lượng", "Volume"),
     },
     {
       metric: "0,01",
       unit: "mg/kg",
-      title: "Ngưỡng MRL EU (LOQ)",
-      desc: "Quy định khắt khe của EU với hoạt chất Tricyclazole — chỉ một mẻ nhiễm bẩn có thể khiến toàn bộ container bị từ chối cập cảng.",
+      title: text("Ngưỡng MRL EU (LOQ)", "EU MRL Threshold (LOQ)"),
+      desc: text(
+        "Quy định khắt khe của EU với hoạt chất Tricyclazole — chỉ một mẻ nhiễm bẩn có thể khiến toàn bộ container bị từ chối cập cảng.",
+        "Strict EU Tricyclazole rules mean a single contaminated batch can lead to full container rejection at port.",
+      ),
       color: "text-accent-danger",
       accent: "border-accent-danger/20 bg-accent-danger/[0.02]",
-      badge: "Rủi ro MRL",
+      badge: text("Rủi ro MRL", "MRL Risk"),
     },
     {
       metric: "100%",
-      title: "Khối lượng được bảo toàn",
-      desc: "Sổ cái cân bằng kép từ chối dứt khoát mọi mẻ chế biến sai lệch ngoài dung sai 0,5% — không cho phép gian lận hoặc double-spending.",
+      title: text("Khối lượng được bảo toàn", "Mass Conserved"),
+      desc: text(
+        "Sổ cái cân bằng kép từ chối dứt khoát mọi mẻ chế biến sai lệch ngoài dung sai 0,5% — không cho phép gian lận hoặc double-spending.",
+        "Double-entry conservation rejects processing batches outside 0.5% tolerance — preventing inflation or double-spending.",
+      ),
       color: "text-accent-primary",
       accent: "border-accent-primary/20 bg-functional-balanced-bg0/[0.02]",
       badge: "Mass Balance",
     },
     {
       metric: "< 30s",
-      title: "Truy vết đồ thị hai chiều",
-      desc: "Định vị chính xác từ lọ mẫu lab đến container xuất khẩu, và từ container ngược về danh sách nông hộ kèm tỷ lệ % khối lượng.",
+      title: text("Truy vết đồ thị hai chiều", "Bidirectional Graph Trace"),
+      desc: text(
+        "Định vị chính xác từ lọ mẫu lab đến container xuất khẩu, và từ container ngược về danh sách nông hộ kèm tỷ lệ % khối lượng.",
+        "Pinpoint from lab sample to export container, and trace backward from container to farmer plots with mass share %.",
+      ),
       color: "text-accent-info",
       accent: "border-accent-info/20 bg-accent-info/[0.02]",
-      badge: "Đồ thị truy vết",
+      badge: text("Đồ thị truy vết", "Trace Graph"),
     },
   ];
 
@@ -48,17 +62,19 @@ export const ProblemSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-16 space-y-3">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-accent-danger">
-            Bối cảnh thực tế & Thách thức
+            {text("Bối cảnh thực tế & Thách thức", "Industry Context & Challenges")}
           </span>
           <h2 className="font-sans text-3xl sm:text-5xl font-extrabold tracking-[-0.03em] text-ink-primary leading-tight">
-            Xuất khẩu gạo là bài toán truy vết & rủi ro dư lượng lớn nhất ĐBSCL.
+            {text(
+              "Xuất khẩu gạo là bài toán truy vết & rủi ro dư lượng lớn nhất ĐBSCL.",
+              "Rice export faces the Mekong Delta's toughest traceability & MRL risk challenge.",
+            )}
           </h2>
           <p className="text-base text-ink-secondary leading-relaxed pt-1">
-            Một container gạo xuất khẩu là sự hòa trộn của hàng trăm thửa ruộng
-            nhỏ sau khi đưa vào lò sấy và silo công nghiệp. Khi một kết quả kiểm
-            nghiệm xấu về muộn, các phương pháp quản lý bằng giấy hoặc Excel
-            buộc doanh nghiệp phải dừng toàn bộ kho hoặc đối mặt nguy cơ trả
-            hàng triệu USD.
+            {text(
+              "Một container gạo xuất khẩu là sự hòa trộn của hàng trăm thửa ruộng nhỏ sau khi đưa vào lò sấy và silo công nghiệp. Khi một kết quả kiểm nghiệm xấu về muộn, các phương pháp quản lý bằng giấy hoặc Excel buộc doanh nghiệp phải dừng toàn bộ kho hoặc đối mặt nguy cơ trả hàng triệu USD.",
+              "Each export container blends grain from hundreds of smallholder plots through dryers and industrial silos. When a late adverse lab test arrives, paper logs or spreadsheets force costly whole-warehouse freezes or million-dollar rejections.",
+            )}
           </p>
         </div>
 

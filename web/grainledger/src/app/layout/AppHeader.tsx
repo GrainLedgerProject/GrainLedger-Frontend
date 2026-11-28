@@ -292,12 +292,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         t("header.guestEmail", "guest@grainledger.local")}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      {user && <RoleChip role={user.role} size="sm" />}
-                      {user && isCustomerSide(user.role) && (
-                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
-                          {user.organizationName || "Rice"}
+                      {user && user.hasAssignedRole !== false && user.role ? (
+                        <>
+                          <RoleChip role={user.role} size="sm" />
+                          {isCustomerSide(user.role) && (
+                            <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-accent-info/10 text-accent-info">
+                              {user.organizationName || "Rice"}
+                            </span>
+                          )}
+                        </>
+                      ) : user ? (
+                        <span className="font-medium text-[10px] px-2 py-0.5 rounded-full bg-functional-hold-bg text-accent-warning">
+                          {t("header.pendingAccess", "Chờ cấp quyền")}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 

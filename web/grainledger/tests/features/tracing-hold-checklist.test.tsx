@@ -399,6 +399,8 @@ describe("Tracing & Container HOLD checklist", () => {
       "trace.read.all",
       "holds.manage",
       "residue.evaluate",
+      "farms.read",
+      "lab.write",
     ]);
     vi.spyOn(catalogsEndpoints, "getActiveSubstances").mockResolvedValue(page([]));
     vi.spyOn(ledgerEndpoints, "getResidueEvaluations").mockResolvedValue({
@@ -439,7 +441,7 @@ describe("Tracing & Container HOLD checklist", () => {
       ],
       lots: [
         {
-          id: "src-1",
+          id: "11111111-1111-4111-8111-111111111111",
           code: "RAW-001",
           stage: "RAW_PADDY",
           producedKg: "1000",
@@ -468,7 +470,7 @@ describe("Tracing & Container HOLD checklist", () => {
       ],
       edges: [
         {
-          inputLotId: "src-1",
+          inputLotId: "11111111-1111-4111-8111-111111111111",
           outputLotId: "lot-1",
           operationId: "op-1",
           relationType: "BLENDING",
@@ -478,8 +480,9 @@ describe("Tracing & Container HOLD checklist", () => {
       ],
       sources: [
         {
-          lotId: "src-1",
+          lotId: "11111111-1111-4111-8111-111111111111",
           provenance: {
+            sourceRecordId: "11111111-1111-4111-8111-111111111111",
             procurementCode: "PO-1",
             plotId: "plot-1",
             farmerId: "f-1",
@@ -489,13 +492,13 @@ describe("Tracing & Container HOLD checklist", () => {
       ],
     });
     vi.spyOn(sampleEndpoints, "getSamples").mockResolvedValue(
-      page([{ id: "smp-1", sourceLotId: "src-1", code: "SMP-1", sealCode: "SL-1", collectedAt: "2026-11-18T00:00:00Z", materialDescription: null, handoverCount: 1 }]),
+      page([{ id: "smp-1", sourceLotId: "11111111-1111-4111-8111-111111111111", code: "SMP-1", sealCode: "SL-1", collectedAt: "2026-11-18T00:00:00Z", materialDescription: null, handoverCount: 1 }]),
     );
     vi.spyOn(labReportEndpoints, "getLabReports").mockResolvedValue(
-      page([{ id: "rep-1", companyId: "org-1", laboratoryName: "Eurofins", reportNumber: "LAB-01", issuedOn: "2026-11-19", receivedAt: "2026-11-19T00:00:00Z", reportKind: "MRL", status: "CONFIRMED", confirmedAt: "2026-11-19T01:00:00Z", assessmentStatus: "FAIL", resultSets: [{ id: "rs-1", sampleId: "smp-1", confirmedSampleId: "smp-1", sourceLotId: "src-1", laboratorySampleReference: "LREF", statedSampleCode: "SMP-1", statedSealCode: "SL-1", sectionReference: null, identityStatus: "MATCHED", results: [{ id: "res-1", testLabel: "Tricyclazole", substanceId: null, originalResultText: "0.02 mg/kg", resultKind: "NUMERIC", numericValue: "0.02", unit: "mg/kg", lod: null, loq: "0.01", method: "LC-MS/MS", uncertainty: null, reference: null }] }] }]),
+      page([{ id: "rep-1", companyId: "org-1", laboratoryName: "Eurofins", reportNumber: "LAB-01", issuedOn: "2026-11-19", receivedAt: "2026-11-19T00:00:00Z", reportKind: "MRL", status: "CONFIRMED", confirmedAt: "2026-11-19T01:00:00Z", assessmentStatus: "FAIL", resultSets: [{ id: "rs-1", sampleId: "smp-1", confirmedSampleId: "smp-1", sourceLotId: "11111111-1111-4111-8111-111111111111", laboratorySampleReference: "LREF", statedSampleCode: "SMP-1", statedSealCode: "SL-1", sectionReference: null, identityStatus: "MATCHED", results: [{ id: "res-1", testLabel: "Tricyclazole", substanceId: null, originalResultText: "0.02 mg/kg", resultKind: "NUMERIC", numericValue: "0.02", unit: "mg/kg", lod: null, loq: "0.01", method: "LC-MS/MS", uncertainty: null, reference: null }] }] }]),
     );
 
-    mount(<TraceabilityPage />, "/?lotId=src-1&direction=forward");
+    mount(<TraceabilityPage />, "/?lotId=11111111-1111-4111-8111-111111111111&direction=forward");
 
     await screen.findByText(/Trace ID: trace-uuid-999/);
     expect(screen.getByText(/900 \/ 500 kg/)).toBeTruthy();
@@ -796,7 +799,7 @@ describe("Tracing & Container HOLD checklist", () => {
           {
             id: "h-1",
             category: "HOLD",
-            eventType: "HOLD_PLACED",
+            eventType: "CONTAINER_HOLD",
             subjectId: "l-1",
             reference: "HOLD-REF-88",
             actorId: "user-1",
@@ -895,7 +898,7 @@ describe("Tracing & Container HOLD checklist", () => {
       ],
       lots: [
         {
-          id: "src-lot-1",
+          id: "22222222-2222-4222-8222-222222222222",
           code: "RAW-ST25-01",
           stage: "RAW_PADDY",
           producedKg: "1000",
@@ -906,7 +909,7 @@ describe("Tracing & Container HOLD checklist", () => {
       edges: [],
     });
 
-    const cmMount = mount(<TraceabilityPage />, "/?lotId=src-lot-1&direction=forward");
+    const cmMount = mount(<TraceabilityPage />, "/?lotId=22222222-2222-4222-8222-222222222222&direction=forward");
     await screen.findByText("Phương án bị ảnh hưởng trước khi nạp container");
     expect(screen.getByText("CT-PRE-01")).toBeTruthy();
     expect(screen.getByText(/Quy thuộc từ nguồn đang truy/)).toBeTruthy();
@@ -920,7 +923,7 @@ describe("Tracing & Container HOLD checklist", () => {
 
     // Export Officer cannot open /risk/container-trace, so links go to Export container loading/dossier route
     signIn("CUSTOMER_EXPORT_OFFICER", ["trace.read.tenant", "export-orders.read", "containers.write"]);
-    mount(<TraceabilityPage />, "/?lotId=src-lot-1&direction=forward");
+    mount(<TraceabilityPage />, "/?lotId=22222222-2222-4222-8222-222222222222&direction=forward");
     const eoLink = await screen.findByRole("link", { name: "CT-ACT-01" });
     expect(eoLink.getAttribute("href")).toBe("/export/containers/cont-act-1/loading");
   });

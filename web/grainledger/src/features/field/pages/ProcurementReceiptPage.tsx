@@ -9,6 +9,7 @@ import {
   type ProcurementReceivingOption,
 } from "@/api/procurement";
 import { ApiError } from "@/api/client";
+import { collectPages, type ApiPage } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
 import {
   getQueuedProcurementCount,
@@ -226,7 +227,6 @@ export const ProcurementReceiptPage: React.FC = () => {
   );
 
   const loadData = useCallback(async () => {
-    if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setLoading(true);
     setError(null);
@@ -272,19 +272,27 @@ export const ProcurementReceiptPage: React.FC = () => {
         if (fromDate) receiptParams.from = fromDate;
         if (toDate) receiptParams.to = toDate;
 
-        const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
+        const [receiptsRes, farmerList, refRes, plotSeasonItems, plotItems] =
           await Promise.all([
-            procurementEndpoints.getProcurements(receiptParams).catch(() => []),
-            procurementEndpoints
-              .getFarmers({ pageSize: 100 })
-              .catch(() => null),
+            procurementEndpoints.getProcurements(receiptParams),
+            collectPages<CachedFarmer>((paging) =>
+              procurementEndpoints.getFarmers(paging) as Promise<
+                ApiPage<CachedFarmer>
+              >,
+            ).catch(() => null),
             canCapture
               ? procurementEndpoints.getReferenceData().catch(() => null)
               : Promise.resolve(null),
-            procurementEndpoints
-              .getPlotSeasons({ pageSize: 100 })
-              .catch(() => null),
-            procurementEndpoints.getPlots({ pageSize: 100 }).catch(() => null),
+            collectPages<CachedPlotSeason>((paging) =>
+              procurementEndpoints.getPlotSeasons(paging) as Promise<
+                ApiPage<CachedPlotSeason>
+              >,
+            ).catch(() => null),
+            collectPages<CachedPlot>((paging) =>
+              procurementEndpoints.getPlots(paging) as Promise<
+                ApiPage<CachedPlot>
+              >,
+            ).catch(() => null),
           ]);
 
         if (!isMountedRef.current) return;
@@ -306,27 +314,16 @@ export const ProcurementReceiptPage: React.FC = () => {
         setTotalCount(serverTotal);
         setHasMore(serverHasMore);
 
-        if (farmersRes) {
-          const farmerList = Array.isArray(farmersRes)
-            ? (farmersRes as CachedFarmer[])
-            : (farmersRes as { items?: CachedFarmer[] })?.items || [];
-          if (farmerList.length > 0) {
-            setFarmers(farmerList);
-            void saveCachedFarmers(farmerList, false);
-          }
+        if (farmerList && farmerList.length > 0) {
+          setFarmers(farmerList);
+          void saveCachedFarmers(farmerList, false);
         }
 
-        const plotSeasonItems = Array.isArray(plotSeasonsRes)
-          ? (plotSeasonsRes as CachedPlotSeason[])
-          : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
-        if (plotSeasonItems.length > 0) {
+        if (plotSeasonItems && plotSeasonItems.length > 0) {
           setAllPlotSeasons(plotSeasonItems);
         }
 
-        const plotItems = Array.isArray(plotsRes)
-          ? (plotsRes as CachedPlot[])
-          : (plotsRes as { items?: CachedPlot[] })?.items || [];
-        if (plotItems.length > 0) {
+        if (plotItems && plotItems.length > 0) {
           setAllPlots(plotItems);
         }
 
@@ -334,10 +331,11 @@ export const ProcurementReceiptPage: React.FC = () => {
           const compositeRefData: CachedReferenceData = {
             ...refRes,
             plotSeasons:
-              plotSeasonItems.length > 0
+              plotSeasonItems && plotSeasonItems.length > 0
                 ? plotSeasonItems
                 : cachedRef?.plotSeasons,
-            plots: plotItems.length > 0 ? plotItems : cachedRef?.plots,
+            plots:
+              plotItems && plotItems.length > 0 ? plotItems : cachedRef?.plots,
           };
           setRefData(compositeRefData);
           void saveCachedRefData(compositeRefData, false);
@@ -420,26 +418,32 @@ export const ProcurementReceiptPage: React.FC = () => {
         );
 
         if (isOnline) {
-          const [receiptsRes, farmersRes, refRes, plotSeasonsRes, plotsRes] =
+          const [receiptsRes, farmerList, refRes, plotSeasonItems, plotItems] =
             await Promise.all([
-              procurementEndpoints
-                .getProcurements({
-                  page: 1,
-                  pageSize: 20,
-                  sortBy: "receivedAt",
-                  sortDirection: "desc",
-                })
-                .catch(() => []),
-              procurementEndpoints
-                .getFarmers({ pageSize: 100 })
-                .catch(() => null),
-              procurementEndpoints.getReferenceData().catch(() => null),
-              procurementEndpoints
-                .getPlotSeasons({ pageSize: 100 })
-                .catch(() => null),
-              procurementEndpoints
-                .getPlots({ pageSize: 100 })
-                .catch(() => null),
+              procurementEndpoints.getProcurements({
+                page: 1,
+                pageSize: 20,
+                sortBy: "receivedAt",
+                sortDirection: "desc",
+              }),
+              collectPages<CachedFarmer>((paging) =>
+                procurementEndpoints.getFarmers(paging) as Promise<
+                  ApiPage<CachedFarmer>
+                >,
+              ).catch(() => null),
+              canCapture
+                ? procurementEndpoints.getReferenceData().catch(() => null)
+                : Promise.resolve(null),
+              collectPages<CachedPlotSeason>((paging) =>
+                procurementEndpoints.getPlotSeasons(paging) as Promise<
+                  ApiPage<CachedPlotSeason>
+                >,
+              ).catch(() => null),
+              collectPages<CachedPlot>((paging) =>
+                procurementEndpoints.getPlots(paging) as Promise<
+                  ApiPage<CachedPlot>
+                >,
+              ).catch(() => null),
             ]);
           if (!active) return;
 
@@ -459,27 +463,16 @@ export const ProcurementReceiptPage: React.FC = () => {
           setTotalCount(serverTotal);
           setHasMore(serverHasMore);
 
-          if (farmersRes) {
-            const farmerList = Array.isArray(farmersRes)
-              ? (farmersRes as CachedFarmer[])
-              : (farmersRes as { items?: CachedFarmer[] })?.items || [];
-            if (farmerList.length > 0) {
-              setFarmers(farmerList);
-              void saveCachedFarmers(farmerList, false);
-            }
+          if (farmerList && farmerList.length > 0) {
+            setFarmers(farmerList);
+            void saveCachedFarmers(farmerList, false);
           }
 
-          const plotSeasonItems = Array.isArray(plotSeasonsRes)
-            ? (plotSeasonsRes as CachedPlotSeason[])
-            : (plotSeasonsRes as { items?: CachedPlotSeason[] })?.items || [];
-          if (plotSeasonItems.length > 0) {
+          if (plotSeasonItems && plotSeasonItems.length > 0) {
             setAllPlotSeasons(plotSeasonItems);
           }
 
-          const plotItems = Array.isArray(plotsRes)
-            ? (plotsRes as CachedPlot[])
-            : (plotsRes as { items?: CachedPlot[] })?.items || [];
-          if (plotItems.length > 0) {
+          if (plotItems && plotItems.length > 0) {
             setAllPlots(plotItems);
           }
 
@@ -487,10 +480,13 @@ export const ProcurementReceiptPage: React.FC = () => {
             const compositeRefData: CachedReferenceData = {
               ...refRes,
               plotSeasons:
-                plotSeasonItems.length > 0
+                plotSeasonItems && plotSeasonItems.length > 0
                   ? plotSeasonItems
                   : cachedRef?.plotSeasons,
-              plots: plotItems.length > 0 ? plotItems : cachedRef?.plots,
+              plots:
+                plotItems && plotItems.length > 0
+                  ? plotItems
+                  : cachedRef?.plots,
             };
             setRefData(compositeRefData);
             void saveCachedRefData(compositeRefData, false);
@@ -545,19 +541,18 @@ export const ProcurementReceiptPage: React.FC = () => {
       unsubQueue();
       unsubCache();
     };
-  }, [isOnline, t]);
+  }, [isOnline, t, canCapture]);
 
   // Filter plot-seasons for the currently selected farmer in formData
   const getAvailablePlotSeasons = useCallback(
     (selectedFarmerId: string): CachedPlotSeason[] => {
-      if (!selectedFarmerId) return allPlotSeasons;
+      if (!selectedFarmerId) return [];
       const farmerPlots = allPlots.filter(
         (p) => p.farmerId === selectedFarmerId,
       );
-      if (farmerPlots.length === 0) return allPlotSeasons;
+      if (farmerPlots.length === 0) return [];
       const plotIds = new Set(farmerPlots.map((p) => p.id));
-      const filtered = allPlotSeasons.filter((ps) => plotIds.has(ps.plotId));
-      return filtered.length > 0 ? filtered : allPlotSeasons;
+      return allPlotSeasons.filter((ps) => plotIds.has(ps.plotId));
     },
     [allPlots, allPlotSeasons],
   );
@@ -575,19 +570,14 @@ export const ProcurementReceiptPage: React.FC = () => {
 
     const options = getReceivingOptions(refData);
     const defaultOption = options[0];
-    const defaultSiteId =
-      defaultOption?.collectionSiteId || crypto.randomUUID();
-    const defaultLocId =
-      defaultOption?.receivingLocationId || crypto.randomUUID();
+    const defaultSiteId = defaultOption?.collectionSiteId || "";
+    const defaultLocId = defaultOption?.receivingLocationId || "";
 
     const defaultCommId =
-      refData?.commodity?.id ||
-      refData?.commodities?.[0]?.id ||
-      crypto.randomUUID();
+      refData?.commodity?.id || refData?.commodities?.[0]?.id || "";
 
     const availablePlotSeasons = getAvailablePlotSeasons(farmerId);
-    const defaultPlotSeasonId =
-      availablePlotSeasons[0]?.id || allPlotSeasons[0]?.id || "";
+    const defaultPlotSeasonId = availablePlotSeasons[0]?.id || "";
     const defaultUnit = unitOptions[0]?.code || "KG";
 
     setFormData({
@@ -816,11 +806,13 @@ export const ProcurementReceiptPage: React.FC = () => {
   };
 
   const filteredReceipts = receipts.filter((r) => {
+    if (isOnline && !r.isOfflinePending) return true;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
       r.code?.toLowerCase().includes(q) ||
       r.farmerName?.toLowerCase().includes(q) ||
+      r.status?.toLowerCase().includes(q) ||
       r.id.toLowerCase().includes(q)
     );
   });
@@ -1239,10 +1231,7 @@ export const ProcurementReceiptPage: React.FC = () => {
             page={page}
             hasMore={hasMore}
             count={totalCount}
-            onPage={(nextPage) => {
-              setPage(nextPage);
-              setTimeout(() => void loadData(), 0);
-            }}
+            onPage={(nextPage) => setPage(nextPage)}
             label={t("field.receipt.title", "Phiếu Thu Mua")}
           />
         </div>
@@ -1272,6 +1261,15 @@ export const ProcurementReceiptPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+            {error && (
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger font-medium flex items-start gap-2"
+              >
+                <WarningCircle size={16} weight="fill" className="shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
             {/* 1. Farmer Selection & Received At */}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>

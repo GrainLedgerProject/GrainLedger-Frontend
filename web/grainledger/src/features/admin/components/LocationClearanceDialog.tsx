@@ -1,5 +1,7 @@
+import { useRef, useState } from "react";
+import { ledgerEndpoints } from "@/api/ledger";
 import { Modal } from "@/shared/ui/Modal";
-import { Broom, CheckCircle, Info, X } from "@phosphor-icons/react";
+import { Broom, CheckCircle, Info, UploadSimple, X } from "@phosphor-icons/react";
 import type { FacilityConfigModel } from "../hooks/useFacilityConfig";
 
 export function LocationClearanceDialog(props: FacilityConfigModel["clearance"]) {
@@ -14,6 +16,50 @@ export function LocationClearanceDialog(props: FacilityConfigModel["clearance"])
     submittingClearance,
     handleConfirmClearance,
   } = props;
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
+  const uploadedRef = useRef<{ file: File; id: string } | null>(null);
+
+  async function handleFileSelect(file: File | null) {
+    if (!file || !clearanceTarget) return;
+    if (!clearanceTarget.ownerId) {
+      setUploadError(
+        "Vị trí chưa gắn chủ hàng cố định; vui lòng tải chứng cứ theo chủ hàng hoặc nhập UUID hợp lệ.",
+      );
+      return;
+    }
+    setUploadError(null);
+    setUploading(true);
+    try {
+      if (uploadedRef.current?.file !== file) {
+        uploadedRef.current = { file, id: crypto.randomUUID() };
+      }
+      const evidenceId = uploadedRef.current.id;
+      const contentBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Không thể đọc tệp biên bản."));
+        reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+        reader.readAsDataURL(file);
+      });
+      await ledgerEndpoints.uploadEvidence({
+        id: evidenceId,
+        ownerId: clearanceTarget.ownerId,
+        facilityId: clearanceTarget.facilityId,
+        fileName: file.name,
+        contentType: file.type || "application/octet-stream",
+        contentBase64,
+      });
+      setClearanceEvidenceId(evidenceId);
+      setUploadedName(file.name);
+    } catch (err: unknown) {
+      setUploadError(
+        err instanceof Error ? err.message : "Tải tệp biên bản thất bại.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
   return (
     <Modal
       isOpen={Boolean(clearanceTarget)}
@@ -88,18 +134,42 @@ export function LocationClearanceDialog(props: FacilityConfigModel["clearance"])
             >
               Mã bằng chứng nghiệm thu (Evidence ID) *
             </label>
+            {clearanceTarget?.ownerId && (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-tertiary/20 bg-surface-raised/60 p-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent-primary/30 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary hover:bg-accent-primary/20">
+                  <UploadSimple size={13} weight="bold" />
+                  <span>{uploading ? "Đang tải lên..." : "Tải lên tệp biên bản"}</span>
+                  <input
+                    type="file"
+                    disabled={uploading || submittingClearance}
+                    className="sr-only"
+                    onChange={(e) => void handleFileSelect(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {uploadedName && (
+                  <span className="text-[11px] text-ink-secondary">
+                    Đã lưu: {uploadedName}
+                  </span>
+                )}
+              </div>
+            )}
+            {uploadError && (
+              <p role="alert" className="text-[11px] text-accent-danger">
+                {uploadError}
+              </p>
+            )}
             <input
               id="clearance-evidence-input"
               required
               type="text"
+              pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
               value={clearanceEvidenceId}
               onChange={(e) => setClearanceEvidenceId(e.target.value)}
               placeholder="VD: e2dcea67-87e8-4db4-a399-d81eb1e90730"
               className="w-full px-3 py-2 rounded-lg bg-surface-raised border border-ink-tertiary/20 text-ink-primary font-mono text-xs focus:border-accent-primary focus:outline-none"
             />
             <p className="text-[11px] text-ink-tertiary">
-              Nhập UUID biên bản kiểm tra vệ sinh mặt bằng đã đăng ký
-              trong sổ cái.
+              Tải tệp biên bản (nếu vị trí gắn chủ hàng) hoặc nhập UUID biên bản kiểm tra vệ sinh hợp lệ.
             </p>
           </div>
 

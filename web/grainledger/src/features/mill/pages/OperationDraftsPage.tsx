@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1337,6 +1337,9 @@ function OperationForm({
   const [declaredLoss, setDeclaredLoss] = useState(
     draft?.declaredLossKg ?? "0",
   );
+  const [occurredAtValue, setOccurredAtValue] = useState(() =>
+    localTime(draft?.occurredAt ?? new Date().toISOString()),
+  );
   const [message, setMessage] = useState("");
   const [renderedAt] = useState(() => Date.now());
 
@@ -1349,13 +1352,19 @@ function OperationForm({
             ...paging,
             facilityId,
             ownerId,
+            availableOnly: "true",
           })) as ApiPage<InputLot>,
       ),
   });
 
   const locations =
     setup.locations?.filter(
-      (row) => row.facilityId === facilityId && row.kind !== "ISOLATION",
+      (row) =>
+        row.facilityId === facilityId &&
+        row.kind !== "ISOLATION" &&
+        (row.kind !== "COMPARTMENT" ||
+          row.ownerId === ownerId ||
+          (!row.ownerId && row.cleared)),
     ) ?? [];
   const positions = (lots.data ?? [])
     .filter((lot) =>
@@ -1367,7 +1376,10 @@ function OperationForm({
     )
     .flatMap((lot) =>
       lot.positions
-        .filter((pos) => pos.facilityId === facilityId)
+        .filter(
+          (pos) =>
+            pos.facilityId === facilityId && toDecimal(pos.availableKg).gt(0),
+        )
         .map((pos) => ({
           ...pos,
           lot,
@@ -1389,12 +1401,17 @@ function OperationForm({
               ? [first.lot.stage]
               : [];
 
+  const policyCutoffTime = useMemo(() => {
+    const parsed = Date.parse(occurredAtValue);
+    return Number.isFinite(parsed) ? parsed : renderedAt;
+  }, [occurredAtValue, renderedAt]);
+
   const activePolicy = setup.policies
     ?.filter(
       (item) =>
         item.facilityId === facilityId &&
         item.kind === kind &&
-        Date.parse(item.effectiveFrom) <= renderedAt,
+        Date.parse(item.effectiveFrom) <= policyCutoffTime,
     )
     .sort(
       (a, b) => Date.parse(b.effectiveFrom) - Date.parse(a.effectiveFrom),
@@ -1598,9 +1615,8 @@ function OperationForm({
                 type="datetime-local"
                 name="occurredAt"
                 required
-                defaultValue={localTime(
-                  draft?.occurredAt ?? new Date().toISOString(),
-                )}
+                value={occurredAtValue}
+                onChange={(e) => setOccurredAtValue(e.target.value)}
               />
             </label>
           </div>

@@ -38,8 +38,14 @@ export const fieldRoutes = [
   }),
   screenRoute(fieldPaths.declarations, pesticideDeclarationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
   screenRoute(fieldPaths.receipts, procurementReceiptPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
-  screenRoute(fieldPaths.receipt, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.ProcurementDetailPage }))), { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
-  screenRoute(fieldPaths.sourceLot, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.SourceLotDetailPage }))), { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
+  screenRoute(fieldPaths.receipt, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.ProcurementDetailPage }))), {
+    roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["purchases.write", "lots.read.tenant"],
+  }),
+  screenRoute(fieldPaths.sourceLot, lazyScreen(() => import("./pages/ProcurementDetailPages").then(m => ({ default: m.SourceLotDetailPage }))), {
+    roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER", "CUSTOMER_EXPORT_OFFICER"],
+    anyPermissions: ["purchases.write", "lots.read.tenant"],
+  }),
   screenRoute(fieldPaths.samples, fieldSampleRegistrationPage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER", "CUSTOMER_MANAGER"] }),
   screenRoute(fieldPaths.sync, offlineSyncQueuePage, { roles: ["CUSTOMER_PROCUREMENT_OFFICER"], permission: "purchases.write" }),
 ];

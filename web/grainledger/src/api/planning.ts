@@ -57,9 +57,10 @@ export const planningEndpoints = {
       `/api/blend-plans/${encodeURIComponent(id)}/revoke`,
       { method: "POST", body: JSON.stringify(body) },
     ),
-  cancelDraft: (id: string, body: CancelBlendPlanDraftRequest) =>
+  cancelDraft: (id: string, body: CancelBlendPlanDraftRequest, etag?: string) =>
     apiFetch<unknown>(`/api/blend-plans/${encodeURIComponent(id)}/cancel`, {
       method: "POST",
+      headers: etag ? { "If-Match": etag } : undefined,
       body: JSON.stringify(body),
     }),
   getApplicableAssessmentPolicy: (query: {

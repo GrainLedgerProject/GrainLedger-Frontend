@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { CheckCircle, LockSimple, WarningCircle } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
 export const LiveSimulatorSection: React.FC = () => {
+  const text = useWorkflowText();
   // Simulator Tab State
   const [activeSimTab, setActiveSimTab] = useState<"LEDGER" | "MRL">("LEDGER");
 
@@ -133,14 +135,16 @@ export const LiveSimulatorSection: React.FC = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-accent-primary">
-            Trải nghiệm thời gian thực
+            {text("Trải nghiệm thời gian thực", "Interactive Live Demo")}
           </span>
           <h2 className="font-sans text-3xl sm:text-4xl font-extrabold tracking-[-0.03em] text-ink-primary">
-            Trình mô phỏng Sổ cái & Kiểm định MRL
+            {text("Trình mô phỏng Sổ cái & Kiểm định MRL", "Custody Ledger & MRL Simulator")}
           </h2>
           <p className="text-xs text-ink-secondary text-ink-tertiary">
-            Khám phá cách thuật toán của GrainLedger xử lý khối lượng và tiêu
-            chuẩn MRL theo thời gian thực.
+            {text(
+              "Khám phá cách thuật toán của GrainLedger xử lý khối lượng và tiêu chuẩn MRL theo thời gian thực.",
+              "Explore how GrainLedger enforces mass conservation and MRL safety margins in real time.",
+            )}
           </p>
         </div>
 
@@ -164,7 +168,7 @@ export const LiveSimulatorSection: React.FC = () => {
                 />
               )}
               <span className="relative z-10">
-                1. Sổ cái Cân bằng Khối lượng
+                {text("1. Sổ cái Cân bằng Khối lượng", "1. Mass Balance Ledger")}
               </span>
             </button>
 
@@ -185,7 +189,7 @@ export const LiveSimulatorSection: React.FC = () => {
                 />
               )}
               <span className="relative z-10">
-                2. Đánh giá MRL & Biên An Toàn
+                {text("2. Đánh giá MRL & Biên An Toàn", "2. MRL Evaluation & Margin")}
               </span>
             </button>
           </div>
@@ -205,20 +209,24 @@ export const LiveSimulatorSection: React.FC = () => {
               <div className="flex items-center justify-between border-b border-ink-tertiary/20 dark:border-surface-overlay pb-5">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-ink-primary">
-                    Công thức: Tổng Vào = Tổng Ra + Hao Hụt Khai Báo (Dung sai ≤
-                    0,5%)
+                    {text(
+                      "Công thức: Tổng Vào = Tổng Ra + Hao Hụt Khai Báo (Dung sai ≤ 0,5%)",
+                      "Equation: Total Input = Total Output + Declared Loss (Tolerance ≤ 0.5%)",
+                    )}
                   </h3>
                   <p className="text-xs text-ink-tertiary mt-0.5">
-                    Nhập số liệu hoặc chọn mẻ thử nghiệm để kiểm tra tính toàn
-                    vẹn của sổ cái.
+                    {text(
+                      "Nhập số liệu hoặc chọn mẻ thử nghiệm để kiểm tra tính toàn vẹn của sổ cái.",
+                      "Enter batch figures or load a sample preset to verify ledger conservation.",
+                    )}
                   </p>
                 </div>
                 <StatusBadge
                   status={isSimBalanced ? "BALANCED" : "REJECTED"}
                   label={
                     isSimBalanced
-                      ? "Sổ cái Chấp nhận"
-                      : "Sổ cái Từ chối (MSG01)"
+                      ? text("Sổ cái Chấp nhận", "Ledger Accepted")
+                      : text("Sổ cái Từ chối (MSG01)", "Ledger Rejected (MSG01)")
                   }
                 />
               </div>
@@ -226,7 +234,7 @@ export const LiveSimulatorSection: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div>
                   <label className="text-xs font-semibold text-ink-secondary text-ink-tertiary block mb-2">
-                    Đầu vào (Lúa tươi vào máy sấy)
+                    {text("Đầu vào (Lúa tươi vào máy sấy)", "Input (Fresh paddy fed to dryer)")}
                   </label>
                   <div className="relative">
                     <input
@@ -243,7 +251,7 @@ export const LiveSimulatorSection: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-ink-secondary text-ink-tertiary block mb-2">
-                    Đầu ra (Thóc khô S1 thu được)
+                    {text("Đầu ra (Thóc khô S1 thu được)", "Output (Dry paddy S1 produced)")}
                   </label>
                   <div className="relative">
                     <input
@@ -260,7 +268,7 @@ export const LiveSimulatorSection: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-ink-secondary text-ink-tertiary block mb-2">
-                    Hao hụt ẩm khai báo
+                    {text("Hao hụt ẩm khai báo", "Declared moisture loss")}
                   </label>
                   <div className="relative">
                     <input
@@ -301,17 +309,23 @@ export const LiveSimulatorSection: React.FC = () => {
                   <div>
                     <h4 className="font-bold text-sm">
                       {isSimBalanced
-                        ? "BÚT TOÁN CÂN BẰNG — ĐÃ GHI NHẬN VÀO SỔ CÁI BẤT BIẾN"
-                        : "MSG01: BƯỚC CHẾ BIẾN BỊ TỪ CHỐI (VƯỢT DUNG SAI)"}
+                        ? text(
+                            "BÚT TOÁN CÂN BẰNG — ĐÃ GHI NHẬN VÀO SỔ CÁI BẤT BIẾN",
+                            "ENTRY BALANCED — COMMITTED TO IMMUTABLE LEDGER",
+                          )
+                        : text(
+                            "MSG01: BƯỚC CHẾ BIẾN BỊ TỪ CHỐI (VƯỢT DUNG SAI)",
+                            "MSG01: OPERATION REJECTED (EXCEEDS TOLERANCE)",
+                          )}
                     </h4>
                     <p className="text-xs opacity-90 mt-0.5">
-                      Độ lệch:{" "}
+                      {text("Độ lệch:", "Variance:")}{" "}
                       <strong className="font-mono">
-                        {simVariance.toLocaleString("vi-VN")} kg
+                        {simVariance.toLocaleString(text("vi-VN", "en-US"))} kg
                       </strong>{" "}
-                      · Dung sai tối đa cho phép (0,5%):{" "}
+                      · {text("Dung sai tối đa cho phép (0,5%):", "Max allowed tolerance (0.5%):")}{" "}
                       <span className="font-mono font-bold">
-                        {simAllowed.toLocaleString("vi-VN")} kg
+                        {simAllowed.toLocaleString(text("vi-VN", "en-US"))} kg
                       </span>
                     </p>
                   </div>
@@ -327,7 +341,7 @@ export const LiveSimulatorSection: React.FC = () => {
                     }}
                     className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-white/10 border border-ink-tertiary/20 text-ink-primary shadow-xs hover:bg-black/[0.02]"
                   >
-                    Mẫu chuẩn (0 kg lệch)
+                    {text("Mẫu chuẩn (0 kg lệch)", "Balanced preset (0 kg diff)")}
                   </button>
                   <button
                     type="button"
@@ -338,7 +352,7 @@ export const LiveSimulatorSection: React.FC = () => {
                     }}
                     className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-white/10 border border-functional-hold-border/40 text-accent-danger shadow-xs hover:bg-accent-danger/10"
                   >
-                    Mẫu lỗi gõ nhầm (+4.000 kg)
+                    {text("Mẫu lỗi gõ nhầm (+4.000 kg)", "Typo preset (+4,000 kg)")}
                   </button>
                 </div>
               </div>
@@ -356,19 +370,24 @@ export const LiveSimulatorSection: React.FC = () => {
               <div className="flex items-center justify-between border-b border-ink-tertiary/20 dark:border-surface-overlay pb-5">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-ink-primary">
-                    Kiểm định Giới hạn Dư lượng MRL Đích
+                    {text(
+                      "Kiểm định Giới hạn Dư lượng MRL Đích",
+                      "Destination Market MRL Compliance Check",
+                    )}
                   </h3>
                   <p className="text-xs text-ink-tertiary mt-0.5">
-                    Áp dụng ngưỡng trần quy định của thị trường nhập khẩu trừ
-                    biên an toàn 20%.
+                    {text(
+                      "Áp dụng ngưỡng trần quy định của thị trường nhập khẩu trừ biên an toàn 20%.",
+                      "Enforces destination regulatory limits minus a conservative 20% safety margin.",
+                    )}
                   </p>
                 </div>
                 <StatusBadge
                   status={isMrlCompliant ? "COMPLIANT" : "NON_COMPLIANT"}
                   label={
                     isMrlCompliant
-                      ? "Đạt chuẩn xuất khẩu"
-                      : "Nguy cơ vượt ngưỡng"
+                      ? text("Đạt chuẩn xuất khẩu", "Export Compliant")
+                      : text("Nguy cơ vượt ngưỡng", "Threshold Risk")
                   }
                 />
               </div>
@@ -376,14 +395,14 @@ export const LiveSimulatorSection: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs font-semibold text-ink-secondary text-ink-tertiary block mb-2">
-                    Thị trường đích xuất khẩu:
+                    {text("Thị trường đích xuất khẩu:", "Export destination market:")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: "EU", label: "Châu Âu (EU)" },
-                      { id: "USA", label: "Hoa Kỳ (USA)" },
-                      { id: "JAPAN", label: "Nhật Bản (MHLW)" },
-                      { id: "KOREA", label: "Hàn Quốc (MFDS)" },
+                      { id: "EU", label: text("Châu Âu (EU)", "European Union (EU)") },
+                      { id: "USA", label: text("Hoa Kỳ (USA)", "United States (USA)") },
+                      { id: "JAPAN", label: text("Nhật Bản (MHLW)", "Japan (MHLW)") },
+                      { id: "KOREA", label: text("Hàn Quốc (MFDS)", "South Korea (MFDS)") },
                     ].map((m) => (
                       <button
                         key={m.id}
@@ -407,16 +426,16 @@ export const LiveSimulatorSection: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-ink-secondary text-ink-tertiary block mb-2">
-                    Hoạt chất thuốc BVTV kiểm định:
+                    {text("Hoạt chất thuốc BVTV kiểm định:", "Evaluated pesticide substance:")}
                   </label>
                   <div className="space-y-2">
                     {[
                       {
                         id: "TCZ",
-                        name: "Tricyclazole (Rủi ro cực cao tại EU)",
+                        name: text("Tricyclazole (Rủi ro cực cao tại EU)", "Tricyclazole (Strict EU LOQ risk)"),
                       },
-                      { id: "IPT", name: "Isoprothiolane (Trừ đạo ôn)" },
-                      { id: "HXC", name: "Hexaconazole (Trừ nấm)" },
+                      { id: "IPT", name: text("Isoprothiolane (Trừ đạo ôn)", "Isoprothiolane (Blast control)") },
+                      { id: "HXC", name: text("Hexaconazole (Trừ nấm)", "Hexaconazole (Fungicide)") },
                     ].map((s) => (
                       <button
                         key={s.id}
@@ -442,7 +461,7 @@ export const LiveSimulatorSection: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <span className="text-ink-tertiary block mb-1">
-                      Căn cứ pháp lý:
+                      {text("Căn cứ pháp lý:", "Regulatory basis:")}
                     </span>
                     <span className="font-semibold text-ink-primary">
                       {currentMrl.basis}
@@ -450,7 +469,7 @@ export const LiveSimulatorSection: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-ink-tertiary block mb-1">
-                      Ngưỡng MRL tối đa:
+                      {text("Ngưỡng MRL tối đa:", "Max MRL ceiling:")}
                     </span>
                     <span className="font-mono font-bold text-ink-primary">
                       {currentMrl.limit} {currentMrl.unit}
@@ -458,7 +477,7 @@ export const LiveSimulatorSection: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-ink-tertiary block mb-1">
-                      Ngưỡng an toàn (-20%):
+                      {text("Ngưỡng an toàn (-20%):", "Safety margin (-20%):")}
                     </span>
                     <span className="font-mono font-bold text-accent-primary">
                       {currentMrl.safeMargin} {currentMrl.unit}
@@ -466,7 +485,7 @@ export const LiveSimulatorSection: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-ink-tertiary block mb-1">
-                      Dư lượng mẻ thử:
+                      {text("Dư lượng mẻ thử:", "Sample residue:")}
                     </span>
                     <span
                       className={`font-mono font-bold ${
@@ -484,14 +503,18 @@ export const LiveSimulatorSection: React.FC = () => {
                   {isMrlCompliant ? (
                     <span className="text-xs text-accent-primary font-semibold flex items-center gap-1.5">
                       <CheckCircle size={16} weight="bold" />
-                      Mẻ gạo đạt chuẩn xuất khẩu sang thị trường{" "}
-                      {selectedMarket}. Sẵn sàng cấp phép xếp container.
+                      {text(
+                        `Mẻ gạo đạt chuẩn xuất khẩu sang thị trường ${selectedMarket}. Sẵn sàng cấp phép xếp container.`,
+                        `Batch meets export standards for ${selectedMarket}. Ready for container loading approval.`,
+                      )}
                     </span>
                   ) : (
                     <span className="text-xs text-accent-danger font-semibold flex items-center gap-1.5">
                       <WarningCircle size={16} weight="bold" />
-                      Dư lượng tiếp cận hoặc vượt biên an toàn. Thuật toán phối
-                      trộn sẽ đề xuất bổ sung lô gạo sạch để hạ nồng độ.
+                      {text(
+                        "Dư lượng tiếp cận hoặc vượt biên an toàn. Thuật toán phối trộn sẽ đề xuất bổ sung lô gạo sạch để hạ nồng độ.",
+                        "Residue approaches or breaches safety margin. Blend planning will dilute with compliant lots.",
+                      )}
                     </span>
                   )}
                 </div>

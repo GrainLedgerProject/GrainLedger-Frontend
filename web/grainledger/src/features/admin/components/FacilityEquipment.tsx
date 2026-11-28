@@ -87,14 +87,16 @@ export function FacilityEquipment({ canConfigure = true, displayEquipment, handl
                     {!isActive && <div />}
 
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditEquipment(eq)}
-                        className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
-                        title="Sửa thiết bị"
-                      >
-                        <PencilSimple size={14} />
-                      </button>
+                      {eq.canEdit !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditEquipment(eq)}
+                          className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-base transition-colors"
+                          title="Sửa thiết bị"
+                        >
+                          <PencilSimple size={14} />
+                        </button>
+                      )}
                       {eq.canDelete !== false && (
                         <button
                           type="button"

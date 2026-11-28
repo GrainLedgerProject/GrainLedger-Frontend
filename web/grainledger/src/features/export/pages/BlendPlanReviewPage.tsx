@@ -13,6 +13,8 @@ import {
 } from "@phosphor-icons/react";
 import { z } from "zod";
 import { planningEndpoints, type BlendPlanDecision } from "@/api/planning";
+import { exportEndpoints } from "@/api/exports";
+import { Decimal } from "@/shared/utils/decimalMass";
 import { useAuthStore } from "@/app/store/authStore";
 import { Modal } from "@/shared/ui/Modal";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
@@ -103,6 +105,11 @@ export function BlendPlanReviewContent({
     queryFn: () => planningEndpoints.getDecision(planId),
     enabled: Boolean(proposal.data),
   });
+  const containerResource = useQuery({
+    queryKey: ["blend-plan-container", plan.data?.containerId],
+    queryFn: () => exportEndpoints.getContainerResource(plan.data!.containerId),
+    enabled: Boolean(plan.data?.containerId),
+  });
   const parsed = assessmentSchema.safeParse(proposal.data?.assessment);
   const assessment = parsed.success ? parsed.data : undefined;
   const [confirmation, setConfirmation] = useState<DecisionCommand | null>(
@@ -114,6 +121,7 @@ export function BlendPlanReviewContent({
       plan.refetch(),
       proposal.isEnabled ? proposal.refetch() : Promise.resolve(),
       decision.isEnabled ? decision.refetch() : Promise.resolve(),
+      containerResource.isEnabled ? containerResource.refetch() : Promise.resolve(),
     ]);
   };
   const command = useExportCommand(
@@ -153,6 +161,13 @@ export function BlendPlanReviewContent({
     { persistKey: `blend-plan-review:${planId}` },
   );
   const current = decision.data;
+  const executionStarted = Boolean(
+    (containerResource.data?.data.status &&
+      containerResource.data.data.status !== "PLANNED") ||
+    current?.reservation.lines.some((line) =>
+      new Decimal(line.consumedKg || "0").gt(0),
+    ),
+  );
   const fresh =
     proposal.data?.freshness === "CURRENT" &&
     proposal.data.demandCurrent &&
@@ -172,7 +187,8 @@ export function BlendPlanReviewContent({
       !proposal.data ||
       !current ||
       busy ||
-      (action === "approve" && !approving)
+      (action === "approve" && !approving) ||
+      (action === "revoke" && executionStarted)
     )
       return;
     command.reset();
@@ -318,7 +334,7 @@ export function BlendPlanReviewContent({
                   </span>
                 </div>
               )}
-              {proposal.data && !fresh && (
+              {proposal.data && !fresh && current?.status !== "APPROVED" && (
                 <p className="text-xs text-accent-warning">
                   {proposal.data.freshness === "NOT_RECHECKED"
                     ? text(
@@ -538,13 +554,23 @@ export function BlendPlanReviewContent({
                         </>
                       )}
                       {current.activeApproval && (
-                        <button
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
-                          disabled={busy}
-                          onClick={() => open("revoke")}
-                        >
-                          {labels.revoke}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:min-h-12 border-ink-tertiary/25 bg-surface-base text-ink-secondary hover:bg-surface-raised hover:text-ink-primary px-4"
+                            disabled={busy || executionStarted}
+                            onClick={() => open("revoke")}
+                          >
+                            {labels.revoke}
+                          </button>
+                          {executionStarted && (
+                            <span className="text-xs text-ink-secondary">
+                              {text(
+                                "Container đã bắt đầu thực thi — không thể thu hồi phê duyệt.",
+                                "Container execution has started — approval cannot be revoked.",
+                              )}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -593,7 +619,7 @@ export function BlendPlanReviewContent({
                 <textarea
                   className="w-full pl-9 pr-3 py-3 text-sm rounded-lg bg-surface-raised dark:bg-surface-base border border-ink-tertiary/20 focus:border-accent-primary focus:outline-none focus:rounded-lg"
                   required
-                  maxLength={2000}
+                  maxLength={1000}
                   rows={3}
                   value={reason}
                   disabled={command.isPending}

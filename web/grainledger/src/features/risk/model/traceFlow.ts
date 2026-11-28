@@ -9,8 +9,14 @@ export interface TraceFlowLotInput {
   quantityKg?: string;
   availableKg?: string;
   restrictions?: string[];
+  directHold?: boolean;
+  effectiveHold?: boolean;
   directHoldIds?: string[];
   effectiveHoldIds?: string[];
+  positions?: {
+    quantityKg?: string;
+    availableKg?: string;
+  }[];
 }
 
 export interface TraceFlowEdgeInput {
@@ -32,11 +38,15 @@ export interface TraceFlowOperationInput {
 
 export interface TraceFlowCustodyInput {
   id: string;
-  kind: string;
-  lotId: string;
+  kind?: string;
+  action?: string;
+  lotId?: string;
+  primaryOutputLotId?: string;
+  locationId?: string | null;
   fromLocationId?: string | null;
   toLocationId?: string | null;
-  quantityKg: string;
+  quantityKg?: string;
+  revision?: string | number | null;
   occurredAt?: string | null;
 }
 
@@ -222,12 +232,22 @@ export function buildTraceFlowGraph({
   for (const lot of lots) {
     const held =
       Boolean(lot.restrictions?.length) ||
+      Boolean(lot.directHold) ||
+      Boolean(lot.effectiveHold) ||
       Boolean(lot.directHoldIds?.length) ||
       Boolean(lot.effectiveHoldIds?.length);
+    const positionQuantity = lot.positions?.length
+      ? lot.positions.reduce((sum, p) => sum.plus(new Decimal(p.quantityKg || "0")), new Decimal(0)).toString()
+      : undefined;
+    const positionAvailable = lot.positions?.some((p) => p.availableKg != null)
+      ? lot.positions.reduce((sum, p) => sum.plus(new Decimal(p.availableKg || "0")), new Decimal(0)).toString()
+      : undefined;
+    const physicalKg = lot.quantityKg ?? positionQuantity;
+    const availKg = lot.availableKg ?? positionAvailable;
     const meta: string[] = [];
     if (lot.producedKg) meta.push(`${locale === "vi" ? "Sản lượng" : "Produced"}: ${formatKg(lot.producedKg)} kg`);
-    if (lot.quantityKg) meta.push(`${locale === "vi" ? "Tồn vật lý" : "Physical"}: ${formatKg(lot.quantityKg)} kg`);
-    if (lot.availableKg) meta.push(`${locale === "vi" ? "Khả dụng" : "Available"}: ${formatKg(lot.availableKg)} kg`);
+    if (physicalKg) meta.push(`${locale === "vi" ? "Tồn vật lý" : "Physical"}: ${formatKg(physicalKg)} kg`);
+    if (availKg) meta.push(`${locale === "vi" ? "Khả dụng" : "Available"}: ${formatKg(availKg)} kg`);
     if (lot.restrictions?.length) meta.push(`HOLD: ${lot.restrictions.join(", ")}`);
     nodesMap.set(`lot:${lot.id}`, {
       id: `lot:${lot.id}`,
@@ -307,27 +327,33 @@ export function buildTraceFlowGraph({
   }
 
   for (const evt of custodyEvents) {
-    const lotKey = `lot:${evt.lotId}`;
+    const evtLotId = evt.lotId ?? evt.primaryOutputLotId;
+    if (!evtLotId) continue;
+    const lotKey = `lot:${evtLotId}`;
     if (!nodesMap.has(lotKey)) continue;
     const custodyKey = `custody:${evt.id}`;
-    const fromLoc = evt.fromLocationId ? (locationNames?.get(evt.fromLocationId) ?? evt.fromLocationId) : "—";
-    const toLoc = evt.toLocationId ? (locationNames?.get(evt.toLocationId) ?? evt.toLocationId) : "—";
+    const fromLoc = evt.fromLocationId ? (locationNames?.get(evt.fromLocationId) ?? evt.fromLocationId) : null;
+    const toLoc = (evt.toLocationId ?? evt.locationId)
+      ? (locationNames?.get((evt.toLocationId ?? evt.locationId)!) ?? (evt.toLocationId ?? evt.locationId)!)
+      : null;
+    const locLine = fromLoc && toLoc ? `${fromLoc} → ${toLoc}` : (toLoc ?? fromLoc ?? "—");
+    const kindLabel = evt.kind ?? evt.action ?? "CUSTODY";
     nodesMap.set(custodyKey, {
       id: custodyKey,
       kind: "custody",
-      label: traceRelationLabel(evt.kind, locale),
-      sublabel: `${formatKg(evt.quantityKg)} kg`,
+      label: traceRelationLabel(kindLabel, locale),
+      sublabel: evt.quantityKg ? `${formatKg(evt.quantityKg)} kg` : (evt.revision ? `rev ${evt.revision}` : kindLabel),
       meta: [
-        `${fromLoc} → ${toLoc}`,
+        locLine,
         ...(evt.occurredAt ? [new Date(evt.occurredAt).toLocaleString(locale === "vi" ? "vi-VN" : "en-GB")] : []),
       ],
-      lotId: evt.lotId,
+      lotId: evtLotId,
     });
     rawEdges.push({
       id: `${lotKey}->${custodyKey}`,
       from: lotKey,
       to: custodyKey,
-      label: `${formatKg(evt.quantityKg)} kg`,
+      label: evt.quantityKg ? `${formatKg(evt.quantityKg)} kg` : "",
     });
   }
 

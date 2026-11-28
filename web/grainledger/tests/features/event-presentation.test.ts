@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { ledgerHistoryKinds } from '@/api/history';
+import { BUSINESS_EVENT_TYPES } from '@/features/audit/model/businessHistory';
 import i18n from '@/app/i18n';
 import { detailLabel, detailValue, eventLabel, readableDecimal, structuredDetails } from '@/features/audit/model/eventPresentation';
 
 describe('Readable event details', () => {
-  it('defines a translation for each backend history kind in both locales', () => {
+  it('defines a translation for each backend history kind and business event type in both locales', () => {
     for (const language of ['vi', 'en']) {
       for (const kind of ledgerHistoryKinds) {
         expect(i18n.getResource(language, 'translation', `audit.events.types.${kind}`)).toEqual(expect.any(String));
+      }
+      for (const { eventType } of BUSINESS_EVENT_TYPES) {
+        expect(i18n.exists(`audit.events.types.${eventType}`, { lng: language })).toBe(true);
       }
     }
   });

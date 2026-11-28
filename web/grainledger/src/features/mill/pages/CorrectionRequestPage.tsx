@@ -13,6 +13,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { ledgerEndpoints } from "@/api/ledger";
+import { collectPages, type ApiPage } from "@/api/query";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import { useWorkflowText } from "@/shared/ui/useWorkflowText";
@@ -51,22 +52,21 @@ export function CorrectionRequestPage() {
 
       const opsPromise = (async () => {
         try {
-          const res = (await ledgerEndpoints.getOperations()) as unknown;
-          const items = Array.isArray(res)
-            ? res
-            : res && typeof res === "object" && "items" in res
-              ? (res as { items: unknown }).items
-              : [];
-          const committedOps = Array.isArray(items)
-            ? items.filter((item): item is CommittedOperationOption =>
-                Boolean(
-                  item &&
-                    typeof item === "object" &&
-                    typeof (item as CommittedOperationOption).id === "string" &&
-                    (item as CommittedOperationOption).status === "COMMITTED",
-                ),
-              )
-            : [];
+          const items = await collectPages<CommittedOperationOption>(
+            async (paging) => {
+              const res = (await ledgerEndpoints.getOperations({
+                ...paging,
+                status: "COMMITTED",
+              })) as ApiPage<CommittedOperationOption> | CommittedOperationOption[];
+              if (Array.isArray(res)) {
+                return { items: res, hasMore: false };
+              }
+              return res;
+            },
+          );
+          const committedOps = items.filter(
+            (item) => item.status === "COMMITTED",
+          );
           if (active) setOperations(committedOps);
         } catch (err: unknown) {
           if (active) {

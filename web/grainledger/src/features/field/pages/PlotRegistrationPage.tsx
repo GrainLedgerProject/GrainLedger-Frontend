@@ -1,5 +1,6 @@
 import { confirmAction } from "@/app/store/feedbackStore";
 import React, { useState } from "react";
+import { Link, useInRouterContext } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { collectPages, pageItems } from "@/api/query";
 import { useTranslation } from "react-i18next";
@@ -154,9 +155,13 @@ export const PlotRegistrationPage: React.FC = () => {
       if (searchQuery) plotParams.search = searchQuery;
       if (selectedFarmerId) plotParams.farmerId = selectedFarmerId;
 
-      const [plotsRes, farmersRes] = await Promise.all([
+      const [plotsRes, farmerItems] = await Promise.all([
         procurementEndpoints.getPlots(plotParams),
-        procurementEndpoints.getFarmers({ pageSize: 100 }),
+        collectPages<FarmerOption>((paging) =>
+          procurementEndpoints.getFarmers(paging) as Promise<
+            import("@/api/query").ApiPage<FarmerOption>
+          >,
+        ),
       ]);
 
       const plotItems = pageItems<PlotRecord>(plotsRes);
@@ -164,7 +169,6 @@ export const PlotRegistrationPage: React.FC = () => {
         ? plotItems.length
         : (plotsRes.totalCount ?? plotItems.length);
       const hasMore = !Array.isArray(plotsRes) && Boolean(plotsRes.hasMore);
-      const farmerItems = pageItems<FarmerOption>(farmersRes);
 
       // Map farmer names to plots
       const farmerMap = new Map(farmerItems.map((f) => [f.id, f.name]));
@@ -942,6 +946,7 @@ export const PlotRegistrationPage: React.FC = () => {
 
 function PlotRelatedRecords({ plotId }: { plotId: string }) {
   const text = useWorkflowText();
+  const inRouter = useInRouterContext();
   const allowed = useAuthStore((state) =>
     state.user?.permissions.some(
       (p) => p === "farms.read" || p === "farms.write",
@@ -971,21 +976,39 @@ function PlotRelatedRecords({ plotId }: { plotId: string }) {
       <ul className="space-y-1">
         {links.data?.map((row) => (
           <li key={row.id}>
-            <a
-              className="text-accent-primary underline"
-              href={`${fieldPaths.seasons}?seasonId=${encodeURIComponent(row.seasonId)}`}
-            >
-              {row.seasonName}
-            </a>
+            {inRouter ? (
+              <Link
+                className="text-accent-primary underline"
+                to={`${fieldPaths.seasons}?seasonId=${encodeURIComponent(row.seasonId)}`}
+              >
+                {row.seasonName}
+              </Link>
+            ) : (
+              <a
+                className="text-accent-primary underline"
+                href={`${fieldPaths.seasons}?seasonId=${encodeURIComponent(row.seasonId)}`}
+              >
+                {row.seasonName}
+              </a>
+            )}
             {" · "}
             {row.riceVariety}
             {" · "}
-            <a
-              className="text-accent-primary underline"
-              href={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(row.id)}`}
-            >
-              {text("Lịch sử phun", "Spray history")}
-            </a>
+            {inRouter ? (
+              <Link
+                className="text-accent-primary underline"
+                to={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(row.id)}`}
+              >
+                {text("Lịch sử phun", "Spray history")}
+              </Link>
+            ) : (
+              <a
+                className="text-accent-primary underline"
+                href={`${fieldPaths.declarations}?plotSeasonId=${encodeURIComponent(row.id)}`}
+              >
+                {text("Lịch sử phun", "Spray history")}
+              </a>
+            )}
           </li>
         ))}
       </ul>

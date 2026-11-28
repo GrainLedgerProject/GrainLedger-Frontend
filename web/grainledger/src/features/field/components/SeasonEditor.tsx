@@ -163,8 +163,9 @@ export function SeasonEditor({
                 ? action.link.plotId
                 : String(form.get("plotId") ?? ""),
             seasonId: resolvedSeasonId,
-            riceVariety: resolvedVarietyName,
-            ...(resolvedVarietyId ? { riceVarietyId: resolvedVarietyId } : {}),
+            ...(resolvedVarietyId
+              ? { riceVariety: null, riceVarietyId: resolvedVarietyId }
+              : { riceVariety: resolvedVarietyName, riceVarietyId: undefined }),
           };
           if (action.type === "editLink") {
             await procurement.updatePlotSeason(action.link.id, {
@@ -177,6 +178,7 @@ export function SeasonEditor({
           if (
             !prior ||
             prior.plotId !== body.plotId ||
+            prior.seasonId !== body.seasonId ||
             prior.riceVariety !== body.riceVariety ||
             prior.riceVarietyId !== body.riceVarietyId
           ) {

@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { withApiQuery } from "./query";
 
 /** Endpoints for reviewed residue rules, policy settings and evidence selection. */
 export const residueEndpoints = {
@@ -31,15 +32,32 @@ export const residueEndpoints = {
       `/api/residue-rules/${encodeURIComponent(id)}/retire`,
       { method: "POST", body: JSON.stringify(body) },
     ),
+  getResidueChange: (changeId: string) =>
+    apiFetch<ResidueChangeDetail>(
+      `/api/residue-changes/${encodeURIComponent(changeId)}`,
+    ),
+  getResidueChangeTargets: (
+    changeId: string,
+    query?: ResidueChangeTargetQuery,
+  ) =>
+    apiFetch<ResidueRiskPage<ResidueChangeTarget>>(
+      withApiQuery(
+        `/api/residue-changes/${encodeURIComponent(changeId)}/targets`,
+        query,
+      ),
+    ),
+  getResidueRiskEvents: (query?: ResidueRiskQuery) =>
+    apiFetch<ResidueRiskPage<ResidueRiskEvent>>(
+      withApiQuery("/api/residue-risk-events", query),
+    ),
+  getResidueRiskEvent: (eventId: string) =>
+    apiFetch<ResidueRiskEvent>(
+      `/api/residue-risk-events/${encodeURIComponent(eventId)}`,
+    ),
   getPolicySettings: () =>
     apiFetch<{ items: ResiduePolicySettingVersion[] }>(
       "/api/residue-policy-settings",
     ),
-  createPolicySetting: (request: ResiduePolicySettingVersion) =>
-    apiFetch<ResiduePolicySettingVersion>("/api/residue-policy-settings", {
-      method: "POST",
-      body: JSON.stringify(request),
-    }),
   getPolicySetting: (id: string) =>
     apiFetch<ResiduePolicySettingVersion>(
       `/api/residue-policy-settings/${encodeURIComponent(id)}`,
@@ -278,4 +296,124 @@ export interface ResidueSourceGroupVersion {
 
 export interface RetireResidueProfileRequest {
   reason: string;
+}
+
+export type ResidueRiskTargetKind = "LOT" | "PLAN" | "CONTAINER";
+export type ResidueRiskAssessmentStatus =
+  | "COMPLETE"
+  | "UNRESOLVED"
+  | "PASS"
+  | "FAIL"
+  | "INCOMPLETE";
+export type ResidueChangeTargetState =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED_RETRYABLE";
+
+export interface ResidueRiskPage<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
+}
+
+export interface ResidueChangeTargetQuery {
+  page?: number;
+  pageSize?: number;
+  targetKind?: ResidueRiskTargetKind;
+  targetId?: string;
+  state?: ResidueChangeTargetState;
+}
+
+export interface ResidueRiskQuery {
+  page?: number;
+  pageSize?: number;
+  targetKind?: ResidueRiskTargetKind;
+  targetId?: string;
+  assessmentStatus?: ResidueRiskAssessmentStatus;
+  from?: string;
+  to?: string;
+}
+
+export interface ResidueChangeDetail {
+  id: string;
+  companyId: string;
+  globalCause: boolean;
+  changeKind: string;
+  subjectId: string;
+  subjectVersion?: string | number | null;
+  phase?: string | null;
+  knownAt?: string | null;
+  dueAt?: string | null;
+  state: string;
+  discoveryComplete: boolean;
+  progress: {
+    totalTargets: number;
+    completedTargets: number;
+    remainingTargets: number;
+  };
+  errorCode?: string | null;
+  originReferences?: Record<string, string | null | undefined>;
+}
+
+export interface ResidueChangeTarget {
+  id: string;
+  changeId: string;
+  targetType: ResidueRiskTargetKind | string;
+  targetId: string;
+  relationshipBasis: string;
+  state: ResidueChangeTargetState | string;
+  evaluationId?: string | null;
+  dependencyRevision?: string | number | null;
+  substanceIds?: string[];
+  discoveredAt?: string | null;
+  updatedAt?: string | null;
+  errorCode?: string | null;
+  latestRiskEventId?: string | null;
+}
+
+export interface ResidueRiskEvent {
+  id: string;
+  changeId: string;
+  targetType: ResidueRiskTargetKind | string;
+  targetId: string;
+  relationshipBasis: string;
+  assessmentStatus: ResidueRiskAssessmentStatus | string;
+  snapshotAt?: string | null;
+  evaluatedAt?: string | null;
+  evaluationId?: string | null;
+  dependencyRevision?: string | number | null;
+  assessment?: {
+    engineVersion?: string | null;
+    marketId?: string | null;
+    commodityId?: string | null;
+    materialBasis?: string | null;
+    mrlVersionId?: string | null;
+    marginPolicyId?: string | null;
+    historicalDecisionId?: string | null;
+    historicalDossierId?: string | null;
+    findings?: Array<{
+      code?: string | null;
+      status?: string | null;
+      actual?: string | number | null;
+      limit?: string | number | null;
+      unit?: string | null;
+      substanceId?: string | null;
+      attributeId?: string | null;
+    }>;
+    results?: Array<{
+      substanceId?: string | null;
+      status?: string | null;
+      lower?: string | number | null;
+      upper?: string | number | null;
+      unit?: string | null;
+      profileCode?: string | null;
+      commodityId?: string | null;
+      productStage?: string | null;
+      productIdentity?: string | null;
+      reasons?: string[];
+    }>;
+  } | null;
 }

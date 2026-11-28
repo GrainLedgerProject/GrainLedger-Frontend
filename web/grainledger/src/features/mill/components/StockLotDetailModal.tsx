@@ -48,6 +48,9 @@ export interface StockLot {
   code: string;
   stage: string;
   productIdentity: string;
+  riceVarietyId?: string | null;
+  riceVariety?: string | null;
+  varietyStatus?: "UNKNOWN" | "SINGLE" | "MIXED" | string;
   ownerId: string;
   ownerName?: string;
   commodityId: string;
@@ -203,47 +206,58 @@ export function StockLotDetailModal({
         <div className="space-y-4">
           {(lot.restrictions.length > 0 ||
             Boolean(lot.directHoldIds?.length) ||
-            Boolean(lot.effectiveHoldIds?.length)) && (
-            <div
-              role="status"
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-functional-hold-border bg-functional-hold-bg/60 p-3 text-xs text-accent-danger dark:bg-functional-hold-bg/25"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge
-                  status="HOLD"
-                  label={
-                    lot.directHoldIds?.length
-                      ? text("HOLD trực tiếp", "Direct HOLD")
-                      : lot.effectiveHoldIds?.length
-                        ? text("HOLD kế thừa", "Inherited HOLD")
-                        : text("Đang hạn chế", "Restricted")
-                  }
-                  size="sm"
-                />
-                <LockSimple size={15} className="shrink-0" aria-hidden="true" />
-                <span className="font-semibold [overflow-wrap:anywhere]">
-                  {lot.restrictions.join(" · ") ||
-                    lot.effectiveHoldIds?.join(", ") ||
-                    lot.directHoldIds?.join(", ")}
-                </span>
-              </div>
-              {inRouter && canIsolateHold && (
-                <Link
-                  to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(activeLotId)}${
-                    (lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])
-                      ? `&holdId=${encodeURIComponent((lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])!)}`
-                      : ""
-                  }`}
-                  className="font-semibold text-accent-danger underline"
+            Boolean(lot.effectiveHoldIds?.length)) &&
+            (() => {
+              const hasHold =
+                Boolean(lot.directHoldIds?.length) ||
+                Boolean(lot.effectiveHoldIds?.length) ||
+                lot.restrictions.some((r) => r.includes("HOLD"));
+              return (
+                <div
+                  role="status"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-functional-hold-border bg-functional-hold-bg/60 p-3 text-xs text-accent-danger dark:bg-functional-hold-bg/25"
                 >
-                  {text(
-                    "Mở phiếu cách ly (ISOLATION) →",
-                    "Open ISOLATION transfer →",
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge
+                      status={hasHold ? "HOLD" : "STALE"}
+                      label={
+                        lot.directHoldIds?.length
+                          ? text("HOLD trực tiếp", "Direct HOLD")
+                          : lot.effectiveHoldIds?.length
+                            ? text("HOLD kế thừa", "Inherited HOLD")
+                            : text("Đang hạn chế", "Restricted")
+                      }
+                      size="sm"
+                    />
+                    <LockSimple
+                      size={15}
+                      className="shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="font-semibold [overflow-wrap:anywhere]">
+                      {lot.restrictions.join(" · ") ||
+                        lot.effectiveHoldIds?.join(", ") ||
+                        lot.directHoldIds?.join(", ")}
+                    </span>
+                  </div>
+                  {inRouter && canIsolateHold && hasHold && (
+                    <Link
+                      to={`${millPaths.stockTransfer}?lotId=${encodeURIComponent(activeLotId)}&isolation=1${
+                        (lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])
+                          ? `&holdId=${encodeURIComponent((lot.effectiveHoldIds?.[0] ?? lot.directHoldIds?.[0])!)}`
+                          : ""
+                      }`}
+                      className="font-semibold text-accent-danger underline"
+                    >
+                      {text(
+                        "Mở phiếu cách ly (ISOLATION) →",
+                        "Open ISOLATION transfer →",
+                      )}
+                    </Link>
                   )}
-                </Link>
-              )}
-            </div>
-          )}
+                </div>
+              );
+            })()}
 
           <dl className="record-details [overflow-wrap:anywhere] sm:grid-cols-2">
             <div>
@@ -261,6 +275,24 @@ export function StockLotDetailModal({
             <div>
               <dt>{text("Mặt hàng", "Commodity")}</dt>
               <dd className="text-ink-primary">{commodityName || "—"}</dd>
+            </div>
+            <div>
+              <dt>{text("Giống lúa", "Rice variety")}</dt>
+              <dd className="flex flex-wrap items-center gap-1.5 text-ink-primary">
+                <span>
+                  {lot.riceVariety ||
+                    (lot.varietyStatus === "MIXED"
+                      ? text("Hỗn hợp nhiều giống", "Mixed varieties")
+                      : "—")}
+                </span>
+                {lot.varietyStatus && (
+                  <StatusBadge
+                    status={lot.varietyStatus === "MIXED" ? "PENDING" : "ACTIVE"}
+                    size="sm"
+                    label={lot.varietyStatus}
+                  />
+                )}
+              </dd>
             </div>
             <div>
               <dt>{text("Tổng tồn", "Total on hand")}</dt>

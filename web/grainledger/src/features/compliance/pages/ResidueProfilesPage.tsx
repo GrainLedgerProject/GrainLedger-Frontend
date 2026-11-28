@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { residueEndpoints, type ResidueProfileVersion } from "@/api/residue";
+import { compliancePaths } from "../paths";
 import { useAuthStore } from "@/app/store/authStore";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
 import { Modal } from "@/shared/ui/Modal";
@@ -240,6 +242,14 @@ export function ResidueProfilesPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+        {(user?.role === "CUSTOMER_MANAGER" || user?.role === "CUSTOMER_EXPORT_OFFICER") && (
+          <Link
+            to={compliancePaths.residueRisk}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary hover:bg-accent-primary/20"
+          >
+            <span>{text("Sự kiện rủi ro dư lượng", "Residue risk events")}</span>
+          </Link>
+        )}
         {mayPublish && <button type="button" className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white"
           onClick={() => setEditor({ source: null })}>{text("Tạo hồ sơ", "New profile")}</button>}
         <button
@@ -267,7 +277,7 @@ export function ResidueProfilesPage() {
             size={16}
             weight="fill"
             aria-hidden="true"
-            className="absolute left-3 top-2.5 text-ink-tertiary"
+            className="mt-0.5 shrink-0 text-accent-primary"
           />
           <span>
             {t(

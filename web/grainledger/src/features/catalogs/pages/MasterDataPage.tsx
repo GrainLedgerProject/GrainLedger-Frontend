@@ -210,9 +210,7 @@ const MasterDataWorkspace: React.FC = () => {
             await catalogsEndpoints.updateMeasurementUnit(
               editingItem.id,
               {
-                code: formData.code,
                 name: formData.name,
-                quantityKind: formData.extra || "MASS",
               },
               editingEtag,
             );
@@ -248,9 +246,7 @@ const MasterDataWorkspace: React.FC = () => {
             await catalogsEndpoints.updateQualityAttribute(
               editingItem.id,
               {
-                code: formData.code,
                 name: formData.name,
-                unit: formData.extra || "%",
               },
               editingEtag,
             );
@@ -316,6 +312,14 @@ const MasterDataWorkspace: React.FC = () => {
       if (err instanceof ApiError && err.status === 412) {
         setEditingEtag(null);
         setError(t("apiAudit.conflict"));
+      } else if (err instanceof ApiError && err.problem?.errors) {
+        const fieldDetails = Object.entries(err.problem.errors)
+          .flatMap(([field, msgs]) =>
+            msgs.map((msg) => (field ? `${field}: ${msg}` : msg)),
+          )
+          .filter(Boolean)
+          .join(" · ");
+        setError(fieldDetails || err.message);
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -774,16 +778,39 @@ const MasterDataWorkspace: React.FC = () => {
                     >
                       {t("catalogs.master.lblExtra")}
                     </label>
-                    <input
-                      id={`${formId}-extra`}
-                      type="text"
-                      value={formData.extra}
-                      onChange={(e) =>
-                        setFormData({ ...formData, extra: e.target.value })
-                      }
-                      placeholder={t("catalogs.master.placeholderExtra")}
-                      className={`${modalField} font-mono`}
-                    />
+                    {activeTab === "UNITS" ? (
+                      <select
+                        id={`${formId}-extra`}
+                        disabled={Boolean(editingItem) || submitting}
+                        value={formData.extra || "MASS"}
+                        onChange={(e) =>
+                          setFormData({ ...formData, extra: e.target.value })
+                        }
+                        className={`${modalField} font-mono`}
+                      >
+                        <option value="MASS">MASS</option>
+                        <option value="AREA">AREA</option>
+                        <option value="RESIDUE_CONCENTRATION">
+                          RESIDUE_CONCENTRATION
+                        </option>
+                        <option value="APPLICATION_RATE">
+                          APPLICATION_RATE
+                        </option>
+                        <option value="FRACTION">FRACTION</option>
+                      </select>
+                    ) : (
+                      <input
+                        id={`${formId}-extra`}
+                        type="text"
+                        disabled={Boolean(editingItem) || submitting}
+                        value={formData.extra}
+                        onChange={(e) =>
+                          setFormData({ ...formData, extra: e.target.value })
+                        }
+                        placeholder={t("catalogs.master.placeholderExtra")}
+                        className={`${modalField} font-mono`}
+                      />
+                    )}
                   </div>
                 )}
               </fieldset>

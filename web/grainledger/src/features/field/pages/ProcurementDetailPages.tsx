@@ -521,7 +521,13 @@ function SourceLotDetailBody({
           key={selectedStockLot.id}
           lotId={selectedStockLot.id}
           initialCode={selectedStockLot.code}
-          showStockPageLink
+          showStockPageLink={useAuthStore
+            .getState()
+            .user?.permissions.some((p) =>
+              ["lots.read.tenant", "lots.read.facility", "lots.read.all"].includes(
+                p,
+              ),
+            )}
           onClose={() => setSelectedStockLot(null)}
         />
       )}

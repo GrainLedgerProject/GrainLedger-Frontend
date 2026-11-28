@@ -242,7 +242,7 @@ it("filters catalog rice varieties in the link-plot selector by name or code and
   expect(JSON.parse(String(requests("POST")[0][1]?.body)).payload).toMatchObject({
     plotId: plot.id,
     seasonId: season.id,
-    riceVariety: "Đài Thơm 8",
+    riceVariety: null,
     riceVarietyId: "var-2",
   });
 });

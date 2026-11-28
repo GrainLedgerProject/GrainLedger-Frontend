@@ -323,8 +323,16 @@ export interface ContainerTrace {
       availableKg?: string;
       status?: string;
       restrictions?: string[];
+      directHold?: boolean;
+      effectiveHold?: boolean;
       directHoldIds?: string[];
       effectiveHoldIds?: string[];
+      positions?: {
+        locationId: string;
+        facilityId?: string;
+        quantityKg: string;
+        availableKg?: string;
+      }[];
     }[];
     edges: {
       operationId?: string;
@@ -333,6 +341,7 @@ export interface ContainerTrace {
       inputConsumedKg: string;
       outputProducedKg: string;
       kind?: string;
+      relationType?: string;
     }[];
     operations?: {
       id: string;
@@ -343,12 +352,25 @@ export interface ContainerTrace {
     }[];
     custodyEvents?: {
       id: string;
-      kind: string;
-      lotId: string;
+      kind?: string;
+      action?: string;
+      lotId?: string;
+      primaryOutputLotId?: string;
+      locationId?: string | null;
       fromLocationId?: string | null;
       toLocationId?: string | null;
-      quantityKg: string;
+      quantityKg?: string;
+      revision?: string | number | null;
       occurredAt?: string | null;
+    }[];
+    actualContainers?: {
+      containerId: string;
+      code: string;
+      linkedLoadedKg?: string;
+      sourceLoadedKg?: string | null;
+      status?: string;
+      held?: boolean;
+      restricted?: boolean;
     }[];
     corrections?: {
       id?: string;

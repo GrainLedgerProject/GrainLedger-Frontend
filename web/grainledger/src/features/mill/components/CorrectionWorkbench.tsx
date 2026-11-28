@@ -33,6 +33,9 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
   const [confirmedCommit, setConfirmedCommit] = useState(false);
   const [success, setSuccess] = useState("");
   const busy = useRef(false);
+  const setup = useQuery({ queryKey: ["ledger-setup"], queryFn: ledgerEndpoints.getSetup });
+  const locationName = (locationId: string) =>
+    setup.data?.locations?.find((loc) => loc.id === locationId)?.name ?? locationId;
   const original = useQuery({ queryKey: ["correction-original", correction.operationId], queryFn: async () => await ledgerEndpoints.getOperation(correction.operationId) as CorrectionOperation });
   const drafts = useQuery({ queryKey: ["correction-drafts", original.data?.ownerId, original.data?.facilityId], enabled: Boolean(original.data && open), queryFn: async () => collectPages(async q => {
     const response = await ledgerEndpoints.getOperations({ ...q, status: "DRAFT", ownerId: original.data!.ownerId, facilityId: original.data!.facilityId });
@@ -44,7 +47,7 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
     const lots = await Promise.all(original.data.outputs.map(async o => await ledgerEndpoints.getLot(o.id) as OutputLot));
     return lots.flatMap(l => {
       if (!l.id || !Array.isArray(l.positions)) throw new Error(text("Thiếu vị trí đầu ra gốc.", "Original output positions are missing."));
-      return l.positions.filter(p => Number(p.quantityKg) > 0).map(p => ({ lotId: l.id, locationId: p.locationId, quantityKg: p.quantityKg }));
+      return l.positions.filter(p => toDecimal(p.quantityKg).gt(0)).map(p => ({ lotId: l.id, locationId: p.locationId, quantityKg: p.quantityKg }));
     });
   } });
   const [positions, setPositions] = useState<PhysicalPosition[] | null>(null);
@@ -65,7 +68,7 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
     }
   }, onSettled: () => { busy.current = false; } });
   const r = replacement.data;
-  const needsConfirmation = r?.varianceKg !== undefined && Number(r.varianceKg) !== 0 && r.confirmedVersion !== r.version;
+  const needsConfirmation = r?.varianceKg !== undefined && !toDecimal(r.varianceKg).isZero() && r.confirmedVersion !== r.version;
   const eligible = r?.status === "DRAFT" && r.ownerId === original.data?.ownerId && r.facilityId === original.data?.facilityId && (!r.boundCorrectionId || r.boundCorrectionId === correction.id);
   const reviewing = mutation.isPending || physical.isFetching || replacement.isFetching || original.isFetching;
   const positionsValid = !!positions?.length && positions.every(row => /^[0-9]{1,14}(\.[0-9]{1,6})?$/.test(row.quantityKg) && toDecimal(row.quantityKg).gt(0));
@@ -90,8 +93,8 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
       <p className="break-all font-mono text-xs">{correction.id}</p><CorrectionStatusBadge status={correction.status}/><p>{correction.reason}</p>
       <Feedback error={original.error ?? drafts.error ?? replacement.error ?? physical.error ?? mutation.error} pending={original.isPending || mutation.isPending}/>
       {success && <p role="status" className="text-accent-primary">{success}</p>}
-      {original.data && <Panel title={text("Công đoạn gốc bất biến", "Immutable original operation")}><OperationSummary operation={original.data}/></Panel>}
-      {correction.reconciliation && <Panel title={text("Vị trí đã đối soát", "Recorded physical reconciliation")}><PositionsTable positions={correction.reconciliation}/></Panel>}
+      {original.data && <Panel title={text("Công đoạn gốc bất biến", "Immutable original operation")}><OperationSummary operation={original.data} locationName={locationName}/></Panel>}
+      {correction.reconciliation && <Panel title={text("Vị trí đã đối soát", "Recorded physical reconciliation")}><PositionsTable positions={correction.reconciliation} locationName={locationName}/></Panel>}
       {correction.evidenceId && <CorrectionEvidenceDownload id={correction.evidenceId} fileName={correction.evidenceFileName}/>}
       {correction.replacementOperationId && <p>{text("Công đoạn thay thế đã gắn", "Bound replacement")}: {correction.replacementOperationId}</p>}
       {canCommit && open && original.data && <CorrectionReplacementForm original={original.data} saved={id => { setReplacementId(id); setSuccess(text("Đã lưu bản nháp. Bàn giao cho quản lý đối soát trước khi chốt.", "Draft saved. Hand off to a manager for reconciliation before commit.")); }}/ >}
@@ -103,7 +106,7 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
           <Feedback pending={physical.isFetching}/>
           {positions && <>
             {positions.map((row, i) => <fieldset key={`${row.lotId}:${row.locationId}`} className="rounded-lg border border-ink-tertiary/20 p-3">
-              <legend>{original.data?.outputs.find(output => output.id === row.lotId)?.code ?? row.lotId} · <span>{row.locationId}</span></legend>
+              <legend>{original.data?.outputs.find(output => output.id === row.lotId)?.code ?? row.lotId} · <span>{locationName(row.locationId)}</span></legend>
               <label>{text("Khối lượng thực tế đã kiểm tra (kg)", "Verified physical quantity (kg)")}
                 <input inputMode="decimal" pattern="[0-9]{1,14}([.][0-9]{1,6})?" required value={row.quantityKg} onChange={e => {
                   setPositions(current => current?.map((position, index) => index === i ? { ...position, quantityKg: e.target.value } : position) ?? null);
@@ -117,7 +120,7 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
             {drafts.data?.filter(d => !d.boundCorrectionId || d.boundCorrectionId === correction.id).map(d => <option key={d.id} value={d.id}>{d.kind} · {d.outputs.map(o => o.code ?? o.stage).join(", ")} · {d.id}</option>)}
           </select></label>
           {drafts.data?.length === 0 && <p>{text("Nhân viên vận hành cần tạo bản nháp thay thế cùng chủ sở hữu và cơ sở.", "An operator must prepare a replacement draft with the same owner and facility.")}</p>}
-          {r && <><OperationSummary operation={r}/><p className="break-all">{text("Phiên bản đang xem", "Reviewed version")}: {r.version}</p></>}
+          {r && <><OperationSummary operation={r} locationName={locationName}/><p className="break-all">{text("Phiên bản đang xem", "Reviewed version")}: {r.version}</p></>}
           {needsConfirmation && <p role="status">{text("Công đoạn thay thế có chênh lệch khác 0. Quản lý cần xác nhận đúng phiên bản và chứng cứ trước khi bàn giao chốt.", "The replacement has nonzero variance. A manager must confirm this version and evidence before commit handoff.")}</p>}
           <label className="!flex-row items-start"><input type="checkbox" checked={verified && reviewedVersion === r?.version} disabled={!positionsValid || !eligible || reviewing} onChange={e => { setVerified(e.target.checked); setReviewedVersion(r?.version ?? ""); }}/>{text("Tôi đã kiểm tra mọi vị trí thực tế, chứng cứ và đúng phiên bản công đoạn thay thế trên.", "I verified all actual positions, evidence and the replacement version shown above.")}</label>
           {needsConfirmation && canConfirm && <button type="button" disabled={!ready} onClick={() => submit("confirm")}>{text("Xác nhận chênh lệch phiên bản thay thế", "Confirm replacement version variance")}</button>}
@@ -140,15 +143,15 @@ export function CorrectionWorkbench({ selectedCorrection: correction, onClose }:
   </Modal>;
 }
 
-function PositionsTable({ positions }: { positions: PhysicalPosition[] }) {
+function PositionsTable({ positions, locationName }: { positions: PhysicalPosition[]; locationName: (id: string) => string }) {
   const text = useWorkflowText();
-  return <div className="overflow-x-auto"><table><caption className="sr-only">{text("Vị trí tồn thực tế", "Physical stock positions")}</caption><thead><tr><th scope="col">{text("Lô", "Lot")}</th><th scope="col">{text("Vị trí", "Location")}</th><th scope="col">kg</th></tr></thead><tbody>{positions.map(p => <tr key={p.lotId + p.locationId}><td>{p.lotId}</td><td>{p.locationId}</td><td>{p.quantityKg}</td></tr>)}</tbody></table></div>;
+  return <div className="overflow-x-auto"><table><caption className="sr-only">{text("Vị trí tồn thực tế", "Physical stock positions")}</caption><thead><tr><th scope="col">{text("Lô", "Lot")}</th><th scope="col">{text("Vị trí", "Location")}</th><th scope="col">kg</th></tr></thead><tbody>{positions.map(p => <tr key={p.lotId + p.locationId}><td>{p.lotId}</td><td>{locationName(p.locationId)}</td><td>{p.quantityKg}</td></tr>)}</tbody></table></div>;
 }
 
-function OperationSummary({ operation: o }: { operation: CorrectionOperation }) {
+function OperationSummary({ operation: o, locationName }: { operation: CorrectionOperation; locationName: (id: string) => string }) {
   const text = useWorkflowText();
   return <div className="space-y-2"><p>{o.kind} · {o.status} · {text("Hao hụt", "Loss")}: {o.declaredLossKg} kg</p>
-    <h3 className="font-semibold">{text("Đầu vào", "Inputs")}</h3><ul>{o.inputs.map((l, i) => <li key={i}>{l.lotId} · {l.locationId} · {l.quantityKg} kg</li>)}</ul>
-    <h3 className="font-semibold">{text("Đầu ra", "Outputs")}</h3><ul>{o.outputs.map(l => <li key={l.id}>{l.code ?? l.id} · {l.stage} · {l.locationId} · {l.quantityKg} kg</li>)}</ul>
+    <h3 className="font-semibold">{text("Đầu vào", "Inputs")}</h3><ul>{o.inputs.map((l, i) => <li key={i}>{l.lotId} · {locationName(l.locationId)} · {l.quantityKg} kg</li>)}</ul>
+    <h3 className="font-semibold">{text("Đầu ra", "Outputs")}</h3><ul>{o.outputs.map(l => <li key={l.id}>{l.code ?? l.id} · {l.stage} · {locationName(l.locationId)} · {l.quantityKg} kg</li>)}</ul>
   </div>;
 }

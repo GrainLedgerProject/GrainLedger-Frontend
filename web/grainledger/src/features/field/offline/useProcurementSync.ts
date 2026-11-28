@@ -4,7 +4,12 @@ import { selectSessionOwner } from "@/app/store/sessionOwner";
 import { useUiStore } from "@/app/store/uiStore";
 import { logger } from "@/shared/utils/logger";
 import { syncOfflineCache } from "./offlineCache";
-import { getQueuedProcurementCount, isProcurementSyncing, onProcurementQueueChanged, syncQueuedProcurements } from "./procurementQueue";
+import {
+  getQueuedProcurementCount,
+  isProcurementSyncing,
+  onProcurementQueueChanged,
+  syncQueuedProcurements,
+} from "./procurementQueue";
 
 export function useProcurementSync() {
   const isOnline = useUiStore((state) => state.isOnline);
@@ -17,9 +22,20 @@ export function useProcurementSync() {
     let active = true;
     let running = false;
     let requested = false;
-    const canSync = () => active && useUiStore.getState().isOnline && useUiStore.getState().isBackendConnected &&
-      useUiStore.getState().procurementSyncMode === "auto" &&
-      useAuthStore.getState().isAuthenticated;
+    const canSync = () => {
+      const state = useAuthStore.getState();
+      const canPurchase =
+        state.user?.role === "CUSTOMER_PROCUREMENT_OFFICER" ||
+        Boolean(state.user?.permissions.includes("purchases.write"));
+      return (
+        active &&
+        useUiStore.getState().isOnline &&
+        useUiStore.getState().isBackendConnected &&
+        useUiStore.getState().procurementSyncMode === "auto" &&
+        state.isAuthenticated &&
+        canPurchase
+      );
+    };
     const refreshCount = async () => {
       const count = await getQueuedProcurementCount();
       if (active) useUiStore.getState().setPendingOfflineCount(count);
@@ -51,12 +67,22 @@ export function useProcurementSync() {
     });
     void refreshCount();
     void synchronize();
-    return () => { active = false; unsubscribe(); };
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [isOnline, isBackendConnected, mode, isAuthenticated, ownerKey]);
 
   useEffect(() => {
-    if (isOnline && isBackendConnected && isAuthenticated) {
-      void syncOfflineCache().catch((error) => logger.warn("Unable to refresh offline cache:", error));
+    const perms = useAuthStore.getState().user?.permissions ?? [];
+    const canSyncField =
+      perms.includes("purchases.write") ||
+      perms.includes("farms.read") ||
+      perms.includes("farms.write");
+    if (isOnline && isBackendConnected && isAuthenticated && canSyncField) {
+      void syncOfflineCache().catch((error) =>
+        logger.warn("Unable to refresh offline cache:", error),
+      );
     }
   }, [isOnline, isBackendConnected, isAuthenticated, ownerKey]);
 }

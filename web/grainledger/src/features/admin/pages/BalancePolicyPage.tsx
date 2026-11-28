@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -245,6 +245,18 @@ function buildHistoryRows(
   });
 }
 
+function loadStoredYieldRules(storageKey: string): PublishedYieldRule[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as PublishedYieldRule[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function BalancePolicyPage() {
   const text = useWorkflowText();
   const user = useAuthStore((s) => s.user);
@@ -263,9 +275,16 @@ export function BalancePolicyPage() {
   });
   const [mode, setMode] = useState<PolicyMode>("balance");
   const [searchQuery, setSearchQuery] = useState("");
-  const [publishedYieldRules, setPublishedYieldRules] = useState<
-    PublishedYieldRule[]
-  >([]);
+  const yieldStorageKey = `grainledger:published-yield-rules:${user?.organizationId || user?.id || "global"}`;
+  const [publishedYieldRulesMap, setPublishedYieldRulesMap] = useState<
+    Record<string, PublishedYieldRule[]>
+  >({});
+  const publishedYieldRules = useMemo(
+    () =>
+      publishedYieldRulesMap[yieldStorageKey] ??
+      loadStoredYieldRules(yieldStorageKey),
+    [publishedYieldRulesMap, yieldStorageKey],
+  );
 
   const titles: Record<PolicyMode, string> = {
     balance: text("Dung sai công đoạn", "Operation tolerance"),
@@ -511,9 +530,23 @@ export function BalancePolicyPage() {
               modeTitle={titles[mode]}
               setup={setup.data}
               yieldRules={publishedYieldRules}
-              onYieldRulePublished={(rule) =>
-                setPublishedYieldRules((prev) => [rule, ...prev])
-              }
+              onYieldRulePublished={(rule) => {
+                const next = [rule, ...publishedYieldRules];
+                setPublishedYieldRulesMap((prev) => ({
+                  ...prev,
+                  [yieldStorageKey]: next,
+                }));
+                if (typeof window !== "undefined") {
+                  try {
+                    window.localStorage.setItem(
+                      yieldStorageKey,
+                      JSON.stringify(next),
+                    );
+                  } catch {
+                    // Ignore storage quota / privacy mode restrictions
+                  }
+                }
+              }}
               defaultReviewer={user?.displayName ?? ""}
               defaultOwnerId={
                 mode === "yield" && !canConfigure ? (user?.organizationId ?? "") : ""
@@ -956,10 +989,20 @@ function PolicyEditor({
     if (!facilityId || !ownerId || !evidenceId || save.isPending) return;
     const data = new FormData(event.currentTarget);
     const value = (name: string) => String(data.get(name) ?? "").trim();
+    const parsedEffective = new Date(value("effectiveFrom"));
+    if (Number.isNaN(parsedEffective.getTime())) {
+      setMessage(
+        text(
+          "Thời điểm hiệu lực không hợp lệ.",
+          "Effective timestamp is invalid.",
+        ),
+      );
+      return;
+    }
     const base = {
       id: crypto.randomUUID(),
       evidenceId,
-      effectiveFrom: new Date(value("effectiveFrom")).toISOString(),
+      effectiveFrom: parsedEffective.toISOString(),
     };
     setMessage("");
     save.mutate(async () => {

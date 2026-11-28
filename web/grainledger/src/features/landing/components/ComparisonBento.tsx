@@ -1,38 +1,56 @@
 import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { XCircle, CheckCircle } from "@phosphor-icons/react";
+import { useWorkflowText } from "@/shared/ui/useWorkflowText";
 
 export const ComparisonBento: React.FC = () => {
+  const text = useWorkflowText();
   const shouldReduceMotion = useReducedMotion();
 
   const comparisons = [
     {
-      criteria: "Trộn lúa trong Silo",
-      oldWay:
+      criteria: text("Trộn lúa trong Silo", "Mixed Silo Storage"),
+      oldWay: text(
         "Mất hoàn toàn dấu vết nguồn gốc sau khi đổ lúa của nhiều nông dân vào silo chung.",
-      newWay:
+        "All origin visibility is lost once smallholder paddy harvests are pooled into a shared silo.",
+      ),
+      newWay: text(
         "Bảo toàn tỷ lệ khối lượng: Xác định chính xác từng thửa ruộng đóng góp bao nhiêu % vào mẻ gạo xuất khẩu.",
+        "Mass share conservation tracks each plot's exact percentage contribution into every export batch.",
+      ),
     },
     {
-      criteria: "Khi có kết quả Lab xấu",
-      oldWay:
+      criteria: text("Khi có kết quả Lab xấu", "Adverse Lab Results"),
+      oldWay: text(
         "Không biết container nào bị nhiễm; phải phong toả toàn bộ kho hoặc đối mặt rủi ro bị nước nhập khẩu phạt.",
-      newWay:
+        "Unable to isolate impacted containers — forcing entire warehouse locks or border penalties.",
+      ),
+      newWay: text(
         "Truy vết đồ thị trong 30s: Chỉ ra chính xác các container bị ảnh hưởng và khối lượng kg nhiễm để cách ly tức thời.",
+        "Graph trace in 30s pinpoints impacted containers and contaminated mass for surgical isolation.",
+      ),
     },
     {
-      criteria: "Kiểm soát hao hụt & Thất thoát",
-      oldWay:
+      criteria: text("Kiểm soát hao hụt & Thất thoát", "Loss & Shrinkage Control"),
+      oldWay: text(
         "Dễ khai khống, gõ nhầm hoặc tạo số liệu ảo mà hệ thống sổ sách không ngăn chặn được.",
-      newWay:
+        "Manual spreadsheets allow typos, inflated yields, or unverified shrinkage adjustments.",
+      ),
+      newWay: text(
         "Từ chối tuyệt đối: Giao dịch không cân bằng theo dung sai 0,5% bị huỷ ngay lập tức ở tầng dữ liệu.",
+        "Strict enforcement rejects any processing entry breaching the 0.5% tolerance threshold.",
+      ),
     },
     {
-      criteria: "Duyệt xuất khẩu MRL",
-      oldWay:
+      criteria: text("Duyệt xuất khẩu MRL", "MRL Export Clearance"),
+      oldWay: text(
         "Phỏng đoán cảm tính, phụ thuộc vào kinh nghiệm người phối trộn gạo.",
-      newWay:
+        "Rule-of-thumb estimates relying on manual blending intuition.",
+      ),
+      newWay: text(
         "Tính toán toán học bảo thủ: Kiểm tra nồng độ theo phiên bản MRL của thị trường đích kèm biên an toàn 20%.",
+        "Deterministic math validates concentrations against market MRL versions with a 20% safety margin.",
+      ),
     },
   ];
 
@@ -44,14 +62,19 @@ export const ComparisonBento: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-accent-primary">
-            Đối chiếu giải pháp
+            {text("Đối chiếu giải pháp", "Solution Comparison")}
           </span>
           <h2 className="font-sans text-3xl sm:text-4xl font-extrabold tracking-[-0.03em] text-ink-primary">
-            Mô hình truyền thống so với Sổ cái GrainLedger
+            {text(
+              "Mô hình truyền thống so với Sổ cái GrainLedger",
+              "Traditional Logs vs. GrainLedger Custody",
+            )}
           </h2>
           <p className="text-sm text-ink-secondary text-ink-tertiary">
-            Sự khác biệt cốt lõi giữa quản lý thủ công truyền thống và kiến trúc
-            sổ cái kế toán bảo toàn khối lượng.
+            {text(
+              "Sự khác biệt cốt lõi giữa quản lý thủ công truyền thống và kiến trúc sổ cái kế toán bảo toàn khối lượng.",
+              "Core differences between manual recordkeeping and mass-conserving ledger architecture.",
+            )}
           </p>
         </div>
 
@@ -73,7 +96,7 @@ export const ComparisonBento: React.FC = () => {
             >
               <div className="md:col-span-3">
                 <span className="text-xs font-mono uppercase tracking-wider text-ink-tertiary block mb-1">
-                  Tiêu chí
+                  {text("Tiêu chí", "Criteria")}
                 </span>
                 <h4 className="font-sans font-bold text-base text-ink-primary">
                   {item.criteria}
@@ -84,7 +107,7 @@ export const ComparisonBento: React.FC = () => {
               <div className="md:col-span-4 p-4 rounded-2xl bg-accent-danger/[0.04] border border-accent-danger/20 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-accent-danger">
                   <XCircle size={15} weight="fill" />
-                  <span>Cách làm cũ (Sổ & Excel)</span>
+                  <span>{text("Cách làm cũ (Sổ & Excel)", "Legacy (Paper & Excel)")}</span>
                 </div>
                 <p className="text-xs text-ink-secondary text-ink-tertiary leading-relaxed">
                   {item.oldWay}

@@ -177,6 +177,30 @@ interface ReceivingMeasurementLine {
   measuredUnit: ReceivingUnit;
 }
 
+export interface LocationStockItem {
+  lotId: string;
+  code: string;
+  stage: string;
+  productIdentity?: string | null;
+  riceVarietyId?: string | null;
+  riceVariety?: string | null;
+  varietyStatus?: "UNKNOWN" | "SINGLE" | "MIXED" | string;
+  ownerName?: string | null;
+  quantityKg: string;
+  availableKg: string;
+  restrictions: string[];
+}
+
+export interface LocationStockResponse {
+  locationId: string;
+  totalKg: string;
+  items: LocationStockItem[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
 export interface ReceivingTask {
   id: string;
   code: string;
@@ -197,8 +221,13 @@ export interface ReceivingTask {
     id: string;
     lineNo: number;
     lotCode: string;
+    riceVarietyId?: string | null;
     riceVariety: string;
+    expectedValue?: string;
+    expectedUnit?: ReceivingUnit | string;
     expectedKg: string;
+    actualValue?: string | null;
+    actualUnit?: ReceivingUnit | string | null;
     actualKg: string | null;
   }[];
   measurementSets: {
@@ -280,24 +309,6 @@ export interface CorrectionOperation {
   outputs: { id: string; code?: string; commodityId: string; stage: string; productIdentity?: string; locationId: string; quantityKg: string; originalLotId?: string }[];
 }
 
-export interface RecordOperationRequest {
-  facilityId?: string;
-  operationType: "DRYING" | "MILLING" | "BLENDING" | "BAGGING";
-  inputs: Array<{ lotId: string; massKg: string }>;
-  outputs: Array<{ productType: string; massKg: string; locationId?: string }>;
-  declaredLossKg: string;
-  declaredLossReason?: string;
-  measuredVarianceKg?: string;
-  varianceReason?: string;
-}
-
-export interface HoldRequest {
-  lotId?: string;
-  containerId?: string;
-  reason: string;
-  evidenceReference?: string;
-}
-
 export const ledgerEndpoints = {
   getSetup: () => apiFetch<SetupApiResponse>("/api/ledger/setup"),
   getLookups: () => apiFetch<unknown>("/api/ledger/lookups"),
@@ -311,6 +322,10 @@ export const ledgerEndpoints = {
   },
   getLot: (id: string) =>
     apiFetch<unknown>(`/api/ledger/lots/${encodeURIComponent(id)}`),
+  getLocationStock: (id: string, query?: PageQuery) =>
+    apiFetch<LocationStockResponse>(
+      withApiQuery(`/api/ledger/locations/${encodeURIComponent(id)}/stock`, query),
+    ),
 
   // Facilities, Locations, Equipment
   createFacility: (req: object) =>
@@ -643,8 +658,6 @@ export const ledgerEndpoints = {
   // Receiving Thresholds
   getReceivingThresholds: () =>
     apiFetch<unknown>("/api/ledger/receiving-thresholds"),
-  getReceivingThresholdCompanies: () =>
-    apiFetch<unknown>("/api/ledger/receiving-thresholds/companies"),
   getReceivingThresholdHistory: (query?: PageQuery & { scope?: ReceivingThresholdScope; companyId?: string }) =>
     apiFetch<ApiPage<ReceivingThresholdHistoryItem>>(withApiQuery("/api/ledger/receiving-thresholds/history", query)),
   getOwnCompanyReceivingThreshold: () =>

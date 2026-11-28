@@ -260,6 +260,14 @@ export const CustomerOrganizationsPage: React.FC = () => {
           </header>
 
           <form onSubmit={handleCreate} className="p-5 space-y-4 text-xs">
+            {error && (
+              <div
+                role="alert"
+                className="p-3 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger font-medium"
+              >
+                {error}
+              </div>
+            )}
             <div>
               <label className="block font-semibold text-ink-secondary mb-1">
                 {t("admin.orgs.nameLabel", "Tên Công ty / Đơn vị *")}

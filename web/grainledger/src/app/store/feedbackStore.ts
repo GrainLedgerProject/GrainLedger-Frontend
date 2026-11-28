@@ -1,3 +1,4 @@
+import i18n from '@/app/i18n';
 import { create } from 'zustand';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
@@ -99,7 +100,7 @@ export const toast = {
 export function confirmAction(options: ConfirmOptions | string): Promise<boolean> {
   if (typeof options === 'string') {
     return useFeedbackStore.getState().openConfirm({
-      title: 'Xác nhận thao tác',
+      title: i18n.t('common.confirmTitle', 'Xác nhận thao tác'),
       description: options,
       variant: 'warning',
     });

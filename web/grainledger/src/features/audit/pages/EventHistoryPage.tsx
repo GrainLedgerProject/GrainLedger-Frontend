@@ -1,7 +1,7 @@
 import { logger } from "@/shared/utils/logger";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { ledgerHistoryKinds } from "@/api/history";
 import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
 import { useAuthStore } from "@/app/store/authStore";
@@ -9,6 +9,7 @@ import { eventLabel } from "../model/eventPresentation";
 import {
   BUSINESS_CATEGORIES,
   fetchBusinessHistory,
+  getBusinessEventTypes,
   type BusinessCategory,
   type BusinessHistoryPageResult,
 } from "../model/businessHistory";
@@ -23,11 +24,8 @@ import {
   Cube,
   Eye,
   Funnel,
-  HandCoins,
-  LockSimple,
   MagnifyingGlass,
   Scales,
-  Truck,
   WarningCircle,
   X,
   ArrowsClockwise,
@@ -35,24 +33,29 @@ import {
 } from "@phosphor-icons/react";
 
 export const EventHistoryPage: React.FC = () => {
+  const { type: routeType, id: routeId } = useParams<{
+    type?: string;
+    id?: string;
+  }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const text = useWorkflowText();
   const user = useAuthStore((s) => s.user);
+  const canViewLedgerAudit = user?.role !== "MILL_ADMIN";
   const entityFilterId = React.useId();
   const eventTypeFilterId = React.useId();
   const [historyMode, setHistoryMode] = useState<"ledger" | "business">(() =>
-    user?.role === "MILL_ADMIN" ? "business" : "ledger",
+    canViewLedgerAudit ? "ledger" : "business",
   );
   const [businessCategory, setBusinessCategory] =
     useState<BusinessCategory>("ALL");
   const [businessEventType, setBusinessEventType] = useState("");
-  const [businessRef, setBusinessRef] = useState("");
+  const [businessRef, setBusinessRef] = useState(() => routeId ?? "");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [businessPage, setBusinessPage] = useState(1);
   const [events, setEvents] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(() => user?.role !== "MILL_ADMIN");
+  const [loading, setLoading] = useState(() => canViewLedgerAudit);
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
@@ -60,7 +63,9 @@ export const EventHistoryPage: React.FC = () => {
   const [hasMore, setHasMore] = useState(false);
   const [reload, setReload] = useState(0);
   const [ledgerFacilityId, setLedgerFacilityId] = useState("");
-  const [ledgerLotId, setLedgerLotId] = useState("");
+  const [ledgerLotId, setLedgerLotId] = useState(() =>
+    routeType?.toLowerCase() === "lot" && routeId ? routeId : "",
+  );
   const [ledgerSortBy, setLedgerSortBy] = useState<
     "occurredAt" | "kind" | "quantity"
   >("occurredAt");
@@ -75,7 +80,9 @@ export const EventHistoryPage: React.FC = () => {
   );
 
   // Filters apply to the displayed page.
-  const searchTerm = searchParams.get("search") ?? "";
+  const searchTerm =
+    searchParams.get("search") ??
+    (routeType?.toLowerCase() !== "lot" && routeId ? routeId : "");
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
   const [entityFilter, setEntityFilter] = useState("ALL");
@@ -84,7 +91,9 @@ export const EventHistoryPage: React.FC = () => {
   // Synchronize searchInput during render when URL search param changes externally (e.g. Back/Forward)
   if (searchTerm !== prevSearchTerm) {
     setPrevSearchTerm(searchTerm);
-    setSearchInput(searchTerm);
+    if (searchInput.trim() !== searchTerm) {
+      setSearchInput(searchTerm);
+    }
   }
 
   // Debounce search input: wait 400ms after user stops typing before triggering search query and API call
@@ -94,6 +103,8 @@ export const EventHistoryPage: React.FC = () => {
       return;
     }
     const timer = setTimeout(() => {
+      setLoading(true);
+      setError(null);
       setPage(1);
       setSearchParams(trimmed ? { search: trimmed } : {}, { replace: true });
     }, 400);
@@ -103,6 +114,8 @@ export const EventHistoryPage: React.FC = () => {
 
   const handleClearSearch = () => {
     setSearchInput("");
+    setLoading(true);
+    setError(null);
     setPage(1);
     setSearchParams({}, { replace: true });
   };
@@ -113,6 +126,8 @@ export const EventHistoryPage: React.FC = () => {
       const trimmed = searchInput.trim();
       const currentParam = searchParams.get("search") ?? "";
       if (trimmed !== currentParam) {
+        setLoading(true);
+        setError(null);
         setPage(1);
         setSearchParams(trimmed ? { search: trimmed } : {}, { replace: true });
       }
@@ -121,8 +136,13 @@ export const EventHistoryPage: React.FC = () => {
 
   // Selected event for detail modal
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
+  const businessEventOptions = getBusinessEventTypes(businessCategory);
+  const selectedBusinessEventType =
+    businessEventType && businessEventOptions.includes(businessEventType)
+      ? businessEventType
+      : "";
   const trimmedBusinessRef = businessRef.trim();
-  const trimmedBusinessEventType = businessEventType.trim();
+  const trimmedBusinessEventType = selectedBusinessEventType.trim();
   const currentBusinessKey = `${businessCategory}:${trimmedBusinessEventType}:${trimmedBusinessRef}:${fromDate}:${toDate}:${businessPage}:${reload}`;
   const [businessState, setBusinessState] = useState<{
     key: string;
@@ -180,8 +200,7 @@ export const EventHistoryPage: React.FC = () => {
     toDate,
     businessPage,
     currentBusinessKey,
-    // `text` is excluded: it is only used in the catch branch for error message
-    // formatting and must not trigger a re-fetch on every render.
+    text,
   ]);
 
   const businessItems =
@@ -276,6 +295,7 @@ export const EventHistoryPage: React.FC = () => {
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
+        setError(null);
         setEvents(result.items.map(toAuditEvent));
         setTotalCount(result.totalCount);
         setHasMore(result.hasMore);
@@ -331,15 +351,6 @@ export const EventHistoryPage: React.FC = () => {
         return (
           <Scales className="text-accent-primary" size={16} weight="bold" />
         );
-      case "receivingtask":
-      case "receiving":
-        return <Truck className="text-sky-500" size={16} weight="bold" />;
-      case "hold":
-        return (
-          <LockSimple className="text-accent-danger" size={16} weight="bold" />
-        );
-      case "procurement":
-        return <HandCoins className="text-teal-500" size={16} weight="bold" />;
       default:
         return (
           <ClockCounterClockwise
@@ -377,30 +388,39 @@ export const EventHistoryPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-ink-tertiary/20 bg-surface-raised p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setHistoryMode("ledger")}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-                historyMode === "ledger"
-                  ? "bg-accent-primary text-white"
-                  : "text-ink-secondary hover:text-ink-primary"
-              }`}
-            >
-              {text("Nhật ký sổ cái", "Ledger audit")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setHistoryMode("business")}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-                historyMode === "business"
-                  ? "bg-accent-primary text-white"
-                  : "text-ink-secondary hover:text-ink-primary"
-              }`}
-            >
-              {text("Lịch sử nghiệp vụ", "Business history")}
-            </button>
-          </div>
+          {canViewLedgerAudit && (
+            <div className="inline-flex rounded-xl border border-ink-tertiary/20 bg-surface-raised p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  setError(null);
+                  setHistoryMode("ledger");
+                }}
+                className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
+                  historyMode === "ledger"
+                    ? "bg-accent-primary text-white"
+                    : "text-ink-secondary hover:text-ink-primary"
+                }`}
+              >
+                {text("Nhật ký sổ cái", "Ledger audit")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setHistoryMode("business");
+                }}
+                className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
+                  historyMode === "business"
+                    ? "bg-accent-primary text-white"
+                    : "text-ink-secondary hover:text-ink-primary"
+                }`}
+              >
+                {text("Lịch sử nghiệp vụ", "Business history")}
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -444,7 +464,16 @@ export const EventHistoryPage: React.FC = () => {
                   aria-label={text("Nhóm nghiệp vụ", "Business group")}
                   value={businessCategory}
                   onChange={(e) => {
-                    setBusinessCategory(e.target.value as BusinessCategory);
+                    const nextCategory = e.target.value as BusinessCategory;
+                    setBusinessCategory(nextCategory);
+                    if (
+                      businessEventType &&
+                      !getBusinessEventTypes(nextCategory).includes(
+                        businessEventType,
+                      )
+                    ) {
+                      setBusinessEventType("");
+                    }
                     setBusinessPage(1);
                   }}
                   className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
@@ -463,32 +492,23 @@ export const EventHistoryPage: React.FC = () => {
               <label className="space-y-1">
                 <span className="font-semibold text-ink-secondary">
                   {text("Loại sự kiện", "Event type")}
-                </span>
-                <input
-                  type="text"
-                  list="business-event-type-options"
+                </span>{" "}
+                <select
                   aria-label={text("Loại sự kiện", "Event type")}
-                  placeholder={text(
-                    "VD: TRACEBACK, CLOSE...",
-                    "e.g. TRACEBACK, CLOSE...",
-                  )}
-                  value={businessEventType}
+                  value={selectedBusinessEventType}
                   onChange={(e) => {
                     setBusinessEventType(e.target.value);
                     setBusinessPage(1);
                   }}
                   className="filter-control border-ink-tertiary/20 bg-surface-raised dark:bg-surface-overlay"
-                />
-                <datalist id="business-event-type-options">
-                  <option value="TRACEBACK" />
-                  <option value="CLOSE" />
-                  <option value="HOLD_PLACED" />
-                  <option value="HOLD_ISOLATED" />
-                  <option value="HOLD_RELEASED" />
-                  <option value="OPERATION_COMMITTED" />
-                  <option value="CORRECTION_APPROVED" />
-                  <option value="LAB_REPORT_RECORDED" />
-                </datalist>
+                >
+                  <option value="">{text("Tất cả", "All")}</option>
+                  {businessEventOptions.map((eventType) => (
+                    <option key={eventType} value={eventType}>
+                      {eventLabel(eventType, i18n.language)}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="space-y-1">
@@ -497,6 +517,7 @@ export const EventHistoryPage: React.FC = () => {
                 </span>
                 <input
                   type="search"
+                  maxLength={100}
                   aria-label={text("Mã tham chiếu", "Reference code")}
                   placeholder={text(
                     "Mã phiếu, mẫu, báo cáo, container...",
@@ -627,9 +648,14 @@ export const EventHistoryPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <StatusBadge
                             status="PENDING"
-                            label={item.eventType}
+                            label={eventLabel(item.eventType, i18n.language)}
                             size="sm"
                           />
+                          {item.evidenceId && (
+                            <div className="mt-1 font-mono text-[10px] text-ink-tertiary">
+                              Evidence: {item.evidenceId}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <button
@@ -698,9 +724,10 @@ export const EventHistoryPage: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder={t(
-                    "audit.events.searchCurrentPage",
-                    "Tìm trong trang hiện tại: mã sự kiện, mã lô, người ghi...",
+                  maxLength={100}
+                  placeholder={text(
+                    "Tìm theo mã lô, mã sự kiện, tác nhân...",
+                    "Search by lot, event, or actor...",
                   )}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -758,6 +785,8 @@ export const EventHistoryPage: React.FC = () => {
                   id={eventTypeFilterId}
                   value={eventTypeFilter}
                   onChange={(e) => {
+                    setLoading(true);
+                    setError(null);
                     setEventTypeFilter(e.target.value);
                     setPage(1);
                   }}
@@ -784,6 +813,8 @@ export const EventHistoryPage: React.FC = () => {
                   aria-label={text("Lọc theo cơ sở", "Filter by facility")}
                   value={ledgerFacilityId}
                   onChange={(e) => {
+                    setLoading(true);
+                    setError(null);
                     setLedgerFacilityId(e.target.value);
                     setPage(1);
                   }}
@@ -808,6 +839,8 @@ export const EventHistoryPage: React.FC = () => {
                   aria-label={text("Lọc theo lô hàng", "Filter by lot")}
                   value={ledgerLotId}
                   onChange={(e) => {
+                    setLoading(true);
+                    setError(null);
                     setLedgerLotId(e.target.value);
                     setPage(1);
                   }}
@@ -833,6 +866,8 @@ export const EventHistoryPage: React.FC = () => {
                   )}
                   value={ledgerSortBy}
                   onChange={(e) => {
+                    setLoading(true);
+                    setError(null);
                     setLedgerSortBy(e.target.value as typeof ledgerSortBy);
                     setPage(1);
                   }}
@@ -856,6 +891,8 @@ export const EventHistoryPage: React.FC = () => {
                   aria-label={text("Chiều sắp xếp", "Sort direction")}
                   value={ledgerSortDirection}
                   onChange={(e) => {
+                    setLoading(true);
+                    setError(null);
                     setLedgerSortDirection(
                       e.target.value as typeof ledgerSortDirection,
                     );
@@ -894,7 +931,7 @@ export const EventHistoryPage: React.FC = () => {
           </div>
 
           {/* Events Table */}
-          {loading ? (
+          {loading && events.length === 0 ? (
             <div className="py-16 flex justify-center">
               <GrainLoader
                 label={t(

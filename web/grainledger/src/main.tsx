@@ -9,7 +9,7 @@ import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./pwa/registerServiceWorker";
 import { confirmAction } from "@/app/store/feedbackStore";
-import "@/app/i18n";
+import i18n from "@/app/i18n";
 
 configureApplicationApi();
 if (useAuthStore.getState().isLoading) {
@@ -21,10 +21,13 @@ if (useAuthStore.getState().isLoading) {
   });
 }
 registerServiceWorker(() => confirmAction({
-      title: "Có phiên bản mới",
-      description: "Ứng dụng GrainLedger đã có bản cập nhật mới. Bạn có muốn tải lại để áp dụng ngay không?",
-      confirmLabel: "Cập nhật ngay",
-      cancelLabel: "Để sau",
+      title: i18n.t("common.pwaUpdateTitle", "Có phiên bản mới"),
+      description: i18n.t(
+        "common.pwaUpdateDesc",
+        "Ứng dụng GrainLedger đã có bản cập nhật mới. Bạn có muốn tải lại để áp dụng ngay không?",
+      ),
+      confirmLabel: i18n.t("common.pwaUpdateConfirm", "Cập nhật ngay"),
+      cancelLabel: i18n.t("common.pwaUpdateCancel", "Để sau"),
       variant: "primary",
     }));
 

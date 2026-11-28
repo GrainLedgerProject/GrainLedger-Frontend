@@ -37,7 +37,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleMeta> = {
     labelEn: 'Mill Manager',
     side: 'MILL',
     descriptionVi: 'Xác minh đối soát, dung sai đo lường, cách ly và xử lý lệnh HOLD',
-    defaultPath: '/mill/operations/new',
+    defaultPath: '/mill/stock',
   },
   MILL_OPERATOR: {
     code: 'MO',

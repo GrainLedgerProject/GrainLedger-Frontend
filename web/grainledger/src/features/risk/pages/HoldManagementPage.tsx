@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowsClockwiseIcon,
   ArrowsLeftRight,
@@ -99,6 +99,7 @@ function readFileAsBase64(file: File): Promise<string> {
 export const HoldManagementPage: React.FC = () => {
   const { t } = useTranslation();
   const text = useWorkflowText();
+  const location = useLocation();
   const [params] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const canIssue =
@@ -106,6 +107,11 @@ export const HoldManagementPage: React.FC = () => {
     user.permissions.includes("holds.manage");
   const canRespond =
     user?.role === "MILL_MANAGER" && user.permissions.includes("holds.process");
+
+  const requestedLotId = params.get("lotId") ?? "";
+  const routeModalTrigger = `${location.pathname}:${requestedLotId}`;
+  const wantsCreateModal =
+    canIssue && (location.pathname.endsWith("/new") || Boolean(requestedLotId));
 
   const [page, setPage] = useState(1);
   const [actionError, setError] = useState<string | null>(null);
@@ -118,10 +124,15 @@ export const HoldManagementPage: React.FC = () => {
     "createdAt",
   );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(() => wantsCreateModal);
+  const [prevRouteTrigger, setPrevRouteTrigger] = useState(routeModalTrigger);
+  if (routeModalTrigger !== prevRouteTrigger) {
+    setPrevRouteTrigger(routeModalTrigger);
+    if (wantsCreateModal) {
+      setIsModalOpen(true);
+    }
+  }
   const [activeHold, setActiveHold] = useState<HoldOrder | null>(null);
-
-  const requestedLotId = params.get("lotId") ?? "";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -289,7 +300,6 @@ export const HoldManagementPage: React.FC = () => {
           <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
           <option value="ISOLATED">ISOLATED</option>
           <option value="RESPONDED">RESPONDED</option>
-          <option value="RELEASED">RELEASED</option>
         </select>
 
         {ownerOptions.length > 0 ? (
@@ -383,7 +393,8 @@ export const HoldManagementPage: React.FC = () => {
               )}
             />
           </div>
-        ) : error ? null : filteredHolds.length === 0 ? (
+        ) : filteredHolds.length === 0 ? (
+          error ? null : (
           <div className="py-16 px-4 text-center space-y-2">
             <CheckCircleIcon
               size={40}
@@ -402,6 +413,7 @@ export const HoldManagementPage: React.FC = () => {
               )}
             </p>
           </div>
+          )
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -577,6 +589,7 @@ function RespondHoldModal({
 }) {
   const text = useWorkflowText();
   const uid = useId();
+  const cache = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [status, setStatus] = useState<
     "ACKNOWLEDGED" | "ISOLATED" | "RESPONDED"
@@ -584,6 +597,7 @@ function RespondHoldModal({
   const [responseText, setResponseText] = useState("");
   const [evidenceId, setEvidenceId] = useState(hold.evidenceId ?? "");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const uploadedEvidenceRef = useRef<{ file: File; id: string } | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -624,7 +638,9 @@ function RespondHoldModal({
 
     try {
       let resolvedEvidenceId = evidenceId.trim();
-      if (evidenceFile) {
+      if (evidenceFile && uploadedEvidenceRef.current?.file === evidenceFile) {
+        resolvedEvidenceId = uploadedEvidenceRef.current.id;
+      } else if (evidenceFile) {
         setUploading(true);
         const ownerId = hold.ownerId || user?.organizationId || "";
         const facilityId =
@@ -649,6 +665,7 @@ function RespondHoldModal({
           contentType: evidenceFile.type || "application/octet-stream",
           contentBase64,
         });
+        uploadedEvidenceRef.current = { file: evidenceFile, id: newEvidenceId };
         resolvedEvidenceId = newEvidenceId;
         setEvidenceId(newEvidenceId);
       }
@@ -679,6 +696,7 @@ function RespondHoldModal({
         response: responseText.trim(),
         evidenceId: resolvedEvidenceId,
       });
+      void cache.invalidateQueries({ queryKey: ["respond-hold-lot", hold.lotId] });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : String(err));
     } finally {

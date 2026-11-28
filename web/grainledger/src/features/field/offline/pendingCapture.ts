@@ -1,4 +1,4 @@
-﻿import { ApiError } from "@/api/client";
+import { ApiError } from "@/api/client";
 
 export function loadPendingCapture<T>(key: string): T | null {
   try {
@@ -26,5 +26,5 @@ export async function submitPendingCapture<T, TResult>(
 }
 
 export function captureWasRejected(error: unknown) {
-  return error instanceof ApiError && [400, 403, 404, 412, 422].includes(error.status);
+  return error instanceof ApiError && [400, 403, 404, 409, 412, 422].includes(error.status);
 }

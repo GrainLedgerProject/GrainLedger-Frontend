@@ -834,6 +834,9 @@ function ReceivingDetail({
               <th scope="col" className="px-4 py-3 text-left">
                 {text("Dòng và lô", "Line and lot")}
               </th>
+              <th scope="col" className="px-4 py-3 text-left">
+                {text("Giống lúa", "Rice variety")}
+              </th>
               <th scope="col" className="px-4 py-3 text-right">
                 {text("Dự kiến (kg)", "Expected (kg)")}
               </th>
@@ -851,11 +854,24 @@ function ReceivingDetail({
                 >
                   {row.lineNo} · {row.lotCode}
                 </th>
+                <td className="px-4 py-3 text-left text-ink-secondary">
+                  {row.riceVariety || "—"}
+                </td>
                 <td className="px-4 py-3 text-right font-mono tabular-nums text-ink-secondary">
-                  {row.expectedKg}
+                  <div>{row.expectedKg}</div>
+                  {row.expectedValue && row.expectedUnit && row.expectedUnit !== "KG" && (
+                    <div className="text-[10px] text-ink-tertiary">
+                      ({row.expectedValue} {row.expectedUnit})
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-ink-primary">
-                  {row.actualKg ?? "—"}
+                  <div>{row.actualKg ?? "—"}</div>
+                  {row.actualValue && row.actualUnit && row.actualUnit !== "KG" && (
+                    <div className="text-[10px] font-normal text-ink-tertiary">
+                      ({row.actualValue} {row.actualUnit})
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -985,7 +1001,7 @@ function ReceivingDetail({
                   </div>
                   <p className="text-ink-primary">{entry.reason}</p>
                 </div>
-                {entry.evidenceId && (
+                {review && entry.evidenceId && (
                   <div className={evidenceWrapperClass}>
                     <CorrectionEvidenceDownload id={entry.evidenceId} />
                   </div>

@@ -40,11 +40,11 @@ export function PesticideDeclarationPage() {
   const activeId = selected?.id ?? declarationIdParam;
   const [status, setStatus] = useState("");
   const list = useQuery({
-    queryKey: [...scope, plotSeasonId, page],
+    queryKey: [...scope, owner, plotSeasonId, page],
     queryFn: () => procurementEndpoints.getSprayDeclarations({ plotSeasonId, page, pageSize: 20 }),
   });
   const detail = useQuery({
-    queryKey: ["field-spray-detail", activeId],
+    queryKey: ["field-spray-detail", owner, activeId],
     queryFn: () => procurementEndpoints.getSprayDeclaration(activeId!),
     enabled: Boolean(activeId),
   });

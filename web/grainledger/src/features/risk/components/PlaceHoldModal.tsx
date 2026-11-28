@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldWarning, UploadSimple } from "@phosphor-icons/react";
 import { containerExecutionEndpoints } from "@/api/containerExecution";
@@ -105,6 +105,7 @@ function PlaceHoldModalContent({
   );
   const [reason, setReason] = useState("");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const uploadedEvidenceRef = useRef<{ file: File; id: string } | null>(null);
   const [manualEvidenceId, setManualEvidenceId] = useState("");
   const [facilityOverride, setFacilityOverride] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
@@ -112,7 +113,7 @@ function PlaceHoldModalContent({
 
   const setup = useQuery({
     queryKey: ["hold-modal-setup"],
-    queryFn: () => ledgerEndpoints.getSetup() as Promise<SetupApiResponse>,
+    queryFn: () => ledgerEndpoints.getLookups() as Promise<SetupApiResponse>,
     enabled: isOpen,
   });
 
@@ -231,6 +232,9 @@ function PlaceHoldModalContent({
       return cleaned;
     }
     if (!evidenceFile) return undefined;
+    if (uploadedEvidenceRef.current?.file === evidenceFile) {
+      return uploadedEvidenceRef.current.id;
+    }
     const ownerId =
       (targetKind === "container"
         ? containerDetail.data?.container.companyId
@@ -267,6 +271,7 @@ function PlaceHoldModalContent({
       contentType: evidenceFile.type || "application/octet-stream",
       contentBase64,
     });
+    uploadedEvidenceRef.current = { file: evidenceFile, id: evidenceId };
     return evidenceId;
   }
 
@@ -279,15 +284,25 @@ function PlaceHoldModalContent({
       setUploading(true);
       const evidenceId = await resolveEvidenceId();
       if (targetKind === "container") {
-        if (!activeContainerId || !containerDetail.data) {
+        if (!activeContainerId) {
           throw new Error(
             text(
-              "Đang tải thông tin phiên bản container, vui lòng thử lại.",
-              "Container version details are still loading.",
+              "Chọn container trước khi đặt lệnh HOLD.",
+              "Select a container before placing a HOLD.",
             ),
           );
         }
-        const { version } = containerDetail.data.container;
+        const refreshed = await containerDetail.refetch();
+        const detail = refreshed.data ?? containerDetail.data;
+        if (!detail) {
+          throw new Error(
+            text(
+              "Không tải được phiên bản container mới nhất, vui lòng thử lại.",
+              "Could not load latest container version; please try again.",
+            ),
+          );
+        }
+        const { version } = detail.container;
         containerCommand.submit({
           containerId: activeContainerId,
           version,

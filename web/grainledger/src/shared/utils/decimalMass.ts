@@ -60,7 +60,10 @@ export function checkMassBalance(
 
   const sumOutAndLoss = out.plus(loss);
   const varianceKg = sumOutAndLoss.minus(inp).abs();
-  const allowedKg = inp.times(tolerancePercent).dividedBy(100);
+  const allowedKg = inp
+    .times(tolerancePercent)
+    .dividedBy(100)
+    .toDecimalPlaces(6, Decimal.ROUND_DOWN);
 
   const percentageDiff = inp.isZero() ? new Decimal(0) : varianceKg.dividedBy(inp).times(100);
   const isBalanced = varianceKg.lessThanOrEqualTo(allowedKg);

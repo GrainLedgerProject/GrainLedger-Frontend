@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import Decimal from "decimal.js";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "@/app/store/authStore";
 import { MagnifyingGlass, WarningCircle, Sliders } from "@phosphor-icons/react";
 import {
   exportEndpoints,
@@ -32,6 +33,7 @@ export function BlendCandidateList({
   onPage: (page: number) => void;
 }) {
   const text = useWorkflowText();
+  const user = useAuthStore((s) => s.user);
   const [filterText, setFilterText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ELIGIBLE" | "EXCLUDED">("ALL");
 
@@ -283,7 +285,10 @@ export function BlendCandidateList({
               <ul className="list-disc space-y-1 ps-5">
                 {trace.data.composition.map((row) => (
                   <li key={row.ledgerSourceLotId} className="font-mono">
-                    {row.captureSourceLotId ? (
+                    {row.captureSourceLotId &&
+                    user?.permissions.some((p) =>
+                      ["purchases.write", "lots.read.tenant"].includes(p),
+                    ) ? (
                       <Link
                         className="text-accent-primary underline"
                         to={sourceLotPath(row.captureSourceLotId)}
@@ -350,11 +355,11 @@ export function BlendRatioEditor({
   onAssess: (firstKg: string) => void;
 }) {
   const text = useWorkflowText();
-  const [edited, setEdited] = useState("");
+  const [edited, setEdited] = useState<string | null>(null);
   const { selection, ratioRange } = result;
   if (!ratioRange || !selection || selection.allocations.length !== 2) return null;
   const [first, second] = selection.allocations;
-  const firstKg = edited || first.quantityKg;
+  const firstKg = edited ?? first.quantityKg;
   const remaining = (() => {
     try {
       return new Decimal(selection.selectedMassKg).minus(firstKg || "0").toFixed();
@@ -455,7 +460,7 @@ export function BlendRatioEditor({
             </span>
           </div>
         </div>
-        {edited && !isWholeKg && (
+        {edited !== null && !isWholeKg && (
           <p className="text-[11px] font-medium text-accent-danger">
             {text(
               "Khối lượng điều chỉnh phải là số nguyên kg trong phạm vi cho phép.",

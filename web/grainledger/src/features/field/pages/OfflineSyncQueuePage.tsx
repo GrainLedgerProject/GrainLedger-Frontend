@@ -6,6 +6,7 @@ import {
   isProcurementSyncing,
   onProcurementQueueChanged,
   onProcurementSyncStateChanged,
+  removeQueuedProcurement,
   syncQueuedProcurements,
   type QueuedProcurement,
 } from "@/features/field/offline/procurementQueue";
@@ -15,6 +16,7 @@ import {
   CloudCheck,
   CloudSlash,
   MapPin,
+  Trash,
   WarningCircle,
 } from "@phosphor-icons/react";
 import React, { useCallback, useEffect, useState, useSyncExternalStore } from "react";
@@ -198,9 +200,21 @@ export const OfflineSyncQueuePage: React.FC = () => {
                         Phiếu thu mua lúa tươi
                         {items.length > 1 ? ` (${items.length} dòng)` : ""}
                       </p>
-                      <span className="shrink-0 px-2 py-1 rounded-full bg-accent-warning/10 text-accent-warning text-[10px] font-bold">
-                        CHỜ GỬI
-                      </span>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <span className="px-2 py-1 rounded-full bg-accent-warning/10 text-accent-warning text-[10px] font-bold">
+                          CHỜ GỬI
+                        </span>
+                        <button
+                          type="button"
+                          disabled={isSyncing}
+                          onClick={() => void removeQueuedProcurement(record.id)}
+                          aria-label="Xóa phiếu khỏi hàng đợi"
+                          title="Xóa phiếu khỏi hàng đợi"
+                          className="p-1.5 rounded-lg border border-ink-tertiary/20 text-ink-tertiary hover:text-accent-danger hover:border-functional-rejected-border disabled:opacity-40"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
                     </div>
                     {items.length > 0 ? (
                       <ul className="mt-1 space-y-0.5 font-mono text-xs text-ink-secondary">

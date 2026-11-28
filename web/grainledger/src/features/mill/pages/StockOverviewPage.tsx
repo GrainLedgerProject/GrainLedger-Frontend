@@ -57,8 +57,10 @@ export function StockOverviewPage() {
     null,
   );
   const [page, setPage] = useState(1);
+  const [locPage, setLocPage] = useState(1);
   const scopeHeadingId = useId();
   const lotsHeadingId = useId();
+  const locationStockHeadingId = useId();
 
   const search = params.get("search") ?? "";
   const facilityId = params.get("facilityId") ?? "";
@@ -93,6 +95,15 @@ export function StockOverviewPage() {
       ),
   });
   const references = lookups.data;
+  const locationStock = useQuery({
+    queryKey: [...scope, "location-stock", locationId, locPage],
+    queryFn: () =>
+      ledgerEndpoints.getLocationStock(locationId, {
+        page: locPage,
+        pageSize: 25,
+      }),
+    enabled: Boolean(locationId),
+  });
 
   function change(values: Record<string, string>) {
     const next = new URLSearchParams(params);
@@ -102,6 +113,7 @@ export function StockOverviewPage() {
     }
     setParams(next);
     setPage(1);
+    setLocPage(1);
   }
 
   function closeModal() {
@@ -377,6 +389,153 @@ export function StockOverviewPage() {
             </div>
           </div>
 
+          {locationId && (
+            <section
+              className="record-card rounded-2xl"
+              aria-labelledby={locationStockHeadingId}
+            >
+              <header className="record-card-header">
+                <h2 id={locationStockHeadingId} className="record-card-title">
+                  <Package
+                    size={20}
+                    className="shrink-0 text-accent-primary"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {text("Tồn kho tại vị trí đã chọn", "Location stock breakdown")}
+                    {references?.locations?.find((l) => l.id === locationId)?.name
+                      ? ` · ${references.locations.find((l) => l.id === locationId)?.name}`
+                      : ""}
+                  </span>
+                </h2>
+                {locationStock.data && (
+                  <span className="font-mono text-xs font-semibold text-ink-secondary">
+                    {text("Tổng tại vị trí:", "Location total:")}{" "}
+                    <MassValue value={locationStock.data.totalKg} /> kg
+                  </span>
+                )}
+              </header>
+              <RecordFeedback
+                error={locationStock.error}
+                pending={locationStock.isPending}
+                label={text("Đang tải tồn kho theo vị trí…", "Loading location stock…")}
+              />
+              {locationStock.data && locationStock.data.items.length === 0 && (
+                <RecordEmpty icon={<Package size={32} />}>
+                  {text(
+                    "Vị trí này hiện chưa có tồn kho.",
+                    "No inventory stored in this location.",
+                  )}
+                </RecordEmpty>
+              )}
+              {locationStock.data && locationStock.data.items.length > 0 && (
+                <>
+                  <RecordTable labelledBy={locationStockHeadingId}>
+                    <thead>
+                      <tr>
+                        <th scope="col">{text("Lô", "Lot")}</th>
+                        <th scope="col">{text("Giống lúa", "Rice variety")}</th>
+                        <th scope="col">{text("Chủ hàng", "Owner")}</th>
+                        <th scope="col">{text("Giai đoạn", "Stage")}</th>
+                        <th scope="col" className="text-end">
+                          {text("Tồn (kg)", "On hand (kg)")}
+                        </th>
+                        <th scope="col" className="text-end">
+                          {text("Khả dụng (kg)", "Available (kg)")}
+                        </th>
+                        <th scope="col">{text("Hạn chế", "Restrictions")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {locationStock.data.items.map((item) => (
+                        <tr key={item.lotId}>
+                          <th scope="row" className="whitespace-nowrap">
+                            <button
+                              type="button"
+                              className="record-row-action font-mono text-accent-primary"
+                              onClick={() =>
+                                setModalLot({ id: item.lotId, code: item.code })
+                              }
+                            >
+                              {item.code}
+                            </button>
+                          </th>
+                          <td>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-ink-primary">
+                                {item.riceVariety ||
+                                  (item.varietyStatus === "MIXED"
+                                    ? text("Hỗn hợp", "Mixed")
+                                    : "—")}
+                              </span>
+                              {item.varietyStatus && (
+                                <StatusBadge
+                                  status={
+                                    item.varietyStatus === "MIXED"
+                                      ? "PENDING"
+                                      : "ACTIVE"
+                                  }
+                                  size="sm"
+                                  label={item.varietyStatus}
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td>{item.ownerName || "—"}</td>
+                          <td>{detailValue("stage", item.stage, i18n.language)}</td>
+                          <td className="text-end whitespace-nowrap">
+                            <MassValue value={item.quantityKg} />
+                          </td>
+                          <td className="text-end whitespace-nowrap">
+                            <MassValue value={item.availableKg} />
+                          </td>
+                          <td>
+                            {item.restrictions.length > 0 ? (
+                              <StatusBadge
+                                status="HOLD"
+                                label={item.restrictions.join(" · ")}
+                                size="sm"
+                              />
+                            ) : (
+                              <span className="text-ink-tertiary">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </RecordTable>
+                  {(locPage > 1 || locationStock.data.hasMore) && (
+                    <div className="flex items-center justify-between border-t border-ink-tertiary/15 px-4 py-2.5 text-xs">
+                      <button
+                        type="button"
+                        disabled={locPage <= 1 || locationStock.isFetching}
+                        onClick={() => setLocPage((p) => Math.max(1, p - 1))}
+                        className="record-button rounded-full px-3 py-1 disabled:opacity-50"
+                      >
+                        <CaretLeft size={14} aria-hidden="true" />
+                        <span>{text("Trước", "Prev")}</span>
+                      </button>
+                      <span className="font-mono text-ink-secondary">
+                        {text(`Trang ${locPage}`, `Page ${locPage}`)}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={
+                          !locationStock.data.hasMore || locationStock.isFetching
+                        }
+                        onClick={() => setLocPage((p) => p + 1)}
+                        className="record-button rounded-full px-3 py-1 disabled:opacity-50"
+                      >
+                        <span>{text("Sau", "Next")}</span>
+                        <CaretRight size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          )}
+
           <section className="record-card rounded-2xl" aria-labelledby={lotsHeadingId}>
             <header className="record-card-header">
               <h2 id={lotsHeadingId} className="record-card-title">
@@ -407,6 +566,7 @@ export function StockOverviewPage() {
                       <th scope="col">{text("Lô", "Lot")}</th>
                       <th scope="col">{text("Chủ hàng", "Owner")}</th>
                       <th scope="col">{text("Giai đoạn", "Stage")}</th>
+                      <th scope="col">{text("Giống lúa", "Rice variety")}</th>
                       <th scope="col" className="text-end">
                         {text("Tồn (kg)", "On hand (kg)")}
                       </th>
@@ -442,6 +602,12 @@ export function StockOverviewPage() {
                             row.lot.ownerId}
                         </td>
                         <td>{detailValue("stage", row.lot.stage, i18n.language)}</td>
+                        <td className="text-ink-secondary">
+                          {row.lot.riceVariety ||
+                            (row.lot.varietyStatus === "MIXED"
+                              ? text("Hỗn hợp", "Mixed")
+                              : "—")}
+                        </td>
                         <td className="text-end whitespace-nowrap">
                           <MassValue value={row.quantity} />
                         </td>

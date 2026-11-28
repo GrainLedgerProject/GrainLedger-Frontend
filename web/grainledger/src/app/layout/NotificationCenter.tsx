@@ -49,7 +49,7 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
       typeof ledgerEndpoints.getLookups === "function"
         ? (ledgerEndpoints.getLookups() as Promise<SetupApiResponse>)
         : Promise.resolve({} as SetupApiResponse),
-    enabled: Boolean(user) && open,
+    enabled: Boolean(user?.role) && open,
     retry: false,
     staleTime: 60_000,
   });
@@ -60,7 +60,7 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
         { status: "UNREAD", pageSize: 1 },
         { signal },
       ),
-    enabled: Boolean(user),
+    enabled: Boolean(user?.role),
     staleTime: 30_000,
     refetchInterval: 60_000,
     retry: false,
@@ -91,7 +91,7 @@ export function NotificationCenter({ onOpen }: { onOpen?: () => void }) {
         { signal },
       ),
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
-    enabled: Boolean(user) && open,
+    enabled: Boolean(user?.role) && open,
     staleTime: 0,
     retry: false,
     gcTime: 0,

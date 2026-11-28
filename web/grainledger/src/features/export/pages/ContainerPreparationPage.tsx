@@ -717,8 +717,8 @@ function PreparationDetail({ id, canWrite }: { id: string; canWrite: boolean }) 
                   </div>
                   {check.data.findings.length > 0 && (
                     <ul className="list-disc space-y-1 ps-5 text-ink-primary">
-                      {check.data.findings.map((finding) => (
-                        <li key={finding.code}>{finding.message}</li>
+                      {check.data.findings.map((finding, index) => (
+                        <li key={`${finding.code}-${index}`}>{finding.message}</li>
                       ))}
                     </ul>
                   )}
@@ -855,7 +855,7 @@ function PreparationForms({
           lotId,
           locationId,
           quantityKg,
-          ...(poolRevision != null && { poolRevision }),
+          ...(poolRevision != null && { poolRevision: String(poolRevision) }),
         })),
       },
     });
@@ -1030,7 +1030,10 @@ function PreparationForms({
                                 changeLine(index, {
                                   lotId: position.lotId,
                                   locationId: position.locationId,
-                                  poolRevision: position.poolRevision ?? undefined,
+                                  poolRevision:
+                                    position.poolRevision != null
+                                      ? String(position.poolRevision)
+                                      : undefined,
                                 });
                               } else {
                                 changeLine(index, blankLine());

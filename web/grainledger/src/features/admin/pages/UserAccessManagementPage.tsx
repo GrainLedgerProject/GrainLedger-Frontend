@@ -369,6 +369,14 @@ export const UserAccessManagementPage: React.FC = () => {
             </header>
 
             <form onSubmit={handleSaveAccess} className="p-5 space-y-4 text-xs">
+              {error && (
+                <div
+                  role="alert"
+                  className="p-3 rounded-lg bg-functional-rejected-bg border border-functional-rejected-border text-accent-danger font-medium"
+                >
+                  {error}
+                </div>
+              )}
               {isEditingSelf && (
                 <div
                   role="alert"

@@ -6,7 +6,7 @@ import { currentOfflineOwnerKey } from "@/app/store/sessionOwner";
 const STORE_NAME = STORES.PROCUREMENT_QUEUE;
 const QUEUE_CHANGED = "grainledger:procurement-queue-changed";
 const SYNC_CHANGED = "grainledger:procurement-sync-changed";
-type QueueChangeReason = "queued" | "synced";
+type QueueChangeReason = "queued" | "synced" | "removed";
 let syncPromise: Promise<{ synced: number; failed: number }> | null = null;
 
 export const isProcurementSyncing = () => syncPromise !== null;
@@ -77,6 +77,11 @@ export async function queueProcurement(request: RegisterProcurementRequest): Pro
   await withStore(STORE_NAME, "readwrite", (store) => store.put(record));
   notifyQueueChanged("queued");
   return record;
+}
+
+export async function removeQueuedProcurement(id: string): Promise<void> {
+  await withStore(STORE_NAME, "readwrite", (store) => store.delete(id));
+  notifyQueueChanged("removed");
 }
 
 // Manual and automatic triggers share one batch and preserve clientOperationId.

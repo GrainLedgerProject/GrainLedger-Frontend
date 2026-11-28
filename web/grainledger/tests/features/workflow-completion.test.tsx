@@ -253,12 +253,12 @@ describe("workflow routes", () => {
     login("CUSTOMER_MANAGER", ["trace.read.all"]);
     vi.spyOn(ledgerEndpoints, "getTraceStarts").mockResolvedValue(page([]));
     vi.spyOn(ledgerEndpoints, "traceLot").mockResolvedValue({ complete: true, asOf: "2026-11-19T03:00:00Z", sourceContributionsVisible: true,
-      lots: [{ id: "lot", code: "RICE-001", stage: "HEAD_RICE", producedKg: "100", restrictions: [], contributions: [{ sourceLotId: "source", quantityKg: "70", denominatorKg: "100", percentage: "70.000000" }] }], edges: [],
+      lots: [{ id: "33333333-3333-4333-8333-333333333333", code: "RICE-001", stage: "HEAD_RICE", producedKg: "100", restrictions: [], contributions: [{ sourceLotId: "source", quantityKg: "70", denominatorKg: "100", percentage: "70.000000" }] }], edges: [],
       sources: [{ lotId: "source", provenance: { procurementCode: "PO-001", riceVariety: "ST25", plotId: "plot", currentReferenceLabels: { farmerName: "Farmer A", plotCode: "PLOT-A" } } }] });
-    mount(<TraceabilityPage/>, "/?lotId=lot&direction=backward");
+    mount(<TraceabilityPage/>, "/?lotId=33333333-3333-4333-8333-333333333333&direction=backward");
     fireEvent.click(await screen.findByText("RICE-001", { selector: "summary" }));
     expect(await screen.findByText("70.000000")).toBeTruthy();
     expect(screen.getByText(/Farmer A · PLOT-A/)).toBeTruthy();
-    expect(ledgerEndpoints.traceLot).toHaveBeenCalledWith({ lotId: "lot", direction: "backward", view: "current" });
+    expect(ledgerEndpoints.traceLot).toHaveBeenCalledWith({ lotId: "33333333-3333-4333-8333-333333333333", direction: "backward", view: "current" });
   });
 });

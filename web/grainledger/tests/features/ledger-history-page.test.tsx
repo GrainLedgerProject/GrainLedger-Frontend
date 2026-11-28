@@ -6,7 +6,7 @@ import { ledgerEndpoints } from '@/api/ledger';
 import type { LedgerHistoryEntry } from '@/api/history';
 import { MemoryRouter } from 'react-router-dom';
 
-vi.mock('@/api/ledger', () => ({ ledgerEndpoints: { getHistory: vi.fn() } }));
+vi.mock('@/api/ledger', () => ({ ledgerEndpoints: { getHistory: vi.fn(), getBusinessHistory: vi.fn() } }));
 vi.mock('@/shared/ui/GrainLoader', () => ({ GrainLoader: () => null }));
 beforeEach(async () => {
   await i18n.changeLanguage('vi');
@@ -110,5 +110,56 @@ describe('History page', () => {
     const signal = vi.mocked(ledgerEndpoints.getHistory).mock.calls.at(-1)?.[1]?.signal;
     view.unmount();
     expect(signal?.aborted).toBe(true);
+  });
+
+  it('uses backend business event codes and filters options by category', async () => {
+    vi.mocked(ledgerEndpoints.getHistory).mockResolvedValue({
+      items: [], page: 1, pageSize: 25, totalCount: 0, hasMore: false,
+    });
+    vi.mocked(ledgerEndpoints.getBusinessHistory).mockResolvedValue({
+      items: [
+        {
+          id: 'bh-1',
+          category: 'HOLD',
+          eventType: 'CONTAINER_HOLD',
+          subjectId: 'cont-1',
+          reference: 'CT-001',
+          actorId: 'u-1',
+          actorName: 'Manager',
+          recordedAt: '2026-11-28T00:00:00Z',
+          context: {},
+          evidenceId: null,
+        },
+      ],
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      hasMore: false,
+    });
+
+    render(<MemoryRouter><EventHistoryPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Lịch sử nghiệp vụ' }));
+    await screen.findByText('CT-001');
+
+    const eventSelect = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Loại sự kiện' });
+    const optionValues = within(eventSelect).getAllByRole<HTMLOptionElement>('option').map(o => o.value);
+    expect(optionValues).toContain('CONTAINER_HOLD');
+    expect(optionValues).toContain('LAB_REPORT_CONFIRMED');
+    expect(optionValues).not.toContain('HOLD_PLACED');
+    expect(optionValues).not.toContain('LAB_REPORT_RECORDED');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Nhóm nghiệp vụ' }), { target: { value: 'HOLD' } });
+    fireEvent.change(eventSelect, { target: { value: 'CONTAINER_HOLD' } });
+    await waitFor(() =>
+      expect(ledgerEndpoints.getBusinessHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category: 'HOLD', eventType: 'CONTAINER_HOLD', page: 1 }),
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Nhóm nghiệp vụ' }), { target: { value: 'LAB' } });
+    await waitFor(() => expect(eventSelect.value).toBe(''));
+    expect(within(eventSelect).getAllByRole<HTMLOptionElement>('option').map(o => o.value))
+      .toEqual(['', 'LAB_REPORT_RECEIVED', 'LAB_REPORT_REVISED', 'LAB_REPORT_CONFIRMED', 'LAB_REPORT_DELETED']);
   });
 });

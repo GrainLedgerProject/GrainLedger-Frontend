@@ -101,6 +101,9 @@ export function ApprovedPlanExecutionPage() {
     !workItems.isPending &&
     !workItems.error,
   );
+  const canReadExecutionDetail = Boolean(
+    user?.permissions.includes("export-orders.read"),
+  );
   const directWorkflow = useQuery({
     queryKey: ["container-workflow", requestedContainerId],
     queryFn: () =>
@@ -111,7 +114,7 @@ export function ApprovedPlanExecutionPage() {
   const directDetail = useQuery({
     queryKey: ["container-execution-direct", requestedContainerId],
     queryFn: () => containerExecutionEndpoints.getDetail(requestedContainerId),
-    enabled: needsDirectFallback,
+    enabled: needsDirectFallback && canReadExecutionDetail,
     retry: false,
   });
   const directLookups = useQuery({
@@ -574,7 +577,9 @@ export function ApprovedPlanExecutionPage() {
                         refresh={async () => {
                           await Promise.all([
                             directWorkflow.refetch(),
-                            directDetail.refetch(),
+                            canReadExecutionDetail
+                              ? directDetail.refetch()
+                              : Promise.resolve(),
                             workItems.refetch(),
                           ]);
                         }}

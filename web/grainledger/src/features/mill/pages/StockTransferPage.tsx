@@ -16,7 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import { ApiError } from "@/api/client";
 import { ledgerEndpoints, type SetupApiResponse } from "@/api/ledger";
-import { pageItems, type ApiPage } from "@/api/query";
+import { collectPages, pageItems, type ApiPage } from "@/api/query";
 import { useAuthStore } from "@/app/store/authStore";
 import { useCommand } from "@/shared/hooks/useCommand";
 import { GrainLoader } from "@/shared/ui/GrainLoader";
@@ -62,7 +62,7 @@ export function StockTransferPage() {
   const { t } = useTranslation();
   const text = useWorkflowText();
   const cache = useQueryClient();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const user = useAuthStore((state) => state.user);
 
   const initialHoldId = params.get("holdId") ?? "";
@@ -71,7 +71,9 @@ export function StockTransferPage() {
     user?.role === "MILL_MANAGER" && user.permissions.includes("holds.process");
 
   const [holdIsolationMode, setHoldIsolationMode] = useState(
-    Boolean(initialHoldId),
+    Boolean(
+      canProcessHold && (initialHoldId || params.get("isolation") === "1"),
+    ),
   );
   const [selectedHoldId, setSelectedHoldId] = useState(initialHoldId);
   const [search, setSearch] = useState("");
@@ -85,6 +87,21 @@ export function StockTransferPage() {
   const term = useDeferredValue(search.trim());
   const scope = ["stock-transfer", user?.id];
 
+  function syncTransferParams(
+    nextLotId: string,
+    nextIsolation: boolean,
+    nextHoldId: string,
+  ) {
+    const next = new URLSearchParams(params);
+    if (nextLotId) next.set("lotId", nextLotId);
+    else next.delete("lotId");
+    if (nextIsolation) next.set("isolation", "1");
+    else next.delete("isolation");
+    if (nextIsolation && nextHoldId) next.set("holdId", nextHoldId);
+    else next.delete("holdId");
+    setParams(next, { replace: true });
+  }
+
   const lookups = useQuery({
     queryKey: [...scope, "lookups"],
     queryFn: async () =>
@@ -93,13 +110,22 @@ export function StockTransferPage() {
 
   const activeHolds = useQuery({
     queryKey: [...scope, "holds"],
-    queryFn: async () => {
-      const res = (await ledgerEndpoints.getHolds({
-        page: 1,
-        pageSize: 50,
-      })) as { items?: HoldItem[] } | HoldItem[];
-      return Array.isArray(res) ? res : (res?.items ?? []);
-    },
+    queryFn: () =>
+      collectPages<HoldItem>(async (paging) => {
+        const res = (await ledgerEndpoints.getHolds(paging)) as
+          | ApiPage<HoldItem>
+          | HoldItem[];
+        if (Array.isArray(res)) {
+          return {
+            items: res,
+            page: paging.page ?? 1,
+            pageSize: paging.pageSize ?? res.length,
+            totalCount: res.length,
+            hasMore: false,
+          };
+        }
+        return res;
+      }),
     enabled: Boolean(canProcessHold && (holdIsolationMode || initialHoldId)),
   });
 
@@ -178,7 +204,10 @@ export function StockTransferPage() {
       setLot("");
       setFrom("");
       setTo("");
+      setSelectedHoldId("");
+      setHoldIsolationMode(false);
       setFormVersion((version) => version + 1);
+      syncTransferParams("", false, "");
       await cache.invalidateQueries({ queryKey: scope });
     },
     {
@@ -199,6 +228,7 @@ export function StockTransferPage() {
     setTo("");
     setError(null);
     command.reset();
+    syncTransferParams(nextLotId, holdIsolationMode, selectedHoldId);
   }
 
   function transfer(event: FormEvent<HTMLFormElement>) {
@@ -267,8 +297,12 @@ export function StockTransferPage() {
   }
 
   const lotItems = lots.data?.items ?? [];
-  const loadError = lots.error ?? lookups.error ?? details.error;
+  const loadError =
+    lots.error ?? lookups.error ?? details.error ?? activeHolds.error;
   const transferError = command.error ?? (error ? new Error(error) : null);
+  const selectedHoldRecord = activeHolds.data?.find(
+    (h) => h.id === selectedHoldId,
+  );
 
   return (
     <div className="space-y-6 pb-8">
@@ -424,10 +458,12 @@ export function StockTransferPage() {
                 type="checkbox"
                 checked={holdIsolationMode}
                 onChange={(e) => {
-                  setHoldIsolationMode(e.target.checked);
+                  const nextIsolation = e.target.checked;
+                  setHoldIsolationMode(nextIsolation);
                   setFrom("");
                   setTo("");
                   setError(null);
+                  syncTransferParams(lotId, nextIsolation, selectedHoldId);
                 }}
                 className="size-4 shrink-0 accent-accent-danger"
               />
@@ -465,11 +501,13 @@ export function StockTransferPage() {
                       const matched = activeHolds.data?.find(
                         (h) => h.id === nextHoldId,
                       );
-                      if (matched) {
+                      const nextLotId = !lotId && matched ? matched.lotId : lotId;
+                      if (!lotId && matched) {
                         setLot(matched.lotId);
                         setFrom("");
                         setTo("");
                       }
+                      syncTransferParams(nextLotId, true, nextHoldId);
                     }}
                   >
                     <option value="">
@@ -490,6 +528,28 @@ export function StockTransferPage() {
                     ))}
                   </select>
                 </label>
+                {selectedHoldRecord &&
+                  lotId &&
+                  selectedHoldRecord.lotId !== lotId && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-functional-hold-border bg-surface-base/80 px-3 py-2 text-xs dark:bg-surface-raised">
+                      <span className="text-ink-secondary">
+                        {text(
+                          `Đang giữ lô đã chọn (lô con kế thừa HOLD). Lệnh HOLD thuộc lô gốc ${selectedHoldRecord.lotCode}.`,
+                          `Keeping selected downstream lot (inherited HOLD). Order originates from ${selectedHoldRecord.lotCode}.`,
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => selectLot(selectedHoldRecord.lotId)}
+                        className="font-semibold text-accent-primary hover:underline"
+                      >
+                        {text(
+                          `Chuyển sang lô gốc (${selectedHoldRecord.lotCode})`,
+                          `Switch to root lot (${selectedHoldRecord.lotCode})`,
+                        )}
+                      </button>
+                    </div>
+                  )}
               </div>
             )}
           </div>

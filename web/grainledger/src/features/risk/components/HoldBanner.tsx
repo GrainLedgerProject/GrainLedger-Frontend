@@ -20,7 +20,7 @@ export const HoldBanner: React.FC<HoldBannerProps> = ({
   targetType,
   targetId,
   reason,
-  issuedAt = '15/10/2026 14:30',
+  issuedAt,
   className = '',
 }) => {
   const { t, i18n } = useTranslation();
@@ -53,9 +53,11 @@ export const HoldBanner: React.FC<HoldBannerProps> = ({
             <span className="font-bold text-accent-danger text-sm flex items-center gap-1.5">
               <span>{message}</span>
             </span>
-            <span className="text-xs font-mono text-ink-secondary bg-surface-base px-2 py-0.5 rounded border border-functional-hold-border/30">
-              {t('risk.holdIssuedAt', 'Thời điểm ban hành')}: {issuedAt}
-            </span>
+            {issuedAt && (
+              <span className="text-xs font-mono text-ink-secondary bg-surface-base px-2 py-0.5 rounded border border-functional-hold-border/30">
+                {t('risk.holdIssuedAt', 'Thời điểm ban hành')}: {issuedAt}
+              </span>
+            )}
           </div>
 
           <p className="text-xs text-ink-secondary leading-normal">

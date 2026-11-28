@@ -19,10 +19,7 @@ export interface CatalogEntryDto {
   code: string;
   name: string;
 }
-export interface ActiveSubstanceDto extends CatalogEntryDto {
-  category?: string;
-  safetyIntervalDays?: number;
-}
+export type ActiveSubstanceDto = CatalogEntryDto;
 export interface CommodityDto extends CatalogEntryDto {
   createdBy: string | null;
   version: number;
@@ -383,14 +380,14 @@ export interface UpdateMarketRequest {
 
 export interface UpdateMeasurementUnitRequest {
   name: null | string;
-  code: null | string;
-  quantityKind: null | string;
+  code?: null | string;
+  quantityKind?: null | string;
 }
 
 export interface UpdateQualityAttributeRequest {
   name: null | string;
-  code: null | string;
-  unit: null | string;
+  code?: null | string;
+  unit?: null | string;
 }
 
 export interface UpdateRiceVarietyRequest {

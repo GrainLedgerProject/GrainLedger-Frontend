@@ -1,5 +1,6 @@
 import { apiFetch } from "./client";
 import { getApiUrl } from "./config";
+import { getCookie } from "@/shared/utils/cookies";
 
 export const authEndpoints = {
   register: (req: RegisterRequest) =>
@@ -26,11 +27,14 @@ export const authEndpoints = {
       body: JSON.stringify(req),
     }),
 
-  webLogin: (req: LoginRequest) =>
-    apiFetch<SessionUserDto>("/api/auth/web-login", {
+  webLogin: (req: LoginRequest, csrfToken?: string) => {
+    const token = csrfToken ?? getCookie("XSRF-TOKEN") ?? getCookie("CSRF-TOKEN");
+    return apiFetch<SessionUserDto>("/api/auth/web-login", {
       method: "POST",
+      ...(token ? { headers: { "X-CSRF-TOKEN": token } } : {}),
       body: JSON.stringify(req),
-    }),
+    });
+  },
 
   refresh: (refreshToken: string) =>
     apiFetch<IssuedTokens>("/api/auth/refresh", {
@@ -52,22 +56,12 @@ export const authEndpoints = {
 
   getSession: (browserSession = false) => apiFetch<SessionUserDto>("/api/auth/session", { browserSession }),
 
-  getCsrf: () => apiFetch<{ token: string }>("/api/auth/csrf"),
-
   getGoogleAuthUrl: (returnUrl?: string) =>
-    returnUrl
-      ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
-      : "/api/auth/google",
-
-  loginGoogle: (returnUrl?: string) => {
-    const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : "";
-    window.location.assign(getApiUrl(`/api/auth/google${qs}`));
-  },
-
-  googleComplete: (returnUrl?: string) => {
-    const qs = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : "";
-    window.location.assign(getApiUrl(`/api/auth/google/complete${qs}`));
-  },
+    getApiUrl(
+      returnUrl
+        ? `/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`
+        : "/api/auth/google",
+    ),
 
   getHealth: () => apiFetch<void>("/health"),
 

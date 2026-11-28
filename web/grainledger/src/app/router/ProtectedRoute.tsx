@@ -5,6 +5,7 @@ import { GrainLoader } from "@/shared/ui/GrainLoader";
 import type { UserRole } from "@/shared/types/roles";
 import { ArrowLeft, ShieldWarning } from "@phosphor-icons/react";
 import React, { type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
@@ -21,6 +22,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredAnyPermissions,
 }) => {
   const { isAuthenticated, user, accessToken, cookieSession, isLoading } = useAuthStore();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -50,12 +52,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <ShieldWarning size={32} weight="fill" />
         </div>
         <h2 className="text-xl font-bold text-ink-primary">
-          Tài khoản đang chờ quản trị viên cấp quyền
+          {t("auth.pendingTitle", "Tài khoản đang chờ quản trị viên cấp quyền")}
         </h2>
         <p className="text-xs text-ink-secondary leading-relaxed">
-          Tài khoản của bạn đã xác thực danh tính nhưng chưa được quản trị viên
-          gán doanh nghiệp và vai trò sử dụng. Vui lòng liên hệ quản trị viên để
-          kích hoạt quyền truy cập.
+          {t(
+            "auth.pendingDesc",
+            "Tài khoản của bạn đã xác thực danh tính nhưng chưa được quản trị viên gán doanh nghiệp và vai trò sử dụng. Vui lòng liên hệ quản trị viên để kích hoạt quyền truy cập.",
+          )}
         </p>
         <div className="pt-4 flex items-center justify-center gap-3">
           <button
@@ -64,7 +67,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
           >
             <ArrowLeft size={14} />
-            Về trang chờ kích hoạt
+            {t("auth.pendingButton", "Về trang chờ kích hoạt")}
           </button>
         </div>
       </div>
@@ -85,14 +88,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <ShieldWarning size={32} weight="fill" />
         </div>
         <h2 className="text-xl font-bold text-ink-primary">
-          Không có quyền truy cập màn hình này
+          {t("auth.forbiddenTitle", "Không có quyền truy cập màn hình này")}
         </h2>
         <p className="text-xs text-ink-secondary leading-relaxed">
-          Tài khoản của bạn hiện có vai trò{" "}
+          {t("auth.forbiddenRolePrefix", "Tài khoản của bạn hiện có vai trò")}{" "}
           <span className="inline-block align-middle mx-1">
             <RoleChip role={user.role} size="sm" />
           </span>
-          . {allowedRoles && "Màn hình này chỉ dành cho: "}
+          . {allowedRoles && `${t("auth.forbiddenRolesOnly", "Màn hình này chỉ dành cho:")} `}
           {allowedRoles?.map((r) => (
             <span key={r} className="inline-block align-middle mx-0.5">
               <RoleChip role={r} size="sm" />
@@ -108,7 +111,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-accent-primary text-white text-xs font-semibold hover:bg-accent-primary-dim transition-colors"
           >
             <ArrowLeft size={14} />
-            Về bàn làm việc của tôi
+            {t("auth.forbiddenHomeButton", "Về bàn làm việc của tôi")}
           </button>
         </div>
       </div>
